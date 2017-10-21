@@ -49,8 +49,9 @@
     </div>
   </div>
 
-  <div :class="'side-left side-view-' + baseview">
-    <div class="right-bar" >
+  <!--<div :class="'side-left side-view-' + baseview">-->
+  <div class="side-left">
+    <div class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
       <input class="url" id="vUrl" type="text" placeholder="请输入请求的接口地址" @keyup="doOnKeyUp(event)" />
       <button class="send" id="vSend" @click="send()">发送请求</button>
@@ -322,10 +323,10 @@
   //    s.parentNode.insertBefore(hm, s);
   //  })();
 </script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/StringUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="StringUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="CodeUtil.js" ></script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/RequestUtil.js" ></script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/ResponseUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="RequestUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="ResponseUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
   var vInput = document.getElementById("vInput");
