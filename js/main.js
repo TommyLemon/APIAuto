@@ -132,9 +132,7 @@
       themes: themes,
       checkedTheme: 0,
       shareKey: '', // 分享后返回的ID
-      isSharing: false,
-
-      input: ''
+      isSharing: false
     },
     methods: {
 

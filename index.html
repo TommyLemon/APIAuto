@@ -327,13 +327,14 @@
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/RequestUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/ResponseUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
+  //TODO 保留，用v-model绑定到App.data会报错，各种undefined
   var vInput = document.getElementById("vInput");
   var vOutput = document.getElementById("vOutput");
   var vUrl = document.getElementById("vUrl");
   var vTransfer = document.getElementById("vTransfer");
   var vSend = document.getElementById("vSend");
 
-  vUrl.value = new String(URL_GET);
+  vUrl.value = new String(URL_GET); //main.js里访问不到，可能是script引用顺序问题
 
 </script>
 
