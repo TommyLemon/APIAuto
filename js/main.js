@@ -132,7 +132,8 @@
       themes: themes,
       checkedTheme: 0,
       shareKey: '', // 分享后返回的ID
-      isSharing: false
+      isSharing: false,
+      isExpand: true
     },
     methods: {
 
@@ -142,6 +143,8 @@
         $('.icon-square-plus').hide()
         $('.expand-view').show()
         $('.fold-view').hide()
+
+        App.isExpand = true;
       },
 
       // 全部折叠
@@ -150,6 +153,8 @@
         $('.icon-square-plus').show()
         $('.expand-view').hide()
         $('.fold-view').show()
+
+        App.isExpand = false;
       },
 
       // diff

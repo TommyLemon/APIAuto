@@ -87,13 +87,13 @@
             </svg>
           </a>
 
-          <a href="javascript:void(0)" class="hint--top"  data-hint="全部展开"  @click="expandAll()">
+          <a v-show="! isExpand" href="javascript:void(0)" class="hint--top"  data-hint="全部展开"  @click="expandAll()">
             <svg class="icon" >
               <use xlink:href="svg/icon.svg#expand"></use>
             </svg>
           </a>
 
-          <a  href="javascript:void(0)" class="hint--top"  data-hint="全部折叠" @click="collapseAll()">
+          <a v-show="isExpand" href="javascript:void(0)" class="hint--top"  data-hint="全部折叠" @click="collapseAll()">
             <svg class="icon"  >
               <use xlink:href="svg/icon.svg#collapse"></use>
             </svg>
