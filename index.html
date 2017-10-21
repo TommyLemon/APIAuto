@@ -56,8 +56,7 @@
       <input class="url" id="vUrl" type="text" placeholder="请输入请求的接口地址" @keyup="doOnKeyUp(event)" />
       <button class="send" id="vSend" @click="send()">发送请求</button>
     </div>
-    <div class="left-panel">
-      <textarea id="vInput" @keyup="onChange(true)">
+    <textarea class="left-panel" id="vInput" @keyup="onChange(true)">
         {
           "[]":{
             "User":{
@@ -65,9 +64,7 @@
             }
           }
         }
-      </textarea>
-      <div class="label" v-show="baseview == 'diff'">原 JSON</div>
-    </div>
+    </textarea>
   </div>
 
   <div class="splitx" ></div>
@@ -101,20 +98,6 @@
           </a>
         </div>
         <div class="pull-right">
-          <div class="loader" v-show="isSharing">
-            <div class="ball-pulse-sync">
-              <div></div>
-              <div></div>
-              <div></div>
-            </div>
-          </div>
-
-          <a class="hint--top save-tool copy-btn"  data-hint="分享" href="javascript:void(0)" @click="share" data-clipboard-target="#share-input" v-show="!isSharing">
-            <svg class="icon">
-              <use xlink:href="svg/icon.svg#share"></use>
-            </svg>
-          </a>
-
           <span class="pop-btn"  v-show="historys.length > 0">
                 <a class="hint--top"  data-hint="历史保存" href="javascript:void(0)">
                   <svg class="icon">
@@ -151,10 +134,6 @@
               </span>
         </div>
 
-        <!-- 用作复制的隐藏文本域 -->
-        <div style="position: absolute; top: -100000px">
-          <input id="share-input" :value="shareUrl(shareKey)">
-        </div>
       </div>
 
 

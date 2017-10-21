@@ -1,4 +1,3 @@
-'use strict';
 
 (function () {
   var ApiUrl = 'https://api.awesomes.cn'
@@ -128,12 +127,10 @@
       isSaveShow: false,
       isExportTxtShow: false,
       exTxt: {
-        name: 'JSONON'
+        name: 'Response'
       },
       themes: themes,
       checkedTheme: 0,
-      shareKey: '', // 分享后返回的ID
-      isSharing: false,
       isExpand: true
     },
     methods: {
@@ -294,34 +291,6 @@
         localforage.setItem('#theme', index)
       },
 
-      // 获取分享的链接
-      shareUrl: function (key) {
-        return `${window.location.origin}?key=${key}`
-      },
-
-      // 分享
-      share: function () {
-        let con = App.jsoncon
-        if (con.trim() === '') {
-          return
-        }
-        App.isSharing = true
-        $.ajax({
-          type: 'POST',
-          url: `${ApiUrl}/json`,
-          contentType: 'application/json; charset=utf-8',
-          data: JSON.stringify({con: con, key: App.shareKey}),
-          success: (data) => {
-            App.isSharing = false
-            App.shareKey = uuidv1()
-            if (data.status) {
-              Helper.alert('分享成功，已将链接复制到剪贴板，只能保存24小时', 'success')
-            } else {
-            }
-          }
-        })
-      },
-
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
       /**转至主页
@@ -374,9 +343,8 @@
 
 
           if (this.setDoc(doc) == false) {
-            let this_ = this;
             this.getDoc(function (d) {
-              this_.setDoc(d);
+              App.setDoc(d);
             });
           }
 
@@ -394,9 +362,8 @@
         inputted = new String(vInput.value);
         clearTimeout(handler);
 
-        let this_ = this;
         handler = setTimeout(function () {
-          this_.onHandle(inputted);
+          App.onHandle(inputted);
         }, delay ? 2*1000 : 0);
       },
 
@@ -481,8 +448,7 @@
        * 获取文档
        */
       getDoc: function (callback) {
-        let this_ = this;
-        let docRq = request(URL_GET, {
+        var docRq = request(URL_GET, {
           '[]': {
             'Table': {
               'TABLE_SCHEMA': 'sys',
@@ -538,7 +504,7 @@
               console.log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n #### 说明: \n' + this_.toMD(table.TABLE_COMMENT);
+              doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n #### 说明: \n' + App.toMD(table.TABLE_COMMENT);
 
               //Column[]
               doc += '\n\n #### 字段: \n 名称  |  类型  |  可为null  |  说明' +
@@ -560,7 +526,7 @@
                 console.log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
                 doc += '\n' + column.COLUMN_NAME + '  |  ' + column.COLUMN_TYPE
-                  + '  |  ' + column.IS_NULLABLE + '  |  ' + this_.toMD(column.COLUMN_COMMENT);
+                  + '  |  ' + column.IS_NULLABLE + '  |  ' + App.toMD(column.COLUMN_COMMENT);
 
               }
 
@@ -589,7 +555,7 @@
               console.log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(this_.getStructure(item.structure));
+              doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(App.getStructure(item.structure));
             }
 
             doc += '\n\n\n\n\n\n\n';
@@ -639,14 +605,14 @@
         console.log('getStructure  obj = \n' + format(JSON.stringify(obj)));
 
         if (obj instanceof Array) {
-          for (let i = 0; i < obj.length; i++) {
+          for (var i = 0; i < obj.length; i++) {
             obj[i] = this.getStructure(obj[i]);
           }
         }
         else if (obj instanceof Object) {
-          let v;
-          let nk;
-          for (let k in obj) {
+          var v;
+          var nk;
+          for (var k in obj) {
             if (k == null || k == '' || k == 'ADD' || k == 'REMOVE' || k == 'REPLACE' || k == 'PUT') {
               delete obj[k];
               continue;
@@ -703,10 +669,10 @@
     },
     computed: {
       theme: function () {
-        let th = this.themes[this.checkedTheme]
-        let result = {}
-        let index = 0;
-        ['key', 'String', 'Number', 'Boolean', 'Null', 'link-link'].forEach(key => {
+        var th = this.themes[this.checkedTheme]
+        var result = {}
+        var index = 0;
+        ['key', 'String', 'Number', 'Boolean', 'Null', 'link-link'].forEach(function(key) {
           result[key] = th[index]
           index++
         })
@@ -715,10 +681,9 @@
     },
     created () {
       this.listHistory()
-      let clipboard = new Clipboard('.copy-btn')
-      let sps = window.location.href.split('?key=')
-      let jsonID = sps[sps.length - 1]
-      this.shareKey = uuidv1()
+      var clipboard = new Clipboard('.copy-btn')
+      var sps = window.location.href.split('?key=')
+      var jsonID = sps[sps.length - 1]
       if (sps.length > 1 && jsonID.length > 5) {
         $.get(`${ApiUrl}/json?key=${jsonID}`, function (data) {
           if (data.status) {
