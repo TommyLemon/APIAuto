@@ -123,11 +123,11 @@
       compressStr: '',
       error: {},
       historys: [],
-      history: {name: ''},
+      history: {name: '请求0'},
       isSaveShow: false,
       isExportTxtShow: false,
       exTxt: {
-        name: 'Response'
+        name: 'APIJSON测试0'
       },
       themes: themes,
       checkedTheme: 0,
@@ -240,7 +240,7 @@
         }
         var val = {
           name: App.history.name,
-          data: App.jsoncon
+          data: inputted
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -261,7 +261,8 @@
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key, function (err, value) {
-          App.jsoncon = item.data
+          vInput.value = item.data
+          App.onChange(false)
         })
       },
 
@@ -281,7 +282,8 @@
 
       // 导出文本
       exportTxt: function () {
-        saveTextAs(App.jsoncon, App.exTxt.name + '.txt')
+        saveTextAs('APIJSON测试(https://github.com/TommyLemon/APIJSON):\n\nRequest:\n'
+          + inputted + '\n\n\nResponse:\n' + App.jsoncon, App.exTxt.name + '.txt')
         App.isExportTxtShow = false
       },
 
