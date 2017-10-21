@@ -311,6 +311,14 @@
 <script src="js/uuid.js"></script>
 <script src="js/clipboard.min.js"></script>
 <script src="js/helper.js"></script>
+
+<!-- 必须在main.js前 TODO 可能有冲突，代码写入vue文件？ <<<<<<<<<<<<<<<< -->
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="StringUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="CodeUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="RequestUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="ResponseUtil.js" ></script>
+<!-- 必须在main.js前 TODO 可能有冲突，代码写入vue文件？ >>>>>>>>>>>>>>>> -->
+
 <script src="js/main.js"></script>
 
 <!--访问统计  请换成自己的-->
@@ -323,10 +331,6 @@
   //    s.parentNode.insertBefore(hm, s);
   //  })();
 </script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="StringUtil.js" ></script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="CodeUtil.js" ></script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="RequestUtil.js" ></script>
-<script type="text/javascript" language="JavaScript" charset="UTF-8" src="ResponseUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
   var vInput = document.getElementById("vInput");

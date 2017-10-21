@@ -91,10 +91,10 @@
     }
   })
 
-  let initJson = {}
+  var initJson = {}
 
   // 主题 [key, String, Number, Boolean, Null, link-link, link-hover]
-  let themes = [
+  var themes = [
     ['#92278f', '#3ab54a', '#25aae2', '#f3934e', '#f34e5c', '#717171'],
     ['rgb(19, 158, 170)', '#cf9f19', '#ec4040', '#7cc500', 'rgb(211, 118, 126)', 'rgb(15, 189, 170)'],
     ['#886', '#25aae2', '#e60fc2', '#f43041', 'rgb(180, 83, 244)', 'rgb(148, 164, 13)'],
@@ -105,11 +105,12 @@
 
 
   // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  let inputted
-  let handler
-  let doc
+  //这些全局变量不能放在data中，否则会报undefined错误
+  var inputted
+  var handler
+  var doc
 
-  let isSingle = true
+  var isSingle = true
 
   // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -434,6 +435,7 @@
             }
             App.jsoncon = format(response);
             App.view = 'code';
+            vOutput.value = '';
           } else {
             vOutput.value = "Response(GET):\nurl = " + rq.url + "\nstatus = " + rq.status + "\nerror = " + rq.error;
           }
