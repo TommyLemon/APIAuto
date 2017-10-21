@@ -67,10 +67,6 @@
       </textarea>
       <div class="label" v-show="baseview == 'diff'">原 JSON</div>
     </div>
-    <div  class="left-panel"  v-show="baseview == 'diff'">
-      <textarea  v-model="newjsoncon"></textarea>
-      <div class="label">新 JSON</div>
-    </div>
   </div>
 
   <div class="splitx" ></div>
@@ -79,18 +75,6 @@
     <div class="right-inner">
       <div class="right-bar">
         <div class="pull-left">
-          <a href="javascript:void(0)" @click="compress()" class="hint--top"  data-hint="压缩">
-            <svg  v-bind:class="'icon  active-' + (view == 'compress')" >
-              <use xlink:href="svg/icon.svg#database"></use>
-            </svg>
-          </a>
-
-          <a href="javascript:void(0)" class="hint--top"  data-hint="美化"  @click="beauty()">
-            <svg class="icon">
-              <use xlink:href="svg/icon.svg#beauty"></use>
-            </svg>
-          </a>
-
           <a href="javascript:void(0)" class="hint--top"  data-hint="清空"  @click="clearAll()">
             <svg class="icon">
               <use xlink:href="svg/icon.svg#clear"></use>
@@ -173,27 +157,26 @@
       </div>
 
 
-      <div class="right-main" >
-        <!--格式化视图 TODO position: fixed 隐藏-->
-        <div style="position: relative" v-show="baseview == 'formater' && view != 'error'">
+      <div class="right-main"  v-show="baseview == 'formater' && view != 'error'">
 
-          <!--正常JSON格式化视图-->
-          <div class="view-code"  v-show="view == 'code'">
-            <vue-outer :jsondata="jsonhtml" isend="true" :theme="theme"></vue-outer>
-          </div>
-
-          <!--空视图-->
-          <div class="view-code"  v-show="view == 'empty'">
-          </div>
-
-          <!--压缩视图-->
-          <textarea v-show="view == 'compress'">{{compressStr}}</textarea>
-
+        <!--正常JSON格式化视图-->
+        <div class="view-code"  v-show="view == 'code'">
+          <vue-outer :jsondata="jsonhtml" isend="true" :theme="theme"></vue-outer>
         </div>
-        <textarea v-show="true" v-model="jsoncon"  style="position: fixed" id="vOutput" readonly>
+
+        <!--空视图-->
+        <div class="view-code"  v-show="view == 'empty'">
+        </div>
+
+        <!--压缩视图-->
+        <textarea v-show="view == 'compress'">{{compressStr}}</textarea>
+
+        <textarea v-show="view == 'output'" style="position: fixed" id="vOutput" readonly>
         initializing...
         </textarea>
+
       </div>
+
 
       <!--格式化错误视图-->
       <div class="view-error" v-show="view == 'error'">
@@ -331,13 +314,13 @@
 
 <!--访问统计  请换成自己的-->
 <script>
-//  var _hmt = _hmt || [];
-//  (function() {
-//    var hm = document.createElement("script");
-//    hm.src = "https://hm.baidu.com/hm.js?0d088ec0e724b355417b09862c236ea8";
-//    var s = document.getElementsByTagName("script")[0];
-//    s.parentNode.insertBefore(hm, s);
-//  })();
+  //  var _hmt = _hmt || [];
+  //  (function() {
+  //    var hm = document.createElement("script");
+  //    hm.src = "https://hm.baidu.com/hm.js?0d088ec0e724b355417b09862c236ea8";
+  //    var s = document.getElementsByTagName("script")[0];
+  //    s.parentNode.insertBefore(hm, s);
+  //  })();
 </script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="http://39.108.143.172/StringUtil.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="CodeUtil.js" ></script>

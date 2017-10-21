@@ -91,7 +91,7 @@
     }
   })
 
-  var initJson = {};
+  let initJson = {}
 
   // 主题 [key, String, Number, Boolean, Null, link-link, link-hover]
   let themes = [
@@ -105,11 +105,11 @@
 
 
   // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  let inputted;
-  let handler;
-  let doc;
+  let inputted
+  let handler
+  let doc
 
-  let isSingle = true;
+  let isSingle = true
 
   // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -117,9 +117,8 @@
     el: '#app',
     data: {
       baseview: 'formater',
-      view: 'code',
+      view: 'output',
       jsoncon: JSON.stringify(initJson),
-      newjsoncon: '{"name": "Json on"}',
       jsonhtml: initJson,
       compressStr: '',
       error: {},
@@ -155,11 +154,6 @@
         $('.fold-view').show()
       },
 
-      // 压缩
-      compress: function () {
-        App.jsoncon = Parse.compress(App.jsoncon)
-      },
-
       // diff
       diffTwo: function () {
         var oldJSON = {}
@@ -176,7 +170,7 @@
         }
 
         try {
-          newJSON = jsonlint.parse(App.newjsoncon)
+          newJSON = jsonlint.parse(App.jsoncon)
         } catch (ex) {
           App.view = 'error'
           App.error = {
@@ -203,11 +197,6 @@
       // 清空
       clearAll: function () {
         App.jsoncon = ''
-      },
-
-      // 美化
-      beauty: function () {
-        App.jsoncon = JSON.stringify(JSON.parse(App.jsoncon), '', 4)
       },
 
       baseViewToDiff: function () {
@@ -345,6 +334,7 @@
           return;
         }
 
+        App.view = 'output';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -426,6 +416,8 @@
 
         var url = vUrl.value;
         vOutput.value = "requesting... \nURL = " + url;
+        App.view = 'output';
+
         var rq = request(url, json, true, function () {
           if (rq.readyState !== 4) {
             return;
@@ -437,7 +429,8 @@
               response = formatObject(JSON.parse(rq.responseText));
               response = JSON.stringify(response);
             }
-            vOutput.value = format(response);
+            App.jsoncon = format(response);
+            App.view = 'code';
           } else {
             vOutput.value = "Response(GET):\nurl = " + rq.url + "\nstatus = " + rq.status + "\nerror = " + rq.error;
           }
