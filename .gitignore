@@ -1,0 +1,11 @@
+node_modules
+start.sh
+npm-debug.log
+.sass-cache
+# VIM
+*~
+*.swp
+dist
+doc
+config/local_env.json
+*.config.json
