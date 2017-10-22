@@ -667,7 +667,7 @@
         console.log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
 
         //补全省略的Table
-        if (isTableKey(tag) && obj[tag] == null) {
+        if (this.isTableKey(tag) && obj[tag] == null) {
           console.log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
           var realObj = {};
           realObj[tag] = obj;
@@ -676,6 +676,18 @@
         }
 
         return obj;
+      },
+
+      /**判断key是否为表名，用CodeUtil里的同名函数会在Safari上报undefined
+       * @param key
+       * @return
+       */
+      isTableKey: function (key) {
+        console.log('isTableKey  typeof key = ' + (typeof key));
+        if (key == null) {
+          return false;
+        }
+        return /^[A-Z][A-Za-z0-9_]*$/.test(key);
       }
 
       // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
