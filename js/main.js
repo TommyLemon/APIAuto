@@ -564,7 +564,7 @@
               console.log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(App.getStructure(item.structure));
+              doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
             }
 
             doc += '\n\n\n\n\n\n\n';
@@ -604,14 +604,15 @@
 
       /**处理请求结构
        * @param obj
+       * @param tag
        * @return {*}
        */
-      getStructure: function (obj) {
+      getStructure: function (obj, tag) {
         if (obj == null) {
           return null;
         }
 
-        console.log('getStructure  obj = \n' + format(JSON.stringify(obj)));
+        console.log('getStructure  tag = ' + tag + '; obj = \n' + format(JSON.stringify(obj)));
 
         if (obj instanceof Array) {
           for (var i = 0; i < obj.length; i++) {
@@ -664,6 +665,15 @@
         }
 
         console.log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
+
+        //补全省略的Table
+        if (isTableKey(tag) && obj[tag] == null) {
+          console.log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
+          var realObj = {};
+          realObj[tag] = obj;
+          obj = realObj;
+          console.log('getStructure  realObj = \n' + JSON.stringify(realObj));
+        }
 
         return obj;
       }

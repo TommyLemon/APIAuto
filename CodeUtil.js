@@ -105,6 +105,17 @@ function getTableKey(key) {
 function getItemKey(key) {
   return addSuffix(key.substring(0, key.length - 2), 'Item');
 }
+/**判断key是否为表名
+ * @param key
+ * @return
+ */
+function isTableKey(key) {
+  log(TAG, 'isTableKey  typeof key = ' + (typeof key));
+  if (key == null) {
+    return false;
+  }
+  return /^[A-Z][A-Za-z0-9_]*$/.test(key);
+}
 /**判断key是否为数组名
  * @param key
  * @return
