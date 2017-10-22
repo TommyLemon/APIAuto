@@ -324,9 +324,11 @@
 
           //关键词let在IE和Safari上不兼容
           var code = "";
+          var err = null;
           try {
             code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
+            err = e;
             code = "\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为它们能自动生成请求代码.\n\n\n";
           }
 
@@ -343,7 +345,7 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code + before + '\n ```';
+          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code + (err != null ? '' : before + '\n ```');
 
 
           if (App.setDoc(doc) == false) {
