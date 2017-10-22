@@ -90,6 +90,8 @@
     }
   })
 
+
+
   var initJson = {}
 
   // 主题 [key, String, Number, Boolean, Null, link-link, link-hover]
@@ -341,10 +343,10 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = "OK，请点击 [发送请求] 按钮来测试。" + code + before;
+          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code + before + '\n ```';
 
 
-          if (this.setDoc(doc) == false) {
+          if (App.setDoc(doc) == false) {
             this.getDoc(function (d) {
               App.setDoc(d);
             });
@@ -427,9 +429,9 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n ==================== Java请求代码 ==================== \n' +
+        return '\n\n\n ### 请求代码 \n\n #### Java:\n ```java \n' +
           parseJava(null, JSON.parse(rq)) +
-          '\n\n ================== JavaScript请求代码 ================== \n';
+          '\n ``` \n\n #### JavaScript:\n ```javascript \n';
       },
 
 
@@ -441,7 +443,10 @@
           return false;
         }
         doc = d;
-        vOutput.value += '\n\n\n ## 文档(可用Markdown在线工具查看) \n\n' + d;
+        vOutput.value += ('\n\n\n ## 文档 \n\n' + d);
+
+        App.view = 'markdown';
+        markdownToHTML(vOutput.value);
         return true;
       },
 

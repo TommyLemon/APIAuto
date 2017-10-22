@@ -9,6 +9,7 @@
   <!-- <link href="css/diffview.css" rel="stylesheet"> -->
   <link href="css/loading.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
+  <link rel="stylesheet" href="md/css/editormd.preview.css" />
 </head>
 
 <body>
@@ -137,10 +138,10 @@
       </div>
 
 
-      <div class="right-main"  v-show="baseview == 'formater' && view != 'error'">
+      <div class="right-main"  v-show="baseview == 'formater' && view != 'error'" >
 
         <!--正常JSON格式化视图-->
-        <div class="view-code"  v-show="view == 'code'">
+        <div style="position: relative" class="view-code"  v-show="view == 'code'">
           <vue-outer :jsondata="jsonhtml" isend="true" :theme="theme"></vue-outer>
         </div>
 
@@ -151,10 +152,9 @@
         <!--压缩视图-->
         <textarea v-show="view == 'compress'">{{compressStr}}</textarea>
 
-        <textarea v-show="view == 'output'" style="position: fixed" id="vOutput" readonly>
-        initializing...
-        </textarea>
+        <textarea id="vOutput" v-show="view == 'output'"></textarea>
 
+        <div class="right-main" id="vMarkdown" v-show="view == 'markdown'"></div>
       </div>
 
 
@@ -300,16 +300,6 @@
 
 <script src="js/main.js"></script>
 
-<!--访问统计  请换成自己的-->
-<script>
-  //  var _hmt = _hmt || [];
-  //  (function() {
-  //    var hm = document.createElement("script");
-  //    hm.src = "https://hm.baidu.com/hm.js?0d088ec0e724b355417b09862c236ea8";
-  //    var s = document.getElementsByTagName("script")[0];
-  //    s.parentNode.insertBefore(hm, s);
-  //  })();
-</script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
   var vInput = document.getElementById("vInput");
@@ -320,7 +310,37 @@
 
   vUrl.value = new String(URL_GET); //main.js里访问不到，可能是script引用顺序问题
 
+  var vMarkdown = document.getElementById('vMarkdown');
+  function markdownToHTML(md) {
+    vMarkdown.innerHTML = '';
+    editormd.markdownToHTML("vMarkdown", {
+      markdown        : md ,//+ "\r\n" + $("#append-test").text(),
+      //htmlDecode      : true,       // 开启 HTML 标签解析，为了安全性，默认不开启
+      htmlDecode      : "style,script,iframe",  // you can filter tags decode
+      //toc             : false,
+      tocm            : true,    // Using [TOCM]
+      //tocContainer    : "#custom-toc-container", // 自定义 ToC 容器层
+      //gfm             : false,
+      tocDropdown     : true,
+      // markdownSourceCode : true, // 是否保留 Markdown 源码，即是否删除保存源码的 Textarea 标签
+      taskList        : true,
+      tex             : true,  // 默认不解析
+      flowChart       : true,  // 默认不解析
+      sequenceDiagram : true,  // 默认不解析
+    });
+  }
 </script>
+<script src="md/lib/jquery.min.js"></script>
+<script src="md/lib/marked.min.js"></script>
+<script src="md/lib/prettify.min.js"></script>
+
+<script src="md/lib/raphael.min.js"></script>
+<script src="md/lib/underscore.min.js"></script>
+<script src="md/lib/sequence-diagram.min.js"></script>
+<script src="md/lib/flowchart.min.js"></script>
+<script src="md/lib/jquery.flowchart.min.js"></script>
+
+<script src="md/editormd.js"></script>
 
 </body>
 </html>
