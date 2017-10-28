@@ -133,7 +133,12 @@
       },
       themes: themes,
       checkedTheme: 0,
-      isExpand: true
+      isExpand: true,
+      User: {
+        id: 0,
+        name: '',
+        head: ''
+      }
     },
     methods: {
 
@@ -303,6 +308,59 @@
         window.open('https://github.com/TommyLemon/APIJSON');
       },
 
+
+      /**登录
+       */
+      login: function () {
+        vUrl.value = URL_BASE + '/login'
+        vInput.value = JSON.stringify(
+          {
+            type: 0,
+            phone: '13000082001',
+            password: '123456'
+          },
+          null, '    ')
+        App.onChange(false)
+        App.send(function (rq) {
+          App.onResponse(rq)
+
+          var rpObj = rq.status != 200 ? null : JSON.parse(rq.responseText)
+
+          if (rpObj != null && rpObj.code === 200) {
+            var user = rpObj.User || {}
+
+            if (user.id > 0) {
+              App.User = user
+            }
+          }
+        })
+      },
+
+      /**退出
+       */
+      logout: function () {
+        vUrl.value = URL_BASE + '/logout'
+        vInput.value = '{}'
+        App.onChange(false)
+        App.send(function (rq) {
+          App.User = {}
+          App.onResponse(rq)
+        })
+      },
+
+      /**获取当前用户
+       */
+      getCurrentUser: function () {
+        vUrl.value = URL_GET
+        vInput.value = JSON.stringify(
+          {
+            User: {
+              id: App.User.id
+            }
+          },
+          null, '    ')
+      },
+
       /**计时回调
        */
       onHandle: function (before) {
@@ -386,7 +444,7 @@
 
       /**发送请求
        */
-      send: function () {
+      send: function (callback) {
         clearTimeout(handler);
 
         var real = new String(vInput.value);
@@ -404,19 +462,34 @@
             return;
           }
 
-          if (rq.status === 200) {
-            var response = rq.responseText;
-            if (isSingle) {
-              response = formatObject(JSON.parse(rq.responseText));
-              response = JSON.stringify(response);
-            }
-            App.jsoncon = format(response);
-            App.view = 'code';
-            vOutput.value = '';
-          } else {
-            vOutput.value = "Response(GET):\nurl = " + rq.url + "\nstatus = " + rq.status + "\nerror = " + rq.error;
+          if (callback != null) {
+            callback(rq)
+            return
           }
+
+          App.onResponse(rq)
         });
+      },
+
+
+      /**请求回调
+       * @param rq
+       */
+      onResponse: function (rq) {
+        if (rq.status == 200) {
+
+          var response = rq.responseText;
+          if (isSingle) {
+            response = formatObject(JSON.parse(rq.responseText));
+            response = JSON.stringify(response);
+          }
+          App.jsoncon = format(response);
+          App.view = 'code';
+          vOutput.value = '';
+        }
+        else {
+          vOutput.value = "Response(GET):\nurl = " + rq.url + "\nstatus = " + rq.status + "\nerror = " + rq.error;
+        }
       },
 
 

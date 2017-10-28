@@ -125,7 +125,8 @@ a:active svg, a:hover svg{
 }
 
 .top-right {
-  float: right
+  float: right;
+  align-content: center;
 }
 
 .top-right a {
