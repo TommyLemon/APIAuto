@@ -320,7 +320,7 @@
             before = before.replace(/'/g, '"');
           }
           console.log('onHandle  before = \n' + before);
-          before = JSON.stringify(JSON.parse(before), null, "    "); //用format不能catch！
+          before = JSON.stringify(jsonlint.parse(before), null, "    "); //用format不能catch！
 
           //关键词let在IE和Safari上不兼容
           var code = "";
@@ -357,7 +357,7 @@
         } catch(e) {
           console.log(e);
           vSend.disabled = true;
-          vOutput.value = "JSON格式错误！请检查并编辑请求！";
+          vOutput.value = "JSON格式错误！请检查并编辑请求！\n\n" + e.message;
         }
       },
 
