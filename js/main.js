@@ -247,6 +247,7 @@
         }
         var val = {
           name: App.history.name,
+          url: vUrl.value,
           data: inputted
         }
         var key = String(Date.now())
@@ -268,6 +269,7 @@
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key, function (err, value) {
+          vUrl.value = item.url || URL_GET
           vInput.value = item.data
           App.onChange(false)
         })
