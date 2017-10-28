@@ -45,7 +45,7 @@
 
     <div class="top-right">
       <a v-show="false" href="javascript:void(0)" @click="logout()">
-      <!--<a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">-->
+        <!--<a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">-->
         退出
       </a>
 
@@ -81,17 +81,6 @@
     <div class="right-inner">
       <div class="right-bar">
         <div class="pull-left">
-          <a href="javascript:void(0)" class="hint--top"  data-hint="清空"  @click="clearAll()">
-            <svg class="icon">
-              <use xlink:href="svg/icon.svg#clear"></use>
-            </svg>
-          </a>
-
-          <a href="javascript:void(0)" class="hint--top"  data-hint="导出文本文件"   @click="showExport(true)">
-            <svg class="icon">
-              <use xlink:href="svg/icon.svg#export-txt"></use>
-            </svg>
-          </a>
 
           <a v-show="! isExpand" href="javascript:void(0)" class="hint--top"  data-hint="全部展开"  @click="expandAll()">
             <svg class="icon" >
@@ -104,8 +93,13 @@
               <use xlink:href="svg/icon.svg#collapse"></use>
             </svg>
           </a>
-        </div>
-        <div class="pull-right">
+
+          <a class="hint--top save-tool"  data-hint="保存" href="javascript:void(0)" @click="showSave(true)">
+            <svg class="icon">
+              <use xlink:href="svg/icon.svg#save"></use>
+            </svg>
+          </a>
+
           <span class="pop-btn"  v-show="historys.length > 0">
                 <a class="hint--top"  data-hint="历史保存" href="javascript:void(0)">
                   <svg class="icon">
@@ -121,10 +115,14 @@
                     </svg>
                   </li>
                 </ul>
-              </span>
-          <a class="hint--top save-tool"  data-hint="保存" href="javascript:void(0)" @click="showSave(true)">
+          </span>
+
+        </div>
+        <div class="pull-right">
+
+          <a href="javascript:void(0)" class="hint--top"  data-hint="导出文本文件"   @click="showExport(true)">
             <svg class="icon">
-              <use xlink:href="svg/icon.svg#save"></use>
+              <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
           </a>
 
@@ -224,8 +222,8 @@
 <script type="text/x-template" id="val-template">
   <div class="keyval">
     <template v-if="!isObjectArr(val)">
-      <span class="key" v-show="field" v-bind:style="{color: theme.key}">"{{field}}": </span>
-      <span  v-bind:class="'val val-' + getTyp(val)" v-bind:style="{color: theme[getTyp(val)]}">
+      <span class="key" v-show="field" :style="{color: theme.key}">"{{field}}": </span>
+      <span  :class="'val val-' + getTyp(val)" :style="{color: theme[getTyp(val)]}">
             <span v-if="!isaLink(val)">{{formatVal(val)}}</span>
             <a v-if="isaLink(val)" :href="val" target="_blank" class="json-link" :style="{color: theme['link-link']}">{{formatVal(val)}}</a>
             <span v-if="!isend">,</span>
@@ -235,7 +233,7 @@
 
     <!--key + 展开折叠ICON-->
     <template v-if="isObjectArr(val)">
-      <span class="key" v-bind:style="{color: theme.key}" v-show="field">"{{field}}": </span>
+      <span class="key" :style="{color: theme.key}" v-show="field">"{{field}}": </span>
       <vue-expand></vue-expand>
     </template>
 

@@ -202,11 +202,6 @@
         }))
       },
 
-      // 清空
-      clearAll: function () {
-        App.jsoncon = ''
-      },
-
       baseViewToDiff: function () {
         App.baseview = 'diff'
         App.diffTwo()
