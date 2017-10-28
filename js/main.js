@@ -355,9 +355,13 @@
           }
 
         } catch(e) {
-          console.log(e);
-          vSend.disabled = true;
-          vOutput.value = "JSON格式错误！请检查并编辑请求！\n\n" + e.message;
+          console.log(e)
+          vSend.disabled = true
+
+          App.view = 'error'
+          App.error = {
+            msg: 'JSON格式错误！请检查并编辑请求！\n\n' + e.message
+          }
         }
       },
 
