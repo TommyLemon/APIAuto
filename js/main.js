@@ -127,9 +127,9 @@
       historys: [],
       history: {name: '请求0'},
       isSaveShow: false,
-      isExportTxtShow: false,
+      isExportShow: false,
       exTxt: {
-        name: 'APIJSON测试0'
+        name: 'APIJSON测试'
       },
       themes: themes,
       checkedTheme: 0,
@@ -239,6 +239,31 @@
         }
       },
 
+
+
+      //获取操作方法
+      getMethod: function () {
+        var url = vUrl.value
+        var index = url == null ? -1 : vUrl.value.lastIndexOf('/')
+        return index < 0 ? '' : url.substring(index + 1)
+      },
+
+      // 显示保存弹窗
+      showSave: function (show) {
+        if (show) {
+          App.history.name = '请求 ' + App.getMethod() + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+        }
+        App.isSaveShow = show
+      },
+
+      // 显示导出弹窗
+      showExport: function (show) {
+        if (show) {
+          App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
+        }
+        App.isExportShow = show
+      },
+
       // 保存当前的JSON
       save: function () {
         if (App.history.name.trim() === '') {
@@ -253,7 +278,7 @@
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
           Helper.alert('保存成功！', 'success')
-          App.isSaveShow = false
+          App.showSave(false)
           val.key = key
           App.historys.push(val)
         })
@@ -291,15 +316,55 @@
 
       // 导出文本
       exportTxt: function () {
-        saveTextAs('APIJSON测试(https://github.com/TommyLemon/APIJSON):\n\nRequest:\n'
-          + inputted + '\n\n\nResponse:\n' + App.jsoncon, App.exTxt.name + '.txt')
-        App.isExportTxtShow = false
+        saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+          + '\n\nURL: ' + vUrl.value
+          + '\n\nRequest:\n' + vInput.value
+          + '\n\n\nResponse:\n' + App.jsoncon
+          , App.exTxt.name + '.txt')
+
+        App.showExport(false)
       },
 
       // 切换主题
       switchTheme: function (index) {
         this.checkedTheme = index
         localforage.setItem('#theme', index)
+      },
+
+      //格式化日期
+      formatDate: function (date) {
+        if (date == null) {
+          date = new Date()
+        }
+        return date.getFullYear() + '-' + App.fillZero(date.getMonth() + 1) + '-' + App.fillZero(date.getDay())
+      },
+      //格式化时间
+      formatTime: function (date) {
+        if (date == null) {
+          date = new Date()
+        }
+        return App.fillZero(date.getHours()) + ':' + App.fillZero(date.getMinutes())
+      },
+      formatDateTime: function (date) {
+        if (date == null) {
+          date = new Date()
+        }
+        return App.formatDate(date) + ' ' + App.formatTime(date)
+      },
+      //填充0
+      fillZero: function (num, n) {
+        if (num == null) {
+          num = 0
+        }
+        if (n == null || n <= 0) {
+          n = 2
+        }
+        var len = num.toString().length;
+        while(len < n) {
+          num = "0" + num;
+          len++;
+        }
+        return num;
       },
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

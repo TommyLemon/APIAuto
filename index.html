@@ -87,7 +87,7 @@
             </svg>
           </a>
 
-          <a href="javascript:void(0)" class="hint--top"  data-hint="导出文本文件"   @click="isExportTxtShow = true">
+          <a href="javascript:void(0)" class="hint--top"  data-hint="导出文本文件"   @click="showExport(true)">
             <svg class="icon">
               <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
@@ -122,7 +122,7 @@
                   </li>
                 </ul>
               </span>
-          <a class="hint--top save-tool"  data-hint="保存" href="javascript:void(0)" @click="isSaveShow = true">
+          <a class="hint--top save-tool"  data-hint="保存" href="javascript:void(0)" @click="showSave(true)">
             <svg class="icon">
               <use xlink:href="svg/icon.svg#save"></use>
             </svg>
@@ -180,7 +180,7 @@
 
   <!--弹出保存框-->
   <div class="save-box" v-show="isSaveShow">
-    <svg class="icon close-icon" @click="isSaveShow = false">
+    <svg class="icon close-icon" @click="showSave(false)">
       <use xlink:href="svg/icon.svg#close"></use>
     </svg>
 
@@ -189,12 +189,10 @@
   </div>
 
   <!--弹出下载文本框-->
-  <div class="save-box" v-show="isExportTxtShow">
-    <svg class="icon close-icon" @click="isExportTxtShow = false">
+  <div class="save-box" v-show="isExportShow">
+    <svg class="icon close-icon" @click="showExport(false)">
       <use xlink:href="svg/icon.svg#close"></use>
     </svg>
-
-    <label>.txt</label>
 
     <input type="text" placeholder="请输入辨识名称" v-model="exTxt.name" />
     <button @click="exportTxt()">下载</button>
