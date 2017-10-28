@@ -331,7 +331,7 @@
         if (date == null) {
           date = new Date()
         }
-        return date.getFullYear() + '-' + App.fillZero(date.getMonth() + 1) + '-' + App.fillZero(date.getDay())
+        return date.getFullYear() + '-' + App.fillZero(date.getMonth() + 1) + '-' + App.fillZero(date.getDate())
       },
       //格式化时间
       formatTime: function (date) {
