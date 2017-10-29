@@ -362,13 +362,8 @@
         return num;
       },
 
-// APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-      /**转至主页
-       */
-      toMainPage: function () {
-        window.open('https://github.com/TommyLemon/APIJSON');
-      },
+      // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
       /**登录
@@ -485,7 +480,7 @@
 
           App.view = 'error'
           App.error = {
-            msg: 'JSON格式错误！请检查并编辑请求！\n\n' + e.message
+            msg: 'JSON格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e.message
           }
         }
       },
@@ -506,6 +501,26 @@
        */
       transfer: function () {
         isSingle = ! isSingle;
+
+        // 删除注释 <<<<<<<<<<<<<<<<<<<<<
+
+        var input = new String(vInput.value);
+
+        var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
+        try {
+          input = input.replace(reg, function(word) { // 去除注释后的文本
+            return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
+          })
+
+          if (vInput.value != input) {
+            vInput.value = input
+          }
+        } catch (e) {
+          log('transfer  delete comment in json >> catch \n' + e.message)
+        }
+
+        // 删除注释 >>>>>>>>>>>>>>>>>>>>>
+
         this.onChange();
       },
 
