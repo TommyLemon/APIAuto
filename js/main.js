@@ -383,10 +383,11 @@
           },
           null, '    ')
         App.onChange(false)
-        App.send(function (rq) {
-          App.onResponse(rq)
+        App.send(function (url, res, err) {
+          App.onResponse(url, res, err)
 
-          var rpObj = rq.status != 200 ? null : JSON.parse(rq.responseText)
+
+          var rpObj = res.data
 
           if (rpObj != null && rpObj.code === 200) {
             var user = rpObj.User || {}
@@ -404,9 +405,9 @@
         vUrl.value = URL_BASE + '/logout'
         vInput.value = '{}'
         App.onChange(false)
-        App.send(function (rq) {
+        App.send(function (url, res, err) {
           App.User = {}
-          App.onResponse(rq)
+          App.onResponse(url, res, err)
         })
       },
 
@@ -439,7 +440,7 @@
           if (before.indexOf("'") >= 0) {
             before = before.replace(/'/g, '"');
           }
-          console.log('onHandle  before = \n' + before);
+          log('onHandle  before = \n' + before);
           before = JSON.stringify(jsonlint.parse(before), null, "    "); //用format不能catch！
 
           //关键词let在IE和Safari上不兼容
@@ -475,7 +476,7 @@
           }
 
         } catch(e) {
-          console.log(e)
+          log(e)
           vSend.disabled = true
 
           App.view = 'error'
@@ -513,44 +514,62 @@
         if (real.indexOf("'") >= 0) {
           real = real.replace(/'/g, "\"");
         }
-        var json = JSON.parse(real);
+        var req = JSON.parse(real);
 
         var url = vUrl.value;
         vOutput.value = "requesting... \nURL = " + url;
         App.view = 'output';
 
-        var rq = request(url, json, true, function () {
-          if (rq.readyState !== 4) {
-            return;
-          }
+        App.request(url, req, callback)
+      },
 
-          if (callback != null) {
-            callback(rq)
-            return
-          }
+      //
+      request: function (url, req, callback) {
+        // axios.defaults.withcredentials = true
+        axios({
+          method: 'post',
+          url: url,
+          data: req,
+          withCredentials: true
+        })
+          .then(function (res) {
+            log('send >> success:\n' + JSON.stringify(res, null, '    '))
 
-          App.onResponse(rq)
-        });
+            if (callback != null) {
+              callback(url, res, null)
+              return
+            }
+            App.onResponse(url, res, null)
+          })
+          .catch(function (err) {
+            log('send >> error:\n' + err)
+            if (callback != null) {
+              callback(url, null, err)
+              return
+            }
+            App.onResponse(url, null, err)
+          })
       },
 
 
       /**请求回调
-       * @param rq
        */
-      onResponse: function (rq) {
-        if (rq.status == 200) {
-
-          var response = rq.responseText;
-          if (isSingle) {
-            response = formatObject(JSON.parse(rq.responseText));
-            response = JSON.stringify(response);
-          }
-          App.jsoncon = format(response);
-          App.view = 'code';
-          vOutput.value = '';
+      onResponse: function (url, res, err) {
+        if (res == null) {
+          res = {}
+        }
+        log('onResponse url = ' + url + '\nerr = ' + err + '\nres = \n' + JSON.stringify(res))
+        if (err != null) {
+          vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
         }
         else {
-          vOutput.value = "Response(GET):\nurl = " + rq.url + "\nstatus = " + rq.status + "\nerror = " + rq.error;
+          var json = res.data
+          if (isSingle) {
+            json = formatObject(json);
+          }
+          App.jsoncon = JSON.stringify(json, null, '    ');
+          App.view = 'code';
+          vOutput.value = '';
         }
       },
 
@@ -596,7 +615,7 @@
        * 获取文档
        */
       getDoc: function (callback) {
-        var docRq = request(URL_GET, {
+        App.request(URL_GET, {
           '[]': {
             'Table': {
               'TABLE_SCHEMA': 'sys',
@@ -617,17 +636,14 @@
               '@order': 'method-'
             }
           }
-        }, true, function () {
-          if (docRq.readyState !== 4) {
-            return;
-          }
-          if (docRq.status !== 200) {
-            console.log('getDoc  docRq.status !== 200 >> return;');
+        }, function (url, res, err) {
+          if (err != null || res == null || res.data == null) {
+            log('getDoc  err != null || res == null || res.data == null >> return;');
             return;
           }
 
-//      console.log('getDoc  docRq.responseText = \n' + docRq.responseText);
-          var docRp = JSON.parse(docRq.responseText);
+//      log('getDoc  docRq.responseText = \n' + docRq.responseText);
+          var docRp = res.data;
 
           //转为文档格式
           var doc = '';
@@ -636,7 +652,7 @@
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docRp == null ? null : docRp['[]'];
           if (list != null) {
-            console.log('getDoc  [] = \n' + format(JSON.stringify(list)));
+            log('getDoc  [] = \n' + format(JSON.stringify(list)));
 
             var table;
             var columnList;
@@ -649,7 +665,7 @@
               if (table == null) {
                 table = {};
               }
-              console.log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+              log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
               doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n #### 说明: \n' + App.toMD(table.TABLE_COMMENT);
@@ -662,7 +678,7 @@
               if (columnList == null) {
                 continue;
               }
-              console.log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+              log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
 
               for (var j = 0; j < columnList.length; j++) {
@@ -671,7 +687,7 @@
                   continue;
                 }
 
-                console.log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+                log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
                 doc += '\n' + column.COLUMN_NAME + '  |  ' + column.COLUMN_TYPE
                   + '  |  ' + column.IS_NULLABLE + '  |  ' + App.toMD(column.COLUMN_COMMENT);
@@ -690,7 +706,7 @@
           //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docRp == null ? null : docRp['Request[]'];
           if (list != null) {
-            console.log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
+            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
             doc += '\n\n\n\n\n\n\n\n\n ### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容) \n 方法  |  tag  |  结构及内容' +
               ' \n --------  |  ------------  |  ------------ ';
@@ -700,7 +716,7 @@
               if (item == null) {
                 continue;
               }
-              console.log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
               doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
@@ -716,7 +732,7 @@
 
           callback(doc);
 
-//      console.log('getDoc  callback(doc); = \n' + doc);
+//      log('getDoc  callback(doc); = \n' + doc);
         });
 
       },
@@ -751,7 +767,7 @@
           return null;
         }
 
-        console.log('getStructure  tag = ' + tag + '; obj = \n' + format(JSON.stringify(obj)));
+        log('getStructure  tag = ' + tag + '; obj = \n' + format(JSON.stringify(obj)));
 
         if (obj instanceof Array) {
           for (var i = 0; i < obj.length; i++) {
@@ -803,15 +819,15 @@
           }
         }
 
-        console.log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
+        log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
 
         //补全省略的Table
         if (this.isTableKey(tag) && obj[tag] == null) {
-          console.log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
+          log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
           var realObj = {};
           realObj[tag] = obj;
           obj = realObj;
-          console.log('getStructure  realObj = \n' + JSON.stringify(realObj));
+          log('getStructure  realObj = \n' + JSON.stringify(realObj));
         }
 
         return obj;
@@ -822,13 +838,16 @@
        * @return
        */
       isTableKey: function (key) {
-        console.log('isTableKey  typeof key = ' + (typeof key));
+        log('isTableKey  typeof key = ' + (typeof key));
         if (key == null) {
           return false;
         }
         return /^[A-Z][A-Za-z0-9_]*$/.test(key);
-      }
+      },
 
+      log: function (msg) {
+        console.log('Main.  ' + msg)
+      }
       // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     },
