@@ -3,14 +3,14 @@
  */
 const TAG_REQUEST_UTIL = 'RequestUtil';
 
-const URL_BASE = "http://39.108.143.172:8080"; // 基地址
-const URL_GET = URL_BASE + "/get"; // 常规获取数据方式
-const URL_HEAD = URL_BASE + "/head"; // 检查，默认是非空检查，返回数据总数
-const URL_GETS = URL_BASE + "/gets"; // 通过POST来GET数据，不显示请求内容和返回结果，一般用于对安全要求比较高的请求
-const URL_HEADS = URL_BASE + "/heads"; // 通过POST来HEAD数据，不显示请求内容和返回结果，一般用于对安全要求比较高的请求
-const URL_POST = URL_BASE + "/post"; // 新增(或者说插入)数据
-const URL_PUT = URL_BASE + "/put"; // 修改数据，只修改传入字段对应的值
-const URL_DELETE = URL_BASE + "/delete"; // 删除数据
+var URL_BASE = "http://39.108.143.172:8080"; // 基地址
+var URL_GET = URL_BASE + "/get"; // 常规获取数据方式
+var URL_HEAD = URL_BASE + "/head"; // 检查，默认是非空检查，返回数据总数
+var URL_GETS = URL_BASE + "/gets"; // 通过POST来GET数据，不显示请求内容和返回结果，一般用于对安全要求比较高的请求
+var URL_HEADS = URL_BASE + "/heads"; // 通过POST来HEAD数据，不显示请求内容和返回结果，一般用于对安全要求比较高的请求
+var URL_POST = URL_BASE + "/post"; // 新增(或者说插入)数据
+var URL_PUT = URL_BASE + "/put"; // 修改数据，只修改传入字段对应的值
+var URL_DELETE = URL_BASE + "/delete"; // 删除数据
 
 
 /**请求，全走HTTP POST

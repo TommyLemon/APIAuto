@@ -414,14 +414,17 @@
       /**获取当前用户
        */
       getCurrentUser: function () {
-        vUrl.value = URL_GET
+        vUrl.value = URL_GETS
         vInput.value = JSON.stringify(
           {
-            User: {
+            Privacy: {
               id: App.User.id
-            }
+            },
+            tag: 'Privacy'
           },
           null, '    ')
+        App.onChange(false)
+        App.send()
       },
 
       /**计时回调
@@ -519,6 +522,13 @@
         var url = vUrl.value;
         vOutput.value = "requesting... \nURL = " + url;
         App.view = 'output';
+
+        //保存基地址
+        while (url.endsWith('/')) {
+          url = url.substring(0, url.length - 1)
+        }
+        var index = url.lastIndexOf('/')
+        URL_BASE = index < 0 ? url : url.substring(0, index)
 
         App.request(url, req, callback)
       },
@@ -633,7 +643,7 @@
           },
           'Request[]': {
             'Request': {
-              '@order': 'method-'
+              '@order': 'version-,method-'
             }
           }
         }, function (url, res, err) {
@@ -708,8 +718,9 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n ### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容) \n 方法  |  tag  |  结构及内容' +
-              ' \n --------  |  ------------  |  ------------ ';
+            doc += '\n\n\n\n\n\n\n\n\n ### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容)'
+              + ' \n 版本  |  方法  |  tag  |  结构及内容'
+              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
@@ -719,7 +730,8 @@
               log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.method + '  |  ' + item.tag + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+              doc += '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
+                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
             }
 
             doc += '\n\n\n\n\n\n\n';
