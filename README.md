@@ -24,3 +24,8 @@ webon s
 ```
 webon deploy
 ```
+
+## Thanks to
+#### jsonon
+#### editor.md
+#### vue.js
