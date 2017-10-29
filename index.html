@@ -44,13 +44,17 @@
         </span>
 
     <div class="top-right">
-      <a v-show="false" href="javascript:void(0)" @click="logout()">
-        <!--<a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">-->
+      <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">
         退出
       </a>
 
-      <img v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()" :src="User.head"
-           style="width: 100%; height: 100%; padding: 10%;"/>
+      <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="getCurrentUser()">
+        {{User.name}}
+      </a>
+
+      <!-- 部分头像加载不出，或者显示为开源中国LOGO -->
+      <!--<img v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()" :src="User.head"-->
+           <!--style="width: 100%; height: 100%; padding: 10%;"/>-->
 
       <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="login()">
         登录
