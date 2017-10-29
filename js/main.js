@@ -377,9 +377,10 @@
         vUrl.value = URL_BASE + '/login'
         vInput.value = JSON.stringify(
           {
-            type: 0,
+            type: 0, // 登录方式，非必须 0-密码 1-验证码
             phone: '13000082001',
-            password: '123456'
+            password: '123456',
+            version: 1 // 全局默认版本号，非必须
           },
           null, '    ')
         App.onChange(false)
