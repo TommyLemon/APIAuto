@@ -734,7 +734,7 @@
                 + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
             }
 
-            doc += '\n\n\n\n\n\n\n';
+            doc += '\n注: 可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
 
 
