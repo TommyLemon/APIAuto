@@ -106,6 +106,7 @@
 
   // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   //这些全局变量不能放在data中，否则会报undefined错误
+  var baseUrl
   var inputted
   var handler
   var doc
@@ -234,11 +235,28 @@
       },
 
 
-
+      //设置基地址
+      setBaseUrl: function () {
+        // 重新拉取文档
+        if (baseUrl != this.getBaseUrl()) {
+          baseUrl = this.getBaseUrl();
+          doc = null
+        }
+      },
+      //获取基地址
+      getBaseUrl: function () {
+        var url = new String(vUrl.value)
+        while (url.endsWith('/')) {
+          url = url.substring(0, url.length - 1)
+        }
+        var index = url.lastIndexOf('/')
+        url = index < 0 ? url : url.substring(0, index)
+        return url == '' ? URL_BASE : url
+      },
       //获取操作方法
       getMethod: function () {
         var url = vUrl.value
-        var index = url == null ? -1 : vUrl.value.lastIndexOf('/')
+        var index = url == null ? -1 : url.lastIndexOf('/')
         return index < 0 ? '' : url.substring(index + 1)
       },
 
@@ -368,7 +386,7 @@
       /**登录
        */
       login: function () {
-        vUrl.value = URL_BASE + '/login'
+        vUrl.value = baseUrl + '/login'
         vInput.value = JSON.stringify(
           {
             type: 0, // 登录方式，非必须 0-密码 1-验证码
@@ -400,7 +418,7 @@
       logout: function () {
         localStorage.removeItem('User')
 
-        vUrl.value = URL_BASE + '/logout'
+        vUrl.value = baseUrl + '/logout'
         vInput.value = '{}'
         App.onChange(false)
         App.send(function (url, res, err) {
@@ -412,7 +430,7 @@
       /**获取当前用户
        */
       getCurrentUser: function () {
-        vUrl.value = URL_GETS
+        vUrl.value = this.getBaseUrl() + '/gets'
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -470,6 +488,7 @@
           vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code + (err != null ? '' : before + '\n ```');
 
 
+          // 设置文档
           if (App.setDoc(doc) == false) {
             this.getDoc(function (d) {
               App.setDoc(d);
@@ -491,6 +510,7 @@
       /**输入内容改变
        */
       onChange: function (delay) {
+        this.setBaseUrl();
         inputted = new String(vInput.value);
         clearTimeout(handler);
 
@@ -523,6 +543,7 @@
 
         // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
+
         this.onChange();
       },
 
@@ -541,12 +562,8 @@
         vOutput.value = "requesting... \nURL = " + url;
         App.view = 'output';
 
-        //保存基地址
-        while (url.endsWith('/')) {
-          url = url.substring(0, url.length - 1)
-        }
-        var index = url.lastIndexOf('/')
-        URL_BASE = index < 0 ? url : url.substring(0, index)
+
+        this.setBaseUrl()
 
         App.request(url, req, callback)
       },
@@ -643,7 +660,7 @@
        * 获取文档
        */
       getDoc: function (callback) {
-        App.request(URL_GET, {
+        App.request(this.getBaseUrl() + '/get', {
           '[]': {
             'Table': {
               'TABLE_SCHEMA': 'sys',
