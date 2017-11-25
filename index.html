@@ -39,10 +39,9 @@
     <a class="logo" href="https://github.com/TommyLemon/APIJSON" target="_blank">
       <span class="on">APIJSON</span><span >.org</span>
     </a>
-    <span class="slogan">
-          在线解析
-        </span>
-
+    <a href="https://github.com/TommyLemon/APIJSONAuto" target="_blank">
+      <span class="slogan" >在线解析</span>
+    </a>
     <div class="top-right">
       <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">
         退出
@@ -54,7 +53,7 @@
 
       <!-- 部分头像加载不出，或者显示为开源中国LOGO -->
       <!--<img v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()" :src="User.head"-->
-           <!--style="width: 100%; height: 100%; padding: 10%;"/>-->
+      <!--style="width: 100%; height: 100%; padding: 10%;"/>-->
 
       <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="login()">
         登录

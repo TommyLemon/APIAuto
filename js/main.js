@@ -1,6 +1,5 @@
 
 (function () {
-  var ApiUrl = 'https://api.awesomes.cn'
   Vue.component('vue-item', {
     props: ['jsondata', 'theme'],
     template: '#item-template'
@@ -391,6 +390,7 @@
             if (user.id > 0) {
               App.User = user
             }
+            localStorage.setItem('User', JSON.stringify(user))
           }
         })
       },
@@ -398,6 +398,8 @@
       /**退出
        */
       logout: function () {
+        localStorage.removeItem('User')
+
         vUrl.value = URL_BASE + '/logout'
         vInput.value = '{}'
         App.onChange(false)
@@ -449,7 +451,7 @@
             code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
             err = e;
-            code = "\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为它们能自动生成请求代码.\n\n\n";
+            code = "\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.\n\n\n";
           }
 
           if (isSingle) {
@@ -898,19 +900,14 @@
     },
     created () {
       this.listHistory()
-      var clipboard = new Clipboard('.copy-btn')
-      var sps = window.location.href.split('?key=')
-      var jsonID = sps[sps.length - 1]
-      if (sps.length > 1 && jsonID.length > 5) {
-        $.get(`${ApiUrl}/json?key=${jsonID}`, function (data) {
-          if (data.status) {
-            App.jsoncon = data.item.con
-          }
-        })
+      this.transfer()
+    },
+    mounted() {
+      try { //App还未初始化，不能用
+        this.User = JSON.parse(localStorage.getItem('User')) || {}
+      } catch(e) {
+        alert('mounted  } catch(e) {\n' + e.message)
       }
-
-      this.transfer();
-
     }
   })
 })()
