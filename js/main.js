@@ -241,6 +241,7 @@
         if (baseUrl != this.getBaseUrl()) {
           baseUrl = this.getBaseUrl();
           doc = null
+          this.User = this.getCache(baseUrl, 'User') || {}
         }
       },
       //获取基地址
@@ -383,6 +384,23 @@
       // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
+      saveCache: function (url, key, value) {
+        var cache = this.getCache(url);
+        cache[key] = value
+        localStorage.setItem(url, JSON.stringify(cache))
+      },
+      getCache: function (url, key) {
+        var cache = localStorage.getItem(url)
+        try {
+          cache = JSON.parse(cache)
+        } catch(e) {
+          console.log('login  App.send >> try { cache = JSON.parse(cache) } catch(e) {\n' + e.message)
+        }
+        cache = cache || {}
+        return key == null ? cache : cache[key]
+      },
+
+
       /**登录
        */
       login: function () {
@@ -399,7 +417,6 @@
         App.send(function (url, res, err) {
           App.onResponse(url, res, err)
 
-
           var rpObj = res.data
 
           if (rpObj != null && rpObj.code === 200) {
@@ -408,7 +425,10 @@
             if (user.id > 0) {
               App.User = user
             }
-            localStorage.setItem('User', JSON.stringify(user))
+
+
+            //保存User到缓存
+            App.saveCache(App.getBaseUrl(), 'User', user)
           }
         })
       },
@@ -416,7 +436,7 @@
       /**退出
        */
       logout: function () {
-        localStorage.removeItem('User')
+        this.saveCache(App.getBaseUrl(), 'User', {})
 
         vUrl.value = baseUrl + '/logout'
         vInput.value = '{}'
@@ -426,6 +446,7 @@
           App.onResponse(url, res, err)
         })
       },
+
 
       /**获取当前用户
        */
@@ -918,13 +939,6 @@
     created () {
       this.listHistory()
       this.transfer()
-    },
-    mounted() {
-      try { //App还未初始化，不能用
-        this.User = JSON.parse(localStorage.getItem('User')) || {}
-      } catch(e) {
-        alert('mounted  } catch(e) {\n' + e.message)
-      }
     }
   })
 })()
