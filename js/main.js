@@ -339,7 +339,7 @@
 
       // 删除已保存的
       remove: function (item, index, isRemote) {
-        if (isRemote == false) {
+        if (isRemote == null || isRemote == false) { //null != false
           localforage.removeItem(item.key, function () {
             App.historys.splice(index, 1)
           })
@@ -556,6 +556,7 @@
             version: 1 // 全局默认版本号，非必须
           },
           null, '    ')
+        App.showRemote(false)
         App.onChange(false)
         App.send(function (url, res, err) {
           App.onResponse(url, res, err)
@@ -583,6 +584,7 @@
 
         vUrl.value = baseUrl + '/logout'
         vInput.value = '{}'
+        App.showRemote(false)
         App.onChange(false)
         App.send(function (url, res, err) {
           App.User = {}
@@ -604,6 +606,7 @@
             tag: 'Privacy'
           },
           null, '    ')
+        App.showRemote(false)
         App.onChange(false)
         App.send()
       },
