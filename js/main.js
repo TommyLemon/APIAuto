@@ -272,7 +272,11 @@
       // 显示导出弹窗
       showExport: function (show) {
         if (show) {
-          App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
+          if (App.view == 'markdown' || App.view == 'output') {
+            App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
+          } else {
+            App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
+          }
         }
         App.isExportShow = show
       },
@@ -329,12 +333,18 @@
 
       // 导出文本
       exportTxt: function () {
-        saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
-          + '\n\nURL: ' + vUrl.value
-          + '\n\nRequest:\n' + vInput.value
-          + '\n\n\nResponse:\n' + App.jsoncon
-          , App.exTxt.name + '.txt')
-
+        if (App.view == 'markdown' || App.view == 'output') {
+          saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+            + '\n\nBASE_URL: ' + this.getBaseUrl()
+            + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
+            , App.exTxt.name + '.txt')
+        } else {
+          saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+            + '\n\nURL: ' + vUrl.value
+            + '\n\nRequest:\n' + vInput.value
+            + '\n\n\nResponse:\n' + App.jsoncon
+            , App.exTxt.name + '.txt')
+        }
         App.showExport(false)
       },
 
@@ -669,7 +679,7 @@
           return false;
         }
         doc = d;
-        vOutput.value += ('\n\n\n ## 文档 \n\n' + d);
+        vOutput.value += ('\n\n\n## 文档 \n\n' + d);
 
         App.view = 'markdown';
         markdownToHTML(vOutput.value);
