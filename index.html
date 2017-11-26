@@ -140,9 +140,15 @@
         </div>
         <div class="pull-right">
 
-          <a href="javascript:void(0)" class="hint--top"  data-hint="导出文本文件"   @click="showExport(true)">
+          <a href="javascript:void(0)" class="hint--top"  data-hint="下载"   @click="showExport(true, false)">
             <svg class="icon">
               <use xlink:href="svg/icon.svg#export-txt"></use>
+            </svg>
+          </a>
+
+          <a href="javascript:void(0)" class="hint--top"  data-hint="上传"   @click="showExport(true, true)">
+            <svg class="icon">
+              <use xlink:href="svg/icon.svg#upload-txt"></use>
             </svg>
           </a>
 
@@ -202,18 +208,18 @@
       <use xlink:href="svg/icon.svg#close"></use>
     </svg>
 
-    <input type="text" placeholder="请输入辨识名称" v-model="history.name" />
+    <input type="text" placeholder="请输入名称" v-model="history.name" />
     <button   @click="save()" >保存</button>
   </div>
 
   <!--弹出下载文本框-->
   <div class="save-box" v-show="isExportShow">
-    <svg class="icon close-icon" @click="showExport(false)">
+    <svg class="icon close-icon" @click="showExport(false, isExportRemote)">
       <use xlink:href="svg/icon.svg#close"></use>
     </svg>
 
-    <input type="text" placeholder="请输入辨识名称" v-model="exTxt.name" />
-    <button @click="exportTxt()">下载</button>
+    <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
+    <button @click="exportTxt()">{{isExportRemote ? '上传' : '下载'}}</button>
   </div>
 
 </div>

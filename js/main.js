@@ -130,6 +130,7 @@
       isSaveShow: false,
       isExportShow: false,
       isRemoteShow: false,
+      isExportRemote: false,
       exTxt: {
         name: 'APIJSON测试'
       },
@@ -273,15 +274,28 @@
       },
 
       // 显示导出弹窗
-      showExport: function (show) {
+      showExport: function (show, isRemote) {
         if (show) {
-          if (App.view == 'markdown' || App.view == 'output') {
-            App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
+          if (isRemote) {
+            if (App.isRemoteShow) {
+              alert('请先输入要上传的请求内容！')
+              return
+            }
+            if (App.view != 'code') {
+              alert('请先测试请求，确保是正确可用的！')
+              return
+            }
+            App.exTxt.name = App.getMethod() + '请求'
           } else {
-            App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
+            if (App.view == 'markdown' || App.view == 'output') {
+              App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
+            } else {
+              App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
+            }
           }
         }
         App.isExportShow = show
+        App.isExportRemote = isRemote
       },
 
       // 保存当前的JSON
@@ -329,7 +343,7 @@
 
             var rpObj = res.data
 
-            if (rpObj != null && rpObj.code === 200 && rpObj.Document.code == 200) {
+            if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
               App.remotes = []
               App.showRemote(true)
             }
@@ -364,19 +378,53 @@
 
       // 导出文本
       exportTxt: function () {
-        if (App.view == 'markdown' || App.view == 'output') {
-          saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
-            + '\n\nBASE_URL: ' + this.getBaseUrl()
-            + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
-            , App.exTxt.name + '.txt')
-        } else {
-          saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
-            + '\n\nURL: ' + vUrl.value
-            + '\n\nRequest:\n' + vInput.value
-            + '\n\n\nResponse:\n' + App.jsoncon
-            , App.exTxt.name + '.txt')
+        if (App.isExportRemote == false) { //下载到本地
+
+          if (App.view == 'markdown' || App.view == 'output') {
+            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+              + '\n\nBASE_URL: ' + this.getBaseUrl()
+              + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
+              , App.exTxt.name + '.txt')
+          }
+          else {
+            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+              + '\n\nURL: ' + vUrl.value
+              + '\n\nRequest:\n' + vInput.value
+              + '\n\n\nResponse:\n' + App.jsoncon
+              , App.exTxt.name + '.txt')
+          }
         }
-        App.showExport(false)
+        else { //上传到远程服务器
+          App.showExport(false)
+
+          App.isRemoteShow = false
+
+          vInput.value = JSON.stringify(
+            {
+              'Document': {
+                'userId': App.User.id,
+                'name': App.exTxt.name,
+                'url': '/' + App.getMethod(),
+                'request': new String(inputted)
+              },
+              'tag': 'Document'
+            },
+            null, '    ')
+          baseUrl = App.getBaseUrl()
+          vUrl.value = baseUrl + '/post'
+
+          App.onChange(false)
+          App.send(function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            var rpObj = res.data
+
+            if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
+              App.remotes = []
+              App.showRemote(true)
+            }
+          })
+        }
       },
 
       // 切换主题
