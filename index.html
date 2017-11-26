@@ -69,13 +69,14 @@
       <button class="send" id="vSend" @click="send()">发送请求</button>
     </div>
     <div class="left-panel">
-      <ul v-show="isRemoteShow" class="left-panel">
-        <li v-for="(item, index) in remotes" style="width: 100%;height: auto;line-height: normal">
-          <a href="javascript:void(0)" @click="restore(item)" > {{'v' + item.version + ' ' + item.name  + '    ' + item.url}}</a>
-
+      <ul v-show="isRemoteShow" class="historys" style="width: 100%">
+        <li v-for="(item, index) in remotes" >
           <svg v-show="item.userId == User.id" class="icon" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
           </svg>
+          <svg v-show="item.userId != User.id" class="icon" >
+          </svg>
+          <a href="javascript:void(0)" @click="restore(item)" > {{'v' + item.version + ' ' + item.name  + '    ' + item.url}}</a>
         </li>
       </ul>
       <textarea v-show="! isRemoteShow" class="left-panel" id="vInput" @keyup="onChange(true)">
@@ -109,19 +110,19 @@
             </svg>
           </a>
 
-          <a class="hint--top save-tool"  data-hint="保存" href="javascript:void(0)" @click="showSave(true)">
+          <a class="hint--top save-tool"  data-hint="保存到本地" href="javascript:void(0)" @click="showSave(true)">
             <svg class="icon">
               <use xlink:href="svg/icon.svg#save"></use>
             </svg>
           </a>
 
           <span class="pop-btn" > <!--v-show="historys.length > 0">-->
-                <a v-show="isRemoteShow" class="hint--top" data-hint="本地保存，点击隐藏远程" href="javascript:void(0)">
+                <a v-show="isRemoteShow" class="hint--top" data-hint="本地保存，点击隐藏远程用例" href="javascript:void(0)">
                   <svg class="icon" @click="showRemote(false)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>
                 </a>
-                <a v-show="! isRemoteShow" class="hint--top" data-hint="本地保存，点击查看远程" href="javascript:void(0)">
+                <a v-show="! isRemoteShow" class="hint--top" data-hint="本地保存，点击查看远程用例" href="javascript:void(0)">
                   <svg class="icon" @click="showRemote(true)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>

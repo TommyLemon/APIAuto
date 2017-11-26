@@ -147,6 +147,11 @@
 
       // 全部展开
       expandAll: function () {
+        if (App.view != 'code') {
+          alert('请先获取正确的JSON Response！')
+          return
+        }
+
         $('.icon-square-min').show()
         $('.icon-square-plus').hide()
         $('.expand-view').show()
@@ -157,6 +162,11 @@
 
       // 全部折叠
       collapseAll: function () {
+        if (App.view != 'code') {
+          alert('请先获取正确的JSON Response！')
+          return
+        }
+
         $('.icon-square-min').hide()
         $('.icon-square-plus').show()
         $('.expand-view').hide()
@@ -268,6 +278,11 @@
       // 显示保存弹窗
       showSave: function (show) {
         if (show) {
+          if (App.isRemoteShow) {
+            alert('请先输入请求内容！')
+            return
+          }
+
           App.history.name = '请求 ' + App.getMethod() + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
@@ -278,7 +293,7 @@
         if (show) {
           if (isRemote) {
             if (App.isRemoteShow) {
-              alert('请先输入要上传的请求内容！')
+              alert('请先输入请求内容！')
               return
             }
             if (App.view != 'code') {
@@ -290,6 +305,10 @@
             if (App.view == 'markdown' || App.view == 'output') {
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             } else {
+              if (App.isRemoteShow) {
+                alert('请先输入请求内容！')
+                return
+              }
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
             }
           }
@@ -378,6 +397,8 @@
 
       // 导出文本
       exportTxt: function () {
+        App.isExportShow = false
+
         if (App.isExportRemote == false) { //下载到本地
 
           if (App.view == 'markdown' || App.view == 'output') {
@@ -395,8 +416,6 @@
           }
         }
         else { //上传到远程服务器
-          App.showExport(false)
-
           App.isRemoteShow = false
 
           vInput.value = JSON.stringify(
@@ -567,6 +586,7 @@
         App.onChange(false)
         App.send(function (url, res, err) {
           App.User = {}
+          App.remotes = []
           App.onResponse(url, res, err)
         })
       },
@@ -669,6 +689,8 @@
       transfer: function () {
         isSingle = ! isSingle;
 
+        this.isRemoteShow = false
+
         // 删除注释 <<<<<<<<<<<<<<<<<<<<<
 
         var input = new String(vInput.value);
@@ -695,6 +717,11 @@
       /**发送请求
        */
       send: function (callback) {
+        if (App.isRemoteShow) {
+          alert('请先输入请求内容！')
+          return
+        }
+
         clearTimeout(handler);
 
         var real = new String(vInput.value);
