@@ -126,8 +126,10 @@
       error: {},
       historys: [],
       history: {name: '请求0'},
+      remotes: [],
       isSaveShow: false,
       isExportShow: false,
+      isRemoteShow: false,
       exTxt: {
         name: 'APIJSON测试'
       },
@@ -242,6 +244,7 @@
           baseUrl = this.getBaseUrl();
           doc = null
           this.User = this.getCache(baseUrl, 'User') || {}
+          this.remotes = []
         }
       },
       //获取基地址
@@ -289,8 +292,8 @@
         }
         var val = {
           name: App.history.name,
-          url: vUrl.value,
-          data: inputted
+          url: '/' + this.getMethod(),
+          request: JSON.parse(inputted)
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -302,17 +305,45 @@
       },
 
       // 删除已保存的
-      remove: function (item, index) {
-        localforage.removeItem(item.key, function () {
-          App.historys.splice(index, 1)
-        })
+      remove: function (item, index, isRemote) {
+        if (isRemote == false) {
+          localforage.removeItem(item.key, function () {
+            App.historys.splice(index, 1)
+          })
+        } else {
+          App.isRemoteShow = false
+
+          baseUrl = App.getBaseUrl()
+          vUrl.value = baseUrl + '/delete'
+          vInput.value = JSON.stringify(
+            {
+              'Document': {
+                'id': item.id
+              },
+              'tag': 'Document'
+            },
+            null, '    ')
+          App.onChange(false)
+          App.send(function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            var rpObj = res.data
+
+            if (rpObj != null && rpObj.code === 200 && rpObj.Document.code == 200) {
+              App.remotes = []
+              App.showRemote(true)
+            }
+          })
+        }
       },
 
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key, function (err, value) {
-          vUrl.value = item.url || URL_GET
-          vInput.value = item.data
+          baseUrl = App.getBaseUrl()
+          vUrl.value = baseUrl + (item.url || '/get')
+          App.showRemote(false)
+          vInput.value = JSON.stringify(item.request, null, '    ')
           App.onChange(false)
         })
       },
@@ -354,6 +385,9 @@
         localforage.setItem('#theme', index)
       },
 
+
+      // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
       //格式化日期
       formatDate: function (date) {
         if (date == null) {
@@ -391,8 +425,40 @@
       },
 
 
-      // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+
+      //显示远程的测试用例文档
+      showRemote: function (show) {
+        App.isRemoteShow = show
+
+        if (show && App.remotes.length <= 0) {
+          App.isRemoteShow = false
+
+          vUrl.value = baseUrl + '/get'
+          vInput.value = JSON.stringify(
+            {
+              'Document[]': {
+                'Document': {
+                  '@order': 'version-,date-'
+                }
+              }
+            },
+            null, '    ')
+          App.onChange(false)
+          App.send(function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            var rpObj = res.data
+
+            if (rpObj != null && rpObj.code === 200) {
+              App.isRemoteShow = true
+              App.remotes = rpObj['Document[]']
+
+              //App.onChange(false)
+            }
+          })
+        }
+      },
 
       saveCache: function (url, key, value) {
         var cache = this.getCache(url);
