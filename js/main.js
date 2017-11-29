@@ -506,6 +506,7 @@
             {
               'Document[]': {
                 'Document': {
+                  '@role': 'login',
                   '@order': 'version-,date-'
                 }
               }
