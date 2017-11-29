@@ -326,7 +326,7 @@
         var val = {
           name: App.history.name,
           url: '/' + this.getMethod(),
-          request: JSON.parse(inputted)
+          request: inputted
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -376,7 +376,7 @@
           baseUrl = App.getBaseUrl()
           vUrl.value = baseUrl + (item.url || '/get')
           App.showRemote(false)
-          vInput.value = JSON.stringify(item.request, null, '    ')
+          vInput.value = item.request
           App.onChange(false)
         })
       },
