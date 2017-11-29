@@ -756,6 +756,13 @@
           .then(function (res) {
             log('send >> success:\n' + JSON.stringify(res, null, '    '))
 
+            //未登录，清空缓存
+            if (res != null && res.data != null && res.data.code == 407) {
+              App.User = {}
+              App.remotes = []
+              App.saveCache(baseUrl, 'User', {}) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
+            }
+
             if (callback != null) {
               callback(url, res, null)
               return
