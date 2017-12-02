@@ -416,6 +416,12 @@
           }
         }
         else { //上传到远程服务器
+          var id = App.User == null ? null : App.User.id
+          if (id == null || id <= 0) {
+            alert('请先登录！')
+            return
+          }
+
           App.isRemoteShow = false
 
           vInput.value = JSON.stringify(
@@ -424,7 +430,7 @@
                 'userId': App.User.id,
                 'name': App.exTxt.name,
                 'url': '/' + App.getMethod(),
-                'request': new String(inputted)
+                'request': App.toDoubleJSON(inputted)
               },
               'tag': 'Document'
             },
@@ -625,9 +631,7 @@
 
         //格式化输入代码
         try {
-          if (before.indexOf("'") >= 0) {
-            before = before.replace(/'/g, '"');
-          }
+          before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
           before = JSON.stringify(jsonlint.parse(before), null, "    "); //用format不能catch！
 
@@ -849,7 +853,7 @@
             'Table': {
               'TABLE_SCHEMA': 'sys',
               'TABLE_TYPE': 'BASE TABLE',
-              'TABLE_NAME!$': '\\_%',
+              'TABLE_NAME!$': ['\\_%', 'sys\\_%', 'system\\_%'],
               '@order': 'TABLE_NAME+',
               '@column': 'TABLE_NAME,TABLE_COMMENT'
             },
@@ -966,6 +970,13 @@
 //      log('getDoc  callback(doc); = \n' + doc);
         });
 
+      },
+
+      toDoubleJSON: function (json) {
+        if (json != null && json.indexOf("'") >= 0) {
+          json = json.replace(/'/g, '"');
+        }
+        return json;
       },
 
       /**转为Markdown格式
