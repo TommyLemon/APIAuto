@@ -42,6 +42,11 @@ function parseSwift(name, reqObj, depth) {
 
         v = '"' + value + '"';
       }
+      else if (value instanceof Array) {
+        log(TAG, 'parseJava  for typeof value === "array" >>  ' );
+
+        v = '[' + getArrayString(value) + ']';
+      }
       else {
         v = value
       }
@@ -126,7 +131,7 @@ function parseJava(name, reqObj, depth) {
       else if (value instanceof Array) {
         log(TAG, 'parseJava  for typeof value === "array" >>  ' );
 
-        v = 'new Object[]{' + value.join() + '}';
+        v = 'new Object[]{' + getArrayString(value) + '}';
       }
       else {
         v = value
@@ -222,6 +227,23 @@ function getBlank(depth) {
   return s;
 }
 
+/**根据数组arr生成用 , 分割的字符串
+ * 直接用 join 会导致里面的 String 没有被 "" 包裹
+ * @param arr
+ */
+function getArrayString(arr) {
+  if (arr == null || arr.length <= 0) {
+    return arr;
+  }
+
+  let s = '';
+  let v;
+  for (var i = 0; i < arr.length; i ++) {
+    v = (typeof arr[i] == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
+    s += (i > 0 ? ', ' : '') + v;
+  }
+  return s;
+}
 
 
 /**获取Table变量名
