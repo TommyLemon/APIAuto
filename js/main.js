@@ -127,6 +127,7 @@
       historys: [],
       history: {name: '请求0'},
       remotes: [],
+      isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
       isRemoteShow: false,
@@ -621,6 +622,7 @@
       /**计时回调
        */
       onHandle: function (before) {
+        this.isDelayShow = false
         if (inputted != before) {
           clearTimeout(handler);
           return;
@@ -686,6 +688,8 @@
         inputted = new String(vInput.value);
         clearTimeout(handler);
 
+        this.isDelayShow = delay;
+
         handler = setTimeout(function () {
           App.onHandle(inputted);
         }, delay ? 2*1000 : 0);
@@ -728,6 +732,7 @@
           alert('请先输入请求内容！')
           return
         }
+        this.onHandle(vInput.value)
 
         clearTimeout(handler);
 
