@@ -633,11 +633,9 @@
 
           //关键词let在IE和Safari上不兼容
           var code = "";
-          var err = null;
           try {
             code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
-            err = e;
             code = "\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.\n\n\n";
           }
 
@@ -654,7 +652,7 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code + (err != null ? '' : before + '\n ```');
+          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code;
 
 
           // 设置文档
@@ -817,9 +815,11 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n ### 请求代码 \n\n #### Java:\n ```java \n' +
-          parseJava(null, JSON.parse(rq)) +
-          '\n ``` \n\n #### JavaScript:\n ```javascript \n';
+        return '\n\n\n ### 请求代码 \n\n #### <= Android-Java: 同名变量需要重命名\n ```java \n'
+          + parseJava(null, JSON.parse(rq))
+          + '\n ``` \n\n #### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
+          + parseSwift(null, JSON.parse(rq))
+          + '\n ``` \n\n #### <= JavaScript: 和左边的请求JSON一样 \n';
       },
 
 
