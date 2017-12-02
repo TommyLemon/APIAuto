@@ -8,6 +8,7 @@ const TAG = 'CodeUtil'
  * @return parseCode
  */
 function parseSwift(name, reqObj, depth) {
+  name = name || '';
   if (depth == null || depth < 0) {
     depth = 0;
   }
@@ -45,7 +46,7 @@ function parseSwift(name, reqObj, depth) {
       else if (value instanceof Array) {
         log(TAG, 'parseJava  for typeof value === "array" >>  ' );
 
-        v = '[' + getArrayString(value) + ']';
+        v = '[' + getArrayString(value, '...' + name + '/' + key) + ']';
       }
       else {
         v = value
@@ -66,6 +67,7 @@ function parseSwift(name, reqObj, depth) {
  * @return parseCode
  */
 function parseJava(name, reqObj, depth) {
+  name = name || '';
   if (depth == null || depth < 0) {
     depth = 0;
   }
@@ -131,7 +133,7 @@ function parseJava(name, reqObj, depth) {
       else if (value instanceof Array) {
         log(TAG, 'parseJava  for typeof value === "array" >>  ' );
 
-        v = 'new Object[]{' + getArrayString(value) + '}';
+        v = 'new Object[]{' + getArrayString(value, '...' + name + '/' + key) + '}';
       }
       else {
         v = value
@@ -230,16 +232,22 @@ function getBlank(depth) {
 /**根据数组arr生成用 , 分割的字符串
  * 直接用 join 会导致里面的 String 没有被 "" 包裹
  * @param arr
+ * @param path
  */
-function getArrayString(arr) {
+function getArrayString(arr, path) {
   if (arr == null || arr.length <= 0) {
     return arr;
   }
 
   let s = '';
   let v;
+  let t;
   for (var i = 0; i < arr.length; i ++) {
-    v = (typeof arr[i] == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
+    t = typeof arr[i];
+    if (t == 'object' || t == 'array') {
+      throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
+    }
+    v = (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
     s += (i > 0 ? ', ' : '') + v;
   }
   return s;

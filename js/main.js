@@ -632,11 +632,12 @@
           before = JSON.stringify(jsonlint.parse(before), null, "    "); //用format不能catch！
 
           //关键词let在IE和Safari上不兼容
-          var code = "";
+          var code = '';
           try {
             code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
-            code = "\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.\n\n\n";
+            code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
+              + '\nError:\n' + e.message + '\n\n\n';
           }
 
           if (isSingle) {
