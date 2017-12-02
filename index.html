@@ -115,12 +115,12 @@
           </a>
 
           <span class="pop-btn" > <!--v-show="historys.length > 0">-->
-                <a v-show="isRemoteShow" class="hint--top" data-hint="本地保存，点击隐藏远程用例" href="javascript:void(0)">
+                <a v-show="isRemoteShow" class="hint--top" data-hint="本地保存，点击隐藏共享" href="javascript:void(0)">
                   <svg class="icon" @click="showRemote(false)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>
                 </a>
-                <a v-show="! isRemoteShow" class="hint--top" data-hint="本地保存，点击查看远程用例" href="javascript:void(0)">
+                <a v-show="! isRemoteShow" class="hint--top" data-hint="本地保存，点击查看共享" href="javascript:void(0)">
                   <svg class="icon" @click="showRemote(true)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>
