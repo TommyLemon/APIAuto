@@ -217,6 +217,8 @@ function parseCode(name, reqObj, callback) {
 }
 
 
+
+
 /**根据层级获取键值对前面的空格
  * @param depth
  * @return {string}
@@ -283,4 +285,207 @@ function isTableKey(key) {
 function isArrayKey(key) {
   log(TAG, 'isArrayKey  typeof key = ' + (typeof key));
   return key != null && key.endsWith('[]');
+}
+
+
+
+
+/**用数据字典转为JavaBean
+ * @param docObj
+ */
+function parseJavaBean(docObj) {
+
+  //转为Java代码格式
+  var doc = '';
+  var item;
+
+  //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  var list = docObj == null ? null : docObj['[]'];
+  if (list != null) {
+    console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+
+    var table;
+    var model;
+    var columnList;
+    var column;
+    for (var i = 0; i < list.length; i++) {
+      item = list[i];
+
+      //Table
+      table = item == null ? null : item.Table;
+      model = getModelName(table == null ? null : table.TABLE_NAME);
+      if (model == '') {
+        continue;
+      }
+
+      console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+
+
+      doc += '\n/**\n * ' + table.TABLE_COMMENT + '\n */'
+        + '\n@MethodAccess'
+        + '\npublic class ' + model + ' {'
+        + '\n  private static final long serialVersionUID = 1L;\n\n';
+
+      //Column[]
+      columnList = item['Column[]'];
+      if (columnList != null) {
+
+        console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+        var name;
+        var type;
+
+        for (var j = 0; j < columnList.length; j++) {
+          column = columnList[j];
+
+          name = getFieldName(column == null ? null : column.COLUMN_NAME);
+          if (name == '') {
+            continue;
+          }
+          type = getJavaType(column.COLUMN_TYPE);
+
+
+          console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+
+          doc += '\n  /**\n   * ' + column.COLUMN_COMMENT + '\n   */'
+            + '\n  private ' + type + ' ' + name + ';';
+
+        }
+
+        doc += '\n\n'
+          + '\n  public ' + model + '() {'
+          + '\n    super();'
+          + '\n  }'
+          + '\n  public ' + model + '(long id) {'
+          + '\n    this();'
+          + '\n    setId(id);'
+          + '\n  }'
+          + '\n\n\n'
+
+
+        for (var j = 0; j < columnList.length; j++) {
+          column = columnList[j];
+
+          name = getFieldName(column == null ? null : column.COLUMN_NAME);
+          if (name == '') {
+            continue;
+          }
+          type = getJavaType(column.COLUMN_TYPE);
+
+          console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+
+          type = getJavaType(column.COLUMN_TYPE);
+
+          //getter
+          doc += '\n  public ' + type + ' ' + getMethodName('get', name) + '() {'
+            + '\n    return ' + name + ';\n  }\n';
+
+          //setter
+          doc += '\n  public ' + model + ' ' + getMethodName('set', name) + '(' + type + ' ' + name + ') {'
+            + '\n    this.' + name + ' = ' + name + ';'
+            + '\n    return this;\n  }\n';
+
+        }
+      }
+
+      doc += '\n\n}\n\n\n';
+
+    }
+
+    //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    return doc;
+  }
+
+
+  /**获取model类名
+   * @param tableName
+   * @return {*}
+   */
+  function getModelName(tableName) {
+    var model = tableName == null ? '' : tableName.trim();
+    if (model == '') {
+      return model;
+    }
+    var lastIndex = model.lastIndexOf('_');
+    if (lastIndex >= 0) {
+      model = model.substring(lastIndex + 1);
+    }
+    return firstCase(model, true);
+  }
+  /**获取model成员变量名
+   * @param columnName
+   * @return {*}
+   */
+  function getFieldName(columnName) {
+    var field = columnName == null ? '' : columnName.replace(' ', '');
+    if (field == '') {
+      return field;
+    }
+    return firstCase(field, false);
+  }
+  /**获取model方法名
+   * @param prefix 前缀，一般是get,set等
+   * @param field
+   * @return {*}
+   */
+  function getMethodName(prefix, field) {
+    if (field.startsWith('_')) {
+      field = '_' + field; //get_name 会被fastjson解析为name而不是_name，所以要多加一个_
+    }
+    return prefix + firstCase(field, true);
+  }
+
+
+
+  /**根据数据库类型获取Java类型
+   * @param t
+   */
+  function getJavaType(t) {
+    if (t == null) {
+      return 'Object';
+    }
+    t = t.replace(' ', '');
+
+    var index = t.indexOf('(');
+    if (index >= 0) {
+      t = t.substring(0, index);
+    }
+
+    if (t == '') {
+      return 'Object';
+    }
+    if (t.endsWith('char') || t.endsWith('text') || t == 'enum' || t == 'set') {
+      return 'String';
+    }
+    if (t.endsWith('int') || t == 'integer') {
+      return t == 'bigint' ? 'Long' : 'Integer';
+    }
+    if (t.endsWith('binary') || t.endsWith('blob')) {
+      return 'byte[]';
+    }
+
+    switch (t) {
+      case 'id':
+        return 'Long';
+      case 'bit':
+        return 'Boolean';
+      case 'bool': //同tinyint
+      case 'boolean': //同tinyint
+        return 'Integer';
+      case 'datetime':
+        return 'Timestamp';
+      case 'year':
+        return 'Date';
+      case 'decimal':
+        return 'BigDecimal';
+      case 'json':
+        return 'List<String>';
+      default:
+        return firstCase(t, true);
+    }
+
+  }
+
+
 }

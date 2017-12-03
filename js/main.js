@@ -109,6 +109,7 @@
   var baseUrl
   var inputted
   var handler
+  var docObj
   var doc
 
   var isSingle = true
@@ -292,7 +293,7 @@
       // 显示导出弹窗
       showExport: function (show, isRemote) {
         if (show) {
-          if (isRemote) {
+          if (isRemote) { //共享测试用例
             if (App.isRemoteShow) {
               alert('请先输入请求内容！')
               return
@@ -302,14 +303,15 @@
               return
             }
             App.exTxt.name = App.getMethod() + '请求'
-          } else {
-            if (App.view == 'markdown' || App.view == 'output') {
+          }
+          else { //下载到本地
+            if (App.isRemoteShow) { //文档
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
-            } else {
-              if (App.isRemoteShow) {
-                alert('请先输入请求内容！')
-                return
-              }
+            }
+            else if (App.view == 'markdown' || App.view == 'output') {
+              App.exTxt.name = 'APIJSON自动生成model ' + App.formatDateTime()
+            }
+            else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
             }
           }
@@ -402,10 +404,15 @@
 
         if (App.isExportRemote == false) { //下载到本地
 
-          if (App.view == 'markdown' || App.view == 'output') {
+          if (App.isRemoteShow) { //文档
             saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
+              , App.exTxt.name + '.txt')
+          }
+          else if (App.view == 'markdown' || App.view == 'output') { //model
+            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+              + '\n\n\n## model类 \n\n' + parseJavaBean(docObj)
               , App.exTxt.name + '.txt')
           }
           else {
@@ -884,14 +891,14 @@
           }
 
 //      log('getDoc  docRq.responseText = \n' + docRq.responseText);
-          var docRp = res.data;
+          docObj = res.data;
 
           //转为文档格式
           var doc = '';
           var item;
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          var list = docRp == null ? null : docRp['[]'];
+          var list = docObj == null ? null : docObj['[]'];
           if (list != null) {
             log('getDoc  [] = \n' + format(JSON.stringify(list)));
 
@@ -902,9 +909,9 @@
               item = list[i];
 
               //Table
-              table = item.Table;
+              table = item == null ? null : item.Table;
               if (table == null) {
-                table = {};
+                continue;
               }
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
@@ -945,7 +952,7 @@
 
 
           //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docRp == null ? null : docRp['Request[]'];
+          list = docObj == null ? null : docObj['Request[]'];
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
