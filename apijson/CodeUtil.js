@@ -342,7 +342,7 @@ function parseJavaBean(docObj) {
           if (name == '') {
             continue;
           }
-          type = getJavaType(column.COLUMN_TYPE);
+          type = name == 'id' ? 'Long' : getJavaType(column.COLUMN_TYPE);
 
 
           console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -369,11 +369,9 @@ function parseJavaBean(docObj) {
           if (name == '') {
             continue;
           }
-          type = getJavaType(column.COLUMN_TYPE);
+          type = name == 'id' ? 'Long' : getJavaType(column.COLUMN_TYPE);
 
           console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-          type = getJavaType(column.COLUMN_TYPE);
 
           //getter
           doc += '\n  public ' + type + ' ' + getMethodName('get', name) + '() {'
