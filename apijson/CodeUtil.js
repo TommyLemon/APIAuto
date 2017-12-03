@@ -321,7 +321,7 @@ function parseJavaBean(docObj) {
       console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-      doc += '\n' + getComment(table.TABLE_COMMENT, true)
+      doc += '\n```java\n\n' + getComment(table.TABLE_COMMENT, true)
         + '\n@MethodAccess'
         + '\npublic class ' + model + ' {'
         + '\n  private static final long serialVersionUID = 1L;\n\n';
@@ -385,7 +385,7 @@ function parseJavaBean(docObj) {
         }
       }
 
-      doc += '\n\n}\n\n\n';
+      doc += '\n\n}\n\n```\n\n\n';
 
     }
 

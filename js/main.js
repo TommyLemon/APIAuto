@@ -405,18 +405,19 @@
         if (App.isExportRemote == false) { //下载到本地
 
           if (App.isRemoteShow) { //文档
-            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
               , App.exTxt.name + '.txt')
           }
           else if (App.view == 'markdown' || App.view == 'output') { //model
-            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
-              + '\n\n\n## model类 \n\n' + parseJavaBean(docObj)
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
+              + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
+              + '\n\n## Java model类 \n\n' + parseJavaBean(docObj)
               , App.exTxt.name + '.txt')
           }
           else {
-            saveTextAs(App.exTxt.name + '(https://github.com/TommyLemon/APIJSON)'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nURL: ' + vUrl.value
               + '\n\nRequest:\n' + vInput.value
               + '\n\n\nResponse:\n' + App.jsoncon
