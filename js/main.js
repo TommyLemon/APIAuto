@@ -407,7 +407,8 @@
           if (App.isRemoteShow) { //文档
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
-              + '\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
+              + '\n\n\n## 测试用例(Markdown格式，可用工具预览) \n\n' + App.getDoc4TestCase()
+              + '\n\n\n\n\n\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
               , App.exTxt.name + '.txt')
           }
           else if (App.view == 'markdown' || App.view == 'output') { //model
@@ -835,12 +836,12 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n ### 请求代码 \n\n #### <= Android-Java: 同名变量需要重命名\n ```java \n'
+        return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
           + parseJava(null, JSON.parse(rq))
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
-          + '\n\n #### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
+          + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + parseSwift(null, JSON.parse(rq))
-          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n #### <= Web-JavaScript: 和左边的请求JSON一样 \n';
+          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript: 和左边的请求JSON一样 \n';
       },
 
 
@@ -917,10 +918,10 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n #### 说明: \n' + App.toMD(table.TABLE_COMMENT);
+              doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
 
               //Column[]
-              doc += '\n\n #### 字段: \n 名称  |  类型  |  可为null  |  说明' +
+              doc += '\n\n#### 字段: \n 名称  |  类型  |  可为null  |  说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
               columnList = item['Column[]'];
@@ -957,7 +958,7 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n ### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容)'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容)'
               + ' \n 版本  |  方法  |  tag  |  结构及内容'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
@@ -1105,6 +1106,21 @@
 
       log: function (msg) {
         console.log('Main.  ' + msg)
+      },
+
+      getDoc4TestCase: function () {
+        var list = App.remotes || []
+        var doc = ''
+        var item
+        for (var i = 0; i < list.length; i ++) {
+          item = list[i]
+          if (item == null || item.name == null) {
+            continue
+          }
+          doc += '\n\n#### ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url
+          doc += '\n```json\n' + JSON.stringify(JSON.parse(item.request), null, '    ') + '\n```\n'
+        }
+        return doc
       }
       // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
