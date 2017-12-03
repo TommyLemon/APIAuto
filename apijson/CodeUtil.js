@@ -321,7 +321,7 @@ function parseJavaBean(docObj) {
       console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-      doc += '\n/**\n * ' + table.TABLE_COMMENT + '\n */'
+      doc += '\n' + getComment(table.TABLE_COMMENT, true)
         + '\n@MethodAccess'
         + '\npublic class ' + model + ' {'
         + '\n  private static final long serialVersionUID = 1L;\n\n';
@@ -347,8 +347,7 @@ function parseJavaBean(docObj) {
 
           console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-          doc += '\n  /**\n   * ' + column.COLUMN_COMMENT + '\n   */'
-            + '\n  private ' + type + ' ' + name + ';';
+          doc += '\n  private ' + type + ' ' + name + '; ' + getComment(column.COLUMN_COMMENT, false);
 
         }
 
@@ -403,7 +402,7 @@ function parseJavaBean(docObj) {
    * @return {*}
    */
   function getModelName(tableName) {
-    var model = tableName == null ? '' : tableName.trim();
+    var model = removeAllBlank(tableName);
     if (model == '') {
       return model;
     }
@@ -418,15 +417,11 @@ function parseJavaBean(docObj) {
    * @return {*}
    */
   function getFieldName(columnName) {
-    var field = columnName == null ? '' : columnName.replace(' ', '');
-    if (field == '') {
-      return field;
-    }
-    return firstCase(field, false);
+    return firstCase(removeAllBlank(columnName), false);
   }
   /**获取model方法名
-   * @param prefix 前缀，一般是get,set等
-   * @param field
+   * @param prefix @NotNull 前缀，一般是get,set等
+   * @param field @NotNull
    * @return {*}
    */
   function getMethodName(prefix, field) {
@@ -436,16 +431,48 @@ function parseJavaBean(docObj) {
     return prefix + firstCase(field, true);
   }
 
+  /**获取注释
+   * @param comment
+   * @param multiple 多行
+   * @param prefix 多行注释的前缀，一般是空格
+   * @return {*}
+   */
+  function getComment(comment, multiple, prefix) {
+    comment = comment == null ? '' : comment.trim();
+    if (prefix == null) {
+      prefix = '';
+    }
+    if (multiple == false) {
+      return prefix + '//' + comment.replace(/\n/g, '  ');
+    }
+
+
+    //多行注释，需要每行加 * 和空格
+
+    var newComment = prefix + '/**';
+    var index;
+    do {
+      newComment += '\n';
+      index = comment.indexOf('\n');
+      if (index < 0) {
+        newComment += prefix + ' * ' + comment;
+        break;
+      }
+      newComment += prefix + ' * ' + comment.substring(0, index);
+      comment = comment.substring(index + 2);
+    }
+    while(comment != '')
+
+    return newComment + '\n' + prefix + ' */';
+  }
+
 
 
   /**根据数据库类型获取Java类型
    * @param t
    */
   function getJavaType(t) {
-    if (t == null) {
-      return 'Object';
-    }
-    t = t.replace(' ', '');
+    t = removeAllBlank(t);
 
     var index = t.indexOf('(');
     if (index >= 0) {
@@ -486,6 +513,16 @@ function parseJavaBean(docObj) {
     }
 
   }
+
+
+  /**移除所有空格
+   * @param str
+   * @return {*}
+   */
+  function removeAllBlank(str) {
+    return str.replace(/' '/g, '');
+  }
+
 
 
 }
