@@ -504,6 +504,7 @@
       //显示远程的测试用例文档
       showRemote: function (show) {
         App.isRemoteShow = show
+        App.view = 'markdown'
 
         if (show && App.remotes.length <= 0) {
           App.isRemoteShow = false
@@ -527,6 +528,7 @@
 
             if (rpObj != null && rpObj.code === 200) {
               App.isRemoteShow = true
+              App.view = 'markdown' //貌似未生效，或者被后面的操作覆盖
               App.remotes = rpObj['Document[]']
 
               //App.onChange(false)
