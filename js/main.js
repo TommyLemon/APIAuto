@@ -262,19 +262,29 @@
       },
       //获取基地址
       getBaseUrl: function () {
-        var url = new String(vUrl.value)
-        while (url.endsWith('/')) {
-          url = url.substring(0, url.length - 1)
-        }
-        var index = url.lastIndexOf('/')
-        url = index < 0 ? url : url.substring(0, index)
+        var url = new String(vUrl.value).trim()
+        var index = this.getBaseUrlLength(url)
+        url = index <= 0 ? url : url.substring(0, index)
         return url == '' ? URL_BASE : url
+      },
+      //获取基地址长度，优先以空格分割baseUrl和method，其次用 /
+      getBaseUrlLength: function (url_) {
+        var url = url_ == null ? '' : new String(url_)
+        var index = url.indexOf(' ')
+        if (index <= 0) {
+          while (url.endsWith('/')) {
+            url = url.substring(0, url.length - 1)
+          }
+          index = url.lastIndexOf('/')
+        }
+        return index
       },
       //获取操作方法
       getMethod: function () {
-        var url = vUrl.value
-        var index = url == null ? -1 : url.lastIndexOf('/')
-        return index < 0 ? '' : url.substring(index + 1)
+        var url = new String(vUrl.value).trim()
+        var index = this.getBaseUrlLength(url)
+        url = index < 0 ? '' : url.substring(index + 1)
+        return url.startsWith('/') ? url.substring(1) : url
       },
 
       // 显示保存弹窗
@@ -377,7 +387,14 @@
       restore: function (item) {
         localforage.getItem(item.key, function (err, value) {
           baseUrl = App.getBaseUrl()
-          vUrl.value = baseUrl + (item.url || '/get')
+          var branch = new String(item.url || '/get')
+          if (branch.startsWith('/') == false) {
+            branch = '/' + branch
+          }
+          if (branch.lastIndexOf('/') > 0) { //不只一个 / ，需要用空格分割baseUrl和branchUrl
+            branch = ' ' + branch
+          }
+          vUrl.value = baseUrl + branch
           App.showRemote(false)
           vInput.value = item.request
           App.onChange(false)
@@ -753,7 +770,8 @@
         }
         var req = JSON.parse(real);
 
-        var url = vUrl.value;
+        var url = new String(vUrl.value)
+        url = url.replace(/ /g, '')
         vOutput.value = "requesting... \nURL = " + url;
         App.view = 'output';
 
