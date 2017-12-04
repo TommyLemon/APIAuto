@@ -323,8 +323,8 @@ function parseJavaBean(docObj) {
 
       doc += '\n```java\n\n' + getComment(table.TABLE_COMMENT, true)
         + '\n@MethodAccess'
-        + '\npublic class ' + model + ' {'
-        + '\n  private static final long serialVersionUID = 1L;\n\n';
+        + '\npublic class ' + model + ' implements Serializable {'
+        + '\n  private static final long serialVersionUID = 1L;\n';
 
       //Column[]
       columnList = item['Column[]'];
@@ -359,7 +359,7 @@ function parseJavaBean(docObj) {
           + '\n    this();'
           + '\n    setId(id);'
           + '\n  }'
-          + '\n\n\n'
+          + '\n\n\n\n'
 
 
         for (var j = 0; j < columnList.length; j++) {
@@ -518,7 +518,7 @@ function parseJavaBean(docObj) {
    * @return {*}
    */
   function removeAllBlank(str) {
-    return str.replace(/' '/g, '');
+    return str.replace(/ /g, '');
   }
 
 
