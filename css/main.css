@@ -1,6 +1,6 @@
 html,body {
   margin: 0;
-  padding: 0; 
+  padding: 0;
   color: #555;
   font-size: 14px;
   overflow: hidden
@@ -9,7 +9,7 @@ html,body {
 * {
   box-sizing: border-box;
   font-family: Menlo, Monaco, Consolas, "Helvetica Neue", Helvetica, "Courier New", 微软雅黑, monospace, Arial, sans-serif, 黑体;
-  
+
 }
 
 [v-show] {
@@ -34,7 +34,7 @@ html,body {
 
 
 textarea {
-   color: #555;
+  color: #555;
 }
 
 ul {
@@ -62,7 +62,7 @@ a:link, a:visited {
 }
 
 a:link svg, a:visited svg {
-  fill: #999; 
+  fill: #999;
 }
 
 a:active, a:hover {
@@ -82,16 +82,25 @@ a:active svg, a:hover svg{
 }
 
 .icon-square {
-    width: 12px;
-    height: 12px;
-    display: inline-block;
-    cursor: pointer;
-    user-select: none
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  cursor: pointer;
+  user-select: none
 }
 
 .icon-square-plus {
   display: none;
   user-select: none
+}
+
+.logo-img {
+  position: fixed;
+  display: inline-block;
+  height: inherit;
+  align-content: center;
+  padding-top: 6px;
+  padding-bottom: 6px
 }
 
 .logo {
@@ -101,6 +110,8 @@ a:active svg, a:hover svg{
   font-size: 24px;
   color: #f34e5c;
   padding: 10px;
+  height: 100%;
+  margin-left: 48px;
 }
 
 .logo .on {
@@ -144,7 +155,7 @@ a:active svg, a:hover svg{
   width: 40%;
   overflow: hidden;
   box-shadow: 1px 1px 1px rgba(245, 244, 244, 0.52);
-  
+
 }
 
 .left-bar {
@@ -204,7 +215,7 @@ textarea {
   position: relative;
   width: 100%;
   height: 100%;
-  padding-top: 40px; 
+  padding-top: 40px;
 }
 
 
@@ -216,14 +227,14 @@ textarea {
 #diffoutput {
   height: 100%;
   overflow-y: scroll;
-  padding: 20px;  
+  padding: 20px;
 }
 
 .view-code {
   width: 100%;
   height: 100%;
-  padding: 10px;  
-  overflow: hidden; 
+  padding: 10px;
+  overflow: hidden;
   overflow-y: scroll;
   word-break: break-all;
 }
@@ -299,8 +310,8 @@ textarea {
 .pop {
   display: none;
   position: absolute;
-  right: 0;  
-  top: 40px; 
+  right: 0;
+  top: 40px;
   border: #DDD 1px solid;
   border-bottom: 0;
   border-top: 0;
@@ -371,10 +382,10 @@ textarea {
 }
 
 .save-box button {
-   border:  none;
-   padding: 8px 20px;
-   cursor: pointer;
-   outline: none;
+  border:  none;
+  padding: 8px 20px;
+  cursor: pointer;
+  outline: none;
 }
 
 .save-box .close-icon {
@@ -433,15 +444,15 @@ textarea {
   color: #25aae2;
   padding: 0 2px;
 }
- 
+
 
 .error-position {
-    background-color: #ea1313;
-    color: #FFF;
+  background-color: #ea1313;
+  color: #FFF;
 }
 
 .json-link:link {
-  text-decoration: none 
+  text-decoration: none
 }
 /* .json-link:link, .json-link:visited {
   color: #717171;
@@ -498,21 +509,21 @@ table.diff thead th.texttitle {
 
 
 .label{
-    border: solid 1px #F1F1F1;
-    background: #fff;
-    display: inline-block;
-    height: 22px;
-    padding: 0 6px;
-    line-height: 22px;
-    position: absolute;
-    top: 7px;
-    right: 6px;
-    text-align: center;
-    font-size: 12px;
-    color: #777;
-    border-radius: 1px;
-    z-index: 30;
-    opacity: 0.5;
+  border: solid 1px #F1F1F1;
+  background: #fff;
+  display: inline-block;
+  height: 22px;
+  padding: 0 6px;
+  line-height: 22px;
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  border-radius: 1px;
+  z-index: 30;
+  opacity: 0.5;
 }
 
 
@@ -520,7 +531,7 @@ table.diff thead th.texttitle {
   margin: 0;
   padding: 0;
   width: 200px;
-  
+
   background-color: #FFF;
 }
 
