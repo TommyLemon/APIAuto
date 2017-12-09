@@ -153,7 +153,6 @@ a:active svg, a:hover svg{
   top: 50px;
   bottom: 0;
   width: 40%;
-  overflow: hidden;
   box-shadow: 1px 1px 1px rgba(245, 244, 244, 0.52);
   padding-top: 40px;
 }
