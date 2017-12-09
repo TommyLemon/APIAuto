@@ -173,9 +173,6 @@ a:active svg, a:hover svg{
 .left-panel {
   height: 100%;
   width: 100%;
-  overflow: hidden;
-  overflow-y: scroll;
-  word-break: break-all;
 }
 
 
