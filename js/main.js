@@ -431,7 +431,7 @@
           else if (App.view == 'markdown' || App.view == 'output') { //model
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
-              + '\n\n## Java model类 \n\n' + parseJavaBean(docObj)
+              + '\n\n## Java model类 \n\n' + CodeUtil.parseJavaBean(docObj)
               , App.exTxt.name + '.txt')
           }
           else {
@@ -830,7 +830,7 @@
         else {
           var json = res.data
           if (isSingle) {
-            json = formatObject(json);
+            json = JSONResponse.formatObject(json);
           }
           App.jsoncon = JSON.stringify(json, null, '    ');
           App.view = 'code';
@@ -855,10 +855,10 @@
        */
       getCode: function (rq) {
         return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
-          + parseJava(null, JSON.parse(rq))
+          + CodeUtil.parseJava(null, JSON.parse(rq))
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
-          + parseSwift(null, JSON.parse(rq))
+          + CodeUtil.parseSwift(null, JSON.parse(rq))
           + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript: 和左边的请求JSON一样 \n';
       },
 
@@ -939,7 +939,7 @@
               doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
 
               //Column[]
-              doc += '\n\n#### 字段: \n 名称  |  类型  |  可为null  |  说明' +
+              doc += '\n\n#### 字段: \n 名称  |  类型(长度)  |  可为null  |  说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
               columnList = item['Column[]'];
@@ -948,17 +948,18 @@
               }
               log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
-
+              var type;
               for (var j = 0; j < columnList.length; j++) {
                 column = columnList[j];
                 if (column == null) {
                   continue;
                 }
+                type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.COLUMN_TYPE, true);
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + column.COLUMN_NAME + '  |  ' + column.COLUMN_TYPE
-                  + '  |  ' + column.IS_NULLABLE + '  |  ' + App.toMD(column.COLUMN_COMMENT);
+                doc += '\n' + column.COLUMN_NAME + '  |  ' + type
+                  + '  |  ' + (column.IS_NULLABLE == 'NO' ? '否' : '是') + '  |  ' + App.toMD(column.COLUMN_COMMENT);
 
               }
 
@@ -976,8 +977,8 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、内容)'
-              + ' \n 版本  |  方法  |  tag  |  结构及内容'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、数据)'
+              + ' \n 版本  |  方法  |  tag  |  结构及数据'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
             for (var i = 0; i < list.length; i++) {
