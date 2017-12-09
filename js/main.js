@@ -111,6 +111,7 @@
   var handler
   var docObj
   var doc
+  var output
 
   var isSingle = true
 
@@ -530,7 +531,8 @@
       //显示远程的测试用例文档
       showRemote: function (show) {
         App.isRemoteShow = show
-        App.view = 'markdown'
+        vOutput.value = show ? '' : (output || '')
+        App.showDoc()
 
         if (show && App.remotes.length <= 0) {
           App.isRemoteShow = false
@@ -554,12 +556,22 @@
 
             if (rpObj != null && rpObj.code === 200) {
               App.isRemoteShow = true
-              App.view = 'markdown' //貌似未生效，或者被后面的操作覆盖
               App.remotes = rpObj['Document[]']
+              vOutput.value = show ? '' : (output || '')
+              App.showDoc()
 
               //App.onChange(false)
             }
           })
+        }
+      },
+
+      // 设置文档
+      showDoc: function () {
+        if (App.setDoc(doc) == false) {
+          this.getDoc(function (d) {
+            App.setDoc(d);
+          });
         }
       },
 
@@ -687,15 +699,11 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。' + code;
+          output = 'OK，请点击 [发送请求] 按钮来测试。' + code;
+          vOutput.value = output
 
 
-          // 设置文档
-          if (App.setDoc(doc) == false) {
-            this.getDoc(function (d) {
-              App.setDoc(d);
-            });
-          }
+          App.showDoc()
 
         } catch(e) {
           log(e)
