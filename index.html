@@ -71,7 +71,7 @@
       <button class="send" id="vSend" @click="send()">发送请求</button>
     </div>
     <div class="left-panel">
-      <ul v-show="isRemoteShow" class="historys" style="width: 100%">
+      <ul v-show="isRemoteShow" class="historys" style="width: 100%;height: 100%">
         <li v-for="(item, index) in remotes" >
           <svg v-show="item.userId == User.id" class="icon" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>

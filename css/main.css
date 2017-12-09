@@ -155,16 +155,15 @@ a:active svg, a:hover svg{
   width: 40%;
   overflow: hidden;
   box-shadow: 1px 1px 1px rgba(245, 244, 244, 0.52);
-
+  padding-top: 40px;
 }
 
 .left-bar {
   height: 40px;
   border-bottom: #DDD 1px solid;
   width: 100%;
-  position: relative;
+  position: absolute;
   top: 0px;
-  display: inline;
   display: flex;
   align-items: center;
   z-index: 100;
@@ -174,7 +173,10 @@ a:active svg, a:hover svg{
 
 .left-panel {
   height: 100%;
-  position: relative
+  width: 100%;
+  overflow: hidden;
+  overflow-y: scroll;
+  word-break: break-all;
 }
 
 
