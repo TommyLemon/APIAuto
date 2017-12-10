@@ -879,7 +879,7 @@
           return false;
         }
         doc = d;
-        vOutput.value += ('\n\n\n## 文档 \n\n' + d);
+        vOutput.value += ('\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d);
 
         App.view = 'markdown';
         markdownToHTML(vOutput.value);
