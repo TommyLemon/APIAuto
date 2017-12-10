@@ -944,7 +944,7 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + table.TABLE_NAME + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.TABLE_NAME) + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型(长度)  |  可为null  |  说明' +
