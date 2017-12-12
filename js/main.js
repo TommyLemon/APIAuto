@@ -867,7 +867,7 @@
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))
-          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript: 和左边的请求JSON一样 \n';
+          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
       },
 
 
