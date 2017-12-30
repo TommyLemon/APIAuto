@@ -903,7 +903,7 @@
             'Column[]': {
               'Column': {
                 'TABLE_NAME@': '[]/Table/TABLE_NAME',
-                '@column': 'COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_COMMENT'
+                '@column': 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT'
               }
             }
           },
@@ -947,7 +947,7 @@
               doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.TABLE_NAME) + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
 
               //Column[]
-              doc += '\n\n#### 字段: \n 名称  |  类型(长度)  |  可为null  |  说明' +
+              doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
               columnList = item['Column[]'];
@@ -956,18 +956,21 @@
               }
               log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
+              var name;
               var type;
+              var length;
               for (var j = 0; j < columnList.length; j++) {
                 column = columnList[j];
-                if (column == null) {
+                name = column == null ? null : column.COLUMN_NAME;
+                if (name == null) {
                   continue;
                 }
-                type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.COLUMN_TYPE, true);
+                type = CodeUtil.getJavaType(column.COLUMN_TYPE, false);
+                length = CodeUtil.getMaxLength(column.COLUMN_TYPE);
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + column.COLUMN_NAME + '  |  ' + type
-                  + '  |  ' + (column.IS_NULLABLE == 'NO' ? '否' : '是') + '  |  ' + App.toMD(column.COLUMN_COMMENT);
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.COLUMN_COMMENT);
 
               }
 
@@ -985,8 +988,8 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任意结构、数据)'
-              + ' \n 版本  |  方法  |  tag  |  结构及数据'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任何 数据、结构)'
+              + ' \n 版本  |  方法  |  数据和结构'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
             for (var i = 0; i < list.length; i++) {
@@ -997,7 +1000,7 @@
               log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
+              doc += '\n' + item.version + '  |  ' + item.method
                 + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
             }
 
@@ -1107,13 +1110,16 @@
 
         log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
 
-        //补全省略的Table
-        if (this.isTableKey(tag) && obj[tag] == null) {
-          log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
-          var realObj = {};
-          realObj[tag] = obj;
-          obj = realObj;
-          log('getStructure  realObj = \n' + JSON.stringify(realObj));
+        if (tag != null) {
+          //补全省略的Table
+          if (this.isTableKey(tag) && obj[tag] == null) {
+            log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
+            var realObj = {};
+            realObj[tag] = obj;
+            obj = realObj;
+            log('getStructure  realObj = \n' + JSON.stringify(realObj));
+          }
+          obj.tag = tag; //补全tag
         }
 
         return obj;

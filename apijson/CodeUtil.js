@@ -466,6 +466,15 @@ var CodeUtil = {
 
   },
 
+  /**获取字段对应值的最大长度
+   * @param columnType
+   * @return {string}
+   */
+  getMaxLength: function (columnType) {
+    var index = columnType == null ? -1 : columnType.indexOf('(');
+    return index < 0 ? '不限' : columnType.substring(index + 1, columnType.length - (columnType.endsWith(')') ? 1 : 0));
+  },
+
 
   /**根据层级获取键值对前面的空格
    * @param depth
@@ -517,6 +526,22 @@ var CodeUtil = {
    */
   getItemKey: function(key) {
     return StringUtil.addSuffix(key.substring(0, key.length - 2), 'Item');
+  },
+
+  /**是否为id
+   * @param column
+   * @return {boolean}
+   */
+  isId: function (column) {
+    if (column == null) {
+      return false;
+    }
+    if (column.endsWith('Id')) { // lowerCamelCase
+      return true;
+    }
+    var index = column.lastIndexOf('_'); // snake_case
+    var id = index < 0 ? column : column.substring(index + 1);
+    return id.toLowerCase() == 'id';
   }
 
 }
