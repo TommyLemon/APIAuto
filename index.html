@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>APIJSON.org</title>
+  <title>APIJSON.cn</title>
   <meta charset="utf-8" />
-  <meta name="keywords" content="apijson,api,json,fastjson,json在线解析,json格式化,json格式验证,json数组"/>
-  <meta name="description" content="后端零用时开发接口，前端/客户端 定制返回JSON的内容和结构！"/>
+  <meta name="keywords" content="apijson,api,json,fastjson,json在线解析,json格式化验证"/>
+  <meta name="description" content="后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！"/>
   <link href="css/hint.min.css" rel="stylesheet">
   <!-- <link href="css/diffview.css" rel="stylesheet"> -->
   <link href="css/loading.css" rel="stylesheet">
@@ -22,17 +22,28 @@
     flex-grow: 1
     /* justify-content: center */
   }
-  .transfer{
+  .transfer {
     width: 58px;
     height: 100%;
     margin: 0;
     padding: 0;
   }
-  .send{
+  .send {
     width: 25%;
     height: 100%;
     margin: 0;
     padding: 0;
+  }
+  .statement {
+    position: absolute;
+    bottom: 0px;
+    width: 100%;
+    text-align: center;
+    font-size: small;
+    z-index: 100;
+    background-color: white;
+    color: #bbb;
+    border-top: #fafafa 1px solid;
   }
 </style>
 <div id="app">
@@ -203,7 +214,7 @@
     </div>
   </div>
 
-  <div style="position: absolute;bottom: 0px;width: 100%; text-align: center; font-size: small; z-index: 100; background-color: white; color: #bbb; border-top: #fafafa 1px solid;">
+  <div class="statement">
     Copyright ©2017 APIJSON.cn All right reserved.
     <a href="http://www.miitbeian.gov.cn/" target="_blank">
       <span >粤ICP备18005508号-1.</span>
