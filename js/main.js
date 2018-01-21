@@ -440,6 +440,7 @@
               + '\n\nURL: ' + vUrl.value
               + '\n\nRequest:\n' + vInput.value
               + '\n\n\nResponse:\n' + App.jsoncon
+              + '\n\n\n## Java解析Response的代码 \n\n' + CodeUtil.parseJavaResponse('res', JSON.parse(App.jsoncon), 0)
               , App.exTxt.name + '.txt')
           }
         }

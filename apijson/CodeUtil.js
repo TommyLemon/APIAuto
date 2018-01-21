@@ -165,7 +165,109 @@ var CodeUtil = {
   },
 
 
+  /**解析出 生成Android-Java返回结果JSON 的代码
+   * @param name
+   * @param resObj
+   * @param depth
+   * @return parseCode
+   */
+  parseJavaResponse: function(name, resObj, depth) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
 
+    if (name == null || name == '') {
+      name = 'response';
+    }
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson); \n';
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = CodeUtil.getJavaTypeFromJS(key, value, true);
+
+        return '\n' + CodeUtil.getBlank(depth) + type + ' ' + key + ' = ' + name + '.get'
+          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");';
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = padding + CodeUtil.getBlank(1);
+        var k = JSONResponse.replaceArray(key);
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = CodeUtil.getJavaTypeFromJS('item', value[0], false);
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'JSONArray ' + k + ' = JSON.nullToEmpty(' + name + '.getJSONArray("' + key + '"));';
+
+        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+
+        s += padding + type + ' item;';
+
+        s += padding + 'for (int i = 0; i < ' + k + '.size(); i++) {';
+
+        s += innerPadding + 'item = ' + k + '.get' + type + '(i);';
+        s += innerPadding + 'if (item == null) {';
+        s += innerPadding + '    continue;';
+        s += innerPadding + '}';
+        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseJavaResponse('item', value[0], depth + 1);
+        }
+        // }
+
+        s += padding + '}';
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var k = StringUtil.firstCase(JSONResponse.getSimpleName(key));
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'JSONObject ' + k + ' = JSON.nullToEmpty(' + name + '.getJSONObject("' + key + '"));\n'
+
+        s += CodeUtil.parseJavaResponse(k, value, depth);
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
 
 
 
@@ -418,6 +520,31 @@ var CodeUtil = {
   },
 
 
+  getJavaTypeFromJS: function (key, value, baseFirst) {
+    if (typeof value == 'boolean') {
+      return baseFirst ? 'boolean' : 'Boolean';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return baseFirst ? 'double' : 'Double';
+      }
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key)) {
+        return baseFirst ? 'long' : 'Long';
+      }
+      return baseFirst ? 'int' : 'Integer';
+    }
+    if (typeof value == 'string') {
+      return 'String';
+    }
+    if (value instanceof Array) {
+      return 'JSONArray';
+    }
+    if (value instanceof Object) {
+      return 'JSONObject';
+    }
+
+    return 'Object';
+  },
 
   /**根据数据库类型获取Java类型
    * @param t
@@ -504,7 +631,7 @@ var CodeUtil = {
     for (var i = 0; i < arr.length; i ++) {
       t = typeof arr[i];
       if (t == 'object' || t == 'array') {
-        throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
+        //TODO 不止为什么parseJavaResponse会调用这个函数，先放过  throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
       }
       v = (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
       s += (i > 0 ? ', ' : '') + v;
