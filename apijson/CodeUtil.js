@@ -165,7 +165,8 @@ var CodeUtil = {
   },
 
 
-  /**解析出 生成Android-Java返回结果JSON 的代码
+  /**TODO 为for循环生成函数
+   * 解析出 生成Android-Java返回结果JSON 的代码
    * @param name
    * @param resObj
    * @param depth
