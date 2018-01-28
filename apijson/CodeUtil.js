@@ -66,7 +66,7 @@ var CodeUtil = {
         }
         else { //其它，直接在后面加上注释
           var isArray = line.endsWith('[');
-          alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
+          // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key, isArray ? '' : line.substring(index + 2).trim());
         }
       }
@@ -751,7 +751,7 @@ var CodeUtil = {
    * @param value
    */
   getComment4Request: function (tableList, name, key, value) {
-    alert('name = ' + name + '; key = ' + key + '; value = ' + value);
+    // alert('name = ' + name + '; key = ' + key + '; value = ' + value);
 
     if (key == null) {
       return '';
@@ -813,7 +813,7 @@ var CodeUtil = {
       return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, name, key), false, '  ');
     }
 
-    alert('name = ' + name + '; key = ' + key);
+    // alert('name = ' + name + '; key = ' + key);
     if (StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
