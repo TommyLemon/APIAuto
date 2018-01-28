@@ -707,10 +707,11 @@
 
           App.showDoc()
 
-          // alert('vComment.with = ' + vComment.cols);
-          // alert('vInput.with = ' + vInput.cols);
-          vComment.value = CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'])
-
+          try {
+            vComment.value = CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'])
+          } catch (e) {
+            log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
+          }
         } catch(e) {
           log(e)
           vSend.disabled = true

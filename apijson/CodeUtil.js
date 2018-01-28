@@ -46,29 +46,34 @@ var CodeUtil = {
       line = lines[i].trim();
 
       //每一种都要提取:左边的key
-      index = line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
+      index = line == null ? -1 : line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
       if (index < 0) {
         continue;
       }
+      if (index == 0) { // ":user": value 不合法
+        // throw new Error('不允许将 : 作为key的第一个字符！');
+        comment = ' ! 不允许将 : 作为key的第一个字符！';
+      }
+      else {
+        key = line.substring(1, index - 1);
 
-      key = line.substring(1, index - 1);
-
-      if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
-        depth ++;
-        names[depth] = key;
-        comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
-      }
-      else if (line.endsWith('[')) { //数组，判断是不是 key{}
-        depth ++;
-        names[depth] = key;
-        comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
-      }
-      else if (line.endsWith('}') || line.endsWith(']')) {
-        depth --;
-      }
-      else { //其它，直接在后面加上注释
-        value = line.substring(index + 2);
-        comment = CodeUtil.getComment4Request(tableList, names[depth], key, value);
+        if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
+          depth ++;
+          names[depth] = key;
+          comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
+        }
+        else if (line.endsWith('[')) { //数组，判断是不是 key{}
+          depth ++;
+          names[depth] = key;
+          comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
+        }
+        else if (line.endsWith('}') || line.endsWith(']')) {
+          depth --;
+        }
+        else { //其它，直接在后面加上注释
+          value = line.substring(index + 2);
+          comment = CodeUtil.getComment4Request(tableList, names[depth], key, value);
+        }
       }
 
       //maxLength = maxLineLength - lines[i].length;
@@ -734,7 +739,22 @@ var CodeUtil = {
     return id.toLowerCase() == 'id';
   },
 
+
+
   QUERY_TYPES: ['数据', '数量', '全部'],
+  REQUEST_ROLES: {
+    UNKNOWN: '未登录',
+
+    LOGIN: '已登录',
+
+    CONTACT: '联系人',
+
+    CIRCLE: '圈子成员',
+
+    OWNER: '拥有者',
+
+    ADMIN: '管理员'
+  },
 
   /**获取请求JSON的注释
    * @param tableList
@@ -792,11 +812,22 @@ var CodeUtil = {
           case '@correct':
             return CodeUtil.getComment('字段校正', false, '  ');
           case '@role':
-            return CodeUtil.getComment('登录角色', false, '  ');
+            return CodeUtil.getComment('登录角色：' + CodeUtil.REQUEST_ROLES[value.toLowerCase()], false, '  ');
         }
         return '';
       }
       return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, name, key), false, '  ');
+    }
+
+    if (StringUtil.isEmpty(name)) {
+      switch (key) {
+        case 'tag':
+          return '请求密钥';
+        case 'version':
+          return '版本号';
+        case '@role':
+          return '默认角色：' + CodeUtil.REQUEST_ROLES[value.toLowerCase()];
+      }
     }
 
     return '';
