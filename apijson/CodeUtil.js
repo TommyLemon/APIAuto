@@ -19,6 +19,68 @@
 var CodeUtil = {
   TAG: 'CodeUtil',
 
+  /**生成JSON的注释
+   * @param reqStr //已格式化的JSON String
+   * @param tableList
+   * @return parseComment
+   */
+  parseComment: function (reqStr, tableList) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+    if (StringUtil.isEmpty(reqStr)) {
+      return '';
+    }
+    // maxLineLength = maxLineLength || 0;
+
+    var lines = reqStr.split('\n');
+    var line;
+
+    var depth = 0;
+    var names = [];
+
+    var index;
+    var key;
+    var value;
+
+    var maxLength;
+    var comment;
+    for (var i = 0; i < lines.length; i ++) {
+      line = lines[i].trim();
+
+      //每一种都要提取:左边的key
+      index = line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
+      if (index < 0) {
+        continue;
+      }
+
+      key = line.substring(1, index - 1);
+
+      if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
+        depth ++;
+        names[depth] = key;
+        comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
+      }
+      else if (line.endsWith('[')) { //数组，判断是不是 key{}
+        depth ++;
+        names[depth] = key;
+        comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
+      }
+      else if (line.endsWith('}') || line.endsWith(']')) {
+        depth --;
+      }
+      else { //其它，直接在后面加上注释
+        value = line.substring(index + 2);
+        comment = CodeUtil.getComment4Request(tableList, names[depth], key, value);
+      }
+
+      //maxLength = maxLineLength - lines[i].length;
+      // if (maxLength >= 0 && comment.length > maxLength) {
+      //   comment = comment.substring(0, maxLength);
+      // }
+      lines[i] += comment;
+    }
+
+    return lines.join('\n');
+  },
+
   /**解析出 生成iOS-Swift请求JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
    * @param name
@@ -670,6 +732,128 @@ var CodeUtil = {
     var index = column.lastIndexOf('_'); // snake_case
     var id = index < 0 ? column : column.substring(index + 1);
     return id.toLowerCase() == 'id';
+  },
+
+  QUERY_TYPES: ['数据', '数量', '全部'],
+
+  /**获取请求JSON的注释
+   * @param tableList
+   * @param name
+   * @param key
+   * @param value
+   */
+  getComment4Request: function (tableList, name, key, value) {
+    if (key == null) {
+      return '';
+    }
+
+    if (value == null || value instanceof Object) {
+      if (JSONObject.isArrayKey(key)) {
+        var arrName = JSONResponse.getSimpleName(key.substring(0, key.lastIndexOf('[]')));
+        return CodeUtil.getComment('数组' + (JSONObject.isTableKey(arrName) ? '，去除' + arrName + '包装' : ''), false, '  ');
+      }
+      if (JSONObject.isTableKey(key)) {
+        var objName = JSONResponse.getSimpleName(key);
+        return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, objName, null), false, '  ');
+      }
+
+      return '';
+    }
+
+    if (JSONObject.isArrayKey(name)) {
+      switch (key) {
+        case 'count':
+          return CodeUtil.getComment('最多数量', false, '  ');
+        case 'page':
+          return CodeUtil.getComment('分页页码', false, '  ');
+        case 'query':
+          value = Number(value)
+          if (value < 0 || value > 2) {
+            value = 0;
+          }
+          return CodeUtil.getComment('查询内容：' + (CodeUtil.QUERY_TYPES[value]), false, '  ');
+      }
+      return CodeUtil.getComment('自定义关键词', false, '  ');
+    }
+
+    if (JSONObject.isTableKey(name)) {
+      if (key.startsWith('@')) {
+        switch (key) {
+          case '@column':
+            return CodeUtil.getComment('返回字段', false, '  ');
+          case '@order':
+            return CodeUtil.getComment('排序方式，+升序，-降序', false, '  ');
+          case '@group':
+            return CodeUtil.getComment('分组方式', false, '  ');
+          case '@having':
+            return CodeUtil.getComment('SQL函数', false, '  ');
+          case '@schema':
+            return CodeUtil.getComment('数据库', false, '  ');
+          case '@correct':
+            return CodeUtil.getComment('字段校正', false, '  ');
+          case '@role':
+            return CodeUtil.getComment('登录角色', false, '  ');
+        }
+        return '';
+      }
+      return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, name, key), false, '  ');
+    }
+
+    return '';
+  },
+
+  /**
+   * @param tableList
+   * @param tableName
+   * @param columnName
+   * @return {*}
+   */
+  getCommentFromDoc: function (tableList, tableName, columnName) {
+    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; tableList = \n' + JSON.stringify(tableList));
+
+    if (tableList != null) {
+      var item;
+
+      var table;
+      var columnList;
+      var column;
+      for (var i = 0; i < tableList.length; i++) {
+        item = tableList[i];
+
+        //Table
+        table = item == null ? null : item.Table;
+        if (table == null || tableName != CodeUtil.getModelName(table.TABLE_NAME)) {
+          continue;
+        }
+        log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+
+        if (StringUtil.isEmpty(columnName)) {
+          return table.TABLE_COMMENT;
+        }
+
+        columnList = item['Column[]'];
+        if (columnList == null) {
+          continue;
+        }
+        log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+        var name;
+        for (var j = 0; j < columnList.length; j++) {
+          column = columnList[j];
+          name = column == null ? null : column.COLUMN_NAME;
+          if (name == null || columnName != name) {
+            continue;
+          }
+
+          return column.COLUMN_COMMENT;
+        }
+
+        break;
+      }
+
+    }
+
+    return '';
   }
 
 }

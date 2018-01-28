@@ -670,6 +670,7 @@
         }
 
         App.view = 'output';
+        vComment.value = '';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -706,6 +707,10 @@
 
           App.showDoc()
 
+          // alert('vComment.with = ' + vComment.cols);
+          // alert('vInput.with = ' + vInput.cols);
+          vComment.value = CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'])
+
         } catch(e) {
           log(e)
           vSend.disabled = true
@@ -723,6 +728,8 @@
       onChange: function (delay) {
         this.setBaseUrl();
         inputted = new String(vInput.value);
+        vComment.value = '';
+
         clearTimeout(handler);
 
         this.isDelayShow = delay;
@@ -864,7 +871,7 @@
        */
       getCode: function (rq) {
         return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
-          + CodeUtil.parseJava(null, JSON.parse(rq))
+          + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq)))
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))
