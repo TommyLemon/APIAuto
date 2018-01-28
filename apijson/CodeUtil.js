@@ -28,7 +28,6 @@ var CodeUtil = {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
-    // maxLineLength = maxLineLength || 0;
 
     var lines = reqStr.split('\n');
     var line;
@@ -40,46 +39,38 @@ var CodeUtil = {
     var key;
     var value;
 
-    var maxLength;
     var comment;
     for (var i = 0; i < lines.length; i ++) {
       line = lines[i].trim();
 
       //每一种都要提取:左边的key
       index = line == null ? -1 : line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
-      if (index < 0) {
-        continue;
-      }
-      if (index == 0) { // ":user": value 不合法
-        // throw new Error('不允许将 : 作为key的第一个字符！');
-        comment = ' ! 不允许将 : 作为key的第一个字符！';
+      key = index < 0 ? '' : line.substring(1, index - 1);
+
+      if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
+        depth ++;
+        names[depth] = key;
+        comment = CodeUtil.getComment4Request(tableList, null, key, null);
       }
       else {
-        key = line.substring(1, index - 1);
-
-        if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
-          depth ++;
-          names[depth] = key;
-          comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
+        if (line.endsWith(',')) {
+          line = line.substring(0, line.length - 1);
         }
-        else if (line.endsWith('[')) { //数组，判断是不是 key{}
-          depth ++;
-          names[depth] = key;
-          comment = CodeUtil.getComment4Request(tableList, names[depth], key, null);
-        }
-        else if (line.endsWith('}') || line.endsWith(']')) {
+        line = line.trim();
+        if (line.endsWith('}')) {
           depth --;
+          continue;
+        }
+        else if (key == '') { //[ 1, \n 2, \n 3] 跳过
+          continue;
         }
         else { //其它，直接在后面加上注释
-          value = line.substring(index + 2);
-          comment = CodeUtil.getComment4Request(tableList, names[depth], key, value);
+          var isArray = line.endsWith('[');
+          alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
+          comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key, isArray ? '' : line.substring(index + 2).trim());
         }
       }
 
-      //maxLength = maxLineLength - lines[i].length;
-      // if (maxLength >= 0 && comment.length > maxLength) {
-      //   comment = comment.substring(0, maxLength);
-      // }
       lines[i] += comment;
     }
 
@@ -742,17 +733,14 @@ var CodeUtil = {
 
 
   QUERY_TYPES: ['数据', '数量', '全部'],
-  REQUEST_ROLES: {
+  QUERY_TYPE_KEYS: [0, 1, 2],
+  REQUEST_ROLE_KEYS: ['UNKNOWN', 'LOGIN', 'CONTACT', 'CIRCLE', 'OWNER', 'ADMIN'],
+  REQUEST_ROLE: {
     UNKNOWN: '未登录',
-
     LOGIN: '已登录',
-
     CONTACT: '联系人',
-
     CIRCLE: '圈子成员',
-
     OWNER: '拥有者',
-
     ADMIN: '管理员'
   },
 
@@ -763,6 +751,8 @@ var CodeUtil = {
    * @param value
    */
   getComment4Request: function (tableList, name, key, value) {
+    alert('name = ' + name + '; key = ' + key + '; value = ' + value);
+
     if (key == null) {
       return '';
     }
@@ -783,50 +773,59 @@ var CodeUtil = {
     if (JSONObject.isArrayKey(name)) {
       switch (key) {
         case 'count':
-          return CodeUtil.getComment('最多数量', false, '  ');
+          return CodeUtil.getType4Request(value) != 'number' ? ' ! value必须是Number类型！' : CodeUtil.getComment('最多数量', false, '  ');
         case 'page':
-          return CodeUtil.getComment('分页页码', false, '  ');
-        case 'query':
-          value = Number(value)
-          if (value < 0 || value > 2) {
-            value = 0;
+          if (CodeUtil.getType4Request(value) != 'number') {
+            return ' ! value必须是Number类型！';
           }
-          return CodeUtil.getComment('查询内容：' + (CodeUtil.QUERY_TYPES[value]), false, '  ');
+          return value < 0 ? ' ! 必须 >= 0 ！' : CodeUtil.getComment('分页页码', false, '  ');
+        case 'query':
+          var query = CodeUtil.QUERY_TYPES[value];
+          return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：' + query, false, '  ');
       }
-      return CodeUtil.getComment('自定义关键词', false, '  ');
+      return '';
     }
 
     if (JSONObject.isTableKey(name)) {
       if (key.startsWith('@')) {
         switch (key) {
           case '@column':
-            return CodeUtil.getComment('返回字段', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段', false, '  ');
           case '@order':
-            return CodeUtil.getComment('排序方式，+升序，-降序', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('排序方式，+升序，-降序', false, '  ');
           case '@group':
-            return CodeUtil.getComment('分组方式', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式', false, '  ');
           case '@having':
-            return CodeUtil.getComment('SQL函数', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('SQL函数', false, '  ');
           case '@schema':
-            return CodeUtil.getComment('数据库', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('数据库', false, '  ');
           case '@correct':
-            return CodeUtil.getComment('字段校正', false, '  ');
+            return value != null ? ' ! value必须是Object类型！' : CodeUtil.getComment('字段校正', false, '  ');
           case '@role':
-            return CodeUtil.getComment('登录角色：' + CodeUtil.REQUEST_ROLES[value.toLowerCase()], false, '  ');
+            try {
+              value = value.substring(1, value.length - 1).toUpperCase();
+            } catch (e) {}
+            var role = CodeUtil.REQUEST_ROLE[value];
+            return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.REQUEST_ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('登录角色：' + role, false, '  ');
         }
         return '';
       }
       return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, name, key), false, '  ');
     }
 
+    alert('name = ' + name + '; key = ' + key);
     if (StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
-          return '请求密钥';
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('请求密钥', false, '  ');
         case 'version':
-          return '版本号';
+          return CodeUtil.getType4Request(value) != 'number' ? ' ! value必须是Number类型！' : CodeUtil.getComment('版本号', false, '  ');
         case '@role':
-          return '默认角色：' + CodeUtil.REQUEST_ROLES[value.toLowerCase()];
+          try {
+            value = value.substring(1, value.length - 1).toUpperCase();
+          } catch (e) {}
+          var role = CodeUtil.REQUEST_ROLE[value];
+          return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.REQUEST_ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('默认角色：' + role, false, '  ');
       }
     }
 
@@ -885,6 +884,10 @@ var CodeUtil = {
     }
 
     return '';
+  },
+
+  getType4Request: function (value) {
+    return typeof JSON.parse(value);
   }
 
 }
