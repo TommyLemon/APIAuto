@@ -764,7 +764,8 @@ var CodeUtil = {
       }
       if (JSONObject.isTableKey(key)) {
         var objName = JSONResponse.getSimpleName(key);
-        return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, objName, null), false, '  ');
+        var c = CodeUtil.getCommentFromDoc(tableList, objName, null);
+        return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(c, false, '  ');
       }
 
       return '';
@@ -810,7 +811,8 @@ var CodeUtil = {
         }
         return '';
       }
-      return CodeUtil.getComment(CodeUtil.getCommentFromDoc(tableList, name, key), false, '  ');
+      var c = CodeUtil.getCommentFromDoc(tableList, name, key);
+      return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 
     // alert('name = ' + name + '; key = ' + key);
