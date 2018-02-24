@@ -761,17 +761,31 @@ var CodeUtil = {
     }
 
     if (value == null || value instanceof Object) {
+
       if (JSONObject.isArrayKey(key)) {
         if (method != 'GET') {
           return ' ! key[]:{}只支持GET方法！';
         }
-        var arrName = JSONResponse.getSimpleName(key.substring(0, key.lastIndexOf('[]')));
-        return CodeUtil.getComment('数组' + (JSONObject.isTableKey(arrName) ? '，提取' + arrName : ''), false, '  ');
+
+        key = key.substring(0, key.lastIndexOf('[]'));
+
+        var aliaIndex = key.indexOf(':');
+        var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+        var alias = aliaIndex < 0 ? '' : key.substring(aliaIndex + 1, key.length);
+
+        var firstIndex = objName.indexOf('-');
+        var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+        alias = alias.length <= 0 ? '' : '新建别名: ' + alias + ' < ';
+        return CodeUtil.getComment((JSONObject.isTableKey(firstKey) ? '提取' + objName + ' < ' : '') + alias + '数组', false, '  ');
       }
-      if (JSONObject.isTableKey(key)) {
-        var objName = JSONResponse.getSimpleName(key);
+
+      var aliaIndex = key.indexOf(':');
+      var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+      if (JSONObject.isTableKey(objName)) {
         var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method);
-        return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(c, false, '  ');
+        return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(
+          (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length) + ' < ' + objName + ': ') + c, false, '  ');
       }
 
       return '';
