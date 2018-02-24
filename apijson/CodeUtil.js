@@ -760,7 +760,7 @@ var CodeUtil = {
     if (value == null || value instanceof Object) {
       if (JSONObject.isArrayKey(key)) {
         var arrName = JSONResponse.getSimpleName(key.substring(0, key.lastIndexOf('[]')));
-        return CodeUtil.getComment('数组' + (JSONObject.isTableKey(arrName) ? '，去除' + arrName + '包装' : ''), false, '  ');
+        return CodeUtil.getComment('数组' + (JSONObject.isTableKey(arrName) ? '，提取' + arrName : ''), false, '  ');
       }
       if (JSONObject.isTableKey(key)) {
         var objName = JSONResponse.getSimpleName(key);
@@ -843,46 +843,47 @@ var CodeUtil = {
   getCommentFromDoc: function (tableList, tableName, columnName) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; tableList = \n' + JSON.stringify(tableList));
 
-    if (tableList != null) {
-      var item;
+    if (tableList == null || tableList.length <= 0) {
+      return '...';
+    }
 
-      var table;
-      var columnList;
-      var column;
-      for (var i = 0; i < tableList.length; i++) {
-        item = tableList[i];
+    var item;
 
-        //Table
-        table = item == null ? null : item.Table;
-        if (table == null || tableName != CodeUtil.getModelName(table.TABLE_NAME)) {
-          continue;
-        }
-        log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+    var table;
+    var columnList;
+    var column;
+    for (var i = 0; i < tableList.length; i++) {
+      item = tableList[i];
 
-        if (StringUtil.isEmpty(columnName)) {
-          return table.TABLE_COMMENT;
-        }
+      //Table
+      table = item == null ? null : item.Table;
+      if (table == null || tableName != CodeUtil.getModelName(table.TABLE_NAME)) {
+        continue;
+      }
+      log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
-        columnList = item['Column[]'];
-        if (columnList == null) {
-          continue;
-        }
-        log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
-
-        var name;
-        for (var j = 0; j < columnList.length; j++) {
-          column = columnList[j];
-          name = column == null ? null : column.COLUMN_NAME;
-          if (name == null || columnName != name) {
-            continue;
-          }
-
-          return column.COLUMN_COMMENT;
-        }
-
-        break;
+      if (StringUtil.isEmpty(columnName)) {
+        return table.TABLE_COMMENT;
       }
 
+      columnList = item['Column[]'];
+      if (columnList == null) {
+        continue;
+      }
+      log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+      var name;
+      for (var j = 0; j < columnList.length; j++) {
+        column = columnList[j];
+        name = column == null ? null : column.COLUMN_NAME;
+        if (name == null || columnName != name) {
+          continue;
+        }
+
+        return column.COLUMN_COMMENT;
+      }
+
+      break;
     }
 
     return '';
