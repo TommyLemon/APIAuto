@@ -91,7 +91,7 @@
         </li>
       </ul>
       <div v-show="! isRemoteShow" style="width: 100%;height: 100%;" >
-        <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen" wrap="off" disabled>
+        <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
         </textarea>
         <textarea id="vInput" @keyup="onChange(true)"style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
         {
@@ -347,6 +347,7 @@
 <!-- 必须在main.js前 TODO 可能有冲突，代码写入vue文件？ <<<<<<<<<<<<<<<< -->
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/StringUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/RequestMethod.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONObject.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONRequest.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONResponse.js" ></script>

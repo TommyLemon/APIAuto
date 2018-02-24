@@ -708,7 +708,7 @@
           App.showDoc()
 
           try {
-            vComment.value = isSingle ? '' : CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'])
+            vComment.value = isSingle ? '' : CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'], App.getMethod())
           } catch (e) {
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }

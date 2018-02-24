@@ -24,10 +24,12 @@ var CodeUtil = {
    * @param tableList
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
+    method = method == null ? 'GET' : method.toUpperCase();
+
 
     var lines = reqStr.split('\n');
     var line;
@@ -50,7 +52,7 @@ var CodeUtil = {
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
         depth ++;
         names[depth] = key;
-        comment = CodeUtil.getComment4Request(tableList, null, key, null);
+        comment = CodeUtil.getComment4Request(tableList, null, key, null, method);
       }
       else {
         if (line.endsWith(',')) {
@@ -67,7 +69,8 @@ var CodeUtil = {
         else { //其它，直接在后面加上注释
           var isArray = line.endsWith('[');
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-          comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key, isArray ? '' : line.substring(index + 2).trim());
+          comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
+            , isArray ? '' : line.substring(index + 2).trim(), method);
         }
       }
 
@@ -750,8 +753,8 @@ var CodeUtil = {
    * @param key
    * @param value
    */
-  getComment4Request: function (tableList, name, key, value) {
-    // alert('name = ' + name + '; key = ' + key + '; value = ' + value);
+  getComment4Request: function (tableList, name, key, value, method) {
+    // alert('name = ' + name + '; key = ' + key + '; value = ' + value + '; method = ' + method);
 
     if (key == null) {
       return '';
@@ -759,12 +762,15 @@ var CodeUtil = {
 
     if (value == null || value instanceof Object) {
       if (JSONObject.isArrayKey(key)) {
+        if (method != 'GET') {
+          return ' ! key[]:{}只支持GET方法！';
+        }
         var arrName = JSONResponse.getSimpleName(key.substring(0, key.lastIndexOf('[]')));
         return CodeUtil.getComment('数组' + (JSONObject.isTableKey(arrName) ? '，提取' + arrName : ''), false, '  ');
       }
       if (JSONObject.isTableKey(key)) {
         var objName = JSONResponse.getSimpleName(key);
-        var c = CodeUtil.getCommentFromDoc(tableList, objName, null);
+        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method);
         return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(c, false, '  ');
       }
 
@@ -811,7 +817,7 @@ var CodeUtil = {
         }
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, name, key);
+      var c = CodeUtil.getCommentFromDoc(tableList, name, key, method);
       return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 
@@ -838,10 +844,11 @@ var CodeUtil = {
    * @param tableList
    * @param tableName
    * @param columnName
+   * @param method
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName) {
-    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; tableList = \n' + JSON.stringify(tableList));
+  getCommentFromDoc: function (tableList, tableName, columnName, method) {
+    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; method = ' + method + '; tableList = \n' + JSON.stringify(tableList));
 
     if (tableList == null || tableList.length <= 0) {
       return '...';
@@ -899,16 +906,18 @@ var CodeUtil = {
         key = columnName.substring(0, columnName.length - 2);
       }
       else if (columnName.endsWith("+")) {//延长，PUT查询时处理
-        //if (method == PUT) {//不为PUT就抛异常
-        fun = '增加 或 扩展	';
+        if (method != 'PUT') {//不为PUT就抛异常
+          return ' ! 功能符 + - 只能用于PUT请求！';
+        }
+        fun = '增加/扩展';
         key = columnName.substring(0, columnName.length - 1);
-        //}
       }
       else if (columnName.endsWith("-")) {//缩减，PUT查询时处理
-        //if (method == PUT) {//不为PUT就抛异常
-        fun = '减少 或 去除';
+        if (method != 'PUT') {//不为PUT就抛异常
+          return ' ! 功能符 + - 只能用于PUT请求！';
+        }
+        fun = '减少/去除';
         key = columnName.substring(0, columnName.length - 1);
-        //}
       }
       else {
         fun = '';
@@ -916,21 +925,31 @@ var CodeUtil = {
       }
 
 
-      var logic = '';
-      //if (RequestMethod.isQueryMethod(method)) {//逻辑运算符仅供GET,HEAD方法使用
+      var logic;
       if (key.endsWith("&")) {
+        if (fun.length <= 0) {
+          return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
+        }
         logic = '符合全部';
       }
       else if (key.endsWith("|")) {
+        if (fun.length <= 0) {
+          return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
+        }
         logic = '符合任意';
       }
       else if (key.endsWith("!")) {
         logic = '都不符合';
       }
-      else {}
-      //}
+      else {
+        logic = '';
+      }
+
 
       if (logic.length > 0) {
+        if (method != 'GET' && method != 'HEAD' && method != 'GETS' && method != 'HEADS') {//逻辑运算符仅供GET,HEAD方法使用
+          return ' ! 逻辑运算符 & | ! 只能用于查询(GET,HEAD,GETS,HEADS)请求！';
+        }
         key = key.substring(0, key.length - 1);
       }
 
@@ -955,9 +974,9 @@ var CodeUtil = {
           continue;
         }
 
-        var p = (at.length <= 0 ? '' : at + ' > ')
-          + (fun.length <= 0 ? '' : fun + ' > ')
-          + (logic.length <= 0 ? '' : logic + ' > ');
+        var p = (at.length <= 0 ? '' : at + ' < ')
+          + (fun.length <= 0 ? '' : fun + ' < ')
+          + (logic.length <= 0 ? '' : logic + ' < ');
         return (p.length <= 0 ? '' : p + key + ': ') + column.COLUMN_COMMENT;
       }
 
