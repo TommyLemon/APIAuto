@@ -62,6 +62,14 @@ var StringUtil = {
     return false;
   },
 
+  /**判断是否为代码名称，只能包含字母，数字或下划线
+   * @param s
+   * @return
+   */
+  isName(s) {
+    return s != null && /^[0-9a-zA-Z_]+$/.test(s);
+  },
+
 
   /**添加后缀
    * @param key

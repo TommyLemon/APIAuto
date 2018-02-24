@@ -866,6 +866,71 @@ var CodeUtil = {
         return table.TABLE_COMMENT;
       }
 
+      if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
+        return '远程函数';
+      }
+
+      var prefix;
+      var at = '';
+      var key;
+
+      if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
+        at = '引用赋值';
+        columnName = columnName.substring(0, columnName.length - 1);
+      }
+
+      if (columnName.endsWith("$")) {//搜索，查询时处理
+        prefix = '模糊搜索';
+        key = columnName.substring(0, columnName.length - 1);
+      }
+      else if (columnName.endsWith("?")) {//匹配正则表达式，查询时处理
+        prefix = '正则匹配';
+        key = columnName.substring(0, columnName.length - 1);
+      }
+      else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理
+        prefix = '匹配 选项/条件';
+        key = columnName.substring(0, columnName.length - 2);
+      }
+      else if (columnName.endsWith("<>")) {//包含，或者说value处于key对应值的范围内。查询时处理
+        prefix = '包含选项';
+        key = columnName.substring(0, columnName.length - 2);
+      }
+      else if (columnName.endsWith("+")) {//延长，PUT查询时处理
+        //if (method == PUT) {//不为PUT就抛异常
+        prefix = '增加 或 扩展	';
+        key = columnName.substring(0, columnName.length - 1);
+        //}
+      }
+      else if (columnName.endsWith("-")) {//缩减，PUT查询时处理
+        //if (method == PUT) {//不为PUT就抛异常
+        prefix = '减少 或 去除';
+        key = columnName.substring(0, columnName.length - 1);
+        //}
+      }
+      else {
+        prefix = '';
+        key = new String(columnName);
+      }
+
+
+      var last = null;//不用Logic优化代码，否则 key 可能变为 key| 导致 key=value 变成 key|=value 而出错
+      //if (RequestMethod.isQueryMethod(method)) {//逻辑运算符仅供GET,HEAD方法使用
+      last = key.length <= 0 ? "" : key.substring(key.length - 1);
+      if ("&" == last || "|" == last || "!" == last) {
+        key = key.substring(0, key.length - 1);
+      } else {
+        last = null;//避免key + StringUtil.getString(last)错误延长
+      }
+      //}
+
+      if (StringUtil.isName(key) == false) {
+        return ' ! 字符' + key + '不合法！';
+      }
+
+
+
+
+
       columnList = item['Column[]'];
       if (columnList == null) {
         continue;
@@ -876,11 +941,12 @@ var CodeUtil = {
       for (var j = 0; j < columnList.length; j++) {
         column = columnList[j];
         name = column == null ? null : column.COLUMN_NAME;
-        if (name == null || columnName != name) {
+        if (name == null || key != name) {
           continue;
         }
 
-        return column.COLUMN_COMMENT;
+        var p = (at.length <= 0 ? '' : at + ' > ') + (prefix.length <= 0 ? '' : prefix + ' > ');
+        return (p.length <= 0 ? '' : p + key + ': ') + column.COLUMN_COMMENT;
       }
 
       break;
