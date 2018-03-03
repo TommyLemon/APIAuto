@@ -839,8 +839,14 @@ var CodeUtil = {
     if (StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
+          if (method == 'GET' || method == 'HEAD') {
+            return '';
+          }
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('请求密钥', false, '  ');
         case 'version':
+          if (method == 'GET' || method == 'HEAD') {
+            return '';
+          }
           return CodeUtil.getType4Request(value) != 'number' ? ' ! value必须是Number类型！' : CodeUtil.getComment('版本号', false, '  ');
         case '@role':
           try {
