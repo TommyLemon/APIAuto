@@ -991,7 +991,7 @@ var CodeUtil = {
         var p = (at.length <= 0 ? '' : at + ' < ')
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
-        return (p.length <= 0 ? '' : p + key + ': ') + column.COLUMN_COMMENT;
+        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.COLUMN_TYPE, true) + ', ' + column.COLUMN_COMMENT;
       }
 
       break;
