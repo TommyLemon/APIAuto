@@ -129,7 +129,7 @@
       historys: [],
       history: {name: '请求0'},
       remotes: [],
-      testList: [],
+      tests: [],
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
@@ -1172,29 +1172,53 @@
        2.逐个发送请求
        3.对比同一用例的先后两次请求结果，如果不一致，就在列表中标记对应的用例(× 蓝黄红色下载(点击下载两个文件) √)。
        4.如果这次请求结果正确，就把请求结果保存到和公司开发环境服务器的APIJSON Server，并取消标记
+
+       compare: 新的请求与上次请求的对比结果
+       0-相同，无颜色；
+       1-对象新增字段或数组新增值，绿色；
+       2-值改变，蓝色；
+       3-对象缺少字段，黄色；
+       4-类型改变，红色；
        */
       test: function () {
         var baseUrl = App.getBaseUrl()
-        var testList = App.testList || []
         var list = App.remotes || []
         var item
+        alert('test  list.length = ' + list.length)
         for (var i = 0; i < list.length; i ++) {
           item = list[i]
           if (item == null || item.name == null) {
             continue
           }
+          if (item.userId != App.User.id || item.url == '/logout') {
+            console.log('test  item.userId != User.id || item.url == /logout >> continue')
+            continue
+          }
+          console.log('test  item = ' + JSON.stringify(item, null, '  '))
+
           App.restore(item)
           App.onChange(false)
-          App.request(baseUrl + item.url, item.request, function (url, res, err) {
-            App.onResponse(url, res, err)
 
-            if (res.data != item.response) {
-              item.compare = 4
-              alert('res.data != item.response')
+          const index = i; //请求异步
+          App.request(baseUrl + item.url, JSON.parse(item.request), function (url, res, err) {
+            App.onResponse(url, res, err)
+            console.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+
+            var response = JSON.stringify(res.data)
+
+            var it = list[index] //请求异步
+            it.compare = it.response == response ? 0 : 4
+            console.log('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
+            if (it.compare > 0) {
+              alert('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare
+                + '; it.response = \n' + it.response
+                + '\n\n\n res.data = \n' + response
+              )
             }
 
-            testList.push(res.data)
-            App.testList = testList
+            var tests = App.tests || {}
+            tests[it.id] = response
+            App.tests = tests
             App.isRemoteShow = true
           })
         }
@@ -1206,14 +1230,51 @@
 
       handleTest: function (right, index, item) {
         if (right) {
-          var testList = App.testList || []
-          item.response = testList[index]
+          var tests = App.tests || {}
+          item.response = tests[item.id]
         }
         item.compare = 0
-        var list = App.remotes || []
-        list[index] = item
+        Vue.set(App.remotes, index, item);
+
+        if (right) {
+          var baseUrl = App.getBaseUrl()
+          vUrl.value = baseUrl + '/put'
+
+          vInput.value = JSON.stringify({
+            Document: {
+              id: item.id,
+              response: item.response
+            },
+            tag: 'Document'
+          })
+
+          App.showRemote(false)
+          App.onChange(false)
+          App.send(function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            var rpObj = res.data
+            if (rpObj != null && rpObj.code === 200) {
+              App.showRemote(true)
+
+              App.request(baseUrl + '/post', {
+                  TestRecord: {
+                    userId: App.User.id, //TODO 权限问题？ item.userId,
+                    documentId: item.id,
+                    response: item.response
+                  },
+                  tag: 'TestRecord'
+                },
+                function (url, res, err) {}
+              )
+
+            }
+
+          })
+
+        }
       }
-      // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     },
     watch: {
