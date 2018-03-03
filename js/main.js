@@ -129,6 +129,7 @@
       historys: [],
       history: {name: '请求0'},
       remotes: [],
+      testList: [],
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
@@ -1163,6 +1164,54 @@
           doc += '\n```json\n' + JSON.stringify(JSON.parse(item.request), null, '    ') + '\n```\n'
         }
         return doc
+      },
+
+      /**回归测试
+       * 原理：
+       1.遍历所有上传过的测试用例（URL+请求JSON）
+       2.逐个发送请求
+       3.对比同一用例的先后两次请求结果，如果不一致，就在列表中标记对应的用例(× 蓝黄红色下载(点击下载两个文件) √)。
+       4.如果这次请求结果正确，就把请求结果保存到和公司开发环境服务器的APIJSON Server，并取消标记
+       */
+      test: function () {
+        var baseUrl = App.getBaseUrl()
+        var testList = App.testList || []
+        var list = App.remotes || []
+        var item
+        for (var i = 0; i < list.length; i ++) {
+          item = list[i]
+          if (item == null || item.name == null) {
+            continue
+          }
+          App.restore(item)
+          App.onChange(false)
+          App.request(baseUrl + item.url, item.request, function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            if (res.data != item.response) {
+              item.compare = 4
+              alert('res.data != item.response')
+            }
+
+            testList.push(res.data)
+            App.testList = testList
+            App.isRemoteShow = true
+          })
+        }
+      },
+
+      downloadTest: function (index, item) {
+
+      },
+
+      handleTest: function (right, index, item) {
+        if (right) {
+          var testList = App.testList || []
+          item.response = testList[index]
+        }
+        item.compare = 0
+        var list = App.remotes || []
+        list[index] = item
       }
       // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
