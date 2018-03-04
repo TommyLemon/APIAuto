@@ -1181,10 +1181,13 @@
        4-类型改变，红色；
        */
       test: function () {
-        var baseUrl = App.getBaseUrl()
         var list = App.remotes || []
+        if (list.length <= 0) {
+          alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
+          return
+        }
+        var baseUrl = App.getBaseUrl()
         var item
-        alert('test  list.length = ' + list.length)
         for (var i = 0; i < list.length; i ++) {
           item = list[i]
           if (item == null || item.name == null) {
