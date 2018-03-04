@@ -1195,7 +1195,8 @@
           if (item == null || item.name == null) {
             continue
           }
-          if (item.url == '/logout') {// || item.userId != App.User.id) {
+          //TODO 加了会因为增删改导致查询变化 if (item.url == '/logout') {// || item.userId != App.User.id) {
+          if (item.userId != App.User.id || (item.url != '/get' && item.url != '/gets' && item.url != '/head' && item.url != '/heads')) {
             console.log('test  item.userId != User.id || item.url == /logout >> continue')
             continue
           }
