@@ -1224,10 +1224,40 @@
         }
       },
 
+      /**
+       * @param index
+       * @param item
+       */
       downloadTest: function (index, item) {
+        saveTextAs(
+          '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
+          + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+          + '\nResponse: \n' + JSON.stringify(JSON.parse(item.response), null, '    ')
+          , 'APIJSON自动化回归测试-前.txt'
+        )
+
+        /**
+         * 浏览器不允许连续下载，saveTextAs也没有回调。
+         * 在第一个文本里加上第二个文本的信息？
+         * beyond compare会把第一个文件的后面一段与第二个文件匹配，
+         * 导致必须先删除第一个文件内的后面与第二个文件重复的一段，再重新对比。
+         */
+        setTimeout(function () {
+          var tests = App.tests || {}
+          saveTextAs(
+            '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
+            + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+            + '\nResponse: \n' + JSON.stringify(JSON.parse(tests[item.id]), null, '    ')
+            , 'APIJSON自动化回归测试-后.txt'
+          )
+        }, 5000)
 
       },
 
+      /**
+       * @param index
+       * @param item
+       */
       handleTest: function (right, index, item) {
         if (right) {
           var tests = App.tests || {}
