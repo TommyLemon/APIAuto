@@ -130,6 +130,7 @@
       history: {name: '请求0'},
       remotes: [],
       tests: [],
+      testProcess: '',
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
@@ -1181,48 +1182,56 @@
        4-类型改变，红色；
        */
       test: function () {
-        var list = App.remotes || []
-        if (list.length <= 0) {
+        const list = App.remotes || []
+        const allCount = list.length - 1
+        App.testProcess = allCount <= 0 ? '' : '正在测试: ' + 0 + '/' + allCount
+        if (allCount <= 0) {
           alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
           return
         }
         var baseUrl = App.getBaseUrl()
-        var item
         for (var i = 0; i < list.length; i ++) {
-          item = list[i]
+          const item = list[i]
           if (item == null || item.name == null) {
             continue
           }
-          if (item.userId != App.User.id || item.url == '/logout') {
+          if (item.url == '/logout') {// || item.userId != App.User.id) {
             console.log('test  item.userId != User.id || item.url == /logout >> continue')
             continue
           }
           console.log('test  item = ' + JSON.stringify(item, null, '  '))
 
-          App.restore(item)
-          App.onChange(false)
+          // App.restore(item)
+          // App.onChange(false)
 
           const index = i; //请求异步
           App.request(baseUrl + item.url, JSON.parse(item.request), function (url, res, err) {
-            App.onResponse(url, res, err)
-            console.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            var response = ''
+            try {
+              App.onResponse(url, res, err)
+              console.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            } catch (e) {
+              console.log('test  App.request >> } catch (e) {\n' + e.message)
+            }
+            response = JSON.stringify(res.data || {})
 
-            var response = JSON.stringify(res.data)
-
-            var it = list[index] //请求异步
+            var it = item || {} //请求异步
             it.compare = it.response == response ? 0 : 4
             console.log('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
-            if (it.compare > 0) {
-              alert('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare
-                + '; it.response = \n' + it.response
-                + '\n\n\n res.data = \n' + response
-              )
-            }
+            // if (it.compare > 0) {
+            //   alert('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare
+            //     + '; it.response = \n' + it.response
+            //     + '\n\n\n res.data = \n' + response
+            //   )
+            // }
+
+            App.testProcess = index <= allCount ? '' : '正在测试: ' + index + '/' + allCount
 
             var tests = App.tests || {}
             tests[it.id] = response
             App.tests = tests
-            App.isRemoteShow = true
+            // App.showRemote(true)
+
           })
         }
       },
