@@ -1182,6 +1182,15 @@
        4-类型改变，红色；
        */
       test: function () {
+        var baseUrl = App.getBaseUrl() || ''
+        if (baseUrl == '') {
+          alert('请先输入有效的URL！')
+          return
+        }
+        if (baseUrl.indexOf('/apijson.cn') >= 0 || baseUrl.indexOf('/39.108.143.172') >= 0) {
+          alert('请把URL改成你自己的！')
+          return
+        }
         const list = App.remotes || []
         const allCount = list.length - 1
         App.testProcess = allCount <= 0 ? '' : '正在测试: ' + 0 + '/' + allCount
@@ -1189,7 +1198,7 @@
           alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
           return
         }
-        var baseUrl = App.getBaseUrl()
+
         for (var i = 0; i < list.length; i ++) {
           const item = list[i]
           if (item == null || item.name == null) {
