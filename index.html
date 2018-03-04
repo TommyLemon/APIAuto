@@ -382,7 +382,7 @@
   var vTransfer = document.getElementById("vTransfer");
   var vSend = document.getElementById("vSend");
 
-  vUrl.value = new String(URL_GET); //main.js里访问不到，可能是script引用顺序问题
+  vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 
   var vMarkdown = document.getElementById('vMarkdown');
 

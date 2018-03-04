@@ -256,11 +256,13 @@
       //设置基地址
       setBaseUrl: function () {
         // 重新拉取文档
-        if (baseUrl != this.getBaseUrl()) {
-          baseUrl = this.getBaseUrl();
+        var bu = this.getBaseUrl()
+        if (baseUrl != bu) {
+          baseUrl = bu;
           doc = null
           this.User = this.getCache(baseUrl, 'User') || {}
           this.remotes = []
+          this.saveCache('', 'URL_BASE', baseUrl)
         }
       },
       //获取基地址
@@ -1347,6 +1349,17 @@
       }
     },
     created () {
+      try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
+        var url = this.getCache('', 'URL_BASE')
+        if (StringUtil.isEmpty(url, true) == false) {
+          URL_BASE = url
+        }
+      } catch (e) {
+        console.log('created  try { ' +
+          '\nURL_BASE = this.getCache(, URL_BASE)' +
+          '\n} catch (e) {\n' + e.message)
+      }
+      //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
       this.transfer()
     }
