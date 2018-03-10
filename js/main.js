@@ -892,7 +892,9 @@
           return false;
         }
         doc = d;
-        vOutput.value += ('\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d);
+        vOutput.value += (
+          '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) \n APIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) \n\n'
+        + '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d);
 
         App.view = 'markdown';
         markdownToHTML(vOutput.value);
