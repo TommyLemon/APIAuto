@@ -823,18 +823,18 @@
             }
 
             if (callback != null) {
-              callback(url, res, null)
+              callback(url, res || {}, null)
               return
             }
-            App.onResponse(url, res, null)
+            App.onResponse(url, res || {}, null)
           })
           .catch(function (err) {
             log('send >> error:\n' + err)
             if (callback != null) {
-              callback(url, null, err)
+              callback(url, {}, err)
               return
             }
-            App.onResponse(url, null, err)
+            App.onResponse(url, {}, err)
           })
       },
 
@@ -1273,7 +1273,7 @@
         saveTextAs(
           '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
           + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-          + '\nResponse: \n' + JSON.stringify(JSON.parse(item.response), null, '    ')
+          + '\nResponse: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
           , 'APIJSON自动化回归测试-前.txt'
         )
 
@@ -1288,7 +1288,7 @@
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
             + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-            + '\nResponse: \n' + JSON.stringify(JSON.parse(tests[item.id]), null, '    ')
+            + '\nResponse: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
             , 'APIJSON自动化回归测试-后.txt'
           )
         }, 5000)

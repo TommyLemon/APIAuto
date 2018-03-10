@@ -95,8 +95,8 @@
       <ul v-show="isRemoteShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
         <li v-for="(item, index) in remotes" >
           <a href="javascript:void(0)" @click="restore(item)" > {{(item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url}}</a>
-          <div :style="{ background: item.compareColor }" v-show="item.compare != null && item.compare > 0" style="position: absolute;right: 30px;display: inline-block;">
-            <button @click="handleTest(false, index, item)" style="position: relative;color: red">错误，已解决</button>
+          <div :style="{ background: item.compareColor }" v-show="item.compare != null && item.compare != 0" style="position: absolute;right: 30px;display: inline-block;">
+            <button v-show="item.compare != null && item.compare > 0" @click="handleTest(false, index, item)" style="position: relative;color: red">错误，已解决</button>
             <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
               <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
