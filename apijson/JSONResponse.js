@@ -160,7 +160,125 @@ var JSONResponse = {
       fullName = fullName.substring(index + 1);
     }
     return fullName;
+  },
+
+
+
+  COMPARE_NO_STANDARD: -1,
+  COMPARE_EQUAL: 0,
+  COMPARE_KEY_MORE: 1,
+  COMPARE_VALUE_CHANGE: 2,
+  COMPARE_KEY_LESS: 3,
+  COMPARE_TYPE_CHANGE: 4,
+  COMPARE_NUMBER_TYPE_CHANGE: 3,
+  COMPARE_CODE_CHANGE: 4,
+
+  /**测试compare: 对比 新的请求与上次请求的结果
+   0-相同，无颜色；
+   1-对象新增字段或数组新增值，绿色；
+   2-值改变，蓝色；
+   3-对象缺少字段/整数变小数，黄色；
+   4-类型/code改变，红色；
+   */
+  compareResponse: function(target, real) {
+    if (target == null || target.code == null) {
+      return JSONResponse.COMPARE_NO_STANDARD; //未上传对比标准（正确的结果）
+    }
+    if (target.code != real.code) {
+      return JSONResponse.COMPARE_CODE_CHANGE;
+    }
+
+    delete target.code;
+    delete real.code;
+
+    delete target.message;
+    delete real.message;
+
+    return JSONResponse.compare(target, real);
+  },
+
+  /**测试compare: 对比 新的请求与上次请求的结果
+   0-相同，无颜色；
+   1-对象新增字段或数组新增值，绿色；
+   2-值改变，蓝色；
+   3-对象缺少字段/整数变小数，黄色；
+   4-类型/success/errCode改变，红色；
+   */
+  compare: function(target, real) {
+    if (target == null) {
+      return real == null ? JSONResponse.COMPARE_EQUAL : JSONResponse.COMPARE_KEY_MORE;
+    }
+    if (real == null) { //少了key
+      return JSONResponse.COMPARE_KEY_LESS;
+    }
+
+    var type = typeof target;
+    if (type != typeof real) { //类型改变
+      return JSONResponse.COMPARE_TYPE_CHANGE;
+    }
+
+    var max = JSONResponse.COMPARE_EQUAL;
+    var each = JSONResponse.COMPARE_EQUAL;
+    if (target instanceof Array) { // JSONArray
+      if (target.length != real.length) {
+        max = JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+
+      var length = Math.min(target.length, real.length); //多或少都不影响
+
+      //TODO 需要把所有值合并，得到最全的，至于类型，Java是很稳定的，同样的key在所有Object的type都相同。
+      for (var i = 0; i < length; i++) { //遍历并递归下一层
+        each = JSONResponse.compare(target[i], real[i]);
+        if (max < each) {
+          max = each;
+        }
+        if (max >= JSONResponse.COMPARE_TYPE_CHANGE) {
+          break;
+        }
+      }
+    }
+    else if (target instanceof Object) { // JSONObject
+      var tks = Object.keys(target);
+      var key;
+      for (var i = 0; i< tks.length; i++) { //遍历并递归下一层
+        key = tks[i];
+        if (key == null) {
+          continue;
+        }
+
+        each = JSONResponse.compare(target[key], real[key]);
+        if (max < each) {
+          max = each;
+        }
+        if (max >= JSONResponse.COMPARE_TYPE_CHANGE) {
+          break;
+        }
+      }
+
+
+      if (max < JSONResponse.COMPARE_KEY_MORE) { //多出key
+        for (var k in real) {
+          if (k != null && tks.indexOf(k) < 0) {
+            max = JSONResponse.COMPARE_KEY_MORE;
+          }
+        }
+      }
+    }
+    else { // Boolean, Number, String
+      if (type == 'number') { //数字类型由整数变为小数
+        if (String(target).indexOf('.') < 0 && String(real).indexOf('.') >= 0) {
+          return JSONResponse.COMPARE_NUMBER_TYPE_CHANGE;
+        }
+      }
+
+      if (target !== real) { //值不同
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+    }
+
+    return max;
   }
+
 
 
 }

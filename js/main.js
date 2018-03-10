@@ -131,6 +131,7 @@
       remotes: [],
       tests: [],
       testProcess: '',
+      compareColor: '#0000',
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
@@ -1183,7 +1184,7 @@
        1-对象新增字段或数组新增值，绿色；
        2-值改变，蓝色；
        3-对象缺少字段，黄色；
-       4-类型改变，红色；
+       4-类型/success/errCode改变，红色；
        */
       test: function () {
         var baseUrl = App.getBaseUrl() || ''
@@ -1230,7 +1231,7 @@
             response = JSON.stringify(res.data || {})
 
             var it = item || {} //请求异步
-            it.compare = it.response == response ? 0 : 4
+            it.compare = JSONResponse.compareResponse(it.response == null ? null : JSON.parse(it.response), res.data)
             console.log('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
             // if (it.compare > 0) {
             //   alert('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare
@@ -1238,6 +1239,20 @@
             //     + '\n\n\n res.data = \n' + response
             //   )
             // }
+            switch (it.compare) {
+              case JSONResponse.COMPARE_KEY_MORE:
+                it.compareColor = 'green'
+                break;
+              case JSONResponse.COMPARE_VALUE_CHANGE:
+                it.compareColor = 'blue'
+                break;
+              case JSONResponse.COMPARE_KEY_LESS:
+                it.compareColor = 'yellow'
+                break;
+              case JSONResponse.COMPARE_TYPE_CHANGE:
+                it.compareColor = 'red'
+                break;
+            }
 
             App.testProcess = index <= allCount ? '' : '正在测试: ' + index + '/' + allCount
 
