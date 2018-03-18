@@ -284,7 +284,7 @@
                   <div class="form-group">
                     <label for="vAccount">Account</label>
 
-                    <input id="vAccount" type="text" class="form-control" name="account" value="" required autofocus>
+                    <input id="vAccount" type="text" class="form-control" name="account" value="13000082001" required autofocus />
                   </div>
 
                   <div class="form-group">
@@ -293,20 +293,27 @@
                         {{ loginType == "login" ? "Forgot Password?" : "Remember Password?" }}
                       </a>
                     </label>
-                    <input id="vPassword" type="password" class="form-control" name="password" required data-eye>
+                    <input id="vPassword" type="password" class="form-control" name="password" value="123456" required data-eye />
+                  </div>
+
+                  <div class="form-group" v-show="loginType != 'login'">
+                    <label for="vVerify">Verify</label>
+
+                    <input id="vVerify" type="tel" class="form-control" name="verify" required />
                   </div>
 
                   <div class="form-group">
                     <label v-show="loginType == 'login'">
-                      <input type="checkbox" name="remember"> Remember Me
+                      <input type="checkbox" name="remember"/> Remember Me
                     </label>
                   </div>
 
                   <div class="form-group" style="margin-top: 30px">
-                    <button class="btn btn-primary btn-block" @click="login()">
+                    <button class="btn btn-primary btn-block" @click="confirm()">
                       Confirm
                     </button>
                   </div>
+
                   <div class="margin-top20 text-center" v-show="loginType != 'forget'">
                     {{ loginType == "login" ? "Don't have an account?" : "Already have an account?" }}
                     <a href="javascript:void(0)" @click="loginType = loginType == 'login' ? 'register' : 'login'">
@@ -446,8 +453,10 @@
   var vUrl = document.getElementById("vUrl");
   var vTransfer = document.getElementById("vTransfer");
   var vSend = document.getElementById("vSend");
+
   var vAccount = document.getElementById("vAccount");
   var vPassword = document.getElementById("vPassword");
+  var vVerify = document.getElementById("vVerify");
 
   vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 

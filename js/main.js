@@ -599,21 +599,33 @@
         return key == null ? cache : cache[key]
       },
 
+      /**登录确认
+       */
+      confirm: function () {
+        App.isLoginShow = false
+
+        switch (App.loginType) {
+          case 'login':
+            App.login()
+            break
+          case 'register':
+            App.register()
+            break
+          case 'resetPassword':
+            App.resetPassword()
+            break
+        }
+      },
 
       /**登录
        */
       login: function () {
-        App.isLoginShow = false
-
-        var account = vAccount.value
-        var password = vPassword.value
-
         vUrl.value = baseUrl + '/login'
         vInput.value = JSON.stringify(
           {
             type: 0, // 登录方式，非必须 0-密码 1-验证码
-            phone: account,
-            password: password,
+            phone: vAccount.value,
+            password: vPassword.value,
             version: 1 // 全局默认版本号，非必须
           },
           null, '    ')
@@ -634,6 +646,71 @@
 
             //保存User到缓存
             App.saveCache(App.getBaseUrl(), 'User', user)
+          }
+        })
+      },
+
+      /**注册
+       */
+      register: function () {
+        vUrl.value = baseUrl + '/register'
+        vInput.value = JSON.stringify(
+          {
+            Privacy: {
+              phone: vAccount.value,
+              _password: vPassword.value
+            },
+            User: {
+              name: 'APIJSONUser'
+            },
+            verify: vVerify.value
+          },
+          null, '    ')
+        App.showRemote(false)
+        App.onChange(false)
+        App.send(function (url, res, err) {
+          App.onResponse(url, res, err)
+
+          var rpObj = res.data
+
+          if (rpObj != null && rpObj.code === 200) {
+            alert('注册成功')
+
+            var privacy = rpObj.Privacy || {}
+
+            vAccount.value = privacy.phone
+            App.loginType = 'login'
+          }
+        })
+      },
+
+      /**重置密码
+       */
+      resetPassword: function () {
+        vUrl.value = baseUrl + ' /put/password'
+        vInput.value = JSON.stringify(
+          {
+            verify: vVerify.value,
+            Privacy: {
+              phone: vAccount.value,
+              _password: vPassword.value
+            }
+          },
+          null, '    ')
+        App.showRemote(false)
+        App.onChange(false)
+        App.send(function (url, res, err) {
+          App.onResponse(url, res, err)
+
+          var rpObj = res.data
+
+          if (rpObj != null && rpObj.code === 200) {
+            alert('重置密码成功')
+
+            var privacy = rpObj.Privacy || {}
+
+            vAccount.value = privacy.phone
+            App.loginType = 'login'
           }
         })
       },
