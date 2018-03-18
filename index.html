@@ -5,6 +5,12 @@
   <meta charset="utf-8" />
   <meta name="keywords" content="apijson,api,json,fastjson,json在线解析,json格式化验证"/>
   <meta name="description" content="后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！"/>
+
+  <!-- 登录 <<<<<<<<<<<<<<<<<<<< -->
+  <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="css/login.css">
+  <!-- 登录 >>>>>>>>>>>>>>>>>>>> -->
+
   <link href="css/hint.min.css" rel="stylesheet">
   <!-- <link href="css/diffview.css" rel="stylesheet"> -->
   <link href="css/loading.css" rel="stylesheet">
@@ -68,7 +74,7 @@
       <!--<img v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()" :src="User.head"-->
       <!--style="width: 100%; height: 100%; padding: 10%;"/>-->
 
-      <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="login()">
+      <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="isLoginShow = ! isLoginShow">
         登录
       </a>
     </div>
@@ -263,11 +269,67 @@
     <button @click="exportTxt()">{{isExportRemote ? '上传' : '下载'}}</button>
   </div>
 
+
+  <!-- 登录 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
+  <div class="my-login-page" v-show="isLoginShow">
+    <section class="h-100">
+      <div class="container h-100">
+        <div class="row justify-content-md-center h-100">
+          <div class="card-wrapper">
+            <div class="card fat" >
+              <div class="card-body">
+                <h4 class="card-title">Login</h4>
+                <form method="POST">
+
+                  <div class="form-group">
+                    <label for="vName">Name</label>
+
+                    <input id="vName" type="text" class="form-control" name="name" value="" required autofocus>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="vPassword">Password
+                      <a href="forgot.html" class="float-right">
+                        Forgot Password?
+                      </a>
+                    </label>
+                    <input id="vPassword" type="password" class="form-control" name="password" required data-eye>
+                  </div>
+
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" name="remember"> Remember Me
+                    </label>
+                  </div>
+
+                  <div class="form-group no-margin">
+                    <button class="btn btn-primary btn-block" @click="login()">
+                      Login
+                    </button>
+                  </div>
+                  <div class="margin-top20 text-center">
+                    Don't have an account? <a href="register.html">Create One</a>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 登录 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> -->
+
+
 </div>
 
 <!--用于移动的时候遮住文本域 避免被选中-->
 <div class="widnow-cover">
 </div>
+
+
+
 
 
 
@@ -323,7 +385,7 @@
             <span>[</span>
             <span class="val">
               <vue-outer :jsondata="sub" v-for="(sub, index) in val" :isend="index == val.length - 1" :theme="theme"></vue-outer>
-            </span> 
+            </span>
             <div class="brace-end">]<span v-if="!isend">,</span></div>
           </span>
 

@@ -135,6 +135,7 @@
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
+      isLoginShow: false,
       isRemoteShow: false,
       isExportRemote: false,
       exTxt: {
@@ -598,15 +599,24 @@
       },
 
 
+      showLogin: function () {
+        App.isLoginShow = true
+      },
+
       /**登录
        */
       login: function () {
+        App.isLoginShow = false
+
+        var name = vName.value
+        var password = vPassword.value
+
         vUrl.value = baseUrl + '/login'
         vInput.value = JSON.stringify(
           {
             type: 0, // 登录方式，非必须 0-密码 1-验证码
-            phone: '13000082001',
-            password: '123456',
+            phone: name,
+            password: password,
             version: 1 // 全局默认版本号，非必须
           },
           null, '    ')
