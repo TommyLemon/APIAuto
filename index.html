@@ -282,9 +282,9 @@
                 <form method="POST">
 
                   <div class="form-group">
-                    <label for="vName">Name</label>
+                    <label for="vAccount">Account</label>
 
-                    <input id="vName" type="text" class="form-control" name="name" value="" required autofocus>
+                    <input id="vAccount" type="text" class="form-control" name="account" value="" required autofocus>
                   </div>
 
                   <div class="form-group">
@@ -446,6 +446,8 @@
   var vUrl = document.getElementById("vUrl");
   var vTransfer = document.getElementById("vTransfer");
   var vSend = document.getElementById("vSend");
+  var vAccount = document.getElementById("vAccount");
+  var vPassword = document.getElementById("vPassword");
 
   vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 

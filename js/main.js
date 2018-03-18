@@ -600,23 +600,19 @@
       },
 
 
-      showLogin: function () {
-        App.isLoginShow = true
-      },
-
       /**登录
        */
       login: function () {
         App.isLoginShow = false
 
-        var name = vName.value
+        var account = vAccount.value
         var password = vPassword.value
 
         vUrl.value = baseUrl + '/login'
         vInput.value = JSON.stringify(
           {
             type: 0, // 登录方式，非必须 0-密码 1-验证码
-            phone: name,
+            phone: account,
             password: password,
             version: 1 // 全局默认版本号，非必须
           },
