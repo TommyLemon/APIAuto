@@ -731,11 +731,14 @@
         })
       },
 
+      /**获取验证码
+       */
       getVerify: function () {
         vUrl.value = baseUrl + ' /post/verify'
+        var type = App.loginType == 'login' ? 0 : (App.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
           {
-            type: 0,
+            type: type,
             phone: vAccount.value
           },
           null, '    ')
