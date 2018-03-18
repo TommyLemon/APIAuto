@@ -136,8 +136,9 @@
       isSaveShow: false,
       isExportShow: false,
       isLoginShow: false,
-      isRemoteShow: false,
+      loginType: 'login',
       isExportRemote: false,
+      isRegister: false,
       exTxt: {
         name: 'APIJSON测试'
       },

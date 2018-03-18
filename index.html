@@ -278,7 +278,7 @@
           <div class="card-wrapper">
             <div class="card fat" >
               <div class="card-body">
-                <h4 class="card-title">Login</h4>
+                <h4 class="card-title">{{ loginType == "login" ? "Login" : (loginType == "register" ? "Register" : "Reset Password")}}</h4>
                 <form method="POST">
 
                   <div class="form-group">
@@ -289,26 +289,29 @@
 
                   <div class="form-group">
                     <label for="vPassword">Password
-                      <a href="forgot.html" class="float-right">
-                        Forgot Password?
+                      <a class="float-right" v-show="loginType != 'register'" href="javascript:void(0)" @click="loginType = loginType == 'login' ? 'forget' : 'login'">
+                        {{ loginType == "login" ? "Forgot Password?" : "Remember Password?" }}
                       </a>
                     </label>
                     <input id="vPassword" type="password" class="form-control" name="password" required data-eye>
                   </div>
 
                   <div class="form-group">
-                    <label>
+                    <label v-show="loginType == 'login'">
                       <input type="checkbox" name="remember"> Remember Me
                     </label>
                   </div>
 
-                  <div class="form-group no-margin">
+                  <div class="form-group" style="margin-top: 30px">
                     <button class="btn btn-primary btn-block" @click="login()">
-                      Login
+                      Confirm
                     </button>
                   </div>
-                  <div class="margin-top20 text-center">
-                    Don't have an account? <a href="register.html">Create One</a>
+                  <div class="margin-top20 text-center" v-show="loginType != 'forget'">
+                    {{ loginType == "login" ? "Don't have an account?" : "Already have an account?" }}
+                    <a href="javascript:void(0)" @click="loginType = loginType == 'login' ? 'register' : 'login'">
+                      {{ loginType == "login" ? "Register" : "Login" }}
+                    </a>
                   </div>
                 </form>
               </div>
