@@ -602,8 +602,6 @@
       /**登录确认
        */
       confirm: function () {
-        App.isLoginShow = false
-
         switch (App.loginType) {
           case 'login':
             App.login()
@@ -611,7 +609,7 @@
           case 'register':
             App.register()
             break
-          case 'resetPassword':
+          case 'forget':
             App.resetPassword()
             break
         }
@@ -620,6 +618,8 @@
       /**登录
        */
       login: function () {
+        App.isLoginShow = false
+
         vUrl.value = baseUrl + '/login'
         vInput.value = JSON.stringify(
           {
@@ -731,6 +731,18 @@
         })
       },
 
+      getVerify: function () {
+        vUrl.value = baseUrl + ' /post/verify'
+        vInput.value = JSON.stringify(
+          {
+            type: 0,
+            phone: vAccount.value
+          },
+          null, '    ')
+        App.showRemote(false)
+        App.onChange(false)
+        App.send()
+      },
 
       /**获取当前用户
        */

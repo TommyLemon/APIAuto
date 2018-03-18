@@ -297,13 +297,15 @@
                   </div>
 
                   <div class="form-group" v-show="loginType != 'login'">
-                    <label for="vVerify">Verify</label>
+                    <label for="vVerify">Verify
+                      <a class="float-right" href="javascript:void(0)" @click="getVerify()">Get It</a>
+                    </label>
 
                     <input id="vVerify" type="tel" class="form-control" name="verify" required />
                   </div>
 
-                  <div class="form-group">
-                    <label v-show="loginType == 'login'">
+                  <div class="form-group" v-show="loginType == 'login'">
+                    <label >
                       <input type="checkbox" name="remember"/> Remember Me
                     </label>
                   </div>
