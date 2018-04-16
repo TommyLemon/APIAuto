@@ -135,6 +135,7 @@
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
+      isRemoteShow: false,
       isLoginShow: false,
       loginType: 'login',
       isExportRemote: false,
