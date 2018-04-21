@@ -711,14 +711,15 @@ var CodeUtil = {
 
   /**获取Table变量名
    * @param key
-   * @return empty ? 'reqObj' : key + 'Request' 且首字母小写
+   * @return empty ? 'request' : key
    */
   getTableKey: function(key) {
-    return StringUtil.addSuffix(key, 'Request');
+    key = StringUtil.trim(key);
+    return key == '' ? 'request' : StringUtil.firstCase(key, false);//StringUtil.addSuffix(key, 'Request');
   },
   /**获取数组内Object变量名
    * @param key
-   * @return empty ? 'reqObj' : key + 'Request' 且首字母小写
+   * @return empty ? 'item' : key + 'Item' 且首字母小写
    */
   getItemKey: function(key) {
     return StringUtil.addSuffix(key.substring(0, key.length - 2), 'Item');
