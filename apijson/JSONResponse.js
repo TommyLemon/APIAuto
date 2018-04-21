@@ -191,8 +191,8 @@ var JSONResponse = {
     delete target.code;
     delete real.code;
 
-    delete target.message;
-    delete real.message;
+    delete target.msg;
+    delete real.msg;
 
     return JSONResponse.compare(target, real);
   },
@@ -220,20 +220,21 @@ var JSONResponse = {
     var max = JSONResponse.COMPARE_EQUAL;
     var each = JSONResponse.COMPARE_EQUAL;
     if (target instanceof Array) { // JSONArray
-      if (target.length != real.length) {
-        max = JSONResponse.COMPARE_VALUE_CHANGE;
+      var all = target[0];
+      for (var i = 1; i < length; i++) { //合并所有子项, Java类型是稳定的，不会出现两个子项间同名字段对应值类型不一样
+        all = JSONResponse.deepMerge(all, target[i]);
+      }
+      //下载需要看源JSON  real = [all];
+
+      each = JSONResponse.compare(target[0], all);
+
+      if (max < each) {
+        max = each;
       }
 
-      var length = Math.min(target.length, real.length); //多或少都不影响
-
-      //TODO 需要把所有值合并，得到最全的，至于类型，Java是很稳定的，同样的key在所有Object的type都相同。
-      for (var i = 0; i < length; i++) { //遍历并递归下一层
-        each = JSONResponse.compare(target[i], real[i]);
-        if (max < each) {
-          max = each;
-        }
-        if (max >= JSONResponse.COMPARE_TYPE_CHANGE) {
-          break;
+      if (max < JSONResponse.COMPARE_VALUE_CHANGE) {
+        if (target.length != real.length || (JSON.stringify(target) != JSON.stringify(real))) {
+          max = JSONResponse.COMPARE_VALUE_CHANGE;
         }
       }
     }
@@ -277,8 +278,46 @@ var JSONResponse = {
     }
 
     return max;
-  }
+  },
 
+  deepMerge: function(left, right) {
+    if (left == null) {
+      return right;
+    }
+    if (right == null) {
+      return left;
+    }
+
+    if (right instanceof Array) {
+      var lfirst = left[0];
+      if (lfirst instanceof Object) {
+        for (var i = 1; i < left.length; i++) {
+          lfirst = JSONResponse.deepMerge(lfirst, left[i]);
+        }
+      }
+
+      var rfirst = right[0];
+      if (rfirst instanceof Object) {
+        for (var i = 1; i < right.length; i++) {
+          rfirst = JSONResponse.deepMerge(rfirst, right[i]);
+        }
+      }
+
+      var m = JSONResponse.deepMerge(lfirst, rfirst);
+
+      return m == null ? [] : [ m ];
+    }
+
+    if (right instanceof Object) {
+      var m = JSON.parse(JSON.stringify(left));
+      for (var k in right) {
+        m[k] = JSONResponse.deepMerge(m[k], right[k]);
+      }
+      return m;
+    }
+
+    return left;
+  }
 
 
 }
