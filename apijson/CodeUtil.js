@@ -49,25 +49,32 @@ var CodeUtil = {
       index = line == null ? -1 : line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
       key = index < 0 ? '' : line.substring(1, index - 1);
 
+      if (line.endsWith(',')) {
+        line = line.substring(0, line.length - 1);
+      }
+      line = line.trim();
+
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
         depth ++;
         names[depth] = key;
         comment = CodeUtil.getComment4Request(tableList, null, key, null, method);
       }
       else {
-        if (line.endsWith(',')) {
-          line = line.substring(0, line.length - 1);
-        }
-        line = line.trim();
         if (line.endsWith('}')) {
-          depth --;
-          continue;
+          if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
+            names[depth] = key;
+            comment = CodeUtil.getComment4Request(tableList, null, key, null, method);
+          }
+          else {
+            depth --;
+            continue;
+          }
         }
         else if (key == '') { //[ 1, \n 2, \n 3] 跳过
           continue;
         }
         else { //其它，直接在后面加上注释
-          var isArray = line.endsWith('[');
+          var isArray = line.endsWith('['); // []  不影响
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
             , isArray ? '' : line.substring(index + 2).trim(), method);
