@@ -969,7 +969,7 @@
       getCode: function (rq) {
         return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
           + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-          + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
+          + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。')
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))
           + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
