@@ -178,7 +178,7 @@ var JSONResponse = {
    1-对象新增字段或数组新增值，绿色；
    2-值改变，蓝色；
    3-对象缺少字段/整数变小数，黄色；
-   4-类型/code改变，红色；
+   4-code/值类型 改变，红色；
    */
   compareResponse: function(target, real) {
     if (target == null || target.code == null) {
@@ -191,18 +191,19 @@ var JSONResponse = {
     delete target.code;
     delete real.code;
 
-    delete target.msg;
-    delete real.msg;
+    //可能提示语变化，也要提示
+    // delete target.msg;
+    // delete real.msg;
 
     return JSONResponse.compare(target, real);
   },
 
   /**测试compare: 对比 新的请求与上次请求的结果
    0-相同，无颜色；
-   1-对象新增字段或数组新增值，绿色；
+   1-新增字段/新增值，绿色；
    2-值改变，蓝色；
-   3-对象缺少字段/整数变小数，黄色；
-   4-类型/success/errCode改变，红色；
+   3-缺少字段/整数变小数，黄色；
+   4-类型/code 改变，红色；
    */
   compare: function(target, real) {
     if (target == null) {

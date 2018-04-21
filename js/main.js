@@ -1335,15 +1335,23 @@
             switch (it.compare) {
               case JSONResponse.COMPARE_KEY_MORE:
                 it.compareColor = 'green'
+                it.error = '新增字段/新增值'
                 break;
               case JSONResponse.COMPARE_VALUE_CHANGE:
                 it.compareColor = 'blue'
+                it.error = '值改变'
                 break;
               case JSONResponse.COMPARE_KEY_LESS:
                 it.compareColor = 'yellow'
+                it.error = '缺少字段/整数变小数'
                 break;
               case JSONResponse.COMPARE_TYPE_CHANGE:
                 it.compareColor = 'red'
+                it.error = 'code/值类型 改变'
+                break;
+              default:
+                it.compareColor = 'white'
+                it.error = ''
                 break;
             }
 

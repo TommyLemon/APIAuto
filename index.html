@@ -102,11 +102,11 @@
         <li v-for="(item, index) in remotes" >
           <a href="javascript:void(0)" @click="restore(item)" > {{(item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url}}</a>
           <div :style="{ background: item.compareColor }" v-show="item.compare != null && item.compare != 0" style="position: absolute;right: 30px;display: inline-block;">
-            <button v-show="item.compare != null && item.compare > 0" @click="handleTest(false, index, item)" style="position: relative;color: red">错误，已解决</button>
+            <button v-show="item.compare != null && item.compare > 0" @click="handleTest(false, index, item)" style="position: relative;color: red">{{ item.error }}</button>
             <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
               <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
-            <button @click="handleTest(true, index, item)">正确，上传</button>
+            <button @click="handleTest(true, index, item)">这是对的</button>
           </div>
           <svg v-show="item.userId == User.id" class="icon" style="margin-right: 4px" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
