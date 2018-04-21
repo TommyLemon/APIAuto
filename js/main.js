@@ -272,27 +272,21 @@
       //获取基地址
       getBaseUrl: function () {
         var url = new String(vUrl.value).trim()
-        var index = this.getBaseUrlLength(url)
-        url = index <= 0 ? url : url.substring(0, index)
+        var length = this.getBaseUrlLength(url)
+        url = length <= 0 ? '' : url.substring(0, length)
         return url == '' ? URL_BASE : url
       },
-      //获取基地址长度，优先以空格分割baseUrl和method，其次用 /
+      //获取基地址长度，以://后的第一个/分割baseUrl和method
       getBaseUrlLength: function (url_) {
-        var url = url_ == null ? '' : new String(url_)
-        var index = url.indexOf(' ')
-        if (index <= 0) {
-          while (url.endsWith('/')) {
-            url = url.substring(0, url.length - 1)
-          }
-          index = url.lastIndexOf('/')
-        }
-        return index
+        var url = url_ == null ? '' : '' + url_
+        var index = url.indexOf('://')
+        return index < 0 ? 0 : index + 3 + url.substring(index + 3).indexOf('/')
       },
       //获取操作方法
       getMethod: function () {
         var url = new String(vUrl.value).trim()
         var index = this.getBaseUrlLength(url)
-        url = index < 0 ? '' : url.substring(index + 1)
+        url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url.substring(1) : url
       },
 
@@ -399,9 +393,6 @@
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
-          }
-          if (branch.lastIndexOf('/') > 0) { //不只一个 / ，需要用空格分割baseUrl和branchUrl
-            branch = ' ' + branch
           }
           vUrl.value = baseUrl + branch
           App.showRemote(false)
@@ -688,7 +679,7 @@
       /**重置密码
        */
       resetPassword: function () {
-        vUrl.value = baseUrl + ' /put/password'
+        vUrl.value = baseUrl + '/put/password'
         vInput.value = JSON.stringify(
           {
             verify: vVerify.value,
@@ -735,7 +726,7 @@
       /**获取验证码
        */
       getVerify: function () {
-        vUrl.value = baseUrl + ' /post/verify'
+        vUrl.value = baseUrl + '/post/verify'
         var type = App.loginType == 'login' ? 0 : (App.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
           {
