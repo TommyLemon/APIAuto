@@ -806,7 +806,7 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          output = 'OK，请点击 [发送请求] 按钮来测试。' + code;
+          output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
           vOutput.value = output
 
 
@@ -981,7 +981,9 @@
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))
-          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
+          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
+          + '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON)'
+          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) ';
       },
 
 
@@ -994,8 +996,8 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) \n APIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) \n\n'
-        + '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d);
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d
+        );
 
         App.view = 'markdown';
         markdownToHTML(vOutput.value);
