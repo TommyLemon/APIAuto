@@ -278,27 +278,27 @@
           <div class="card-wrapper">
             <div class="card fat" >
               <div class="card-body">
-                <h4 class="card-title">{{ loginType == "login" ? "Login" : (loginType == "register" ? "Register" : "Reset Password")}}</h4>
+                <h4 class="card-title">{{ loginType == "login" ? "登录" : (loginType == "register" ? "注册" : "重置密码")}}</h4>
                 <form method="POST">
 
                   <div class="form-group">
-                    <label for="vAccount">Account</label>
+                    <label for="vAccount">账号</label>
 
                     <input id="vAccount" type="text" class="form-control" name="account" value="13000082001" required autofocus />
                   </div>
 
                   <div class="form-group">
-                    <label for="vPassword">Password
+                    <label for="vPassword">密码
                       <a class="float-right" v-show="loginType != 'register'" href="javascript:void(0)" @click="loginType = loginType == 'login' ? 'forget' : 'login'">
-                        {{ loginType == "login" ? "Forgot Password?" : "Remember Password?" }}
+                        {{ loginType == "login" ? "忘记密码?" : "记得密码?" }}
                       </a>
                     </label>
                     <input id="vPassword" type="password" class="form-control" name="password" value="123456" required data-eye />
                   </div>
 
                   <div class="form-group" v-show="loginType != 'login'">
-                    <label for="vVerify">Verify
-                      <a class="float-right" href="javascript:void(0)" @click="getVerify()">Get It</a>
+                    <label for="vVerify">验证码
+                      <a class="float-right" href="javascript:void(0)" @click="getVerify()">获取</a>
                     </label>
 
                     <input id="vVerify" type="tel" class="form-control" name="verify" required />
@@ -306,20 +306,20 @@
 
                   <div class="form-group" v-show="loginType == 'login'">
                     <label >
-                      <input type="checkbox" name="remember"/> Remember Me
+                      <input type="checkbox" name="remember"/> 记住登录
                     </label>
                   </div>
 
                   <div class="form-group" style="margin-top: 30px">
                     <button class="btn btn-primary btn-block" @click="confirm()">
-                      Confirm
+                      确定
                     </button>
                   </div>
 
                   <div class="margin-top20 text-center" v-show="loginType != 'forget'">
-                    {{ loginType == "login" ? "Don't have an account?" : "Already have an account?" }}
+                    {{ loginType == "login" ? "没有账号?" : "已有账号?" }}
                     <a href="javascript:void(0)" @click="loginType = loginType == 'login' ? 'register' : 'login'">
-                      {{ loginType == "login" ? "Register" : "Login" }}
+                      {{ loginType == "login" ? "注册" : "登录" }}
                     </a>
                   </div>
                 </form>
