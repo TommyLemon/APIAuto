@@ -152,19 +152,21 @@ var CodeUtil = {
    * @param reqObj
    * @param depth
    * @return parseCode
+   * @return isSmart 是否智能
    */
-  parseJava: function(name, reqObj, depth) {
+  parseJava: function(name, reqObj, depth, isSmart) {
     name = name || '';
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    const parentKey = JSONObject.isArrayKey(name) ? CodeUtil.getItemKey(name) : CodeUtil.getTableKey(name);
+    const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getSimpleName(CodeUtil.getItemKey(name)) : CodeUtil.getTableKey(JSONResponse.getSimpleName(name));
+
 
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return '\nJSONRequest ' + parentKey + ' = new JSONRequest();';
+        return '\n' + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<String, Object>') + '();';
       },
 
       onParseParentEnd: function () {
@@ -175,23 +177,30 @@ var CodeUtil = {
 
         var s = '\n\n//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        const count = value.count || 0;
-        const page = value.page || 0;
+        const count = isSmart ? (value.count || 0) : 0;
+        const page = isSmart ? (value.page || 0) : 0;
 
         log(CodeUtil.TAG, 'parseJava  for  count = ' + count + '; page = ' + page);
 
-        delete value.count;
-        delete value.page;
+        if (isSmart) {
+          delete value.count;
+          delete value.page;
+        }
 
-        s += CodeUtil.parseJava(key, value, depth + 1);
+        s += CodeUtil.parseJava(key, value, depth + 1, isSmart);
 
         log(CodeUtil.TAG, 'parseJava  for delete >> count = ' + count + '; page = ' + page);
 
-        var prefix = key.substring(0, key.length - 2);
+        var name = JSONResponse.getSimpleName(CodeUtil.getItemKey(key));
 
-        s += '\n\n'
-          + parentKey + '.putAll(' +  CodeUtil.getItemKey(key) + '.toArray('
-          + count  + ', ' + page + (prefix.length <= 0 ? '' : ', "' + prefix + '"') + '));';
+        if (isSmart) {
+          var prefix = key.substring(0, key.length - 2);
+          s += '\n\n'
+            + parentKey + '.putAll(' + name + '.toArray('
+            + count  + ', ' + page + (prefix.length <= 0 ? '' : ', "' + prefix + '"') + '));';
+        } else {
+          s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
+        }
 
         s += '\n//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -201,8 +210,37 @@ var CodeUtil = {
       onParseChildObject: function (key, value, index) {
         var s = '\n\n//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += CodeUtil.parseJava(key, value, depth + 1);
-        s += '\n\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getTableKey(key) + ');';
+        const isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
+
+        const column = isTable ? value['@column'] : null;
+        const order = isTable ? value['@order'] : null;
+        const group = isTable ? value['@group'] : null;
+        const having = isTable ? value['@having'] : null;
+        const schema = isTable ? value['@schema'] : null;
+        const role = isTable ? value['@role'] : null;
+
+        if (isTable) {
+          delete value['@column'];
+          delete value['@order'];
+          delete value['@group'];
+          delete value['@having'];
+          delete value['@schema'];
+          delete value['@role'];
+        }
+
+        s += CodeUtil.parseJava(key, value, depth + 1, isTable);
+
+        const name = CodeUtil.getTableKey(JSONResponse.getSimpleName(key));
+        if (isTable) {
+          s = column == null ? s : s + '\n' + name + '.setColumn(' + CodeUtil.getJavaValue(column) + ');';
+          s = order == null ? s : s + '\n' + name + '.setOrder(' + CodeUtil.getJavaValue(order) + ');';
+          s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(group) + ');';
+          s = having == null ? s : s + '\n' + name + '.setHaving(' + CodeUtil.getJavaValue(having) + ');';
+          s = schema == null ? s : s + '\n' + name + '.setSchema(' + CodeUtil.getJavaValue(schema) + ');';
+          s = role == null ? s : s + '\n' + name + '.setRole(' + CodeUtil.getJavaValue(role) + ');';
+        }
+
+        s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
 
         s += '\n//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -210,23 +248,7 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index) {
-
-        var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
-
-          v = '"' + value + '"';
-        }
-        else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
-
-          v = 'new Object[]{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
-        }
-        else {
-          v = value
-        }
-
-        return '\n' + parentKey + '.put("' + key + '", ' + v + ');';
+        return '\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(value) + ');';
       }
     })
 
@@ -519,6 +541,7 @@ var CodeUtil = {
   },
 
 
+
   /**获取model类名
    * @param tableName
    * @return {*}
@@ -588,6 +611,27 @@ var CodeUtil = {
     return newComment + '\n' + prefix + ' */';
   },
 
+  /**获取Java的值
+   * @param value
+   * @return {*}
+   */
+  getJavaValue: function (value) {
+    var v; //避免改变原来的value
+    if (typeof value == 'string') {
+      log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
+
+      v = '"' + value + '"';
+    }
+    else if (value instanceof Array) {
+      log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+
+      v = 'new Object[]{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+    }
+    else {
+      v = value
+    }
+    return v;
+  },
 
   getJavaTypeFromJS: function (key, value, baseFirst) {
     if (typeof value == 'boolean') {

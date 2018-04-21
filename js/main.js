@@ -968,7 +968,7 @@
        */
       getCode: function (rq) {
         return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
-          + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq)))
+          + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
           + '\n ``` \n注：用了APIJSON的JSONRequest类。也可使用其它方式，只要JSON有序就行。'
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))

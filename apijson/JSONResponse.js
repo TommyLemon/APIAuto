@@ -153,13 +153,20 @@ var JSONResponse = {
    * @param fullName name 或 name:alias
    * @return name => name; name:alias => alias
    */
+  getTableName: function(fullName) {
+    //key:alias  -> alias; key:alias[] -> alias[]
+    var index = fullName == null ? -1 : fullName.indexOf(":");
+    return index < 0 ? fullName : fullName.substring(0, index);
+  },
+
+  /**获取简单名称
+   * @param fullName name 或 name:alias
+   * @return name => name; name:alias => alias
+   */
   getSimpleName: function(fullName) {
     //key:alias  -> alias; key:alias[] -> alias[]
     var index = fullName == null ? -1 : fullName.indexOf(":");
-    if (index >= 0) {
-      fullName = fullName.substring(index + 1);
-    }
-    return fullName;
+    return index < 0 ? fullName : fullName.substring(index + 1);
   },
 
 
