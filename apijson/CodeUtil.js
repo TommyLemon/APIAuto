@@ -232,12 +232,12 @@ var CodeUtil = {
 
         const name = CodeUtil.getTableKey(JSONResponse.getSimpleName(key));
         if (isTable) {
-          s = column == null ? s : s + '\n' + name + '.setColumn(' + CodeUtil.getJavaValue(column) + ');';
-          s = order == null ? s : s + '\n' + name + '.setOrder(' + CodeUtil.getJavaValue(order) + ');';
-          s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(group) + ');';
-          s = having == null ? s : s + '\n' + name + '.setHaving(' + CodeUtil.getJavaValue(having) + ');';
-          s = schema == null ? s : s + '\n' + name + '.setSchema(' + CodeUtil.getJavaValue(schema) + ');';
-          s = role == null ? s : s + '\n' + name + '.setRole(' + CodeUtil.getJavaValue(role) + ');';
+          s = column == null ? s : s + '\n' + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
+          s = order == null ? s : s + '\n' + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
+          s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
+          s = having == null ? s : s + '\n' + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+          s = schema == null ? s : s + '\n' + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
+          s = role == null ? s : s + '\n' + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
         }
 
         s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
@@ -248,7 +248,7 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index) {
-        return '\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(value) + ');';
+        return '\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
       }
     })
 
@@ -615,7 +615,7 @@ var CodeUtil = {
    * @param value
    * @return {*}
    */
-  getJavaValue: function (value) {
+  getJavaValue: function (name, key, value) {
     var v; //避免改变原来的value
     if (typeof value == 'string') {
       log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );

@@ -388,7 +388,7 @@
 
       // 根据历史恢复数据
       restore: function (item) {
-        localforage.getItem(item.key, function (err, value) {
+        localforage.getItem(item.key || '', function (err, value) {
           baseUrl = App.getBaseUrl()
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
