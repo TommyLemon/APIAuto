@@ -248,6 +248,14 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index) {
+        if (depth <= 0 && isSmart) {
+          if (key == 'tag') {
+            return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == 'version') {
+            return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+        }
         return '\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
       }
     })
