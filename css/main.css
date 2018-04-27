@@ -243,7 +243,7 @@ textarea {
   padding: 0;
 }
 
-.view-error {
+.view-error > pre {
   padding: 10px;
   color: #f1592a;
   font-weight: bold;
