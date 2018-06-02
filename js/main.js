@@ -322,7 +322,7 @@
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             }
             else if (App.view == 'markdown' || App.view == 'output') {
-              App.exTxt.name = 'APIJSON自动生成model ' + App.formatDateTime()
+              App.exTxt.name = 'User'
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
@@ -429,10 +429,19 @@
               , App.exTxt.name + '.txt')
           }
           else if (App.view == 'markdown' || App.view == 'output') { //model
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
-              + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
-              + '\n\n## Java model类 \n\n' + CodeUtil.parseJavaBean(docObj)
-              , App.exTxt.name + '.txt')
+            // saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
+            //   + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
+            //   + '\n\n## Java model类 \n\n' + CodeUtil.parseJavaBean(docObj)
+            //   , App.exTxt.name + '.txt')
+
+
+            var clazz = App.exTxt.name
+            var txt = CodeUtil.parseJavaBean(docObj, clazz)
+            if (StringUtil.isEmpty(txt, true)) {
+              alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
+              return
+            }
+            saveTextAs(txt, clazz + '.java')
           }
           else {
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
@@ -1302,9 +1311,8 @@
           if (item == null || item.name == null) {
             continue
           }
-          //TODO 加了会因为增删改导致查询变化 if (item.url == '/logout') {// || item.userId != App.User.id) {
-          if (item.userId != App.User.id || (item.url != '/get' && item.url != '/gets' && item.url != '/head' && item.url != '/heads')) {
-            console.log('test  item.userId != User.id || item.url == /logout >> continue')
+          if (item.url == '/logout') {
+            console.log('test  item.url == "/logout" >> continue')
             continue
           }
           console.log('test  item = ' + JSON.stringify(item, null, '  '))

@@ -166,7 +166,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return '\n' + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<String, Object>') + '();';
+        return '\n' + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
       },
 
       onParseParentEnd: function () {
@@ -447,7 +447,7 @@ var CodeUtil = {
   /**用数据字典转为JavaBean
    * @param docObj
    */
-  parseJavaBean: function(docObj) {
+  parseJavaBean: function(docObj, clazz) {
 
     //转为Java代码格式
     var doc = '';
@@ -468,14 +468,19 @@ var CodeUtil = {
         //Table
         table = item == null ? null : item.Table;
         model = CodeUtil.getModelName(table == null ? null : table.TABLE_NAME);
-        if (model == '') {
+        if (model != clazz) {
           continue;
         }
 
         console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-        doc += '\n```java\n\n' + CodeUtil.getComment(table.TABLE_COMMENT, true)
+        doc += '/*'
+          + '\nAPIJSONAuto自动生成JavaBean\n主页: http://apijson.cn'
+          + '\n\n使用方法\n1.修改包名package \n2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
+          + '\n*/\n'
+          + '\npackage apijson.demo.server.model;\n\n\n'
+          + CodeUtil.getComment(table.TABLE_COMMENT, true)
           + '\n@MethodAccess'
           + '\npublic class ' + model + ' implements Serializable {'
           + '\n  private static final long serialVersionUID = 1L;\n';
@@ -539,7 +544,7 @@ var CodeUtil = {
           }
         }
 
-        doc += '\n\n}\n\n```\n\n\n';
+        doc += '\n\n}';
 
       }
     }
