@@ -1311,8 +1311,8 @@
           if (item == null || item.name == null) {
             continue
           }
-          if (item.url == '/logout') {
-            console.log('test  item.url == "/logout" >> continue')
+          if (item.url == '/login' || item.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+            console.log('test  item.url == "/login" || item.url == "/logout" >> continue')
             continue
           }
           console.log('test  item = ' + JSON.stringify(item, null, '  '))
