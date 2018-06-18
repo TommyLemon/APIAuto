@@ -115,6 +115,8 @@
 
   var isSingle = true
 
+  var doneCount
+
   // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   var App = new Vue({
@@ -1299,7 +1301,9 @@
           return
         }
         const list = App.remotes || []
-        const allCount = list.length - 1
+        const allCount = list.length - 2
+        doneCount = 0
+
         App.testProcess = allCount <= 0 ? '' : '正在测试: ' + 0 + '/' + allCount
         if (allCount <= 0) {
           alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
@@ -1320,8 +1324,12 @@
           // App.restore(item)
           // App.onChange(false)
 
-          const index = i; //请求异步
           App.request(baseUrl + item.url, JSON.parse(item.request), function (url, res, err) {
+
+            doneCount ++
+            App.testProcess = doneCount >= allCount ? '' : '正在测试: ' + doneCount + '/' + allCount
+
+
             var response = ''
             try {
               App.onResponse(url, res, err)
@@ -1333,13 +1341,8 @@
 
             var it = item || {} //请求异步
             it.compare = JSONResponse.compareResponse(it.response == null ? null : JSON.parse(it.response), res.data)
-            console.log('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
-            // if (it.compare > 0) {
-            //   alert('i = ' + index + '; item.name = ' + it.name + '; item.compare = ' + it.compare
-            //     + '; it.response = \n' + it.response
-            //     + '\n\n\n res.data = \n' + response
-            //   )
-            // }
+            console.log('doneCount = ' + doneCount + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
+
             switch (it.compare) {
               case JSONResponse.COMPARE_KEY_MORE:
                 it.compareColor = 'green'
@@ -1362,8 +1365,6 @@
                 it.error = ''
                 break;
             }
-
-            App.testProcess = index <= allCount ? '' : '正在测试: ' + index + '/' + allCount
 
             var tests = App.tests || {}
             tests[it.id] = response
