@@ -1413,10 +1413,16 @@
           var tests = App.tests || {}
           item.response = tests[item.id]
         }
-        item.compare = 0
-        Vue.set(App.remotes, index, item);
 
-        if (right) {
+        if (right != true) {
+          var isBefore = item.showType != 'before'
+          item.showType = isBefore ? 'before' : 'after'
+          Vue.set(App.remotes, index, item);
+
+          App.view = 'code'
+          App.jsoncon = isBefore ? item.response : App.tests[item.id]
+        }
+        else {
           var baseUrl = App.getBaseUrl()
           vUrl.value = baseUrl + '/put'
 
