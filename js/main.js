@@ -985,7 +985,8 @@
           + CodeUtil.parseSwift(null, JSON.parse(rq))
           + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
           + '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON)'
-          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) ';
+          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
+          + '\nAPIJSON - C#版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) ';
       },
 
 
@@ -1127,6 +1128,8 @@
             doc += '\n注: 可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
 
+
+          App.onChange(false);
 
           //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
