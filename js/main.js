@@ -1299,8 +1299,13 @@
           alert('请先输入有效的URL！')
           return
         }
-        if (baseUrl.indexOf('/apijson.cn') >= 0 || baseUrl.indexOf('/39.108.143.172') >= 0) {
-          alert('请把URL改成你自己的！')
+        //开放测试
+        // if (baseUrl.indexOf('/apijson.cn') >= 0 || baseUrl.indexOf('/39.108.143.172') >= 0) {
+        //   alert('请把URL改成你自己的！\n例如 http://localhost:8080')
+        //   return
+        // }
+        if (baseUrl.indexOf('/apijson.org') >= 0) {
+          alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
           return
         }
         const list = App.remotes || []
@@ -1385,9 +1390,9 @@
       downloadTest: function (index, item) {
         saveTextAs(
           '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
-          + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-          + '\nResponse: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
-          , 'APIJSON自动化回归测试-前.txt'
+          + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+          + '\n返回结果: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
+          , '测试：' + item.name + '-前.txt'
         )
 
         /**
@@ -1400,9 +1405,9 @@
           var tests = App.tests || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
-            + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-            + '\nResponse: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
-            , 'APIJSON自动化回归测试-后.txt'
+            + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
+            , '测试：' + item.name + '-后.txt'
           )
         }, 5000)
 
