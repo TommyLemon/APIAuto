@@ -291,6 +291,16 @@
         url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url.substring(1) : url
       },
+      //获取请求的tag
+      getTag: function () {
+        var req = null
+        try {
+          req = JSON.parse(new String(vInput.value))
+        } catch (e) {
+          log('main.getTag', 'try { req = JSON.parse(new String(vInput.value)) \n } catch (e) {\n' + e.message)
+        }
+        return req == null ? null : req.tag
+      },
 
       // 显示保存弹窗
       showSave: function (show) {
@@ -300,7 +310,8 @@
             return
           }
 
-          App.history.name = '请求 ' + App.getMethod() + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          var tag = App.getTag()
+          App.history.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -317,7 +328,8 @@
               alert('请先测试请求，确保是正确可用的！')
               return
             }
-            App.exTxt.name = App.getMethod() + '请求'
+            var tag = App.getTag()
+            App.exTxt.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag)
           }
           else { //下载到本地
             if (App.isRemoteShow) { //文档

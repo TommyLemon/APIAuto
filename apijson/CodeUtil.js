@@ -179,7 +179,7 @@ var CodeUtil = {
 
         const count = isSmart ? (value.count || 0) : 0;
         const page = isSmart ? (value.page || 0) : 0;
-        const query = isSmart ? (value.query || 0) : 0;
+        const query = isSmart ? value.query : null;
         const join = isSmart ? value.join : null;
 
         log(CodeUtil.TAG, 'parseJava  for  count = ' + count + '; page = ' + page);
@@ -199,12 +199,18 @@ var CodeUtil = {
 
         if (isSmart) {
           var prefix = key.substring(0, key.length - 2);
-          s += '\n\n'
-            + name + '.setQuery(' + CodeUtil.QUERY_TYPE_CONSTS[query] + ');\n'
-            + name + '.setJoin("' + join + '");\n'
-            + parentKey + '.putAll(' + name + '.toArray('
+
+          if (query != null) {
+            s += '\n\n'
+              + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+          }
+          if (StringUtil.isEmpty(join, true) == false) {
+            s += name + '.setJoin("' + join + '");\n';
+          }
+          s += parentKey + '.putAll(' + name + '.toArray('
             + count  + ', ' + page + (prefix.length <= 0 ? '' : ', "' + prefix + '"') + '));';
-        } else {
+        }
+        else {
           s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
         }
 
