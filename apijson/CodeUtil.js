@@ -200,9 +200,9 @@ var CodeUtil = {
         if (isSmart) {
           var prefix = key.substring(0, key.length - 2);
 
+          s += '\n\n';
           if (query != null) {
-            s += '\n\n'
-              + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+            s += name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
           }
           if (StringUtil.isEmpty(join, true) == false) {
             s += name + '.setJoin("' + join + '");\n';
