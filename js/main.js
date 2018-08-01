@@ -1462,6 +1462,7 @@
 
             var rpObj = res.data
             if (rpObj != null && rpObj.code === 200) {
+              item.compare = 0
               App.showRemote(true)
 
               App.request(baseUrl + '/post', {
