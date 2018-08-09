@@ -23,3 +23,26 @@
 * jsonon
 * editor.md
 * vue.js
+
+
+### 关于作者
+TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
+QQ技术交流群：607020115
+
+如果有什么问题或建议可以[提ISSUE](https://github.com/TommyLemon/APIJSON/issues)、加群或者[发我邮件](https://github.com/TommyLemon)，交流技术，分享经验。<br >
+如果你解决了某些bug，或者新增了一些功能，欢迎[贡献代码](https://github.com/TommyLemon/APIJSON/pulls)，感激不尽。
+
+
+
+### 其它项目
+[APIJSON](https://github.com/TommyLemon/APIJSON) 后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构。
+
+[APIJSON.NET](https://github.com/liaozb/APIJSON.NET) 使用 C# 开发的 APIJSON 服务端库。
+
+
+### 持续更新
+[https://github.com/TommyLemon/APIJSONAuto/commits/master](https://github.com/TommyLemon/APIJSONAuto/commits/master)
+
+### 我要赞赏
+创作不易，右上角点 ⭐Star 支持下吧，谢谢 ^_^ <br />
+[https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto)
