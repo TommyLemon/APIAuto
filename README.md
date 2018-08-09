@@ -9,6 +9,12 @@
 * 自动管理与测试接口用例，一键共享
 * 自动校验与格式化JSON，支持高亮和收展
 
+<br />
+
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_get.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_code.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
+<br /><br />
 
 ## 部署方法
 
@@ -29,8 +35,8 @@
 TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
 QQ技术交流群：607020115
 
-如果有什么问题或建议可以[提ISSUE](https://github.com/TommyLemon/APIJSON/issues)、加群或者[发我邮件](https://github.com/TommyLemon)，交流技术，分享经验。<br >
-如果你解决了某些bug，或者新增了一些功能，欢迎[贡献代码](https://github.com/TommyLemon/APIJSON/pulls)，感激不尽。
+如果有什么问题或建议可以[提ISSUE](https://github.com/TommyLemon/APIJSONAuto/issues)、加群或者[发我邮件](https://github.com/TommyLemon)，交流技术，分享经验。<br >
+如果你解决了某些bug，或者新增了一些功能，欢迎[贡献代码](https://github.com/TommyLemon/APIJSONAuto/pulls)，感激不尽。
 
 
 
