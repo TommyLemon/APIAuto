@@ -20,6 +20,6 @@
 
 
 ## 感谢开源
-#### jsonon
-#### editor.md
-#### vue.js
+* jsonon
+* editor.md
+* vue.js
