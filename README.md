@@ -1,6 +1,15 @@
 # APIJSON Auto
 自动化接口管理工具，支持自动生成文档与注释、自动生成代码、自动化回归测试、自动静态检查等。
 
+## 特点功能
+
+* 自动生成文档，清晰可读永远最新
+* 自动生成请求代码，支持Android和iOS
+* 自动生成JavaBean文件，一键下载
+* 自动管理与测试接口用例，一键共享
+* 自动校验与格式化JSON，支持高亮和收展
+
+
 ## 部署方法
 
 可以直接下载源码解压后访问index.html，<br />
@@ -10,32 +19,7 @@
 [https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
 
 
-
-## develop and deploy
-Some resources such as font and svg must be run at a server. I recommand to use [webon](https://github.com/bimohxh/webon)
-
-### install webon
-[webon](https://github.com/bimohxh/webon) is help to develop and deploy a static site.
-run
-```
-npm install webon -g
-```
-
-### configuration
-You need to do some configuration with `webon init`
-
-### development
-Just run 
-```
-webon s
-```
-
-### deploy
-```
-webon deploy
-```
-
-## Thanks to
+## 感谢开源
 #### jsonon
 #### editor.md
 #### vue.js
