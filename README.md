@@ -46,9 +46,11 @@ QQ技术交流群：607020115
 
 
 ### 其它项目
-[APIJSON](https://github.com/TommyLemon/APIJSON) 后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构。
+[APIJSON](https://github.com/TommyLemon/APIJSON) 后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构
 
-[APIJSON.NET](https://github.com/liaozb/APIJSON.NET) 使用 C# 开发的 APIJSON 服务端库。
+[APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
+
+[apijson](https://github.com/TEsTsLA/apijson) Node.ts 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite, MariaDB, WebSQL
 
 
 ### 持续更新
