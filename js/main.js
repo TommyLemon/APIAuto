@@ -291,6 +291,16 @@
         url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url.substring(1) : url
       },
+      //获取请求的tag
+      getTag: function () {
+        var req = null
+        try {
+          req = JSON.parse(new String(vInput.value))
+        } catch (e) {
+          log('main.getTag', 'try { req = JSON.parse(new String(vInput.value)) \n } catch (e) {\n' + e.message)
+        }
+        return req == null ? null : req.tag
+      },
 
       // 显示保存弹窗
       showSave: function (show) {
@@ -300,7 +310,8 @@
             return
           }
 
-          App.history.name = '请求 ' + App.getMethod() + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          var tag = App.getTag()
+          App.history.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -317,7 +328,8 @@
               alert('请先测试请求，确保是正确可用的！')
               return
             }
-            App.exTxt.name = App.getMethod() + '请求'
+            var tag = App.getTag()
+            App.exTxt.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag)
           }
           else { //下载到本地
             if (App.isRemoteShow) { //文档
@@ -985,7 +997,8 @@
           + CodeUtil.parseSwift(null, JSON.parse(rq))
           + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
           + '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON)'
-          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) ';
+          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
+          + '\nAPIJSON - C#版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) ';
       },
 
 
@@ -1127,6 +1140,8 @@
             doc += '\n注: 可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
 
+
+          App.onChange(false);
 
           //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -1296,8 +1311,13 @@
           alert('请先输入有效的URL！')
           return
         }
-        if (baseUrl.indexOf('/apijson.cn') >= 0 || baseUrl.indexOf('/39.108.143.172') >= 0) {
-          alert('请把URL改成你自己的！')
+        //开放测试
+        // if (baseUrl.indexOf('/apijson.cn') >= 0 || baseUrl.indexOf('/39.108.143.172') >= 0) {
+        //   alert('请把URL改成你自己的！\n例如 http://localhost:8080')
+        //   return
+        // }
+        if (baseUrl.indexOf('/apijson.org') >= 0) {
+          alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
           return
         }
         const list = App.remotes || []
@@ -1382,9 +1402,9 @@
       downloadTest: function (index, item) {
         saveTextAs(
           '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
-          + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-          + '\nResponse: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
-          , 'APIJSON自动化回归测试-前.txt'
+          + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+          + '\n返回结果: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
+          , '测试：' + item.name + '-前.txt'
         )
 
         /**
@@ -1397,9 +1417,9 @@
           var tests = App.tests || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
-            + '\n\n接口: ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-            + '\nResponse: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
-            , 'APIJSON自动化回归测试-后.txt'
+            + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
+            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
+            , '测试：' + item.name + '-后.txt'
           )
         }, 5000)
 
@@ -1442,6 +1462,7 @@
 
             var rpObj = res.data
             if (rpObj != null && rpObj.code === 200) {
+              item.compare = 0
               App.showRemote(true)
 
               App.request(baseUrl + '/post', {

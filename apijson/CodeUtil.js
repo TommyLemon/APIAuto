@@ -179,12 +179,16 @@ var CodeUtil = {
 
         const count = isSmart ? (value.count || 0) : 0;
         const page = isSmart ? (value.page || 0) : 0;
+        const query = isSmart ? value.query : null;
+        const join = isSmart ? value.join : null;
 
         log(CodeUtil.TAG, 'parseJava  for  count = ' + count + '; page = ' + page);
 
         if (isSmart) {
           delete value.count;
           delete value.page;
+          delete value.query;
+          delete value.join;
         }
 
         s += CodeUtil.parseJava(key, value, depth + 1, isSmart);
@@ -195,10 +199,18 @@ var CodeUtil = {
 
         if (isSmart) {
           var prefix = key.substring(0, key.length - 2);
-          s += '\n\n'
-            + parentKey + '.putAll(' + name + '.toArray('
+
+          s += '\n\n';
+          if (query != null) {
+            s += name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+          }
+          if (StringUtil.isEmpty(join, true) == false) {
+            s += name + '.setJoin("' + join + '");\n';
+          }
+          s += parentKey + '.putAll(' + name + '.toArray('
             + count  + ', ' + page + (prefix.length <= 0 ? '' : ', "' + prefix + '"') + '));';
-        } else {
+        }
+        else {
           s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
         }
 
@@ -216,6 +228,7 @@ var CodeUtil = {
         const order = isTable ? value['@order'] : null;
         const group = isTable ? value['@group'] : null;
         const having = isTable ? value['@having'] : null;
+        const combine = isTable ? value['@combine'] : null;
         const schema = isTable ? value['@schema'] : null;
         const role = isTable ? value['@role'] : null;
 
@@ -224,6 +237,7 @@ var CodeUtil = {
           delete value['@order'];
           delete value['@group'];
           delete value['@having'];
+          delete value['@combine'];
           delete value['@schema'];
           delete value['@role'];
         }
@@ -236,6 +250,7 @@ var CodeUtil = {
           s = order == null ? s : s + '\n' + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
           s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
           s = having == null ? s : s + '\n' + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+          s = combine == null ? s : s + '\n' + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
           s = schema == null ? s : s + '\n' + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
           s = role == null ? s : s + '\n' + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
         }
@@ -802,6 +817,7 @@ var CodeUtil = {
 
   QUERY_TYPES: ['数据', '数量', '全部'],
   QUERY_TYPE_KEYS: [0, 1, 2],
+  QUERY_TYPE_CONSTS: ["JSONRequest.QUERY_TABLE", "JSONRequest.QUERY_TOTAL", "JSONRequest.QUERY_ALL"],
   REQUEST_ROLE_KEYS: ['UNKNOWN', 'LOGIN', 'CONTACT', 'CIRCLE', 'OWNER', 'ADMIN'],
   REQUEST_ROLE: {
     UNKNOWN: '未登录',
@@ -867,24 +883,31 @@ var CodeUtil = {
           return value < 0 ? ' ! 必须 >= 0 ！' : CodeUtil.getComment('分页页码', false, '  ');
         case 'query':
           var query = CodeUtil.QUERY_TYPES[value];
-          return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：' + query, false, '  ');
+          return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：0-数据 1-总数 2-全部', false, '  ');
+        case 'join':
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('多表连接：LEFT JOIN < ，RIGHT JOIN > ，INNER JOIN & | ! ', false, '  ');
       }
       return '';
     }
 
-    if (JSONObject.isTableKey(name)) {
+    var aliaIndex = name.indexOf(':');
+    var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
+
+    if (JSONObject.isTableKey(objName)) {
       if (key.startsWith('@')) {
         switch (key) {
           case '@column':
-            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段：例如 id,name,json_length(contactIdList):contactCount...', false, '  ');
           case '@order':
-            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('排序方式，+升序，-降序', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('排序方式：+升序，-降序，例如 name+,date-,...', false, '  ');
           case '@group':
-            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式：例如 userId', false, '  ');
           case '@having':
-            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('SQL函数', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('SQL函数：例如 max(id)>100,sum(balance)<=10000,...', false, '  ');
+          case '@combine':
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('条件组合：例如 name?,|tag?,&id{},!id,...', false, '  ');
           case '@schema':
-            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('数据库', false, '  ');
+            return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('数据库：例如 sys', false, '  ');
           case '@correct':
             return value != null ? ' ! value必须是Object类型！' : CodeUtil.getComment('字段校正', false, '  ');
           case '@role':
@@ -892,11 +915,11 @@ var CodeUtil = {
               value = value.substring(1, value.length - 1).toUpperCase();
             } catch (e) {}
             var role = CodeUtil.REQUEST_ROLE[value];
-            return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.REQUEST_ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('登录角色：' + role, false, '  ');
+            return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.REQUEST_ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('来访角色：' + role, false, '  ');
         }
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, name, key, method);
+      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method);
       return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 

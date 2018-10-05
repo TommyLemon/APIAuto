@@ -160,13 +160,33 @@ var JSONResponse = {
   },
 
   /**获取简单名称
-   * @param fullName name 或 name:alias
-   * @return name => name; name:alias => alias
+   * @param fullName name 或 name:alias 或 User-name 或 User-name:alias
+   * @return name => name; name:alias 或 User-name:alias => alias; User-name => userName
    */
   getSimpleName: function(fullName) {
-    //key:alias  -> alias; key:alias[] -> alias[]
+    //key:alias -> alias
     var index = fullName == null ? -1 : fullName.indexOf(":");
-    return index < 0 ? fullName : fullName.substring(index + 1);
+    if (index >= 0) {
+      return fullName.substring(index + 1);
+    }
+
+    var left = index < 0 ? fullName : fullName.substring(0, index);
+
+    var first = true;
+    var name = '';
+    var part;
+    do {
+      index = left.indexOf("-");
+      part = index < 0 ? left : left.substring(0, index);
+
+      name += StringUtil.firstCase(part, ! first);
+      left = left.substring(index + 1);
+
+      first = false;
+    }
+    while (index >=0)
+
+    return name;
   },
 
 
