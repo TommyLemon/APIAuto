@@ -50,6 +50,8 @@ QQ技术交流群：607020115
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
 
+[apijson](https://github.com/orchie/apijson) PHP 版 APIJSON，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite 等
+
 [apijson](https://github.com/TEsTsLA/apijson) Node.ts 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite, MariaDB, WebSQL
 
 
