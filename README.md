@@ -28,7 +28,7 @@
 ### 部署方法
 
 可以直接下载源码解压后访问index.html，<br />
-也可以直接用 http://apijson.cn ，把基地址改为你主机的地址（例如 http://localhost:8080 ）即可。
+也可以直接用 http://apijson.org ，把基地址改为你主机的地址（例如 http://localhost:8080 ）即可。
 
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见
 [https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
