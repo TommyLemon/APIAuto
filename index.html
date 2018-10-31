@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>APIJSON.cn</title>
+  <title>APIJSON.org</title>
   <meta charset="utf-8" />
   <meta name="keywords" content="apijson,api,json,fastjson,json在线解析,json格式化验证"/>
   <meta name="description" content="后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！"/>
@@ -54,73 +54,109 @@
 </style>
 <div id="app" style="background-color: white">
   <div class="side-top">
+
     <img src="img/logo.png" class="logo-img"/>
     <a class="logo" href="https://github.com/TommyLemon/APIJSON" target="_blank">
-      <span class="on">APIJSON</span><span >.cn</span>
+      <span class="on">APIJSON</span><span >.org</span>
     </a>
-    <a href="https://github.com/TommyLemon/APIJSONAuto" target="_blank">
-      <span class="slogan" >在线解析 </span><span class="slogan" v-show="isDelayShow" >2s</span>
-    </a>
+    <a v-show="isDelayShow" >2s</a>
+
+    <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=TommyLemon&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
+
+    <!--只用60%避免拦截左右两侧View的触摸事件-->
+    <div style="width: 40%;height: 100%;left: 30%;display: inline-block;text-align: center;position: fixed;padding-top: 10px">
+      <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="https://github.com/TommyLemon/APIJSON/blob/master/Document.md" target="_blank" >文档</a>
+      <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="http://i.youku.com/apijson" target="_blank" >视频</a>
+      <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="https://github.com/search?o=desc&q=apijson&s=stars&type=Repositories" target="_blank" >源码</a>
+    </div>
+
     <div class="top-right">
-      <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()">
+      <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout(true)">
         退出
       </a>
 
-      <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="getCurrentUser()">
-        {{User.name}}
+      <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="showLogin(true, true)">
+        登录
       </a>
+
+      <span class="pop-btn">
+                <a href="javascript:void(0)" >
+                   {{ User.id != null && User.id > 0 ? User.name : '设置' }}
+                </a>
+                <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 270px">
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库Schema: {{ schema || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">托管服务器URL: {{ server || '点击设置' }}</a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">当前账号: {{ Privacy.phone || '点击更新'  }} <br/> 可用余额: {{ Privacy.balance == null ? '点击更新' : Privacy.balance + ' 元'  }}</a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 3)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
+
+                  <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
+                    <div style="margin-top: 10px">微信扫码充值<br />没有账号会自动创建</div>
+                    <img src="img/wechat_collect.jpg" />
+                    <div style="margin: 10px">备注填: APIJSON+你的手机号</div>
+                  </li>
+                </ul>
+      </span>
+
 
       <!-- 部分头像加载不出，或者显示为开源中国LOGO -->
       <!--<img v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout()" :src="User.head"-->
       <!--style="width: 100%; height: 100%; padding: 10%;"/>-->
 
-      <a v-show="User.id == null || User.id <= 0" href="javascript:void(0)" @click="isLoginShow = ! isLoginShow">
-        登录
-      </a>
     </div>
   </div>
 
   <!--<div :class="'side-left side-view-' + baseview">-->
   <div class="side-left">
-    <div v-show="! isRemoteShow" class="left-bar" >
+    <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
       <input class="url" id="vUrl" type="text" placeholder="请输入请求的接口地址" @keyup="doOnKeyUp(event)" />
-      <button class="send" id="vSend" @click="send()">发送请求</button>
+      <button class="send" id="vSend" @click="send(false)">发送请求</button>
     </div>
-    <div v-show="isRemoteShow" class="left-bar">
-      <svg class="icon" style="margin-left: 10px">
-        <use xlink:href="svg/icon.svg#share"></use>
-      </svg>
-      <span style="display: flex;flex-grow: 1;font-size: medium;margin-left: 6px">测试用例</span>
-      <a >{{ testProcess }}</a>
-      <a class="hint--top save-tool"  data-hint="回归测试" href="javascript:void(0)" @click="test()">
+    <div v-show="isTestCaseShow" class="left-bar">
+      <!--<svg class="icon" style="margin-left: 10px">-->
+      <!--<use xlink:href="svg/icon.svg#share"></use>-->
+      <!--</svg>-->
+
+      <a style="display: flex;flex-grow: 1;font-size: medium;color: black" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="showTestCase(true, ! isLocalShow)">测试用例:{{ (isLocalShow ? '本地历史(' : '远程共享(') + (testCases == null ? 0 : testCases.length) + ')' }}</a>
+
+      <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
+      <a v-show="! isLocalShow" class="hint--top @cli-tool" data-hint="回归测试" href="javascript:void(0)" @click="test()">
         <img class="icon" src="img/refresh.png"/>
+      </a>
+      <a v-show="isLocalShow" class="hint--top @cli-tool" data-hint="清空" href="javascript:void(0)" @click="clearLocal()">
+        <svg class="icon" >
+          <use xlink:href="svg/icon.svg#trash"></use>
+        </svg>
       </a>
     </div>
     <div class="left-panel">
-      <ul v-show="isRemoteShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-        <li v-for="(item, index) in remotes" >
-          <a href="javascript:void(0)" @click="restore(item)" > {{(item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url}}</a>
-          <div :style="{ background: item.compareColor }" v-show="item.compare != null && item.compare != 0" style="position: absolute;right: 30px;display: inline-block;">
-            <button v-show="item.compare != null && item.compare > 0" @click="handleTest(false, index, item)" style="position: relative;color: red">{{ item.error + (item.showType == 'before' ? '-前' : '-后') }}</button>
+      <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+        <li v-for="(item, index) in testCases" >
+          <a href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
+          <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
+            <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
             <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
               <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
-            <button @click="handleTest(true, index, item)">这是对的</button>
+            <button v-show="item.compareType != 0" @click="handleTest(true, index, item)">这是对的</button>
+            <button style="color: white;background: white;border: white;" v-show="item.compareType == 0" disabled>这是对的</button>
           </div>
-          <svg v-show="item.userId == User.id" class="icon" style="margin-right: 4px" @click="remove(item, index, true)">
+          <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
           </svg>
         </li>
       </ul>
-      <div v-show="! isRemoteShow" style="width: 100%;height: 100%;" >
+      <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
         <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
         </textarea>
         <textarea id="vInput" @keyup="onChange(true)"style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
 {
+    "User": {
+        "id": 82001
+    },
     "[]": {
-        "User": {
-            "sex": 1
+        "Comment": {
+            "userId@": "User/id"
         }
     }
 }
@@ -155,13 +191,13 @@
           </a>
 
           <span class="pop-btn" > <!--v-show="historys.length > 0">-->
-                <a v-show="isRemoteShow" class="hint--top" data-hint="本地保存，点击隐藏共享" href="javascript:void(0)">
-                  <svg class="icon" @click="showRemote(false)">
+                <a v-show="isTestCaseShow" class="hint--top" data-hint="本地保存，点击隐藏共享" href="javascript:void(0)">
+                  <svg class="icon" @click="showTestCase(false, isLocalShow)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>
                 </a>
-                <a v-show="! isRemoteShow" class="hint--top" data-hint="本地保存，点击查看共享" href="javascript:void(0)">
-                  <svg class="icon" @click="showRemote(true)">
+                <a v-show="! isTestCaseShow" class="hint--top" data-hint="本地保存，点击查看共享" href="javascript:void(0)">
+                  <svg class="icon" @click="showTestCase(true, isLocalShow)">
                     <use xlink:href="svg/icon.svg#record"></use>
                   </svg>
                 </a>
@@ -177,6 +213,18 @@
           </span>
 
         </div>
+
+        <div class="pull-center" >
+          <ul style="width: 100%; padding-left: 18px;padding-right: 18px;" >
+            <li style="width: 100%; display: inline-block;text-align: center;">
+              <button style="background-color: #DDD;margin: 0px;outline: none;border: #DDD 1px solid;" href="javascript:void(0)" @click="removeAccountTab()"> - </button>
+              <button style="outline: none;border: #DDD 1px solid;" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD', color: item.isLoggedIn ? 'red' : 'black'}" v-for="(item, index) in accounts" @click="onClickAccount(index, item)">{{ item.name }}</button>
+              <button style="background-color: #DDD;margin: 0px;outline: none;border: #DDD 1px solid;" href="javascript:void(0)" @click="addAccountTab()"> + </button>
+            </li>
+          </ul>
+
+        </div>
+
         <div class="pull-right">
 
           <a href="javascript:void(0)" class="hint--top"  data-hint="下载"   @click="showExport(true, false)">
@@ -241,13 +289,13 @@
     </div>
   </div>
 
-  <div class="statement">
-    Copyright ©2017 APIJSON.cn All right reserved.
-    <a href="http://www.miitbeian.gov.cn/" target="_blank">
-      <span >粤ICP备18005508号-1.</span>
-    </a>
-    本网站部分工具是站长整合网上已有工具、开源包等，并全部遵循原有协议发布，著作权归属原作者或是团队。
-  </div>
+  <!--<div class="statement">-->
+  <!--Copyright ©2017 APIJSON.cn All right reserved.-->
+  <!--<a href="http://www.miitbeian.gov.cn/" target="_blank">-->
+  <!--<span >粤ICP备18005508号-1.</span>-->
+  <!--</a>-->
+  <!--本网站部分工具是站长整合网上已有工具、开源包等，并全部遵循原有协议发布，著作权归属原作者或是团队。-->
+  <!--</div>-->
 
   <!--弹出保存框-->
   <div class="save-box" v-show="isSaveShow">
@@ -269,6 +317,16 @@
     <button @click="exportTxt()">{{isExportRemote ? '上传' : '下载'}}</button>
   </div>
 
+  <!--弹出设置文本框-->
+  <div class="save-box" v-show="isConfigShow">
+    <svg class="icon close-icon" @click="showConfig(false)">
+      <use xlink:href="svg/icon.svg#close"></use>
+    </svg>
+
+    <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
+    <button @click="saveConfig()">切换</button>
+  </div>
+
 
   <!-- 登录 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
   <div class="my-login-page" v-show="isLoginShow">
@@ -278,7 +336,14 @@
           <div class="card-wrapper">
             <div class="card fat" >
               <div class="card-body">
-                <h4 class="card-title">{{ loginType == "login" ? "登录" : (loginType == "register" ? "注册" : "重置密码")}}</h4>
+                <div class="card-title">
+                  <a style="font-size: x-large;color: black">{{ ( loginType == "login" ? "登录" : (loginType == "register" ? "注册" : "重置密码") ) + (isAdminOperation ? "(管理员)" : "(测试用户)")}}</a>
+                  <a style="float: right;margin-top: 8px" href="javascript:void(0)" @click="showLogin(false)">
+                    <svg class="icon close-icon"  >
+                      <use xlink:href="svg/icon.svg#close"></use>
+                    </svg>
+                  </a>
+                </div>
                 <form method="POST">
 
                   <div class="form-group">
@@ -298,7 +363,7 @@
 
                   <div class="form-group" v-show="loginType != 'login'">
                     <label for="vVerify">验证码
-                      <a class="float-right" href="javascript:void(0)" @click="getVerify()">获取</a>
+                      <a class="float-right" href="javascript:void(0)" @click="getVerify(isAdminOperation)">获取</a>
                     </label>
 
                     <input id="vVerify" type="tel" class="form-control" name="verify" required />
@@ -311,7 +376,7 @@
                   </div>
 
                   <div class="form-group" style="margin-top: 30px">
-                    <button class="btn btn-primary btn-block" @click="confirm()">
+                    <button class="btn btn-primary btn-block" @click="confirm(isAdminOperation)">
                       确定
                     </button>
                   </div>
@@ -465,11 +530,15 @@
   var vMarkdown = document.getElementById('vMarkdown');
 
 
+
+  function onScrollChanged() {
+    $(vComment).scrollLeft(vInput.scrollLeft);
+    $(vComment).scrollTop(vInput.scrollTop);
+  }
+
   //vComment跟随vInput滚动，避免JSON重叠"露馅"
-  $(vInput).on('scroll', function() {
-    $(vComment).scrollLeft(this.scrollLeft);
-    $(vComment).scrollTop(this.scrollTop);
-  });
+  $(vInput).on('scroll', onScrollChanged);
+
 
 
   function markdownToHTML(md) {

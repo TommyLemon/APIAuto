@@ -189,7 +189,7 @@ function format(json) {
 }
 
 function log(tag, msg) {
-  console.log(tag + '.' + msg);
+  //console.log(tag + '.' + msg);
 }
 
 /**将json字符串转为JSON对象

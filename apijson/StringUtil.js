@@ -117,6 +117,22 @@ var StringUtil = {
   toLowerCase: function(s, trim) {
     s = trim ? StringUtil.trim(s) : StringUtil.get(s);
     return s.toLowerCase();
+  },
+
+  split: function (s, separator) {
+    if (s == null) {
+      return null;
+    }
+
+    if (separator == null) {
+      separator = ',';
+    }
+
+    if (s.indexOf(separator) < 0) {
+      return [s];
+    }
+
+    return s.split(separator)
   }
 
 }
