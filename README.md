@@ -3,10 +3,12 @@
 
 ### 特点功能
 
-* 自动生成文档，清晰可读永远最新
+* 自动生成接口文档，清晰可读永远最新
 * 自动生成请求代码，支持Android和iOS
 * 自动生成JavaBean文件，一键下载
 * 自动管理与测试接口用例，一键共享
+* 自动给请求JSON加注释，一键切换
+* 自动保存历史请求记录，一键恢复
 * 自动校验与格式化JSON，支持高亮和收展
 
 <br />
@@ -14,6 +16,8 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_get.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_code.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_test.jpg) 
+
 <br /><br />
 
 ### 视频教程
@@ -24,7 +28,7 @@
 ### 部署方法
 
 可以直接下载源码解压后访问index.html，<br />
-也可以直接用 http://apijson.cn ，把基地址改为你主机的地址（例如 http://localhost:8080 ）即可。
+也可以直接用 http://apijson.org ，把基地址改为你主机的地址（例如 http://localhost:8080 ）即可。
 
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见
 [https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
@@ -40,8 +44,8 @@
 TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
 QQ技术交流群：607020115
 
-如果有什么问题或建议可以[提ISSUE](https://github.com/TommyLemon/APIJSONAuto/issues)、加群或者[发我邮件](https://github.com/TommyLemon)，交流技术，分享经验。<br >
-如果你解决了某些bug，或者新增了一些功能，欢迎[贡献代码](https://github.com/TommyLemon/APIJSONAuto/pulls)，感激不尽。
+如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIJSONAuto/issues) 或 加群，交流技术，分享经验。<br >
+如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIJSONAuto/pulls)，感激不尽。
 
 
 
@@ -49,6 +53,8 @@ QQ技术交流群：607020115
 [APIJSON](https://github.com/TommyLemon/APIJSON) 后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
+
+[apijson](https://github.com/orchie/apijson) PHP 版 APIJSON，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite 等
 
 [apijson](https://github.com/TEsTsLA/apijson) Node.ts 版 APIJSON 服务端库，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite, MariaDB, WebSQL
 

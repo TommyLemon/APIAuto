@@ -194,6 +194,7 @@ var JSONResponse = {
   COMPARE_NO_STANDARD: -1,
   COMPARE_EQUAL: 0,
   COMPARE_KEY_MORE: 1,
+  COMPARE_LENGTH_CHANGE: 2,
   COMPARE_VALUE_CHANGE: 2,
   COMPARE_KEY_LESS: 3,
   COMPARE_TYPE_CHANGE: 4,
@@ -207,13 +208,24 @@ var JSONResponse = {
    3-对象缺少字段/整数变小数，黄色；
    4-code/值类型 改变，红色；
    */
-  compareResponse: function(target, real) {
+  compareResponse: function(target, real, folder, isMachineLearning) {
     if (target == null || target.code == null) {
-      return JSONResponse.COMPARE_NO_STANDARD; //未上传对比标准（正确的结果）
+      return {
+        code: JSONResponse.COMPARE_NO_STANDARD, //未上传对比标准
+        msg: '没有校验标准！',
+        path: folder == null ? '' : folder
+      };
     }
     if (target.code != real.code) {
-      return JSONResponse.COMPARE_CODE_CHANGE;
+      return {
+        code: JSONResponse.COMPARE_CODE_CHANGE,
+        msg: '状态码改变！',
+        path: folder == null ? '' : folder
+      };
     }
+
+    var tCode = target.code;
+    var rCode = real.code;
 
     delete target.code;
     delete real.code;
@@ -222,7 +234,12 @@ var JSONResponse = {
     // delete target.msg;
     // delete real.msg;
 
-    return JSONResponse.compare(target, real);
+    var result = JSONResponse.compareWithBefore(target, real, folder);
+
+    target.code = tCode;
+    real.code = rCode;
+
+    return result;
   },
 
   /**测试compare: 对比 新的请求与上次请求的结果
@@ -232,21 +249,48 @@ var JSONResponse = {
    3-缺少字段/整数变小数，黄色；
    4-类型/code 改变，红色；
    */
-  compare: function(target, real) {
+  compareWithBefore: function(target, real, folder) {
+    folder = folder == null ? '' : folder;
+
     if (target == null) {
-      return real == null ? JSONResponse.COMPARE_EQUAL : JSONResponse.COMPARE_KEY_MORE;
+      return {
+        code: real == null ? JSONResponse.COMPARE_EQUAL : JSONResponse.COMPARE_KEY_MORE,
+        msg: real == null ? '结果正确' : '是新增的',
+        path: real == null ? '' : folder,
+        value: real
+      };
     }
     if (real == null) { //少了key
-      return JSONResponse.COMPARE_KEY_LESS;
+      return {
+        code: JSONResponse.COMPARE_KEY_LESS,
+        msg: '是缺少的',
+        path: folder,
+        value: real
+      };
     }
 
     var type = typeof target;
     if (type != typeof real) { //类型改变
-      return JSONResponse.COMPARE_TYPE_CHANGE;
+      return {
+        code: JSONResponse.COMPARE_TYPE_CHANGE,
+        msg: '值改变',
+        path: folder,
+        value: real
+      };
     }
 
-    var max = JSONResponse.COMPARE_EQUAL;
-    var each = JSONResponse.COMPARE_EQUAL;
+    // var max = JSONResponse.COMPARE_EQUAL;
+    // var each = JSONResponse.COMPARE_EQUAL;
+
+    var max = {
+      code: JSONResponse.COMPARE_EQUAL,
+      msg: '结果正确',
+      path: '', //导致正确时也显示 folder,
+      value: null //导致正确时也显示  real
+    };
+
+    var each;
+
     if (target instanceof Array) { // JSONArray
       var all = target[0];
       for (var i = 1; i < length; i++) { //合并所有子项, Java类型是稳定的，不会出现两个子项间同名字段对应值类型不一样
@@ -254,41 +298,48 @@ var JSONResponse = {
       }
       //下载需要看源JSON  real = [all];
 
-      each = JSONResponse.compare(target[0], all);
+      each = JSONResponse.compareWithBefore(target[0], all, JSONResponse.getAbstractPath(folder, i));
 
-      if (max < each) {
+      if (max.code < each.code) {
         max = each;
       }
 
-      if (max < JSONResponse.COMPARE_VALUE_CHANGE) {
+      if (max.code < JSONResponse.COMPARE_VALUE_CHANGE) {
         if (target.length != real.length || (JSON.stringify(target) != JSON.stringify(real))) {
-          max = JSONResponse.COMPARE_VALUE_CHANGE;
+          max.code = JSONResponse.COMPARE_VALUE_CHANGE;
+          max.msg = '值改变';
+          max.path = folder;
+          max.value = real;
         }
       }
     }
     else if (target instanceof Object) { // JSONObject
       var tks = Object.keys(target);
       var key;
-      for (var i = 0; i< tks.length; i++) { //遍历并递归下一层
+      for (var i = 0; i < tks.length; i++) { //遍历并递归下一层
         key = tks[i];
         if (key == null) {
           continue;
         }
 
-        each = JSONResponse.compare(target[key], real[key]);
-        if (max < each) {
+        each = JSONResponse.compareWithBefore(target[key], real[key], JSONResponse.getAbstractPath(folder, key));
+        if (max.code < each.code) {
           max = each;
         }
-        if (max >= JSONResponse.COMPARE_TYPE_CHANGE) {
+        if (max.code >= JSONResponse.COMPARE_TYPE_CHANGE) {
           break;
         }
       }
 
 
-      if (max < JSONResponse.COMPARE_KEY_MORE) { //多出key
+      if (max.code < JSONResponse.COMPARE_KEY_MORE) { //多出key
         for (var k in real) {
           if (k != null && tks.indexOf(k) < 0) {
-            max = JSONResponse.COMPARE_KEY_MORE;
+            max.code = JSONResponse.COMPARE_KEY_MORE;
+            max.msg = '是新增的';
+            max.path = JSONResponse.getAbstractPath(folder,  k);
+            max.value = real[k];
+            break;
           }
         }
       }
@@ -296,12 +347,18 @@ var JSONResponse = {
     else { // Boolean, Number, String
       if (type == 'number') { //数字类型由整数变为小数
         if (String(target).indexOf('.') < 0 && String(real).indexOf('.') >= 0) {
-          return JSONResponse.COMPARE_NUMBER_TYPE_CHANGE;
+          max.code = JSONResponse.COMPARE_NUMBER_TYPE_CHANGE;
+          max.msg = '整数变小数';
+          max.path = folder;
+          max.value = real;
         }
       }
 
-      if (target !== real) { //值不同
-        return JSONResponse.COMPARE_VALUE_CHANGE;
+      if (max.code < JSONResponse.COMPARE_VALUE_CHANGE && target !== real) { //值不同
+        max.code = JSONResponse.COMPARE_VALUE_CHANGE;
+        max.msg = '值改变';
+        max.path = folder;
+        max.value = real;
       }
     }
 
@@ -345,7 +402,17 @@ var JSONResponse = {
     }
 
     return left;
-  }
+  },
 
+
+  getAbstractPath: function (folder, name) {
+    folder = folder == null ? '' : folder;
+    name = name == null ? '' : name; //导致 0 变为 ''   name = name || '';
+    return StringUtil.isEmpty(folder, true) ? name : folder + '/' + name;
+  },
+
+  log(msg) {
+    // console.log(msg);
+  }
 
 }

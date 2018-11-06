@@ -106,6 +106,7 @@
 
   // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   //这些全局变量不能放在data中，否则会报undefined错误
+
   var baseUrl
   var inputted
   var handler
@@ -131,19 +132,36 @@
       historys: [],
       history: {name: '请求0'},
       remotes: [],
+      locals: [],
+      testCases: [],
+      accounts: [
+        {
+          'isLoggedIn': false,
+          'name': '测试账号',
+          'phone': '13000082001',
+          'password': '123456'
+        }
+      ],
+      currentAccountIndex: 0,
       tests: [],
-      testProcess: '',
+      testProcess: '机器学习:已关闭',
       compareColor: '#0000',
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
-      isRemoteShow: false,
+      isTestCaseShow: false,
       isLoginShow: false,
+      isConfigShow: false,
+      isAdminOperation: false,
       loginType: 'login',
       isExportRemote: false,
       isRegister: false,
+      isMLEnabled: false,
+      isLocalShow: false,
       exTxt: {
-        name: 'APIJSON测试'
+        name: 'APIJSON测试',
+        button: '保存',
+        index: 0
       },
       themes: themes,
       checkedTheme: 0,
@@ -152,7 +170,13 @@
         id: 0,
         name: '',
         head: ''
-      }
+      },
+      Privacy: {
+        id: 0,
+        balance: null //点击更新提示需要判空 0.00
+      },
+      schema: 'sys',
+      server: 'http://vip.apijson.org'
     },
     methods: {
 
@@ -265,10 +289,16 @@
         var bu = this.getBaseUrl()
         if (baseUrl != bu) {
           baseUrl = bu;
-          doc = null
-          this.User = this.getCache(baseUrl, 'User') || {}
-          this.remotes = []
+          doc = null //这个是本地的数据库字典及非开放请求文档
           this.saveCache('', 'URL_BASE', baseUrl)
+
+          //已换成固定的管理系统URL
+
+          // this.remotes = []
+
+          // var index = baseUrl.indexOf(':') //http://localhost:8080
+          // App.server = (index < 0 ? baseUrl : baseUrl.substring(0, baseUrl)) + ':9090'
+
         }
       },
       //获取基地址
@@ -305,7 +335,7 @@
       // 显示保存弹窗
       showSave: function (show) {
         if (show) {
-          if (App.isRemoteShow) {
+          if (App.isTestCaseShow) {
             alert('请先输入请求内容！')
             return
           }
@@ -320,7 +350,7 @@
       showExport: function (show, isRemote) {
         if (show) {
           if (isRemote) { //共享测试用例
-            if (App.isRemoteShow) {
+            if (App.isTestCaseShow) {
               alert('请先输入请求内容！')
               return
             }
@@ -332,7 +362,7 @@
             App.exTxt.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag)
           }
           else { //下载到本地
-            if (App.isRemoteShow) { //文档
+            if (App.isTestCaseShow) { //文档
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             }
             else if (App.view == 'markdown' || App.view == 'output') {
@@ -345,6 +375,33 @@
         }
         App.isExportShow = show
         App.isExportRemote = isRemote
+      },
+
+      // 显示配置弹窗
+      showConfig: function (show, index) {
+        App.isConfigShow = false
+        if (show) {
+          App.exTxt.index = index
+          switch (index) {
+            case 0:
+            case 1:
+              App.exTxt.name = index == 0 ? App.schema : App.server
+              App.isConfigShow = true
+              break
+            case 2:
+              App.getCurrentUser(true)
+              break
+            case 3:
+              App.showAndSend(App.server + '/get', {
+                'Goods[]': {
+                  'Goods': {
+                    '@column': 'name,detail'
+                  }
+                }
+              }, true)
+              break
+          }
+        }
       },
 
       // 保存当前的JSON
@@ -367,6 +424,12 @@
         })
       },
 
+      // 清空本地历史
+      clearLocal: function () {
+        this.locals.splice(0, this.locals.length) //UI无反应 this.locals = []
+        this.saveCache('', 'locals', [])
+      },
+
       // 删除已保存的
       remove: function (item, index, isRemote) {
         if (isRemote == null || isRemote == false) { //null != false
@@ -374,32 +437,37 @@
             App.historys.splice(index, 1)
           })
         } else {
-          App.isRemoteShow = false
+          if (App.isLocalShow) {
+            App.locals.splice(index, 1)
+            return
+          }
 
-          baseUrl = App.getBaseUrl()
-          vUrl.value = baseUrl + '/delete'
-          vInput.value = JSON.stringify(
-            {
-              'Document': {
-                'id': item.id
-              },
-              'tag': 'Document'
+          App.isTestCaseShow = false
+
+          var url = App.server + '/delete'
+          var req = {
+            'Document': {
+              'id': item.Document == null ? 0 : item.Document.id
             },
-            null, '    ')
-          App.onChange(false)
-          App.send(function (url, res, err) {
+            'tag': 'Document'
+          }
+          App.request(true, url, req, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
 
             if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
-              App.remotes = []
-              App.showRemote(true)
+              App.remotes.splice(index, 1)
+              App.showTestCase(true, App.isLocalShow)
             }
           })
         }
       },
 
+      // 根据历史恢复数据
+      restoreRemote: function (item) {
+        this.restore(item.Document)
+      },
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key || '', function (err, value) {
@@ -409,7 +477,7 @@
             branch = '/' + branch
           }
           vUrl.value = baseUrl + branch
-          App.showRemote(false)
+          App.showTestCase(false, App.isLocalShow)
           vInput.value = item.request
           App.onChange(false)
         })
@@ -435,7 +503,7 @@
 
         if (App.isExportRemote == false) { //下载到本地
 
-          if (App.isRemoteShow) { //文档
+          if (App.isTestCaseShow) { //文档
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 测试用例(Markdown格式，可用工具预览) \n\n' + App.getDoc4TestCase()
@@ -473,35 +541,57 @@
             return
           }
 
-          App.isRemoteShow = false
+          App.isTestCaseShow = false
 
-          vInput.value = JSON.stringify(
-            {
-              'Document': {
-                'userId': App.User.id,
-                'name': App.exTxt.name,
-                'url': '/' + App.getMethod(),
-                'request': App.toDoubleJSON(inputted)
-              },
-              'tag': 'Document'
+          var currentAccount = App.accounts[App.currentAccountIndex];
+
+          var url = App.server + '/post'
+          var req = {
+            'Document': {
+              'userId': App.User.id,
+              'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
+              'name': App.exTxt.name,
+              'url': '/' + App.getMethod(),
+              'request': App.toDoubleJSON(inputted)
             },
-            null, '    ')
-          baseUrl = App.getBaseUrl()
-          vUrl.value = baseUrl + '/post'
+            'tag': 'Document'
+          }
 
-          App.onChange(false)
-          App.send(function (url, res, err) {
+          App.request(true, url, req, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
 
             if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
               App.remotes = []
-              App.showRemote(true)
+              App.showTestCase(true, false)
             }
           })
         }
       },
+
+      // 保存配置
+      saveConfig: function () {
+        App.isConfigShow = false
+
+        if (App.exTxt.index == 0) {
+          App.schema = App.exTxt.name
+          App.saveCache('', 'schema', App.schema)
+
+          doc = null
+          App.onChange(false)
+        }
+        else {
+          App.server = App.exTxt.name
+          App.saveCache('', 'server', App.server)
+
+          // App.remotes = []
+          // App.Privacy = {}
+          // App.showTestCase(false, false) //App.showTestCase(true)
+          App.logout(true)
+        }
+      },
+
 
       // 切换主题
       switchTheme: function (index) {
@@ -551,35 +641,121 @@
 
 
 
+
+
+      onClickAccount: function (index, item) {
+        if (this.currentAccountIndex == index) {
+          vAccount.value = item.phone
+          vPassword.value = item.password
+
+          if (item.isLoggedIn) {
+            //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
+            this.logout(false, function (url, res, err) {
+              App.onResponse(url, res, err)
+
+              item.isLoggedIn = false
+              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+            });
+          }
+          else {
+            //login
+            this.login(false, function (url, res, err) {
+              App.onResponse(url, res, err)
+
+              item.isLoggedIn = true
+
+              var data = res.data || {}
+              var user = data.code == 200 ? data.User : null
+              if (user != null) {
+                App.accounts[App.currentAccountIndex].name = user.name
+                App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+                App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+              }
+            });
+          }
+
+          return;
+        }
+
+        //退出当前账号
+        var c = this.currentAccountIndex
+        var it = c == null || this.accounts == null ? null : this.accounts[c];
+        if (it != null) { //切换 BASE_URL后 it = undefined 导致UI操作无法继续
+          it.isLoggedIn = false  //异步导致账号错位 this.onClickAccount(c, this.accounts[c])
+        }
+
+        //切换到这个tab
+        this.currentAccountIndex = index
+
+        //目前还没做到同一标签页下测试账号切换后，session也跟着切换，所以干脆每次切换tab就重新登录
+        item.isLoggedIn = false
+        this.onClickAccount(index, item)
+      },
+
+      removeAccountTab: function () {
+        if (App.accounts.length <= 1) {
+          alert('至少要 1 个测试账号！')
+          return
+        }
+
+        App.accounts.splice(App.currentAccountIndex, 1)
+        if (App.currentAccountIndex >= App.accounts.length) {
+          App.currentAccountIndex = App.accounts.length - 1
+        }
+
+        App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+        App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+      },
+      addAccountTab: function () {
+        App.showLogin(true, false) //TODO 登录窗口右上角加一个 X App.showLogin(! App.isLoginShow, false)
+      },
+
+
       //显示远程的测试用例文档
-      showRemote: function (show) {
-        App.isRemoteShow = show
+      showTestCase: function (show, isLocal) {
+        App.isTestCaseShow = show
+        App.isLocalShow = isLocal
+
         vOutput.value = show ? '' : (output || '')
         App.showDoc()
 
-        if (show && App.remotes.length <= 0) {
-          App.isRemoteShow = false
+        if (isLocal) {
+          App.testCases = App.locals || []
+          return
+        }
+        App.testCases = App.remotes || []
 
-          vUrl.value = baseUrl + '/get'
-          vInput.value = JSON.stringify(
-            {
-              'Document[]': {
-                'Document': {
-                  '@role': 'login',
-                  '@order': 'version-,date-'
-                }
+        if (show && App.testCases.length <= 0) {
+          App.isTestCaseShow = false
+
+          var url = App.server + '/get'
+          var req = {
+            '[]': {
+              'Document': {
+                '@order': 'version-,date-',
+                'userId': App.User.id
+              },
+              'TestRecord': {
+                'documentId@': '/Document/id',
+                '@order': 'date-',
+                '@column': 'id,userId,documentId,response',
+                'userId': App.User.id
               }
             },
-            null, '    ')
+            '@role': 'login'
+          }
+
           App.onChange(false)
-          App.send(function (url, res, err) {
+          App.request(true, url, req, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
 
             if (rpObj != null && rpObj.code === 200) {
-              App.isRemoteShow = true
-              App.remotes = rpObj['Document[]']
+              App.isTestCaseShow = true
+              App.isLocalShow = false
+              App.testCases = App.remotes = rpObj['[]']
               vOutput.value = show ? '' : (output || '')
               App.showDoc()
 
@@ -591,12 +767,13 @@
 
       // 设置文档
       showDoc: function () {
-        if (App.setDoc(doc) == false) {
+        if (this.setDoc(doc) == false) {
           this.getDoc(function (d) {
             App.setDoc(d);
           });
         }
       },
+
 
       saveCache: function (url, key, value) {
         var cache = this.getCache(url);
@@ -608,7 +785,7 @@
         try {
           cache = JSON.parse(cache)
         } catch(e) {
-          console.log('login  App.send >> try { cache = JSON.parse(cache) } catch(e) {\n' + e.message)
+          App.log('login  App.send >> try { cache = JSON.parse(cache) } catch(e) {\n' + e.message)
         }
         cache = cache || {}
         return key == null ? cache : cache[key]
@@ -619,56 +796,130 @@
       confirm: function () {
         switch (App.loginType) {
           case 'login':
-            App.login()
+            App.login(App.isAdminOperation)
             break
           case 'register':
-            App.register()
+            App.register(App.isAdminOperation)
             break
           case 'forget':
-            App.resetPassword()
+            App.resetPassword(App.isAdminOperation)
             break
         }
       },
 
+      showLogin(show, isAdmin) {
+        App.isLoginShow = show
+        App.isAdminOperation = isAdmin
+      },
+
       /**登录
        */
-      login: function () {
+      login: function (isAdminOperation, callback) {
         App.isLoginShow = false
 
-        vUrl.value = baseUrl + '/login'
-        vInput.value = JSON.stringify(
-          {
-            type: 0, // 登录方式，非必须 0-密码 1-验证码
-            phone: vAccount.value,
-            password: vPassword.value,
-            version: 1 // 全局默认版本号，非必须
-          },
-          null, '    ')
-        App.showRemote(false)
-        App.onChange(false)
-        App.send(function (url, res, err) {
-          App.onResponse(url, res, err)
+        baseUrl = App.getBaseUrl()
+        var url = (isAdminOperation ? App.server : baseUrl) + '/login'
+        const req = {
+          type: 0, // 登录方式，非必须 0-密码 1-验证码
+          phone: vAccount.value,
+          password: vPassword.value,
+          version: 1 // 全局默认版本号，非必须
+        }
 
-          var rpObj = res.data
-
-          if (rpObj != null && rpObj.code === 200) {
-            var user = rpObj.User || {}
-
-            if (user.id > 0) {
-              App.User = user
+        if (isAdminOperation) {
+          App.request(isAdminOperation, url, req, function (url, res, err) {
+            if (callback) {
+              callback(url, res, err)
+              return
             }
 
+            var rpObj = res.data || {}
 
-            //保存User到缓存
-            App.saveCache(App.getBaseUrl(), 'User', user)
+            if (rpObj.code != 200) {
+              alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
+            }
+            else {
+              var user = rpObj.User || {}
+
+              if (user.id > 0) {
+                App.User = user
+              }
+
+              //保存User到缓存
+              App.saveCache(App.server, 'User', user)
+
+              //查询余额
+              App.request(true, App.server + '/gets', {
+                'Privacy': {
+                  'id': user.id
+                },
+                'tag': 'Privacy'
+              }, function (url, res, err) {
+                var data = res.data || {}
+                if (data.code == 200 && data.Privacy != null) {
+                  App.Privacy = data.Privacy
+                }
+              })
+
+
+              var item = App.accounts[App.currentAccountIndex]
+              item.isLoggedIn = false
+              App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
+            }
+
+          })
+        }
+        else {
+          if (callback == null) {
+            var item
+            for (var i in App.accounts) {
+              item = App.accounts[i]
+              if (item != null && req.phone == item.phone) {
+                alert(req.phone +  ' 已在测试账号中！')
+                // App.currentAccountIndex = i
+                App.onClickAccount(i, item)
+                return
+              }
+            }
           }
-        })
+
+          vUrl.value = url
+          vInput.value = JSON.stringify(req, null, '    ')
+          App.showTestCase(false, App.isLocalShow)
+          App.onChange(false)
+          App.send(isAdminOperation, function (url, res, err) {
+            if (callback) {
+              callback(url, res, err)
+              return
+            }
+
+            App.onResponse(url, res, err)
+
+            //由login按钮触发，不能通过callback回调来实现以下功能
+            var data = res.data || {}
+            if (data.code == 200) {
+              var user = data.User || {}
+              App.accounts.push( {
+                isLoggedIn: true,
+                id: user.id,
+                name: user.name,
+                phone: req.phone,
+                password: req.password
+              })
+              App.currentAccountIndex = App.accounts.length - 1
+
+              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+            }
+          })
+        }
       },
 
       /**注册
        */
-      register: function () {
-        vUrl.value = baseUrl + '/register'
+      register: function (isAdminOperation) {
+        baseUrl = App.getBaseUrl()
+        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/register'
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -681,9 +932,9 @@
             verify: vVerify.value
           },
           null, '    ')
-        App.showRemote(false)
+        App.showTestCase(false, false)
         App.onChange(false)
-        App.send(function (url, res, err) {
+        App.send(isAdminOperation, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data
@@ -701,8 +952,9 @@
 
       /**重置密码
        */
-      resetPassword: function () {
-        vUrl.value = baseUrl + '/put/password'
+      resetPassword: function (isAdminOperation) {
+        baseUrl = App.getBaseUrl()
+        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/put/password'
         vInput.value = JSON.stringify(
           {
             verify: vVerify.value,
@@ -712,9 +964,9 @@
             }
           },
           null, '    ')
-        App.showRemote(false)
+        App.showTestCase(false, App.isLocalShow)
         App.onChange(false)
-        App.send(function (url, res, err) {
+        App.send(isAdminOperation, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data
@@ -732,24 +984,45 @@
 
       /**退出
        */
-      logout: function () {
-        this.saveCache(App.getBaseUrl(), 'User', {})
+      logout: function (isAdminOperation, callback) {
+        baseUrl = App.getBaseUrl()
+        var url = (isAdminOperation ? App.server : baseUrl) + '/logout'
+        var req = {}
 
-        vUrl.value = baseUrl + '/logout'
-        vInput.value = '{}'
-        App.showRemote(false)
-        App.onChange(false)
-        App.send(function (url, res, err) {
-          App.User = {}
-          App.remotes = []
-          App.onResponse(url, res, err)
-        })
+        if (isAdminOperation) {
+          // alert('logout  isAdminOperation  this.saveCache(App.server, User, {})')
+          this.saveCache(App.server, 'User', {})
+        }
+
+        // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
+        if (isAdminOperation) {
+          this.request(isAdminOperation, url, req, function (url, res, err) {
+            if (callback) {
+              callback(url, res, err)
+              return
+            }
+
+            // alert('logout  clear admin ')
+
+            App.clearUser()
+            App.onResponse(url, res, err)
+            App.showTestCase(false, App.isLocalShow)
+          })
+        }
+        else {
+          vUrl.value = url
+          vInput.value = JSON.stringify(req, null, '    ')
+          this.showTestCase(false, App.isLocalShow)
+          this.onChange(false)
+          this.send(isAdminOperation, callback)
+        }
       },
 
       /**获取验证码
        */
-      getVerify: function () {
-        vUrl.value = baseUrl + '/post/verify'
+      getVerify: function (isAdminOperation) {
+        baseUrl = App.getBaseUrl()
+        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/post/verify'
         var type = App.loginType == 'login' ? 0 : (App.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
           {
@@ -757,15 +1030,25 @@
             phone: vAccount.value
           },
           null, '    ')
-        App.showRemote(false)
+        App.showTestCase(false, App.isLocalShow)
         App.onChange(false)
-        App.send()
+        App.send(isAdminOperation, function (url, res, err) {
+          App.onResponse(url, res, err)
+
+          var data = res.data || {}
+          var obj = data.code == 200 ? data.Verify : null
+          var verify = obj == null ? null : obj.verify
+          if (verify != null) { //FIXME isEmpty校验时居然在verify=null! StringUtil.isEmpty(verify, true) == false) {
+            vVerify.value = verify
+          }
+        })
       },
 
       /**获取当前用户
        */
-      getCurrentUser: function () {
-        vUrl.value = this.getBaseUrl() + '/gets'
+      getCurrentUser: function (isAdminOperation, callback) {
+        baseUrl = App.getBaseUrl()
+        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/gets'
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -774,9 +1057,29 @@
             tag: 'Privacy'
           },
           null, '    ')
-        App.showRemote(false)
+        App.showTestCase(false, App.isLocalShow)
         App.onChange(false)
-        App.send()
+        App.send(isAdminOperation, function (url, res, err) {
+          if (callback) {
+            callback(url, res, err)
+            return
+          }
+
+          App.onResponse(url, res, err)
+          if (isAdminOperation) {
+            var data = res.data || {}
+            if (data.code == 200 && data.Privacy != null) {
+              App.Privacy = data.Privacy
+            }
+          }
+        })
+      },
+
+      clearUser: function () {
+        App.User = {}
+        App.Privacy = {}
+        App.remotes = []
+        App.saveCache(App.server, 'User', {}) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
       },
 
       /**计时回调
@@ -796,7 +1099,10 @@
         try {
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
-          before = JSON.stringify(jsonlint.parse(before), null, "    "); //用format不能catch！
+
+          before = jsonlint.parse(before);
+
+          before = JSON.stringify(before, null, "    "); //用format不能catch！
 
           //关键词let在IE和Safari上不兼容
           var code = '';
@@ -820,14 +1126,15 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
-          vOutput.value = output
+          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
 
           App.showDoc()
 
           try {
             vComment.value = isSingle ? '' : CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'], App.getMethod())
+
+            onScrollChanged()
           } catch (e) {
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
@@ -864,7 +1171,7 @@
       transfer: function () {
         isSingle = ! isSingle;
 
-        this.isRemoteShow = false
+        this.isTestCaseShow = false
 
         // 删除注释 <<<<<<<<<<<<<<<<<<<<<
 
@@ -889,10 +1196,18 @@
         this.onChange();
       },
 
+      showAndSend: function (url, req, isAdminOperation, callback) {
+        vUrl.value = url
+        vInput.value = JSON.stringify(req, null, '    ')
+        App.showTestCase(false, App.isLocalShow)
+        App.onChange(false)
+        App.send(isAdminOperation, callback)
+      },
+
       /**发送请求
        */
-      send: function (callback) {
-        if (App.isRemoteShow) {
+      send: function(isAdminOperation, callback) {
+        if (this.isTestCaseShow) {
           alert('请先输入请求内容！')
           return
         }
@@ -909,16 +1224,30 @@
         var url = new String(vUrl.value)
         url = url.replace(/ /g, '')
         vOutput.value = "requesting... \nURL = " + url;
-        App.view = 'output';
+        this.view = 'output';
 
 
         this.setBaseUrl()
+        this.request(isAdminOperation, url, req, callback)
 
-        App.request(url, req, callback)
+        this.locals = this.locals || []
+        if (this.locals.length >= 1000) { //最多1000条，太多会很卡
+          this.locals.splice(this.locals.length - 1, 1)
+        }
+        var method = App.getMethod()
+        this.locals.unshift({
+          'Document': {
+            'userId': App.User.id,
+            'name': method + ' ' + (StringUtil.isEmpty(req.tag, true) ? 'Test' : req.tag) + ' ' + App.formatDateTime(),
+            'url': '/' + method,
+            'request': real
+          }
+        })
+        App.saveCache('', 'locals', this.locals)
       },
 
-      //
-      request: function (url, req, callback) {
+      //请求
+      request: function (isAdminOperation, url, req, callback) {
         // axios.defaults.withcredentials = true
         axios({
           method: 'post',
@@ -927,20 +1256,29 @@
           withCredentials: true
         })
           .then(function (res) {
+            res = res || {}
             log('send >> success:\n' + JSON.stringify(res, null, '    '))
 
             //未登录，清空缓存
-            if (res != null && res.data != null && res.data.code == 407) {
-              App.User = {}
-              App.remotes = []
-              App.saveCache(baseUrl, 'User', {}) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
+            if (res.data != null && res.data.code == 407) {
+              // alert('request res.data != null && res.data.code == 407 >> isAdminOperation = ' + isAdminOperation)
+              if (isAdminOperation) {
+                // alert('request App.User = {} App.server = ' + App.server)
+
+                App.clearUser()
+              }
+              else {
+                // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
+
+                App.accounts[App.currentAccountIndex].isLoggedIn = false
+              }
             }
 
             if (callback != null) {
-              callback(url, res || {}, null)
+              callback(url, res, null)
               return
             }
-            App.onResponse(url, res || {}, null)
+            App.onResponse(url, res, null)
           })
           .catch(function (err) {
             log('send >> error:\n' + err)
@@ -981,7 +1319,7 @@
       doOnKeyUp: function (event) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
         if (keyCode == 13) { // enter
-          this.send();
+          this.send(false);
         }
       },
 
@@ -996,9 +1334,12 @@
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
           + CodeUtil.parseSwift(null, JSON.parse(rq))
           + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
-          + '\n\n#### 开放源码 \n APIJSON前后各端: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON)'
-          + '\nAPIJSON在线工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
-          + '\nAPIJSON - C#版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) ';
+          + '\n\n#### 开放源码 '
+          + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
+          + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
+          + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
+          + '\nAPIJSON - PHP版: [https://github.com/orchie/apijson](https://github.com/orchie/apijson) '
+          + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) ';
       },
 
 
@@ -1011,7 +1352,7 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md) \n\n' + d
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n\n' + d
         );
 
         App.view = 'markdown';
@@ -1024,10 +1365,10 @@
        * 获取文档
        */
       getDoc: function (callback) {
-        App.request(this.getBaseUrl() + '/get', {
+        App.request(false, this.getBaseUrl() + '/get', {
           '[]': {
             'Table': {
-              'TABLE_SCHEMA': 'sys',
+              'TABLE_SCHEMA': App.schema,
               'TABLE_TYPE': 'BASE TABLE',
               'TABLE_NAME!$': ['\\_%', 'sys\\_%', 'system\\_%'],
               '@order': 'TABLE_NAME+',
@@ -1035,6 +1376,7 @@
             },
             'Column[]': {
               'Column': {
+                'TABLE_SCHEMA': App.schema,
                 'TABLE_NAME@': '[]/Table/TABLE_NAME',
                 '@column': 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT'
               }
@@ -1043,6 +1385,16 @@
           'Request[]': {
             'Request': {
               '@order': 'version-,method-'
+            }
+          },
+          'Function[]': {
+            'Function': {
+              '@order': 'date-,name+',
+              '@column': 'name,arguments,demo,detail',
+              'demo()': 'getFunctionDemo()',
+              'detail()': 'getFunctionDetail()',
+              'r0()': 'removeKey(name)',
+              'r1()': 'removeKey(arguments)'
             }
           }
         }, function (url, res, err) {
@@ -1121,7 +1473,7 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求的格式(GET,HEAD方法不受限，可传任何 数据、结构)'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
               + ' \n 版本  |  方法  |  数据和结构'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
@@ -1137,14 +1489,39 @@
                 + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
             }
 
-            doc += '\n注: 可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
+            doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
 
 
-          App.onChange(false);
-
           //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+
+          //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          list = docObj == null ? null : docObj['Function[]'];
+          if (list != null) {
+            log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
+
+            doc += '\n\n\n\n\n\n\n\n\n### 远程函数'
+              + ' \n 说明  |  示例'
+              + ' \n --------  |  -------------- ';
+
+            for (var i = 0; i < list.length; i++) {
+              item = list[i];
+              if (item == null) {
+                continue;
+              }
+              log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+
+
+              doc += '\n' + item.detail + '  |  ' + JSON.stringify(item.demo);
+            }
+
+            doc += '\n' //避免没数据时表格显示没有网格
+          }
+
+          //Function[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+          App.onChange(false);
 
 
           callback(doc);
@@ -1273,7 +1650,7 @@
       },
 
       log: function (msg) {
-        console.log('Main.  ' + msg)
+        // App.log('Main.  ' + msg)
       },
 
       getDoc4TestCase: function () {
@@ -1281,7 +1658,7 @@
         var doc = ''
         var item
         for (var i = 0; i < list.length; i ++) {
-          item = list[i]
+          item = list[i] == null ? null : list[i].Document
           if (item == null || item.name == null) {
             continue
           }
@@ -1289,6 +1666,12 @@
           doc += '\n```json\n' + JSON.stringify(JSON.parse(item.request), null, '    ') + '\n```\n'
         }
         return doc
+      },
+
+      enableML: function (enable) {
+        App.isMLEnabled = enable
+        App.testProcess = enable ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
+        App.saveCache(App.server, 'isMLEnabled', enable)
       },
 
       /**回归测试
@@ -1320,79 +1703,117 @@
           alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
           return
         }
+
         const list = App.remotes || []
-        const allCount = list.length - 2
+        const allCount = list.length;
         doneCount = 0
 
-        App.testProcess = allCount <= 0 ? '' : '正在测试: ' + 0 + '/' + allCount
         if (allCount <= 0) {
           alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
           return
         }
+        App.testProcess = '正在测试: ' + 0 + '/' + allCount
 
-        for (var i = 0; i < list.length; i ++) {
+        for (var i = 0; i < allCount; i ++) {
           const item = list[i]
-          if (item == null || item.name == null) {
+          const document = item == null ? null : item.Document
+          if (document == null || document.name == null) {
+            doneCount ++
             continue
           }
-          if (item.url == '/login' || item.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-            console.log('test  item.url == "/login" || item.url == "/logout" >> continue')
+          if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+            App.log('test  document.url == "/login" || document.url == "/logout" >> continue')
+            doneCount ++
             continue
           }
-          console.log('test  item = ' + JSON.stringify(item, null, '  '))
+          App.log('test  document = ' + JSON.stringify(document, null, '  '))
 
           // App.restore(item)
           // App.onChange(false)
 
-          App.request(baseUrl + item.url, JSON.parse(item.request), function (url, res, err) {
+          App.request(false, baseUrl + document.url, JSON.parse(document.request), function (url, res, err) {
 
-            doneCount ++
-            App.testProcess = doneCount >= allCount ? '' : '正在测试: ' + doneCount + '/' + allCount
-
-
-            var response = ''
             try {
               App.onResponse(url, res, err)
-              console.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+              App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
             } catch (e) {
-              console.log('test  App.request >> } catch (e) {\n' + e.message)
+              App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
-            response = JSON.stringify(res.data || {})
+            const response = JSON.stringify(res.data || {})
 
-            var it = item || {} //请求异步
-            it.compare = JSONResponse.compareResponse(it.response == null ? null : JSON.parse(it.response), res.data)
-            console.log('doneCount = ' + doneCount + '; item.name = ' + it.name + '; item.compare = ' + it.compare)
+            const it = item || {} //请求异步
+            const d = it.Document || {} //请求异步
+            const tr = it.TestRecord || {} //请求异步
 
-            switch (it.compare) {
-              case JSONResponse.COMPARE_KEY_MORE:
-                it.compareColor = 'green'
-                it.error = '新增字段/新增值'
-                break;
-              case JSONResponse.COMPARE_VALUE_CHANGE:
-                it.compareColor = 'blue'
-                it.error = '值改变'
-                break;
-              case JSONResponse.COMPARE_KEY_LESS:
-                it.compareColor = 'yellow'
-                it.error = '缺少字段/整数变小数'
-                break;
-              case JSONResponse.COMPARE_TYPE_CHANGE:
-                it.compareColor = 'red'
-                it.error = 'code/值类型 改变'
-                break;
-              default:
-                it.compareColor = 'white'
-                it.error = ''
-                break;
+            if (App.isMLEnabled != true) {
+              const standardKey = App.isMLEnabled == true ? 'standard' : 'response';
+              const standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
+
+              tr.compare = JSONResponse.compareResponse(standard, res.data, '', App.isMLEnabled) || {}
+              App.onTestResponse(allCount, it, d, tr, response, tr.compare || {});
             }
-
-            var tests = App.tests || {}
-            tests[it.id] = response
-            App.tests = tests
-            // App.showRemote(true)
-
+            else {
+              App.request(false, App.server + '/get/testcompare/ml', {
+                "documentId": d.id,
+                "response": response,
+                "isML": true
+              }, function (url, res, err) {
+                var data = res.data || {}
+                if (data.code != 200) {
+                  App.onResponse(url, res, err)
+                  return
+                }
+                App.onTestResponse(allCount, it, d, tr, response, data.compare || {});
+              })
+            }
           })
         }
+      },
+
+      onTestResponse: function(allCount, it, d, tr, response, cmp) {
+        doneCount ++
+        App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
+
+        App.log('doneCount = ' + doneCount + '; d.name = ' + d.name + '; tr.compareType = ' + tr.compareType)
+
+        tr.compare = cmp;
+
+        it.compareType = tr.compare.code;
+        it.hintMessage = tr.compare.path + '  ' + tr.compare.msg;
+        switch (it.compareType) {
+          case JSONResponse.COMPARE_NO_STANDARD:
+            it.compareColor = 'white'
+            it.compareMessage = '确认正确后点击[这是对的]'
+            break;
+          case JSONResponse.COMPARE_KEY_MORE:
+            it.compareColor = 'green'
+            it.compareMessage = '新增字段/新增值'
+            break;
+          case JSONResponse.COMPARE_VALUE_CHANGE:
+            it.compareColor = 'blue'
+            it.compareMessage = '值改变'
+            break;
+          case JSONResponse.COMPARE_KEY_LESS:
+            it.compareColor = 'yellow'
+            it.compareMessage = '缺少字段/整数变小数'
+            break;
+          case JSONResponse.COMPARE_TYPE_CHANGE:
+            it.compareColor = 'red'
+            it.compareMessage = 'code/值类型 改变'
+            break;
+          default:
+            it.compareColor = 'white'
+            it.compareMessage = '查看结果'
+            break;
+        }
+        it.Document = d
+        it.TestRecord = tr
+
+        var tests = App.tests || {}
+        tests[d.id] = response
+        App.tests = tests
+        // App.showTestCase(true)
+
       },
 
       /**
@@ -1400,11 +1821,15 @@
        * @param item
        */
       downloadTest: function (index, item) {
+        item = item || {}
+        var document = item.Document = item.Document || {}
+        var testRecord = item.TestRecord = item.TestRecord || {}
+
         saveTextAs(
           '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
-          + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-          + '\n返回结果: \n' + JSON.stringify(JSON.parse(item.response || '{}'), null, '    ')
-          , '测试：' + item.name + '-前.txt'
+          + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
+          + '\n返回结果: \n' + JSON.stringify(JSON.parse(testRecord.response || '{}'), null, '    ')
+          , '测试：' + document.name + '-前.txt'
         )
 
         /**
@@ -1417,10 +1842,25 @@
           var tests = App.tests || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
-            + '\n\n接口名称: \n' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name
-            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[item.id] || '{}'), null, '    ')
-            , '测试：' + item.name + '-后.txt'
+            + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
+            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[document.id] || '{}'), null, '    ')
+            , '测试：' + document.name + '-后.txt'
           )
+
+
+          if (StringUtil.isEmpty(testRecord.standard, true) == false) {
+            setTimeout(function () {
+              var tests = App.tests || {}
+              saveTextAs(
+                '# APIJSON自动化回归测试-标准\n主页: https://github.com/TommyLemon/APIJSON'
+                + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
+                + '\n测试结果: \n' + JSON.stringify(testRecord.compare || '{}', null, '    ')
+                + '\n测试标准: \n' + JSON.stringify(JSON.parse(testRecord.standard || '{}'), null, '    ')
+                , '测试：' + document.name + '-标准.txt'
+              )
+            }, 5000)
+          }
+
         }, 5000)
 
       },
@@ -1430,9 +1870,13 @@
        * @param item
        */
       handleTest: function (right, index, item) {
+        item = item || {}
+        var document = item.Document = item.Document || {}
+        var testRecord = item.TestRecord = item.TestRecord || {}
+
         if (right) {
           var tests = App.tests || {}
-          item.response = tests[item.id]
+          testRecord.response = tests[document.id]
         }
 
         if (right != true) {
@@ -1441,47 +1885,71 @@
           Vue.set(App.remotes, index, item);
 
           App.view = 'code'
-          App.jsoncon = isBefore ? item.response : App.tests[item.id]
+          App.jsoncon = isBefore ? (testRecord.response || '') : (App.tests[document.id] || '')
         }
         else {
-          var baseUrl = App.getBaseUrl()
-          vUrl.value = baseUrl + '/put'
+          const isML = App.isMLEnabled
 
-          vInput.value = JSON.stringify({
-            Document: {
-              id: item.id,
-              response: item.response
-            },
-            tag: 'Document'
-          })
+          var url
+          var req
+          if (isML != true) {
+            var response = StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response);
+            var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
 
-          App.showRemote(false)
-          App.onChange(false)
-          App.send(function (url, res, err) {
+            var code = response.code;
+            delete response.code; //code必须一致，下面没用到，所以不用还原
+
+            var stddObj = isML ? JSONResponse.updateStandard(standard || {}, response) : {};
+            stddObj.code = code;
+            var stdd = isML ? JSON.stringify(stddObj) : null;
+
+            url = App.server + '/post'
+            req = {
+              TestRecord: {
+                userId: App.User.id, //TODO 权限问题？ item.userId,
+                documentId: document.id,
+                compare: JSON.stringify(testRecord.compare || {}),
+                response: testRecord.response
+              },
+              tag: 'TestRecord'
+            }
+          }
+          else {
+            url = App.server + '/post/testrecord/ml'
+            req = {
+                documentId: document.id
+            }
+          }
+
+          App.request(true, url, req, function (url, res, err) {
             App.onResponse(url, res, err)
 
-            var rpObj = res.data
-            if (rpObj != null && rpObj.code === 200) {
-              item.compare = 0
-              App.showRemote(true)
-
-              App.request(baseUrl + '/post', {
-                  TestRecord: {
-                    userId: App.User.id, //TODO 权限问题？ item.userId,
-                    documentId: item.id,
-                    response: item.response
-                  },
-                  tag: 'TestRecord'
-                },
-                function (url, res, err) {}
-              )
-
+            var data = res.data || {}
+            if (data.code != 200) {
+              if (isML) {
+                alert('机器学习更新标准 异常：\n' + data.msg)
+              }
+            }
+            else {
+              item.compareType = 0
+              item.compareMessage = '查看结果'
+              item.compareColor = 'white'
+              item.hintMessage = '结果正确'
+              testRecord.compare = {}
+              // testRecord.standard = stdd
+              App.showTestCase(true, false)
             }
 
           })
 
         }
-      }
+      },
+
+      //显示详细信息, :data-hint :data, :hint 都报错，只能这样
+      setTestHint(index, item) {
+        this.$refs.testResultButtons[index].setAttribute('data-hint', item.hintMessage);
+      },
+
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     },
@@ -1508,11 +1976,44 @@
         if (StringUtil.isEmpty(url, true) == false) {
           URL_BASE = url
         }
+        var schema = this.getCache('', 'schema')
+        if (StringUtil.isEmpty(schema, true) == false) {
+          this.schema = schema
+        }
+        var server = this.getCache('', 'server')
+        if (StringUtil.isEmpty(server, true) == false) {
+          this.server = server
+        }
+
+        this.locals = this.getCache('', 'locals') || []
       } catch (e) {
-        console.log('created  try { ' +
-          '\nURL_BASE = this.getCache(, URL_BASE)' +
+        this.log('created  try { ' +
+          '\nvar schema = this.getCache(, schema)' +
           '\n} catch (e) {\n' + e.message)
       }
+      try { //这里是初始化，不能出错
+        var accounts = this.getCache(URL_BASE, 'accounts')
+        if (accounts != null) {
+          this.accounts = accounts
+          this.currentAccountIndex = this.getCache(URL_BASE, 'currentAccountIndex')
+        }
+      } catch (e) {
+        this.log('created  try { ' +
+          '\nvar accounts = this.getCache(URL_BASE, accounts)' +
+          '\n} catch (e) {\n' + e.message)
+      }
+
+      try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
+        this.User = this.getCache(this.server, 'User') || {}
+        this.isMLEnabled = this.getCache(server, 'isMLEnabled')
+        this.testProcess = this.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
+      } catch (e) {
+        this.log('created  try { ' +
+          '\nthis.User = this.getCache(this.server, User) || {}' +
+          '\n} catch (e) {\n' + e.message)
+      }
+
+
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
       this.transfer()

@@ -16,6 +16,21 @@ html,body {
   display: none
 }
 
+
+.pull-left {
+  float: left;
+  display: flex;
+  align-items: center;
+  flex-grow: 1
+  /* justify-content: center */
+}
+
+.pull-center {
+  align-items: center;
+  width: 100%;
+  /* justify-content: center */
+}
+
 .pull-right {
   float: right;
   display: flex;
@@ -25,12 +40,7 @@ html,body {
   /* justify-content: center */
 }
 
-.pull-left {
-  display: flex;
-  align-items: center;
-  flex-grow: 1
-  /* justify-content: center */
-}
+
 
 
 textarea, input {
