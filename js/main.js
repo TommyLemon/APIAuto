@@ -341,7 +341,7 @@
           }
 
           var tag = App.getTag()
-          App.history.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          App.history.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -359,7 +359,7 @@
               return
             }
             var tag = App.getTag()
-            App.exTxt.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag)
+            App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
           }
           else { //下载到本地
             if (App.isTestCaseShow) { //文档
@@ -1238,7 +1238,7 @@
         this.locals.unshift({
           'Document': {
             'userId': App.User.id,
-            'name': method + ' ' + (StringUtil.isEmpty(req.tag, true) ? 'Test' : req.tag) + ' ' + App.formatDateTime(),
+            'name': method + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag) + ' ' + App.formatDateTime(),
             'url': '/' + method,
             'request': real
           }
