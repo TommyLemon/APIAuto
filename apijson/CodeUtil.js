@@ -1028,8 +1028,16 @@ var CodeUtil = {
         fun = '模糊搜索';
         key = columnName.substring(0, columnName.length - 1);
       }
-      else if (columnName.endsWith("?")) {//匹配正则表达式，查询时处理
+      else if (columnName.endsWith("~")) {//匹配正则表达式，查询时处理
         fun = '正则匹配';
+        key = columnName.substring(0, columnName.length - 1);
+        if (key.endsWith("*")) {
+          key = key.substring(0, key.length - 1);
+          fun += '(忽略大小写)';
+        }
+      }
+      else if (columnName.endsWith("%")) {//连续范围 BETWEEN AND，查询时处理
+        fun = '连续范围';
         key = columnName.substring(0, columnName.length - 1);
       }
       else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理

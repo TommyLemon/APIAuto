@@ -184,7 +184,7 @@ var JSONResponse = {
 
       first = false;
     }
-    while (index >=0)
+    while (index >= 0);
 
     return name;
   },
