@@ -1302,11 +1302,11 @@
           vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
         }
         else {
-          var json = res.data
-          if (isSingle) {
-            json = JSONResponse.formatObject(json);
+          var data = res.data
+          if (isSingle && data.code == 200) { //不格式化错误的结果
+            data = JSONResponse.formatObject(data);
           }
-          App.jsoncon = JSON.stringify(json, null, '    ');
+          App.jsoncon = JSON.stringify(data, null, '    ');
           App.view = 'code';
           vOutput.value = '';
         }
