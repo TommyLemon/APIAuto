@@ -87,13 +87,13 @@ var JSONResponse = {
       value = object[key];
 
       if (value instanceof Array) { // JSONArray，遍历来format内部项
-        formattedObject[JSONResponse.replaceArray(key)] = JSONResponse.formatArray(value);
+        formattedObject[JSONResponse.formatArrayKey(key)] = JSONResponse.formatArray(value);
       }
       else if (value instanceof Object) { // JSONObject，往下一级提取
-        formattedObject[JSONResponse.getSimpleName(key)] = JSONResponse.formatObject(value);
+        formattedObject[JSONResponse.formatObjectKey(key)] = JSONResponse.formatObject(value);
       }
       else { // 其它Object，直接填充
-        formattedObject[JSONResponse.getSimpleName(key)] = value;
+        formattedObject[JSONResponse.formatOtherKey(key)] = value;
       }
     }
 
@@ -131,24 +131,6 @@ var JSONResponse = {
     return formattedArray;
   },
 
-  /**替换key+KEY_ARRAY为keyList
-   * @param key
-   * @return getSimpleName(isArrayKey(key) ? getArrayKey(...) : key) {@link #getSimpleName(String)}
-   */
-  replaceArray: function(key) {
-    if (JSONObject.isArrayKey(key)) {
-      key = JSONResponse.getArrayKey(key.substring(0, key.lastIndexOf('[]')));
-    }
-    return JSONResponse.getSimpleName(key);
-  },
-  /**获取列表变量名
-   * @param key => getNoBlankString(key)
-   * @return empty ? "list" : key + "List" 且首字母小写
-   */
-  getArrayKey: function(key) {
-    return StringUtil.addSuffix(key, "List");
-  },
-
   /**获取简单名称
    * @param fullName name 或 name:alias
    * @return name => name; name:alias => alias
@@ -159,28 +141,110 @@ var JSONResponse = {
     return index < 0 ? fullName : fullName.substring(0, index);
   },
 
-  /**获取简单名称
-   * @param fullName name 或 name:alias 或 User-name 或 User-name:alias
-   * @return name => name; name:alias 或 User-name:alias => alias; User-name => userName
+  /**获取变量名
+   * @param fullName
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = true, formatAt = true, formatHyphen = true, firstCase = true
    */
-  getSimpleName: function(fullName) {
-    //key:alias -> alias
-    var index = fullName == null ? -1 : fullName.indexOf(":");
+  getVariableName(fullName) {
+    return JSONResponse.formatKey(fullName, true, true, true, true);
+  },
+
+  /**格式化数组的名称 key[] => keyList; key:alias[] => aliasList; Table-column[] => tableColumnList
+   * @param key empty ? "list" : key + "List" 且首字母小写
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = false, formatHyphen = true, firstCase = true
+   */
+  formatArrayKey(key) {
+    if (JSONObject.isArrayKey(key)) {
+      key = StringUtil.addSuffix(key.substring(0, key.length - 2), "list");
+    }
+    var index = key == null ? -1 : key.indexOf(":");
     if (index >= 0) {
-      return fullName.substring(index + 1);
+      return key.substring(index + 1); //不处理自定义的
     }
 
-    var left = index < 0 ? fullName : fullName.substring(0, index);
+    return JSONResponse.formatKey(key, false, false, true, true); //节约性能，除了表对象 Table-column:alias[] ，一般都符合变量命名规范
+  },
 
+  /**格式化对象的名称 name => name; name:alias => alias
+   * @param key name 或 name:alias
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = false, formatHyphen = false, firstCase = true
+   */
+  formatObjectKey(key) {
+    var index = key == null ? -1 : key.indexOf(":");
+    if (index >= 0) {
+      return key.substring(index + 1); //不处理自定义的
+    }
+
+    return JSONResponse.formatKey(key, false, false, false, true); //节约性能，除了表对象 Table:alias ，一般都符合变量命名规范
+  },
+
+  /**格式化普通值的名称 name => name; name:alias => alias
+   * @param fullName name 或 name:alias
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = false, firstCase = false
+   */
+  formatOtherKey(fullName) {
+    return JSONResponse.formatKey(fullName, false, true, false, false); //节约性能，除了关键词 @key ，一般都符合变量命名规范，不符合也原样返回便于调试
+  },
+
+  /**格式化名称
+   * @param fullName name 或 name:alias
+   * @param formatAt 去除前缀 @ ， @a => a
+   * @param formatColon 去除分隔符 : ， A:b => b
+   * @param formatHyphen 去除分隔符 - ， A-b-cd-Efg => aBCdEfg
+   * @param firstCase 第一个单词首字母小写，后面的首字母大写， Ab => ab ; A-b-Cd => aBCd
+   * @return name => name; name:alias => alias
+   */
+  formatKey(fullName, formatColon, formatAt, formatHyphen, firstCase) {
+    if (fullName == null) {
+      log(TAG, "formatKey  fullName == null >> return null;");
+      return null;
+    }
+
+    if (formatColon) {
+      fullName = JSONResponse.formatColon(fullName);
+    }
+    if (formatAt) { //关键词只去掉前缀，不格式化单词，例如 @a-b 返回 a-b ，最后不会调用 setter
+      fullName = JSONResponse.formatAt(fullName);
+    }
+    if (formatHyphen) {
+      fullName = JSONResponse.formatHyphen(fullName, firstCase);
+    }
+
+    return firstCase ? StringUtil.firstCase(fullName) : fullName; //不格式化普通 key:value (value 不为 [], {}) 的 key
+  },
+
+  /**"@key" => "key"
+   * @param key
+   * @return
+   */
+  formatAt(key) {
+    return key.startsWith("@") ? key.substring(1) : key;
+  },
+  /**key:alias => alias
+   * @param key
+   * @return
+   */
+  formatColon(key) {
+    var index = key.indexOf(":");
+    return index < 0 ? key : key.substring(index + 1);
+  },
+
+  /**A-b-cd-Efg => ABCdEfg
+   * @param key
+   * @return
+   */
+  formatHyphen(key, firstCase) {
     var first = true;
-    var name = '';
+    var index;
+
+    var name = "";
     var part;
     do {
-      index = left.indexOf("-");
-      part = index < 0 ? left : left.substring(0, index);
+      index = key.indexOf("-");
+      part = index < 0 ? key : key.substring(0, index);
 
-      name += StringUtil.firstCase(part, ! first);
-      left = left.substring(index + 1);
+      name += firstCase && first == false ? StringUtil.firstCase(part, true) : part;
+      key = key.substring(index + 1);
 
       first = false;
     }
@@ -188,7 +252,6 @@ var JSONResponse = {
 
     return name;
   },
-
 
 
   COMPARE_NO_STANDARD: -1,

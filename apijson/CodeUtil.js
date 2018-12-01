@@ -159,7 +159,7 @@ var CodeUtil = {
       depth = 0;
     }
 
-    const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getSimpleName(CodeUtil.getItemKey(name)) : CodeUtil.getTableKey(JSONResponse.getSimpleName(name));
+    const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
 
     return CodeUtil.parseCode(name, reqObj, {
@@ -194,7 +194,7 @@ var CodeUtil = {
 
         log(CodeUtil.TAG, 'parseJava  for delete >> count = ' + count + '; page = ' + page);
 
-        var name = JSONResponse.getSimpleName(CodeUtil.getItemKey(key));
+        var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key));
 
         if (isSmart) {
           var prefix = key.substring(0, key.length - 2);
@@ -245,7 +245,7 @@ var CodeUtil = {
 
         s += CodeUtil.parseJava(key, value, depth + 1, isTable);
 
-        const name = CodeUtil.getTableKey(JSONResponse.getSimpleName(key));
+        const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {
           s = column == null ? s : s + '\n' + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
           s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
@@ -348,7 +348,7 @@ var CodeUtil = {
       onParseJSONArray: function (key, value, index) {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = padding + CodeUtil.getBlank(1);
-        var k = JSONResponse.replaceArray(key);
+        var k = JSONResponse.getVariableName(key);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getJavaTypeFromJS('item', value[0], false);
 
@@ -381,7 +381,7 @@ var CodeUtil = {
 
       onParseJSONObject: function (key, value, index) {
         var padding = '\n' + CodeUtil.getBlank(depth);
-        var k = StringUtil.firstCase(JSONResponse.getSimpleName(key));
+        var k = JSONResponse.getVariableName(key);
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
