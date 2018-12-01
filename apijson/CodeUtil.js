@@ -341,7 +341,7 @@ var CodeUtil = {
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, true);
 
-        return '\n' + CodeUtil.getBlank(depth) + type + ' ' + key + ' = ' + name + '.get'
+        return '\n' + CodeUtil.getBlank(depth) + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
           + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");';
       },
 

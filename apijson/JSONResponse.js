@@ -146,12 +146,15 @@ var JSONResponse = {
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = true, formatAt = true, formatHyphen = true, firstCase = true
    */
   getVariableName(fullName) {
+    if (JSONObject.isArrayKey(fullName)) {
+      fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), "list");
+    }
     return JSONResponse.formatKey(fullName, true, true, true, true);
   },
 
   /**格式化数组的名称 key[] => keyList; key:alias[] => aliasList; Table-column[] => tableColumnList
    * @param key empty ? "list" : key + "List" 且首字母小写
-   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = false, formatHyphen = true, firstCase = true
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = true, firstCase = true
    */
   formatArrayKey(key) {
     if (JSONObject.isArrayKey(key)) {
@@ -162,12 +165,12 @@ var JSONResponse = {
       return key.substring(index + 1); //不处理自定义的
     }
 
-    return JSONResponse.formatKey(key, false, false, true, true); //节约性能，除了表对象 Table-column:alias[] ，一般都符合变量命名规范
+    return JSONResponse.formatKey(key, false, true, true, true); //节约性能，除了表对象 Table-column:alias[] ，一般都符合变量命名规范
   },
 
   /**格式化对象的名称 name => name; name:alias => alias
    * @param key name 或 name:alias
-   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = false, formatHyphen = false, firstCase = true
+   * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = false, firstCase = true
    */
   formatObjectKey(key) {
     var index = key == null ? -1 : key.indexOf(":");
@@ -175,7 +178,7 @@ var JSONResponse = {
       return key.substring(index + 1); //不处理自定义的
     }
 
-    return JSONResponse.formatKey(key, false, false, false, true); //节约性能，除了表对象 Table:alias ，一般都符合变量命名规范
+    return JSONResponse.formatKey(key, false, true, false, true); //节约性能，除了表对象 Table:alias ，一般都符合变量命名规范
   },
 
   /**格式化普通值的名称 name => name; name:alias => alias
