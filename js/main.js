@@ -1302,7 +1302,7 @@
           vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
         }
         else {
-          var data = res.data
+          var data = res.data || {}
           if (isSingle && data.code == 200) { //不格式化错误的结果
             data = JSONResponse.formatObject(data);
           }
