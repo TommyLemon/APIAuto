@@ -1232,7 +1232,7 @@
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
-          this.locals.splice(this.locals.length - 1, 1)
+          this.locals.splice(999, this.locals.length - 999)
         }
         var method = App.getMethod()
         this.locals.unshift({
@@ -1946,8 +1946,15 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
+      setRequestHint(index, item) {
+        var d = item == null ? null : item.Document;
+        var r = d == null ? null : d.request;
+        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(JSON.parse(r), null, ' '));
+      },
+      //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item) {
-        this.$refs.testResultButtons[index].setAttribute('data-hint', item.hintMessage);
+        var h = item == null ? null : item.hintMessage;
+        this.$refs.testResultButtons[index].setAttribute('data-hint', h || '');
       },
 
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
