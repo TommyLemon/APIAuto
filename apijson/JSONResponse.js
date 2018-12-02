@@ -477,6 +477,13 @@ var JSONResponse = {
     return StringUtil.isEmpty(folder, true) ? name : folder + '/' + name;
   },
 
+  getShowString(arr) {
+    if (arr == null || arr.length <= 0) {
+      return '';
+    }
+    return arr.join();
+  },
+
   log(msg) {
     // console.log(msg);
   }

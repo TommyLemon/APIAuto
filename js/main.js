@@ -1382,9 +1382,12 @@
               }
             }
           },
-          'Request[]': {
-            'Request': {
-              '@order': 'version-,method-'
+          'Access[]': {
+            'Access': {
+              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@order': 'date-,name+',
+              'name()': 'getWithDefault(alias,name)',
+              'r0()': 'removeKey(alias)'
             }
           },
           'Function[]': {
@@ -1395,6 +1398,11 @@
               'detail()': 'getFunctionDetail()',
               'r0()': 'removeKey(name)',
               'r1()': 'removeKey(arguments)'
+            }
+          },
+          'Request[]': {
+            'Request': {
+              '@order': 'version-,method-'
             }
           }
         }, function (url, res, err) {
@@ -1468,32 +1476,38 @@
           //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-          //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['Request[]'];
-          if (list != null) {
-            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
-              + ' \n 版本  |  方法  |  数据和结构'
-              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
+          //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          list = docObj == null ? null : docObj['Access[]'];
+          if (list != null) {
+            log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
+
+            doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
+              + ' \n 表名  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色'
+              + ' \n --------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  -------------- ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
               if (item == null) {
                 continue;
               }
-              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.version + '  |  ' + item.method
-                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+              doc += '\n' + item.name
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete));
             }
 
-            doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
+            doc += '\n' //避免没数据时表格显示没有网格
           }
 
-
-          //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          //Access[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1520,6 +1534,34 @@
           }
 
           //Function[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+          //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          list = docObj == null ? null : docObj['Request[]'];
+          if (list != null) {
+            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
+
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
+              + ' \n 版本  |  方法  |  数据和结构'
+              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
+
+            for (var i = 0; i < list.length; i++) {
+              item = list[i];
+              if (item == null) {
+                continue;
+              }
+              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+
+
+              doc += '\n' + item.version + '  |  ' + item.method
+                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+            }
+
+            doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
+          }
+
+
+          //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
           App.onChange(false);
 
