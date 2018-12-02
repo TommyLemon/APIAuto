@@ -666,7 +666,7 @@
               item.isLoggedIn = true
 
               var data = res.data || {}
-              var user = data.code == 200 ? data.User : null
+              var user = data.code == 200 ? data.user : null
               if (user != null) {
                 App.accounts[App.currentAccountIndex].name = user.name
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
@@ -898,7 +898,7 @@
             //由login按钮触发，不能通过callback回调来实现以下功能
             var data = res.data || {}
             if (data.code == 200) {
-              var user = data.User || {}
+              var user = data.user || {}
               App.accounts.push( {
                 isLoggedIn: true,
                 id: user.id,
@@ -1238,7 +1238,7 @@
         this.locals.unshift({
           'Document': {
             'userId': App.User.id,
-            'name': method + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag) + ' ' + App.formatDateTime(),
+            'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
             'request': real
           }
