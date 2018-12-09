@@ -1036,7 +1036,7 @@
           App.onResponse(url, res, err)
 
           var data = res.data || {}
-          var obj = data.code == 200 ? data.Verify : null
+          var obj = data.code == 200 ? data.verify : null
           var verify = obj == null ? null : obj.verify
           if (verify != null) { //FIXME isEmpty校验时居然在verify=null! StringUtil.isEmpty(verify, true) == false) {
             vVerify.value = verify
