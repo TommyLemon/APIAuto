@@ -60,9 +60,15 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite 等
 
+[APIJSONParser](https://github.com/Zerounary/APIJSONParser) 参考 APIJSON 设计标准开发的一款 SQL 编译器框架
+
+[SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
+
+感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
+
 ### 持续更新
 [https://github.com/TommyLemon/APIJSONAuto/commits/master](https://github.com/TommyLemon/APIJSONAuto/commits/master)
 
 ### 我要赞赏
-创作不易，右上角点 ⭐Star 支持下吧，谢谢 ^_^ <br />
+创作不易，右上角点 ⭐Star 支持下本项目吧，谢谢 ^_^ <br />
 [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto)
