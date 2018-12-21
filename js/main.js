@@ -341,7 +341,7 @@
           }
 
           var tag = App.getTag()
-          App.history.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          App.history.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -359,7 +359,7 @@
               return
             }
             var tag = App.getTag()
-            App.exTxt.name = App.getMethod() + ' ' + (StringUtil.isEmpty(tag, true) ? 'Test' : tag)
+            App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
           }
           else { //下载到本地
             if (App.isTestCaseShow) { //文档
@@ -666,7 +666,7 @@
               item.isLoggedIn = true
 
               var data = res.data || {}
-              var user = data.code == 200 ? data.User : null
+              var user = data.code == 200 ? data.user : null
               if (user != null) {
                 App.accounts[App.currentAccountIndex].name = user.name
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
@@ -898,7 +898,7 @@
             //由login按钮触发，不能通过callback回调来实现以下功能
             var data = res.data || {}
             if (data.code == 200) {
-              var user = data.User || {}
+              var user = data.user || {}
               App.accounts.push( {
                 isLoggedIn: true,
                 id: user.id,
@@ -1036,7 +1036,7 @@
           App.onResponse(url, res, err)
 
           var data = res.data || {}
-          var obj = data.code == 200 ? data.Verify : null
+          var obj = data.code == 200 ? data.verify : null
           var verify = obj == null ? null : obj.verify
           if (verify != null) { //FIXME isEmpty校验时居然在verify=null! StringUtil.isEmpty(verify, true) == false) {
             vVerify.value = verify
@@ -1232,13 +1232,13 @@
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
-          this.locals.splice(this.locals.length - 1, 1)
+          this.locals.splice(999, this.locals.length - 999)
         }
         var method = App.getMethod()
         this.locals.unshift({
           'Document': {
             'userId': App.User.id,
-            'name': method + ' ' + (StringUtil.isEmpty(req.tag, true) ? 'Test' : req.tag) + ' ' + App.formatDateTime(),
+            'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
             'request': real
           }
@@ -1302,11 +1302,11 @@
           vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
         }
         else {
-          var json = res.data
-          if (isSingle) {
-            json = JSONResponse.formatObject(json);
+          var data = res.data || {}
+          if (isSingle && data.code == 200) { //不格式化错误的结果
+            data = JSONResponse.formatObject(data);
           }
-          App.jsoncon = JSON.stringify(json, null, '    ');
+          App.jsoncon = JSON.stringify(data, null, '    ');
           App.view = 'code';
           vOutput.value = '';
         }
@@ -1339,7 +1339,8 @@
           + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
           + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
           + '\nAPIJSON - PHP版: [https://github.com/orchie/apijson](https://github.com/orchie/apijson) '
-          + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) ';
+          + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) '
+          + '\nAPIJSON -Python: [https://github.com/zhangchunlin/uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) ';
       },
 
 
@@ -1382,9 +1383,12 @@
               }
             }
           },
-          'Request[]': {
-            'Request': {
-              '@order': 'version-,method-'
+          'Access[]': {
+            'Access': {
+              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@order': 'date-,name+',
+              'name()': 'getWithDefault(alias,name)',
+              'r0()': 'removeKey(alias)'
             }
           },
           'Function[]': {
@@ -1395,6 +1399,11 @@
               'detail()': 'getFunctionDetail()',
               'r0()': 'removeKey(name)',
               'r1()': 'removeKey(arguments)'
+            }
+          },
+          'Request[]': {
+            'Request': {
+              '@order': 'version-,method-'
             }
           }
         }, function (url, res, err) {
@@ -1468,32 +1477,38 @@
           //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-          //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['Request[]'];
-          if (list != null) {
-            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
-              + ' \n 版本  |  方法  |  数据和结构'
-              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
+          //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          list = docObj == null ? null : docObj['Access[]'];
+          if (list != null) {
+            log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
+
+            doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
+              + ' \n 表名  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色'
+              + ' \n --------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  -------------- ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
               if (item == null) {
                 continue;
               }
-              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.version + '  |  ' + item.method
-                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+              doc += '\n' + item.name
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete));
             }
 
-            doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
+            doc += '\n' //避免没数据时表格显示没有网格
           }
 
-
-          //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          //Access[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1520,6 +1535,34 @@
           }
 
           //Function[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+          //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+          list = docObj == null ? null : docObj['Request[]'];
+          if (list != null) {
+            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
+
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
+              + ' \n 版本  |  方法  |  数据和结构'
+              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
+
+            for (var i = 0; i < list.length; i++) {
+              item = list[i];
+              if (item == null) {
+                continue;
+              }
+              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+
+
+              doc += '\n' + item.version + '  |  ' + item.method
+                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+            }
+
+            doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
+          }
+
+
+          //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
           App.onChange(false);
 
@@ -1946,8 +1989,15 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
+      setRequestHint(index, item) {
+        var d = item == null ? null : item.Document;
+        var r = d == null ? null : d.request;
+        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(JSON.parse(r), null, ' '));
+      },
+      //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item) {
-        this.$refs.testResultButtons[index].setAttribute('data-hint', item.hintMessage);
+        var h = item == null ? null : item.hintMessage;
+        this.$refs.testResultButtons[index].setAttribute('data-hint', h || '');
       },
 
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

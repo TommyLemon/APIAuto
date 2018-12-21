@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>APIJSON.org</title>
+  <title>APIJSONAuto机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理平台。</title>
   <meta charset="utf-8" />
-  <meta name="keywords" content="apijson,api,json,fastjson,json在线解析,json格式化验证"/>
-  <meta name="description" content="后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！"/>
+  <meta name="keywords" content="apijson,api,json,自动生成接口文档,自动化接口回归测试,机器学习接口回归测试,回归测试,机器学习,接口测试,自动化,fastjson,json在线解析,json格式化验证"/>
+  <meta name="description" content="APIJSONAuto机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理平台。"/>
 
   <!-- 登录 <<<<<<<<<<<<<<<<<<<< -->
   <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
@@ -90,7 +90,7 @@
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 3)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
 
                   <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
-                    <div style="margin-top: 10px">微信扫码充值<br />没有账号会自动创建</div>
+                    <div style="margin-top: 10px">微信扫码充值<br />没有账号会帮你创建</div>
                     <img src="img/wechat_collect.jpg" />
                     <div style="margin: 10px">备注填: APIJSON+你的手机号</div>
                   </li>
@@ -132,7 +132,7 @@
     <div class="left-panel">
       <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
         <li v-for="(item, index) in testCases" >
-          <a href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
+          <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
           <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
             <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
             <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
@@ -579,8 +579,8 @@
   (function() {
     try {
       var hm = document.createElement("script");
-      hm.src = "https://hm.baidu.com/hm.js?b8fc421d7c0dc354c6c8fb5a2c4f7729"; //cn
-      // hm.src = "https://hm.baidu.com/hm.js?965ec968d2d53b729b90efc7ffb3ead2"; //org
+//      hm.src = "https://hm.baidu.com/hm.js?b8fc421d7c0dc354c6c8fb5a2c4f7729"; //cn
+      hm.src = "https://hm.baidu.com/hm.js?965ec968d2d53b729b90efc7ffb3ead2"; //org
       var s = document.getElementsByTagName("script")[0];
       s.parentNode.insertBefore(hm, s);
     } catch (e) {
