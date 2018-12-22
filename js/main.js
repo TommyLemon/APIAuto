@@ -647,6 +647,7 @@
         if (this.currentAccountIndex == index) {
           vAccount.value = item.phone
           vPassword.value = item.password
+          this.setRememberLogin(item.remember)
 
           if (item.isLoggedIn) {
             //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
@@ -668,7 +669,9 @@
               var data = res.data || {}
               var user = data.code == 200 ? data.user : null
               if (user != null) {
-                App.accounts[App.currentAccountIndex].name = user.name
+                item.name = user.name
+                item.remember = data.remember
+
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
               }
@@ -708,7 +711,7 @@
         App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
       },
       addAccountTab: function () {
-        App.showLogin(true, false) //TODO 登录窗口右上角加一个 X App.showLogin(! App.isLoginShow, false)
+        App.showLogin(true, false)
       },
 
 
@@ -810,6 +813,27 @@
       showLogin(show, isAdmin) {
         App.isLoginShow = show
         App.isAdminOperation = isAdmin
+
+        if (show != true) {
+          return
+        }
+
+        var user = isAdmin ? App.User : null //add account   App.accounts[App.currentAccountIndex]
+
+        if (user == null) {
+          user = {
+            phone: 13000082001,
+            password: 123456
+          }
+        }
+
+        vAccount.value = user.phone
+        vPassword.value = user.password
+        this.setRememberLogin(user.remember)
+      },
+
+      setRememberLogin(remember) {
+        vRemember.checked = remember || false
       },
 
       /**登录
@@ -823,7 +847,8 @@
           type: 0, // 登录方式，非必须 0-密码 1-验证码
           phone: vAccount.value,
           password: vPassword.value,
-          version: 1 // 全局默认版本号，非必须
+          version: 1, // 全局默认版本号，非必须
+          remember: vRemember.checked,
         }
 
         if (isAdminOperation) {
@@ -842,6 +867,7 @@
               var user = rpObj.User || {}
 
               if (user.id > 0) {
+                user.remember = rpObj.remember
                 App.User = user
               }
 
@@ -877,6 +903,7 @@
               if (item != null && req.phone == item.phone) {
                 alert(req.phone +  ' 已在测试账号中！')
                 // App.currentAccountIndex = i
+                item.remember = vRemember.checked
                 App.onClickAccount(i, item)
                 return
               }
@@ -904,7 +931,8 @@
                 id: user.id,
                 name: user.name,
                 phone: req.phone,
-                password: req.password
+                password: req.password,
+                remember: data.remember
               })
               App.currentAccountIndex = App.accounts.length - 1
 
@@ -1076,10 +1104,10 @@
       },
 
       clearUser: function () {
-        App.User = {}
+        App.User.id = 0
         App.Privacy = {}
         App.remotes = []
-        App.saveCache(App.server, 'User', {}) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
+        App.saveCache(App.server, 'User', App.User) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
       },
 
       /**计时回调
@@ -1716,6 +1744,7 @@
         App.testProcess = enable ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
         App.saveCache(App.server, 'isMLEnabled', enable)
       },
+
 
       /**回归测试
        * 原理：

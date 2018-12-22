@@ -371,7 +371,7 @@
 
                   <div class="form-group" v-show="loginType == 'login'">
                     <label >
-                      <input type="checkbox" name="remember"/> 记住登录
+                      <input id="vRemember" type="checkbox" name="remember" @change="setRememberLogin(vRemember.checked)"/> 记住登录
                     </label>
                   </div>
 
@@ -524,6 +524,7 @@
   var vAccount = document.getElementById("vAccount");
   var vPassword = document.getElementById("vPassword");
   var vVerify = document.getElementById("vVerify");
+  var vRemember = document.getElementById("vRemember");
 
   vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 
