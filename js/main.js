@@ -645,9 +645,9 @@
 
       onClickAccount: function (index, item) {
         if (this.currentAccountIndex == index) {
+          this.setRememberLogin(item.remember)
           vAccount.value = item.phone
           vPassword.value = item.password
-          this.setRememberLogin(item.remember)
 
           if (item.isLoggedIn) {
             //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
@@ -820,6 +820,8 @@
 
         var user = isAdmin ? App.User : null //add account   App.accounts[App.currentAccountIndex]
 
+        alert("showLogin  isAdmin = " + isAdmin + "; user = \n" + JSON.stringify(user, null, '    '))
+
         if (user == null) {
           user = {
             phone: 13000082001,
@@ -827,9 +829,9 @@
           }
         }
 
+        this.setRememberLogin(user.remember)
         vAccount.value = user.phone
         vPassword.value = user.password
-        this.setRememberLogin(user.remember)
       },
 
       setRememberLogin(remember) {
@@ -864,10 +866,12 @@
               alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
             }
             else {
-              var user = rpObj.User || {}
+              var user = rpObj.user || {}
 
               if (user.id > 0) {
                 user.remember = rpObj.remember
+                user.phone = req.phone
+                user.password = req.password
                 App.User = user
               }
 
@@ -882,8 +886,8 @@
                 'tag': 'Privacy'
               }, function (url, res, err) {
                 var data = res.data || {}
-                if (data.code == 200 && data.Privacy != null) {
-                  App.Privacy = data.Privacy
+                if (data.code == 200 && data.privacy != null) {
+                  App.Privacy = data.privacy
                 }
               })
 
@@ -1827,8 +1831,7 @@
             else {
               App.request(false, App.server + '/get/testcompare/ml', {
                 "documentId": d.id,
-                "response": response,
-                "isML": true
+                "response": response
               }, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code != 200) {
