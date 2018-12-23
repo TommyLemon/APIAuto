@@ -820,7 +820,7 @@
 
         var user = isAdmin ? App.User : null //add account   App.accounts[App.currentAccountIndex]
 
-        alert("showLogin  isAdmin = " + isAdmin + "; user = \n" + JSON.stringify(user, null, '    '))
+        // alert("showLogin  isAdmin = " + isAdmin + "; user = \n" + JSON.stringify(user, null, '    '))
 
         if (user == null) {
           user = {
