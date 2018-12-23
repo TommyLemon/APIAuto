@@ -886,8 +886,8 @@
                 'tag': 'Privacy'
               }, function (url, res, err) {
                 var data = res.data || {}
-                if (data.code == 200 && data.privacy != null) {
-                  App.Privacy = data.privacy
+                if (data.code == 200 && data.Privacy != null) {
+                  App.Privacy = data.Privacy
                 }
               })
 
