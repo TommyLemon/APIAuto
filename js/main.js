@@ -394,6 +394,7 @@
             case 3:
               App.showAndSend(App.server + '/get', {
                 'Goods[]': {
+                  'count': 0,
                   'Goods': {
                     '@column': 'name,detail'
                   }
@@ -735,6 +736,7 @@
           var url = App.server + '/get'
           var req = {
             '[]': {
+              'count': 0,
               'Document': {
                 '@order': 'version-,date-',
                 'userId': App.User.id
@@ -1400,6 +1402,7 @@
       getDoc: function (callback) {
         App.request(false, this.getBaseUrl() + '/get', {
           '[]': {
+            'count': 0,
             'Table': {
               'TABLE_SCHEMA': App.schema,
               'TABLE_TYPE': 'BASE TABLE',
@@ -1408,6 +1411,7 @@
               '@column': 'TABLE_NAME,TABLE_COMMENT'
             },
             'Column[]': {
+              'count': 0,
               'Column': {
                 'TABLE_SCHEMA': App.schema,
                 'TABLE_NAME@': '[]/Table/TABLE_NAME',
@@ -1416,6 +1420,7 @@
             }
           },
           'Access[]': {
+            'count': 0,
             'Access': {
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
@@ -1424,6 +1429,7 @@
             }
           },
           'Function[]': {
+            'count': 0,
             'Function': {
               '@order': 'date-,name+',
               '@column': 'name,arguments,demo,detail',
@@ -1434,6 +1440,7 @@
             }
           },
           'Request[]': {
+            'count': 0,
             'Request': {
               '@order': 'version-,method-'
             }
