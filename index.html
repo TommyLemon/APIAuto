@@ -61,6 +61,7 @@
     </a>
     <a v-show="isDelayShow" >2s</a>
 
+
     <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=TommyLemon&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
 
     <!--只用60%避免拦截左右两侧View的触摸事件-->
@@ -71,6 +72,11 @@
     </div>
 
     <div class="top-right">
+
+      <a v-show="User.id == null || User.id <= 0" href="https://gitee.com/TommyLemon/APIJSON" target="_blank">
+        <img class="ui inline black image" height="24" src="https://gitee.com/logo-black.svg?20171024" width="60">
+      </a>
+
       <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout(true)">
         退出
       </a>
