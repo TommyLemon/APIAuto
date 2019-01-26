@@ -1422,7 +1422,7 @@
           'Access[]': {
             'count': 0,
             'Access': {
-              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@column': 'schema,name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
               'r0()': 'removeKey(alias)'
@@ -1523,8 +1523,8 @@
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
             doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
-              + ' \n 表名  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色'
-              + ' \n --------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  -------------- ';
+              + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
+              + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
@@ -1534,14 +1534,15 @@
               log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.name
+              doc += '\n' + (item.name + '(' + item.schema + ')')
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete));
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete))
+                + '  |  ' + (item.name + '(' + item.schema + ')');
             }
 
             doc += '\n' //避免没数据时表格显示没有网格
