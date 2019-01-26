@@ -1081,6 +1081,10 @@ var CodeUtil = {
         fun = '包含选项';
         key = columnName.substring(0, columnName.length - 2);
       }
+      else if (columnName.endsWith("}{")) {//存在，EXISTS。查询时处理
+        fun = '是否存在';
+        key = columnName.substring(0, columnName.length - 2);
+      }
       else if (columnName.endsWith("+")) {//延长，PUT查询时处理
         if (method != 'PUT') {//不为PUT就抛异常
           return ' ! 功能符 + - 只能用于PUT请求！';
