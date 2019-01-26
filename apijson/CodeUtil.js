@@ -60,7 +60,7 @@ var CodeUtil = {
 
         depth ++;
         names[depth] = key;
-        
+
         comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false);
       }
       else {
@@ -870,12 +870,16 @@ var CodeUtil = {
     if (value == null || value instanceof Object) {
 
       if (key.endsWith('@')) {
+        if (key == '@from@') {
+          return CodeUtil.getComment('数据来源：匿名子查询，例如 {"from":"Table", "Table":{}}', false, '  ');
+        }
+
         var aliaIndex = name == null ? -1 : name.indexOf(':');
         var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
-        // if (JSONObject.isTableKey(objName)) {
+        if (JSONObject.isTableKey(objName)) {
           return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method), false, '  ');
-        // }
-        // return CodeUtil.getComment('子查询 ' + StringUtil.get(name), false, '  ');
+        }
+        return CodeUtil.getComment('子查询 ' + StringUtil.get(name) + "，需要被下面的表字段相关 key 引用赋值", false, '  ');
       }
 
       if (JSONObject.isArrayKey(key)) {
@@ -945,6 +949,8 @@ var CodeUtil = {
       switch (key) {
         case '@column':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段：例如 id,name;json_length(contactIdList):contactCount;...', false, '  ');
+        case '@from@': //value 类型为 Object 时 到不了这里，已在上方处理
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String或Object类型！' : CodeUtil.getComment('数据来源：引用赋值 子查询 "' + value.substring(1, value.length - 1) + '@":{...} ', false, '  ');
         case '@group':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式：例如 userId,momentId,...', false, '  ');
         case '@having':
