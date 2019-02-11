@@ -323,13 +323,25 @@
       },
       //获取请求的tag
       getTag: function () {
-        var req = null
+        var req = null;
         try {
-          req = JSON.parse(new String(vInput.value))
+          req = this.getRequest(vInput.value);
         } catch (e) {
-          log('main.getTag', 'try { req = JSON.parse(new String(vInput.value)) \n } catch (e) {\n' + e.message)
+          log('main.getTag', 'try { req = this.getRequest(vInput.value); \n } catch (e) {\n' + e.message)
         }
         return req == null ? null : req.tag
+      },
+
+      getRequest: function (json) {
+        var s = App.toDoubleJSON(json);
+        try {
+          return jsonlint.parse(s);
+        }
+        catch (e) {
+          log('main.getRequest', 'try { return jsonlint.parse(s); \n } catch (e) {\n' + e.message)
+          log('main.getRequest', 'return jsonlint.parse(App.removeComment(s));')
+          return jsonlint.parse(App.removeComment(s));
+        }
       },
 
       // 显示保存弹窗
@@ -1134,14 +1146,21 @@
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
-          before = jsonlint.parse(before);
-
-          before = JSON.stringify(before, null, "    "); //用format不能catch！
+          var after;
+          try {
+            after = JSON.stringify(jsonlint.parse(before), null, "    ");
+            before = after;
+          }
+          catch (e) {
+            log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
+            log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
+            after = JSON.stringify(jsonlint.parse(App.removeComment(before)), null, "    ");
+          }
 
           //关键词let在IE和Safari上不兼容
           var code = '';
           try {
-            code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+            code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
             code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
               + '\nError:\n' + e.message + '\n\n\n';
@@ -1166,7 +1185,7 @@
           App.showDoc()
 
           try {
-            vComment.value = isSingle ? '' : CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'], App.getMethod())
+            vComment.value = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], App.getMethod())
 
             onScrollChanged()
           } catch (e) {
@@ -1209,25 +1228,30 @@
 
         // 删除注释 <<<<<<<<<<<<<<<<<<<<<
 
-        var input = new String(vInput.value);
-
-        var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
-        try {
-          input = input.replace(reg, function(word) { // 去除注释后的文本
-            return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
-          })
-
-          if (vInput.value != input) {
-            vInput.value = input
-          }
-        } catch (e) {
-          log('transfer  delete comment in json >> catch \n' + e.message)
+        var input = this.removeComment(vInput.value);
+        if (vInput.value != input) {
+          vInput.value = input
         }
 
         // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
 
         this.onChange();
+      },
+
+      /**
+       * 删除注释
+       */
+      removeComment: function (json) {
+        var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
+        try {
+          return new String(json).replace(reg, function(word) { // 去除注释后的文本
+            return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
+          })
+        } catch (e) {
+          log('transfer  delete comment in json >> catch \n' + e.message);
+        }
+        return json;
       },
 
       showAndSend: function (url, req, isAdminOperation, callback) {
@@ -1249,11 +1273,7 @@
 
         clearTimeout(handler);
 
-        var real = new String(vInput.value);
-        if (real.indexOf("'") >= 0) {
-          real = real.replace(/'/g, "\"");
-        }
-        var req = JSON.parse(real);
+        var req = this.getRequest(vInput.value);
 
         var url = new String(vUrl.value)
         url = url.replace(/ /g, '')
@@ -1274,7 +1294,7 @@
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
-            'request': real
+            'request': JSON.stringify(req, null, '    ')
           }
         })
         App.saveCache('', 'locals', this.locals)
@@ -1746,7 +1766,7 @@
             continue
           }
           doc += '\n\n#### ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url
-          doc += '\n```json\n' + JSON.stringify(JSON.parse(item.request), null, '    ') + '\n```\n'
+          doc += '\n```json\n' + item.request + '\n```\n'
         }
         return doc
       },
@@ -1815,7 +1835,7 @@
           // App.restore(item)
           // App.onChange(false)
 
-          App.request(false, baseUrl + document.url, JSON.parse(document.request), function (url, res, err) {
+          App.request(false, baseUrl + document.url, App.getRequest(document.request), function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -2000,7 +2020,7 @@
           else {
             url = App.server + '/post/testrecord/ml'
             req = {
-                documentId: document.id
+              documentId: document.id
             }
           }
 
@@ -2032,7 +2052,7 @@
       setRequestHint(index, item) {
         var d = item == null ? null : item.Document;
         var r = d == null ? null : d.request;
-        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(JSON.parse(r), null, ' '));
+        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(this.getRequest(r), null, ' '));
       },
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item) {
