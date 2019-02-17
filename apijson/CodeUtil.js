@@ -502,7 +502,7 @@ var CodeUtil = {
 
         //Table
         table = item == null ? null : item.Table;
-        model = CodeUtil.getModelName(table == null ? null : table.TABLE_NAME);
+        model = CodeUtil.getModelName(table == null ? null : table.table_name);
         if (model != clazz) {
           continue;
         }
@@ -515,7 +515,7 @@ var CodeUtil = {
           + '\n\n使用方法\n1.修改包名package \n2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
           + '\n*/\n'
           + '\npackage apijson.demo.server.model;\n\n\n'
-          + CodeUtil.getComment(table.TABLE_COMMENT, true)
+          + CodeUtil.getComment(table.table_comment, true)
           + '\n@MethodAccess'
           + '\npublic class ' + model + ' implements Serializable {'
           + '\n  private static final long serialVersionUID = 1L;\n';
@@ -532,16 +532,16 @@ var CodeUtil = {
           for (var j = 0; j < columnList.length; j++) {
             column = columnList[j];
 
-            name = CodeUtil.getFieldName(column == null ? null : column.COLUMN_NAME);
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.COLUMN_TYPE, false);
+            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-            doc += '\n  private ' + type + ' ' + name + '; ' + CodeUtil.getComment(column.COLUMN_COMMENT, false);
+            doc += '\n  private ' + type + ' ' + name + '; ' + CodeUtil.getComment(column.column_comment, false);
 
           }
 
@@ -559,11 +559,11 @@ var CodeUtil = {
           for (var j = 0; j < columnList.length; j++) {
             column = columnList[j];
 
-            name = CodeUtil.getFieldName(column == null ? null : column.COLUMN_NAME);
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.COLUMN_TYPE);
+            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type);
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -1038,13 +1038,13 @@ var CodeUtil = {
 
       //Table
       table = item == null ? null : item.Table;
-      if (table == null || tableName != CodeUtil.getModelName(table.TABLE_NAME)) {
+      if (table == null || tableName != CodeUtil.getModelName(table.table_name)) {
         continue;
       }
       log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
       if (StringUtil.isEmpty(columnName)) {
-        return table.TABLE_COMMENT;
+        return table.table_comment;
       }
 
 
@@ -1155,7 +1155,7 @@ var CodeUtil = {
       var name;
       for (var j = 0; j < columnList.length; j++) {
         column = columnList[j];
-        name = column == null ? null : column.COLUMN_NAME;
+        name = column == null ? null : column.column_name;
         if (name == null || key != name) {
           continue;
         }
@@ -1163,7 +1163,7 @@ var CodeUtil = {
         var p = (at.length <= 0 ? '' : at + ' < ')
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
-        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.COLUMN_TYPE, true) + ', ' + column.COLUMN_COMMENT;
+        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + column.column_comment;
       }
 
       break;

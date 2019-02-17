@@ -1424,18 +1424,18 @@
           '[]': {
             'count': 0,
             'Table': {
-              'TABLE_SCHEMA': App.schema,
-              'TABLE_TYPE': 'BASE TABLE',
-              'TABLE_NAME!$': ['\\_%', 'sys\\_%', 'system\\_%'],
-              '@order': 'TABLE_NAME+',
-              '@column': 'TABLE_NAME,TABLE_COMMENT'
+              'table_schema': App.schema,
+              'table_type': 'BASE TABLE',
+              'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
+              '@order': 'table_name+',
+              '@column': 'table_name,table_comment'
             },
             'Column[]': {
               'count': 0,
               'Column': {
-                'TABLE_SCHEMA': App.schema,
-                'TABLE_NAME@': '[]/Table/TABLE_NAME',
-                '@column': 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT'
+                'table_schema': App.schema,
+                'table_name@': '[]/Table/table_name',
+                '@column': 'column_name,column_type,column_comment'
               }
             }
           },
@@ -1497,7 +1497,7 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.TABLE_NAME) + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n' + App.toMD(table.table_comment);
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
@@ -1514,16 +1514,16 @@
               var length;
               for (var j = 0; j < columnList.length; j++) {
                 column = columnList[j];
-                name = column == null ? null : column.COLUMN_NAME;
+                name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
                 }
-                type = CodeUtil.getJavaType(column.COLUMN_TYPE, false);
-                length = CodeUtil.getMaxLength(column.COLUMN_TYPE);
+                type = CodeUtil.getJavaType(column.column_type, false);
+                length = CodeUtil.getMaxLength(column.column_type);
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.COLUMN_COMMENT);
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.column_comment);
 
               }
 
