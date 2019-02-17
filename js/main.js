@@ -175,6 +175,7 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org'
     },
@@ -1428,14 +1429,14 @@
               'table_type': 'BASE TABLE',
               'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
               '@order': 'table_name+',
-              '@column': 'table_name,table_comment'
+              '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name,table_comment'
             },
             'Column[]': {
               'count': 0,
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
-                '@column': 'column_name,column_type,column_comment'
+                '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
               }
             }
           },
