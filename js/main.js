@@ -2095,6 +2095,10 @@
         if (StringUtil.isEmpty(url, true) == false) {
           URL_BASE = url
         }
+        var database = this.getCache('', 'database')
+        if (StringUtil.isEmpty(database, true) == false) {
+          this.database = database
+        }
         var schema = this.getCache('', 'schema')
         if (StringUtil.isEmpty(schema, true) == false) {
           this.schema = schema
