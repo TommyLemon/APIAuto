@@ -1430,6 +1430,7 @@
        */
       getDoc: function (callback) {
         App.request(false, this.getBaseUrl() + '/get', {
+          '@database': App.database,
           '[]': {
             'count': 0,
             'Table': {
