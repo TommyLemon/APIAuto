@@ -165,13 +165,15 @@ var CodeUtil = {
       depth = 0;
     }
 
-    const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+    const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
+    const prefix = CodeUtil.getBlank(depth);
+    const nextPrefix = CodeUtil.getBlank(depth + 1);
 
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return '\n' + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
+        return '\n' + prefix + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
       },
 
       onParseParentEnd: function () {
@@ -180,7 +182,7 @@ var CodeUtil = {
 
       onParseChildArray: function (key, value, index) {
 
-        var s = '\n\n//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         const count = isSmart ? (value.count || 0) : 0;
         const page = isSmart ? (value.page || 0) : 0;
@@ -200,32 +202,33 @@ var CodeUtil = {
 
         log(CodeUtil.TAG, 'parseJava  for delete >> count = ' + count + '; page = ' + page);
 
-        var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key));
+        var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
 
         if (isSmart) {
-          var prefix = key.substring(0, key.length - 2);
+          var alias = key.substring(0, key.length - 2);
 
           s += '\n\n';
           if (query != null) {
-            s += name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+            s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
           }
           if (StringUtil.isEmpty(join, true) == false) {
-            s += name + '.setJoin("' + join + '");\n';
+            s += nextPrefix + name + '.setJoin("' + join + '");\n';
           }
-          s += parentKey + '.putAll(' + name + '.toArray('
-            + count  + ', ' + page + (prefix.length <= 0 ? '' : ', "' + prefix + '"') + '));';
+
+          s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
+            + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
         }
         else {
-          s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
+          s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.put("' + key + '", ' + name + ');';
         }
 
-        s += '\n//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
       onParseChildObject: function (key, value, index) {
-        var s = '\n\n//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         const isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
 
@@ -253,19 +256,19 @@ var CodeUtil = {
 
         const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {
-          s = column == null ? s : s + '\n' + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
-          s = group == null ? s : s + '\n' + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
-          s = having == null ? s : s + '\n' + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
-          s = order == null ? s : s + '\n' + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
-          s = combine == null ? s : s + '\n' + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
-          s = schema == null ? s : s + '\n' + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
-          s = database == null ? s : s + '\n' + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
-          s = role == null ? s : s + '\n' + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
+          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
+          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
+          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
+          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
+          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
+          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
         }
 
-        s += '\n\n' + parentKey + '.put("' + key + '", ' + name + ');';
+        s += '\n\n' + nextPrefix + parentKey + '.put("' + key + '", ' + name + ');';
 
-        s += '\n//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -291,7 +294,7 @@ var CodeUtil = {
             return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
           }
         }
-        return '\n' + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
+        return '\n' + prefix + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
       }
     })
 
