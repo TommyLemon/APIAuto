@@ -1179,7 +1179,7 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
+          vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
 
           App.showDoc()
