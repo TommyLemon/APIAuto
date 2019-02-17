@@ -398,13 +398,14 @@
           switch (index) {
             case 0:
             case 1:
-              App.exTxt.name = index == 0 ? App.schema : App.server
+            case 2:
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : App.server)
               App.isConfigShow = true
               break
-            case 2:
+            case 3:
               App.getCurrentUser(true)
               break
-            case 3:
+            case 4:
               App.showAndSend(App.server + '/get', {
                 'Goods[]': {
                   'count': 0,
@@ -588,9 +589,16 @@
       saveConfig: function () {
         App.isConfigShow = false
 
-        if (App.exTxt.index == 0) {
-          App.schema = App.exTxt.name
-          App.saveCache('', 'schema', App.schema)
+
+        if (App.exTxt.index <= 1) {
+          if (App.exTxt.index == 0) {
+            App.database = App.exTxt.name
+            App.saveCache('', 'database', App.database)
+          }
+          else {
+            App.schema = App.exTxt.name
+            App.saveCache('', 'schema', App.schema)
+          }
 
           doc = null
           App.onChange(false)
