@@ -175,6 +175,7 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org'
     },
@@ -323,13 +324,25 @@
       },
       //获取请求的tag
       getTag: function () {
-        var req = null
+        var req = null;
         try {
-          req = JSON.parse(new String(vInput.value))
+          req = this.getRequest(vInput.value);
         } catch (e) {
-          log('main.getTag', 'try { req = JSON.parse(new String(vInput.value)) \n } catch (e) {\n' + e.message)
+          log('main.getTag', 'try { req = this.getRequest(vInput.value); \n } catch (e) {\n' + e.message)
         }
         return req == null ? null : req.tag
+      },
+
+      getRequest: function (json) {
+        var s = App.toDoubleJSON(json);
+        try {
+          return jsonlint.parse(s);
+        }
+        catch (e) {
+          log('main.getRequest', 'try { return jsonlint.parse(s); \n } catch (e) {\n' + e.message)
+          log('main.getRequest', 'return jsonlint.parse(App.removeComment(s));')
+          return jsonlint.parse(App.removeComment(s));
+        }
       },
 
       // 显示保存弹窗
@@ -385,15 +398,17 @@
           switch (index) {
             case 0:
             case 1:
-              App.exTxt.name = index == 0 ? App.schema : App.server
+            case 2:
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : App.server)
               App.isConfigShow = true
               break
-            case 2:
+            case 3:
               App.getCurrentUser(true)
               break
-            case 3:
+            case 4:
               App.showAndSend(App.server + '/get', {
                 'Goods[]': {
+                  'count': 0,
                   'Goods': {
                     '@column': 'name,detail'
                   }
@@ -574,9 +589,16 @@
       saveConfig: function () {
         App.isConfigShow = false
 
-        if (App.exTxt.index == 0) {
-          App.schema = App.exTxt.name
-          App.saveCache('', 'schema', App.schema)
+
+        if (App.exTxt.index <= 1) {
+          if (App.exTxt.index == 0) {
+            App.database = App.exTxt.name
+            App.saveCache('', 'database', App.database)
+          }
+          else {
+            App.schema = App.exTxt.name
+            App.saveCache('', 'schema', App.schema)
+          }
 
           doc = null
           App.onChange(false)
@@ -645,6 +667,7 @@
 
       onClickAccount: function (index, item) {
         if (this.currentAccountIndex == index) {
+          this.setRememberLogin(item.remember)
           vAccount.value = item.phone
           vPassword.value = item.password
 
@@ -668,7 +691,9 @@
               var data = res.data || {}
               var user = data.code == 200 ? data.user : null
               if (user != null) {
-                App.accounts[App.currentAccountIndex].name = user.name
+                item.name = user.name
+                item.remember = data.remember
+
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
               }
@@ -708,7 +733,7 @@
         App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
       },
       addAccountTab: function () {
-        App.showLogin(true, false) //TODO 登录窗口右上角加一个 X App.showLogin(! App.isLoginShow, false)
+        App.showLogin(true, false)
       },
 
 
@@ -732,6 +757,7 @@
           var url = App.server + '/get'
           var req = {
             '[]': {
+              'count': 0,
               'Document': {
                 '@order': 'version-,date-',
                 'userId': App.User.id
@@ -810,6 +836,29 @@
       showLogin(show, isAdmin) {
         App.isLoginShow = show
         App.isAdminOperation = isAdmin
+
+        if (show != true) {
+          return
+        }
+
+        var user = isAdmin ? App.User : null //add account   App.accounts[App.currentAccountIndex]
+
+        // alert("showLogin  isAdmin = " + isAdmin + "; user = \n" + JSON.stringify(user, null, '    '))
+
+        if (user == null) {
+          user = {
+            phone: 13000082001,
+            password: 123456
+          }
+        }
+
+        this.setRememberLogin(user.remember)
+        vAccount.value = user.phone
+        vPassword.value = user.password
+      },
+
+      setRememberLogin(remember) {
+        vRemember.checked = remember || false
       },
 
       /**登录
@@ -823,7 +872,8 @@
           type: 0, // 登录方式，非必须 0-密码 1-验证码
           phone: vAccount.value,
           password: vPassword.value,
-          version: 1 // 全局默认版本号，非必须
+          version: 1, // 全局默认版本号，非必须
+          remember: vRemember.checked,
         }
 
         if (isAdminOperation) {
@@ -839,9 +889,12 @@
               alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
             }
             else {
-              var user = rpObj.User || {}
+              var user = rpObj.user || {}
 
               if (user.id > 0) {
+                user.remember = rpObj.remember
+                user.phone = req.phone
+                user.password = req.password
                 App.User = user
               }
 
@@ -877,6 +930,7 @@
               if (item != null && req.phone == item.phone) {
                 alert(req.phone +  ' 已在测试账号中！')
                 // App.currentAccountIndex = i
+                item.remember = vRemember.checked
                 App.onClickAccount(i, item)
                 return
               }
@@ -904,7 +958,8 @@
                 id: user.id,
                 name: user.name,
                 phone: req.phone,
-                password: req.password
+                password: req.password,
+                remember: data.remember
               })
               App.currentAccountIndex = App.accounts.length - 1
 
@@ -1076,10 +1131,10 @@
       },
 
       clearUser: function () {
-        App.User = {}
+        App.User.id = 0
         App.Privacy = {}
         App.remotes = []
-        App.saveCache(App.server, 'User', {}) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
+        App.saveCache(App.server, 'User', App.User) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
       },
 
       /**计时回调
@@ -1100,14 +1155,21 @@
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
-          before = jsonlint.parse(before);
-
-          before = JSON.stringify(before, null, "    "); //用format不能catch！
+          var after;
+          try {
+            after = JSON.stringify(jsonlint.parse(before), null, "    ");
+            before = after;
+          }
+          catch (e) {
+            log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
+            log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
+            after = JSON.stringify(jsonlint.parse(App.removeComment(before)), null, "    ");
+          }
 
           //关键词let在IE和Safari上不兼容
           var code = '';
           try {
-            code = this.getCode(before); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+            code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
           } catch(e) {
             code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
               + '\nError:\n' + e.message + '\n\n\n';
@@ -1126,13 +1188,13 @@
 
           vInput.value = before;
           vSend.disabled = false;
-          vOutput.value = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
+          vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
 
           App.showDoc()
 
           try {
-            vComment.value = isSingle ? '' : CodeUtil.parseComment(before, docObj == null ? null : docObj['[]'], App.getMethod())
+            vComment.value = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], App.getMethod())
 
             onScrollChanged()
           } catch (e) {
@@ -1175,25 +1237,30 @@
 
         // 删除注释 <<<<<<<<<<<<<<<<<<<<<
 
-        var input = new String(vInput.value);
-
-        var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
-        try {
-          input = input.replace(reg, function(word) { // 去除注释后的文本
-            return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
-          })
-
-          if (vInput.value != input) {
-            vInput.value = input
-          }
-        } catch (e) {
-          log('transfer  delete comment in json >> catch \n' + e.message)
+        var input = this.removeComment(vInput.value);
+        if (vInput.value != input) {
+          vInput.value = input
         }
 
         // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
 
         this.onChange();
+      },
+
+      /**
+       * 删除注释
+       */
+      removeComment: function (json) {
+        var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
+        try {
+          return new String(json).replace(reg, function(word) { // 去除注释后的文本
+            return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
+          })
+        } catch (e) {
+          log('transfer  delete comment in json >> catch \n' + e.message);
+        }
+        return json;
       },
 
       showAndSend: function (url, req, isAdminOperation, callback) {
@@ -1215,11 +1282,7 @@
 
         clearTimeout(handler);
 
-        var real = new String(vInput.value);
-        if (real.indexOf("'") >= 0) {
-          real = real.replace(/'/g, "\"");
-        }
-        var req = JSON.parse(real);
+        var req = this.getRequest(vInput.value);
 
         var url = new String(vUrl.value)
         url = url.replace(/ /g, '')
@@ -1240,7 +1303,7 @@
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
-            'request': real
+            'request': JSON.stringify(req, null, '    ')
           }
         })
         App.saveCache('', 'locals', this.locals)
@@ -1367,31 +1430,36 @@
        */
       getDoc: function (callback) {
         App.request(false, this.getBaseUrl() + '/get', {
+          '@database': App.database,
           '[]': {
+            'count': 0,
             'Table': {
-              'TABLE_SCHEMA': App.schema,
-              'TABLE_TYPE': 'BASE TABLE',
-              'TABLE_NAME!$': ['\\_%', 'sys\\_%', 'system\\_%'],
-              '@order': 'TABLE_NAME+',
-              '@column': 'TABLE_NAME,TABLE_COMMENT'
+              'table_schema': App.schema,
+              'table_type': 'BASE TABLE',
+              'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
+              '@order': 'table_name+',
+              '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name,table_comment'
             },
             'Column[]': {
+              'count': 0,
               'Column': {
-                'TABLE_SCHEMA': App.schema,
-                'TABLE_NAME@': '[]/Table/TABLE_NAME',
-                '@column': 'COLUMN_NAME,COLUMN_TYPE,COLUMN_COMMENT'
+                'table_schema': App.schema,
+                'table_name@': '[]/Table/table_name',
+                '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
               }
             }
           },
           'Access[]': {
+            'count': 0,
             'Access': {
-              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@column': 'schema,name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
               'r0()': 'removeKey(alias)'
             }
           },
           'Function[]': {
+            'count': 0,
             'Function': {
               '@order': 'date-,name+',
               '@column': 'name,arguments,demo,detail',
@@ -1402,6 +1470,7 @@
             }
           },
           'Request[]': {
+            'count': 0,
             'Request': {
               '@order': 'version-,method-'
             }
@@ -1438,7 +1507,7 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.TABLE_NAME) + '\n#### 说明: \n' + App.toMD(table.TABLE_COMMENT);
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n' + App.toMD(table.table_comment);
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
@@ -1455,16 +1524,16 @@
               var length;
               for (var j = 0; j < columnList.length; j++) {
                 column = columnList[j];
-                name = column == null ? null : column.COLUMN_NAME;
+                name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
                 }
-                type = CodeUtil.getJavaType(column.COLUMN_TYPE, false);
-                length = CodeUtil.getMaxLength(column.COLUMN_TYPE);
+                type = CodeUtil.getJavaType(column.column_type, false);
+                length = CodeUtil.getMaxLength(column.column_type);
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.COLUMN_COMMENT);
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.column_comment);
 
               }
 
@@ -1484,8 +1553,8 @@
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
             doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
-              + ' \n 表名  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色'
-              + ' \n --------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  --------------  |  -------------- ';
+              + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
+              + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
@@ -1495,14 +1564,15 @@
               log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + item.name
+              doc += '\n' + (item.name + '(' + item.schema + ')')
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete));
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete))
+                + '  |  ' + (item.name + '(' + item.schema + ')');
             }
 
             doc += '\n' //避免没数据时表格显示没有网格
@@ -1706,7 +1776,7 @@
             continue
           }
           doc += '\n\n#### ' + (item.version > 0 ? 'V' + item.version : 'V*') + ' ' + item.name  + '    ' + item.url
-          doc += '\n```json\n' + JSON.stringify(JSON.parse(item.request), null, '    ') + '\n```\n'
+          doc += '\n```json\n' + item.request + '\n```\n'
         }
         return doc
       },
@@ -1716,6 +1786,7 @@
         App.testProcess = enable ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
         App.saveCache(App.server, 'isMLEnabled', enable)
       },
+
 
       /**回归测试
        * 原理：
@@ -1774,7 +1845,7 @@
           // App.restore(item)
           // App.onChange(false)
 
-          App.request(false, baseUrl + document.url, JSON.parse(document.request), function (url, res, err) {
+          App.request(false, baseUrl + document.url, App.getRequest(document.request), function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -1798,8 +1869,7 @@
             else {
               App.request(false, App.server + '/get/testcompare/ml', {
                 "documentId": d.id,
-                "response": response,
-                "isML": true
+                "response": response
               }, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code != 200) {
@@ -1960,7 +2030,7 @@
           else {
             url = App.server + '/post/testrecord/ml'
             req = {
-                documentId: document.id
+              documentId: document.id
             }
           }
 
@@ -1992,7 +2062,7 @@
       setRequestHint(index, item) {
         var d = item == null ? null : item.Document;
         var r = d == null ? null : d.request;
-        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(JSON.parse(r), null, ' '));
+        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(this.getRequest(r), null, ' '));
       },
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item) {
@@ -2025,6 +2095,10 @@
         var url = this.getCache('', 'URL_BASE')
         if (StringUtil.isEmpty(url, true) == false) {
           URL_BASE = url
+        }
+        var database = this.getCache('', 'database')
+        if (StringUtil.isEmpty(database, true) == false) {
+          this.database = database
         }
         var schema = this.getCache('', 'schema')
         if (StringUtil.isEmpty(schema, true) == false) {

@@ -221,7 +221,8 @@ var JSONResponse = {
    * @return
    */
   formatAt(key) {
-    return key.startsWith("@") ? key.substring(1) : key;
+    var k = key.startsWith("@") ? key.substring(1) : key;
+    return k.endsWith("@") ? k.substring(0, k.length - 1) : k;
   },
   /**key:alias => alias
    * @param key
