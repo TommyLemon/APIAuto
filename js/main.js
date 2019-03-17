@@ -1155,15 +1155,18 @@
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
+          var afterObj;
           var after;
           try {
-            after = JSON.stringify(jsonlint.parse(before), null, "    ");
+            afterObj = jsonlint.parse(before);
+            after = JSON.stringify(afterObj, null, "    ");
             before = after;
           }
           catch (e) {
             log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
             log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-            after = JSON.stringify(jsonlint.parse(App.removeComment(before)), null, "    ");
+            afterObj = jsonlint.parse(App.removeComment(before));
+            after = JSON.stringify(afterObj, null, "    ");
           }
 
           //关键词let在IE和Safari上不兼容
@@ -1197,9 +1200,9 @@
             var m = App.getMethod();
             var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m)
 
-            if (isSingle != true) {
+            if (isSingle != true && afterObj.tag == null) {
               m = m == null ? 'GET' : m.toUpperCase()
-              if (m != 'GET' && m != 'HEAD' && c.tag == null) {
+              if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
                 c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
               }
             }
