@@ -252,7 +252,7 @@ var CodeUtil = {
           delete value['@role'];
         }
 
-        s += CodeUtil.parseJava(key, value, depth + 1, isTable);
+        s += CodeUtil.parseJava(key, value, depth + 1, isSmart);
 
         const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {

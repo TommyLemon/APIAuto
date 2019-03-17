@@ -1194,7 +1194,16 @@
           App.showDoc()
 
           try {
-            vComment.value = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], App.getMethod())
+            var m = App.getMethod();
+            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m)
+
+            if (isSingle != true) {
+              m = m == null ? 'GET' : m.toUpperCase()
+              if (m != 'GET' && m != 'HEAD' && c.tag == null) {
+                c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+              }
+            }
+            vComment.value = c
 
             onScrollChanged()
           } catch (e) {
