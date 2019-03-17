@@ -1108,6 +1108,22 @@ var CodeUtil = {
         fun = '减少/去除';
         key = columnName.substring(0, columnName.length - 1);
       }
+      else if (columnName.endsWith(">=")) {//大于或等于
+        fun = '大于或等于';
+        key = columnName.substring(0, columnName.length - 2);
+      }
+      else if (columnName.endsWith("<=")) {//小于或等于
+        fun = '小于或等于';
+        key = columnName.substring(0, columnName.length - 2);
+      }
+      else if (columnName.endsWith(">")) {//大于
+        fun = '大于';
+        key = columnName.substring(0, columnName.length - 1);
+      }
+      else if (columnName.endsWith("<")) {//小于
+        fun = '小于';
+        key = columnName.substring(0, columnName.length - 1);
+      }
       else {
         fun = '';
         key = new String(columnName);
