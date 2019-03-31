@@ -1442,6 +1442,8 @@
        * 获取文档
        */
       getDoc: function (callback) {
+
+
         App.request(false, this.getBaseUrl() + '/get', {
           '@database': App.database,
           '[]': {
@@ -1453,12 +1455,22 @@
               '@order': 'table_name+',
               '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name,table_comment'
             },
-            'Column[]': {
+            'PgClass': App.database != 'POSTGRESQL' ? null : {
+              'relname@': '/Table/table_name',
+              '@column': 'oid' //,relname,attnum;col_description(oid,attnum)'
+            },
+            '[]': {
               'count': 0,
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
                 '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
+              },
+              'PgAttribute': App.database != 'POSTGRESQL' ? null : {
+                'attrelid@': '[]/PgClass/oid',
+                'attname@': '/Column/column_name',
+                'attnum>': 0,
+                '@column': 'col_description(attrelid,attnum):column_comment'
               }
             }
           },
@@ -1526,7 +1538,7 @@
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
-              columnList = item['Column[]'];
+              columnList = item['[]'];
               if (columnList == null) {
                 continue;
               }
@@ -1536,7 +1548,7 @@
               var type;
               var length;
               for (var j = 0; j < columnList.length; j++) {
-                column = columnList[j];
+                column = (columnList[j] || {}).Column;
                 name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
@@ -1546,7 +1558,9 @@
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.column_comment);
+                var o = App.database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD((o || {}).column_comment);
 
               }
 
