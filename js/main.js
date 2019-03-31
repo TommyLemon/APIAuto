@@ -1457,7 +1457,8 @@
             },
             'PgClass': App.database != 'POSTGRESQL' ? null : {
               'relname@': '/Table/table_name',
-              '@column': 'oid' //,relname,attnum;col_description(oid,attnum)'
+              //FIXME  多个 schema 有同名表时数据总是取前面的  不属于 pg_class 表 'nspname': App.schema,
+              '@column': 'oid;obj_description(oid):table_comment'
             },
             '[]': {
               'count': 0,
@@ -1532,7 +1533,8 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n' + App.toMD(table.table_comment);
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n'
+                + App.toMD(App.database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment);
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
