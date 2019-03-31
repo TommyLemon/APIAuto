@@ -24,7 +24,7 @@ var CodeUtil = {
    * @param tableList
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList, method) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method, database) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
@@ -61,14 +61,14 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false);
+        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database);
       }
       else {
         if (line.endsWith('}')) {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false);
+            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database);
           }
           else {
             depth --;
@@ -82,7 +82,7 @@ var CodeUtil = {
           var isArray = line.endsWith('['); // []  不影响
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
-            , isArray ? '' : line.substring(index + 2).trim(), method, isInSubquery);
+            , isArray ? '' : line.substring(index + 2).trim(), method, isInSubquery, database);
         }
       }
 
@@ -485,7 +485,7 @@ var CodeUtil = {
   /**用数据字典转为JavaBean
    * @param docObj
    */
-  parseJavaBean: function(docObj, clazz) {
+  parseJavaBean: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
@@ -518,13 +518,13 @@ var CodeUtil = {
           + '\n\n使用方法\n1.修改包名package \n2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
           + '\n*/\n'
           + '\npackage apijson.demo.server.model;\n\n\n'
-          + CodeUtil.getComment(table.table_comment, true)
+          + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
           + '\npublic class ' + model + ' implements Serializable {'
           + '\n  private static final long serialVersionUID = 1L;\n';
 
         //Column[]
-        columnList = item['Column[]'];
+        columnList = item['[]'];
         if (columnList != null) {
 
           console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
@@ -533,7 +533,7 @@ var CodeUtil = {
           var type;
 
           for (var j = 0; j < columnList.length; j++) {
-            column = columnList[j];
+            column = (columnList[j] || {}).Column;
 
             name = CodeUtil.getFieldName(column == null ? null : column.column_name);
             if (name == '') {
@@ -544,7 +544,8 @@ var CodeUtil = {
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-            doc += '\n  private ' + type + ' ' + name + '; ' + CodeUtil.getComment(column.column_comment, false);
+            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+            doc += '\n  private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
@@ -859,8 +860,9 @@ var CodeUtil = {
    * @param key
    * @param value
    * @param isInSubquery
+   * @param database
    */
-  getComment4Request: function (tableList, name, key, value, method, isInSubquery) {
+  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database) {
     // alert('name = ' + name + '; key = ' + key + '; value = ' + value + '; method = ' + method);
 
     if (key == null) {
@@ -880,7 +882,7 @@ var CodeUtil = {
         var aliaIndex = name == null ? -1 : name.indexOf(':');
         var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
         if (JSONObject.isTableKey(objName)) {
-          return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method), false, '  ');
+          return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database), false, '  ');
         }
         return CodeUtil.getComment('子查询 ' + StringUtil.get(name) + "，需要被下面的表字段相关 key 引用赋值", false, '  ');
       }
@@ -906,7 +908,7 @@ var CodeUtil = {
       var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
       if (JSONObject.isTableKey(objName)) {
-        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method);
+        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database);
         return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(
           (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length) + ' < ' + objName + ': ') + c, false, '  ');
       }
@@ -979,7 +981,7 @@ var CodeUtil = {
       if (key.startsWith('@')) {
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method);
+      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database);
       return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 
@@ -1024,8 +1026,8 @@ var CodeUtil = {
    * @param method
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method) {
-    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; method = ' + method + '; tableList = \n' + JSON.stringify(tableList));
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database) {
+    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; method = ' + method + '; database = ' + database + '; tableList = \n' + JSON.stringify(tableList));
 
     if (tableList == null || tableList.length <= 0) {
       return '...';
@@ -1047,7 +1049,7 @@ var CodeUtil = {
       log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
       if (StringUtil.isEmpty(columnName)) {
-        return table.table_comment;
+        return database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment;
       }
 
 
@@ -1165,7 +1167,7 @@ var CodeUtil = {
       //功能符 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-      columnList = item['Column[]'];
+      columnList = item['[]'];
       if (columnList == null) {
         continue;
       }
@@ -1173,7 +1175,7 @@ var CodeUtil = {
 
       var name;
       for (var j = 0; j < columnList.length; j++) {
-        column = columnList[j];
+        column = (columnList[j] || {}).Column;
         name = column == null ? null : column.column_name;
         if (name == null || key != name) {
           continue;
@@ -1182,7 +1184,10 @@ var CodeUtil = {
         var p = (at.length <= 0 ? '' : at + ' < ')
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
-        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + column.column_comment;
+
+        var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+
+        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + (o || {}).column_comment;
       }
 
       break;

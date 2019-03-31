@@ -533,7 +533,7 @@
 
 
             var clazz = App.exTxt.name
-            var txt = CodeUtil.parseJavaBean(docObj, clazz)
+            var txt = CodeUtil.parseJavaBean(docObj, clazz, App.database)
             if (StringUtil.isEmpty(txt, true)) {
               alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
               return
@@ -1198,7 +1198,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m)
+            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
 
             if (isSingle != true && afterObj.tag == null) {
               m = m == null ? 'GET' : m.toUpperCase()
