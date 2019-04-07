@@ -50,7 +50,7 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 
 
 ### 其它项目
-[APIJSON](https://github.com/TommyLemon/APIJSON) 码云最有价值项目：后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！
+[APIJSON](https://github.com/TommyLemon/APIJSON) 码云最有价值项目：后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
 
