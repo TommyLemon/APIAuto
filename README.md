@@ -50,9 +50,11 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 
 
 ### 其它项目
-[APIJSON](https://github.com/TommyLemon/APIJSON) 后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构
+[APIJSON](https://github.com/TommyLemon/APIJSON) 码云最有价值项目：后端接口和文档自动化，前端(客户端) 定制返回JSON的数据和结构！
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
+
+[apijson-php](https://github.com/qq547057827/apijson-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, MS SQL Server, Oracle 等
 
 [apijson](https://github.com/orchie/apijson) PHP 版 APIJSON，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite 等
 
@@ -61,6 +63,8 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite 等
 
 [APIJSONParser](https://github.com/Zerounary/APIJSONParser) 参考 APIJSON 设计标准开发的一款 SQL 编译器框架
+
+[ApiJsonByJFinal](https://gitee.com/zhiyuexin/ApiJsonByJFinal) 整合 JFinal 和 APIJSON 的 Demo
 
 [SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
 
