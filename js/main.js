@@ -533,7 +533,7 @@
 
 
             var clazz = App.exTxt.name
-            var txt = CodeUtil.parseJavaBean(docObj, clazz)
+            var txt = CodeUtil.parseJavaBean(docObj, clazz, App.database)
             if (StringUtil.isEmpty(txt, true)) {
               alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
               return
@@ -1155,15 +1155,18 @@
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
+          var afterObj;
           var after;
           try {
-            after = JSON.stringify(jsonlint.parse(before), null, "    ");
+            afterObj = jsonlint.parse(before);
+            after = JSON.stringify(afterObj, null, "    ");
             before = after;
           }
           catch (e) {
             log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
             log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-            after = JSON.stringify(jsonlint.parse(App.removeComment(before)), null, "    ");
+            afterObj = jsonlint.parse(App.removeComment(before));
+            after = JSON.stringify(afterObj, null, "    ");
           }
 
           //关键词let在IE和Safari上不兼容
@@ -1194,7 +1197,16 @@
           App.showDoc()
 
           try {
-            vComment.value = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], App.getMethod())
+            var m = App.getMethod();
+            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
+
+            if (isSingle != true && afterObj.tag == null) {
+              m = m == null ? 'GET' : m.toUpperCase()
+              if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
+                c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+              }
+            }
+            vComment.value = c
 
             onScrollChanged()
           } catch (e) {
@@ -1401,6 +1413,7 @@
           + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
           + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
           + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
+          + '\nAPIJSON - PHP版: [https://github.com/qq547057827/apijson-php](https://github.com/qq547057827/apijson-php) '
           + '\nAPIJSON - PHP版: [https://github.com/orchie/apijson](https://github.com/orchie/apijson) '
           + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) '
           + '\nAPIJSON -Python: [https://github.com/zhangchunlin/uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) ';
@@ -1429,6 +1442,8 @@
        * 获取文档
        */
       getDoc: function (callback) {
+
+
         App.request(false, this.getBaseUrl() + '/get', {
           '@database': App.database,
           '[]': {
@@ -1440,12 +1455,23 @@
               '@order': 'table_name+',
               '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name,table_comment'
             },
-            'Column[]': {
+            'PgClass': App.database != 'POSTGRESQL' ? null : {
+              'relname@': '/Table/table_name',
+              //FIXME  多个 schema 有同名表时数据总是取前面的  不属于 pg_class 表 'nspname': App.schema,
+              '@column': 'oid;obj_description(oid):table_comment'
+            },
+            '[]': {
               'count': 0,
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
                 '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
+              },
+              'PgAttribute': App.database != 'POSTGRESQL' ? null : {
+                'attrelid@': '[]/PgClass/oid',
+                'attname@': '/Column/column_name',
+                'attnum>': 0,
+                '@column': 'col_description(attrelid,attnum):column_comment'
               }
             }
           },
@@ -1507,13 +1533,14 @@
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n' + App.toMD(table.table_comment);
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n'
+                + App.toMD(App.database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment);
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
-              columnList = item['Column[]'];
+              columnList = item['[]'];
               if (columnList == null) {
                 continue;
               }
@@ -1523,7 +1550,7 @@
               var type;
               var length;
               for (var j = 0; j < columnList.length; j++) {
-                column = columnList[j];
+                column = (columnList[j] || {}).Column;
                 name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
@@ -1533,7 +1560,9 @@
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column.column_comment);
+                var o = App.database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD((o || {}).column_comment);
 
               }
 
