@@ -87,6 +87,63 @@
         return Object.keys(obj).length
       }
 
+      /**渲染 JSON key:value 项
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @return {boolean}
+       */
+      Vue.prototype.onRenderJSONItem = function (val, key) {
+        if (key == null) {
+          return true
+        }
+        if (key == '_$_table_$_') {
+          // return true
+          return false
+        }
+
+        try {
+          if (val instanceof Array == false) {
+
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            if (JSONObject.isTableKey(objName)) {
+              val._$_table_$_ = objName
+
+              // this._$_table_$_ = key
+              // alert('this._$_table_$_ = ' + this._$_table_$_)
+            }
+          }
+          else if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
+            // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
+
+            key = key.substring(0, key.lastIndexOf('[]'));
+
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            var firstIndex = objName.indexOf('-');
+            var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+            if (JSONObject.isTableKey(firstKey)) {
+              for (var i = 0; i < val.length; i++) {
+                val[i]._$_table_$_ = firstKey
+
+                // this.$children[i]._$_table_$_ = key
+                // alert('this.$children[i]._$_table_$_ = ' + this.$children[i]._$_table_$_)
+              }
+            }
+          }
+
+        } catch (e) {
+          alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+        }
+
+        return true
+
+      }
+
       /**显示 Response JSON 的注释
        * 方案一：
        * 拿到父组件的 key，逐层向下传递
@@ -107,65 +164,20 @@
       Vue.prototype.setResponseHint = function (val, key, $event) {
         // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
 
-        var table = null
-        var column = null
-        if (val instanceof Object && (val instanceof Array == false)) {
-          table = key
-        }
-        else {
-          if (val instanceof Array && JSONObject.isArrayKey(key)) {
-            key = key.substring(0, key.lastIndexOf('[]'));
+        try {
 
+          var table = null
+          var column = null
+          if (val instanceof Object && (val instanceof Array == false)) {
             var aliaIndex = key.indexOf(':');
             var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-            var firstIndex = objName.indexOf('-');
-            var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+            table = objName
 
-            table = firstKey
+            // table = this._$_table_$_
           }
           else {
-
-            // alert($event.currentTarget.parentElement.parentElement)
-            // alert($event.currentTarget.parentElement.parentElement.innerHTML)
-            // alert($event.currentTarget.parentElement.parentElement.textContent)
-
-            var parent = $event.currentTarget.parentElement.parentElement
-            var valString = parent.textContent
-
-            // alert('valString = ' + valString)
-
-            var i = valString.indexOf('"_$_parent_$_":  "')
-            if (i >= 0) {
-              valString = valString.substring(i + '"_$_parent_$_":  "'.length)
-              // alert('valString = ' + valString)
-              i = valString.indexOf('"')
-              if (i >= 0) {
-                table = valString.substring(0, i)
-              }
-            }
-
-            column = key
-          }
-        }
-        // alert('setResponseHint  table = ' + table + '; column = ' + column)
-
-        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database));
-      }
-
-      Vue.prototype.onRenderJSONItem = function (val, key) {
-
-
-        if (key != '_$_parent_$_') {
-          try {
-            if (val instanceof Array == false) {
-              if (JSONObject.isTableKey(key)) {
-                val._$_parent_$_ = key
-              }
-            }
-            else if (JSONObject.isArrayKey(key) && val[0] instanceof Object && (val[0] instanceof Array == false)) {
-              // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
-
+            if (val instanceof Array && JSONObject.isArrayKey(key)) {
               key = key.substring(0, key.lastIndexOf('[]'));
 
               var aliaIndex = key.indexOf(':');
@@ -174,22 +186,47 @@
               var firstIndex = objName.indexOf('-');
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
-              if (JSONObject.isTableKey(firstKey)) {
-                for (var i = 0; i < val.length; i++) {
-                  val[i]._$_parent_$_ = firstKey
+              table = firstKey
+
+              if (firstIndex > 0) {
+                objName = objName.substring(firstIndex + 1);
+                firstIndex = objName.indexOf('-');
+                column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
+              }
+
+            }
+            else {
+
+              var parent = $event.currentTarget.parentElement.parentElement
+              var valString = parent.textContent
+
+              // alert('valString = ' + valString)
+
+              var i = valString.indexOf('"_$_table_$_":  "')
+              if (i >= 0) {
+                valString = valString.substring(i + '"_$_table_$_":  "'.length)
+                // alert('valString = ' + valString)
+                i = valString.indexOf('"')
+                if (i >= 0) {
+                  table = valString.substring(0, i)
                 }
               }
-            }
 
-          } catch (e) {
-            alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+              // table = parent._$_table_$_
+
+              column = key
+            }
           }
-          return true
+          // alert('setResponseHint  table = ' + table + '; column = ' + column)
+
+          this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database));
+
+        } catch (e) {
+          alert('setResponseHint  try { ... } catch (e) {\n' + e.message)
         }
 
-        // return true
-        return false
       }
+
 
     }
   })
