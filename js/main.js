@@ -107,10 +107,6 @@
        * @return {string}
        */
       Vue.prototype.setResponseHint = function (val, key, index) {
-        if (isSingle) {
-          return
-        }
-
         // alert('Vue.prototype.setResponseHint setResponseHint key = ' + key + '; index = ' + index)
 
         // var d = val == null ? null : item.Document;
@@ -120,7 +116,7 @@
 
         // setTimeout(function () {
           // if (App.path == key) {
-        this.$refs.responseKeys.setAttribute('data-hint', CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], key, '', App.getMethod(), App.database));
+        this.$refs.responseKeys.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], key, '', App.getMethod(), App.database));
           // }
         // }, 1000)
       }
