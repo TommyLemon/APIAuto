@@ -1,7 +1,7 @@
 
 (function () {
   Vue.component('vue-item', {
-    props: ['path', 'index', 'jsondata', 'theme'],
+    props: ['jsondata', 'theme'],
     template: '#item-template'
   })
 
@@ -16,7 +16,7 @@
   })
 
   Vue.component('vue-val', {
-    props: ['path', 'index', 'field', 'val', 'isend', 'theme'],
+    props: ['field', 'val', 'isend', 'theme'],
     template: '#val-template'
   })
 
@@ -103,22 +103,92 @@
        * @author TommyLemon
        * @param val
        * @param key
-       * @param index
-       * @return {string}
        */
-      Vue.prototype.setResponseHint = function (val, key, index) {
-        // alert('Vue.prototype.setResponseHint setResponseHint key = ' + key + '; index = ' + index)
+      Vue.prototype.setResponseHint = function (val, key, $event) {
+        // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
 
-        // var d = val == null ? null : item.Document;
-        // var r = d == null ? null : d.request;
-        //TODO this.$refs.responseKeys.setAttribute('data-hint', r == null ? '' : JSON.stringify(this.getRequest(r), null, ' '));
-        // this.$refs.responseKeys.setAttribute('data-hint', 'setResponseHint key = ' + key + '; index = ' + index + '; val = ' + JSON.stringify(val));
+        var table = null
+        var column = null
+        if (val instanceof Object && (val instanceof Array == false)) {
+          table = key
+        }
+        else {
+          if (val instanceof Array && JSONObject.isArrayKey(key)) {
+            key = key.substring(0, key.lastIndexOf('[]'));
 
-        // setTimeout(function () {
-          // if (App.path == key) {
-        this.$refs.responseKeys.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], key, '', App.getMethod(), App.database));
-          // }
-        // }, 1000)
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            var firstIndex = objName.indexOf('-');
+            var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+            table = firstKey
+          }
+          else {
+
+            // alert($event.currentTarget.parentElement.parentElement)
+            // alert($event.currentTarget.parentElement.parentElement.innerHTML)
+            // alert($event.currentTarget.parentElement.parentElement.textContent)
+
+            var parent = $event.currentTarget.parentElement.parentElement
+            var valString = parent.textContent
+
+            // alert('valString = ' + valString)
+
+            var i = valString.indexOf('"_$_parent_$_":  "')
+            if (i >= 0) {
+              valString = valString.substring(i + '"_$_parent_$_":  "'.length)
+              // alert('valString = ' + valString)
+              i = valString.indexOf('"')
+              if (i >= 0) {
+                table = valString.substring(0, i)
+              }
+            }
+
+            column = key
+          }
+        }
+        // alert('setResponseHint  table = ' + table + '; column = ' + column)
+
+        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database));
+      }
+
+      Vue.prototype.onRenderJSONItem = function (val, key) {
+
+
+        if (key != '_$_parent_$_') {
+          try {
+            if (val instanceof Array == false) {
+              if (JSONObject.isTableKey(key)) {
+                val._$_parent_$_ = key
+              }
+            }
+            else if (JSONObject.isArrayKey(key) && val[0] instanceof Object && (val[0] instanceof Array == false)) {
+              // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
+
+              key = key.substring(0, key.lastIndexOf('[]'));
+
+              var aliaIndex = key.indexOf(':');
+              var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+              var firstIndex = objName.indexOf('-');
+              var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+              if (JSONObject.isTableKey(firstKey)) {
+                for (var i = 0; i < val.length; i++) {
+                  val[i]._$_parent_$_ = firstKey
+                }
+              }
+            }
+
+          } catch (e) {
+            alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+          }
+          return true
+        }
+
+        // return true
+        return false
       }
 
     }
