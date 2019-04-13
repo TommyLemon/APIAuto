@@ -1837,7 +1837,7 @@
        4-code/值类型 改变，红色；
        */
       test: function () {
-        var baseUrl = App.getBaseUrl() || ''
+        var baseUrl = StringUtil.trim(App.getBaseUrl())
         if (baseUrl == '') {
           alert('请先输入有效的URL！')
           return
