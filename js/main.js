@@ -258,7 +258,7 @@
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database);
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true);
 
           if (StringUtil.isEmpty(c, true) == false) {
             s += (StringUtil.isEmpty(column) ? table : column) + ': ' + c

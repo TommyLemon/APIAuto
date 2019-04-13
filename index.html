@@ -437,7 +437,7 @@
 <script type="text/x-template" id="val-template">
   <div class="keyval">
     <template v-if="!isObjectArr(val)">
-      <span class="key hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}"
+      <span class="key hint--top-right hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}"
             ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
 
       <span  :class="'val val-' + getTyp(val)" :style="{color: theme[getTyp(val)]}">
@@ -450,7 +450,7 @@
 
     <!--key + 展开折叠ICON-->
     <template v-if="isObjectArr(val)">
-      <span class="key hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field"
+      <span class="key hint--right hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field"
             ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
       <vue-expand></vue-expand>
     </template>

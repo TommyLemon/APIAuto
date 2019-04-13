@@ -1024,9 +1024,11 @@ var CodeUtil = {
    * @param tableName
    * @param columnName
    * @param method
+   * @param database
+   * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database) {
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, onlyTableAndColumn) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; method = ' + method + '; database = ' + database + '; tableList = \n' + JSON.stringify(tableList));
 
     if (tableList == null || tableList.length <= 0) {
@@ -1052,120 +1054,126 @@ var CodeUtil = {
         return database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment;
       }
 
-
-      //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-      if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
-        return '远程函数';
-      }
-
-
       var at = '';
-      if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
-        at = '引用赋值';
-        columnName = columnName.substring(0, columnName.length - 1);
-      }
-
-      var fun;
+      var fun = '';
       var key;
-      if (columnName.endsWith("$")) {//搜索，查询时处理
-        fun = '模糊搜索';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else if (columnName.endsWith("~")) {//匹配正则表达式，查询时处理
-        fun = '正则匹配';
-        key = columnName.substring(0, columnName.length - 1);
-        if (key.endsWith("*")) {
-          key = key.substring(0, key.length - 1);
-          fun += '(忽略大小写)';
-        }
-      }
-      else if (columnName.endsWith("%")) {//连续范围 BETWEEN AND，查询时处理
-        fun = '连续范围';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理
-        fun = '匹配 选项/条件';
-        key = columnName.substring(0, columnName.length - 2);
-      }
-      else if (columnName.endsWith("<>")) {//包含，或者说value处于key对应值的范围内。查询时处理
-        fun = '包含选项';
-        key = columnName.substring(0, columnName.length - 2);
-      }
-      else if (columnName.endsWith("}{")) {//存在，EXISTS。查询时处理
-        fun = '是否存在';
-        key = columnName.substring(0, columnName.length - 2);
-      }
-      else if (columnName.endsWith("+")) {//延长，PUT查询时处理
-        if (method != 'PUT') {//不为PUT就抛异常
-          return ' ! 功能符 + - 只能用于PUT请求！';
-        }
-        fun = '增加/扩展';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else if (columnName.endsWith("-")) {//缩减，PUT查询时处理
-        if (method != 'PUT') {//不为PUT就抛异常
-          return ' ! 功能符 + - 只能用于PUT请求！';
-        }
-        fun = '减少/去除';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else if (columnName.endsWith(">=")) {//大于或等于
-        fun = '大于或等于';
-        key = columnName.substring(0, columnName.length - 2);
-      }
-      else if (columnName.endsWith("<=")) {//小于或等于
-        fun = '小于或等于';
-        key = columnName.substring(0, columnName.length - 2);
-      }
-      else if (columnName.endsWith(">")) {//大于
-        fun = '大于';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else if (columnName.endsWith("<")) {//小于
-        fun = '小于';
-        key = columnName.substring(0, columnName.length - 1);
-      }
-      else {
-        fun = '';
+      var logic = '';
+
+      if (onlyTableAndColumn) {
         key = new String(columnName);
       }
-
-
-      var logic;
-      if (key.endsWith("&")) {
-        if (fun.length <= 0) {
-          return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
-        }
-        logic = '符合全部';
-      }
-      else if (key.endsWith("|")) {
-        if (fun.length <= 0) {
-          return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
-        }
-        logic = '符合任意';
-      }
-      else if (key.endsWith("!")) {
-        logic = '都不符合';
-      }
       else {
-        logic = '';
-      }
 
+        //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-      if (logic.length > 0) {
-        if (method != 'GET' && method != 'HEAD' && method != 'GETS' && method != 'HEADS') {//逻辑运算符仅供GET,HEAD方法使用
-          return ' ! 逻辑运算符 & | ! 只能用于查询(GET,HEAD,GETS,HEADS)请求！';
+        if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
+          return '远程函数';
         }
-        key = key.substring(0, key.length - 1);
+
+
+        if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
+          at = '引用赋值';
+          columnName = columnName.substring(0, columnName.length - 1);
+        }
+
+        if (columnName.endsWith("$")) {//搜索，查询时处理
+          fun = '模糊搜索';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else if (columnName.endsWith("~")) {//匹配正则表达式，查询时处理
+          fun = '正则匹配';
+          key = columnName.substring(0, columnName.length - 1);
+          if (key.endsWith("*")) {
+            key = key.substring(0, key.length - 1);
+            fun += '(忽略大小写)';
+          }
+        }
+        else if (columnName.endsWith("%")) {//连续范围 BETWEEN AND，查询时处理
+          fun = '连续范围';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理
+          fun = '匹配 选项/条件';
+          key = columnName.substring(0, columnName.length - 2);
+        }
+        else if (columnName.endsWith("<>")) {//包含，或者说value处于key对应值的范围内。查询时处理
+          fun = '包含选项';
+          key = columnName.substring(0, columnName.length - 2);
+        }
+        else if (columnName.endsWith("}{")) {//存在，EXISTS。查询时处理
+          fun = '是否存在';
+          key = columnName.substring(0, columnName.length - 2);
+        }
+        else if (columnName.endsWith("+")) {//延长，PUT查询时处理
+          if (method != 'PUT') {//不为PUT就抛异常
+            return ' ! 功能符 + - 只能用于PUT请求！';
+          }
+          fun = '增加/扩展';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else if (columnName.endsWith("-")) {//缩减，PUT查询时处理
+          if (method != 'PUT') {//不为PUT就抛异常
+            return ' ! 功能符 + - 只能用于PUT请求！';
+          }
+          fun = '减少/去除';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else if (columnName.endsWith(">=")) {//大于或等于
+          fun = '大于或等于';
+          key = columnName.substring(0, columnName.length - 2);
+        }
+        else if (columnName.endsWith("<=")) {//小于或等于
+          fun = '小于或等于';
+          key = columnName.substring(0, columnName.length - 2);
+        }
+        else if (columnName.endsWith(">")) {//大于
+          fun = '大于';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else if (columnName.endsWith("<")) {//小于
+          fun = '小于';
+          key = columnName.substring(0, columnName.length - 1);
+        }
+        else {
+          fun = '';
+          key = new String(columnName);
+        }
+
+
+        if (key.endsWith("&")) {
+          if (fun.length <= 0) {
+            return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
+          }
+          logic = '符合全部';
+        }
+        else if (key.endsWith("|")) {
+          if (fun.length <= 0) {
+            return ' ! 逻辑运算符 & | 后面必须接其它功能符！';
+          }
+          logic = '符合任意';
+        }
+        else if (key.endsWith("!")) {
+          logic = '都不符合';
+        }
+        else {
+          logic = '';
+        }
+
+
+        if (logic.length > 0) {
+          if (method != 'GET' && method != 'HEAD' && method != 'GETS' && method != 'HEADS') {//逻辑运算符仅供GET,HEAD方法使用
+            return ' ! 逻辑运算符 & | ! 只能用于查询(GET,HEAD,GETS,HEADS)请求！';
+          }
+          key = key.substring(0, key.length - 1);
+        }
+
+        if (StringUtil.isName(key) == false) {
+          return ' ! 字符 ' + key + ' 不合法！';
+        }
+
+        //功能符 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
       }
-
-      if (StringUtil.isName(key) == false) {
-        return ' ! 字符 ' + key + ' 不合法！';
-      }
-
-      //功能符 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
       columnList = item['[]'];
       if (columnList == null) {
