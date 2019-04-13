@@ -111,7 +111,7 @@
             if (JSONObject.isTableKey(objName)) {
               val._$_table_$_ = objName
 
-              // this._$_table_$_ = key
+              // this._$_table_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
               // alert('this._$_table_$_ = ' + this._$_table_$_)
             }
           }
@@ -144,7 +144,17 @@
 
       }
 
+
       /**显示 Response JSON 的注释
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.setResponseHint = function (val, key, $event) {
+        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event));
+      }
+      /**获取 Response JSON 的注释
        * 方案一：
        * 拿到父组件的 key，逐层向下传递
        * 问题：拿不到爷爷组件 "Comment[]": [ { "id": 1, "content": "content1" }, { "id": 2 }... ]
@@ -160,9 +170,12 @@
        * @author TommyLemon
        * @param val
        * @param key
+       * @param $event
        */
-      Vue.prototype.setResponseHint = function (val, key, $event) {
+      Vue.prototype.getResponseHint = function (val, key, $event) {
         // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
+
+        var s = ''
 
         try {
 
@@ -172,9 +185,28 @@
             var aliaIndex = key.indexOf(':');
             var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-            table = objName
+            if (JSONObject.isTableKey(objName)) {
+              table = objName
+              // table = this._$_table_$_
+            }
+            else {
+              var parent = $event.currentTarget.parentElement.parentElement
+              var valString = parent.textContent
 
-            // table = this._$_table_$_
+              // alert('valString = ' + valString)
+
+              var i = valString.indexOf('"_$_table_$_":  "')
+              if (i >= 0) {
+                valString = valString.substring(i + '"_$_table_$_":  "'.length)
+                // alert('valString = ' + valString)
+                i = valString.indexOf('"')
+                if (i >= 0) {
+                  table = valString.substring(0, i)
+                }
+              }
+
+              column = key
+            }
           }
           else {
             if (val instanceof Array && JSONObject.isArrayKey(key)) {
@@ -186,12 +218,19 @@
               var firstIndex = objName.indexOf('-');
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
-              table = firstKey
+              if (JSONObject.isTableKey(firstKey)) {
+                table = firstKey
 
-              if (firstIndex > 0) {
-                objName = objName.substring(firstIndex + 1);
-                firstIndex = objName.indexOf('-');
-                column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
+                if (firstIndex > 0) {
+                  objName = objName.substring(firstIndex + 1);
+                  firstIndex = objName.indexOf('-');
+                  column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
+
+                  var s0 = this.getResponseHint({}, table, $event)
+                  if (StringUtil.isEmpty(s0, true) == false) {
+                    s = s0 + '    \n'
+                  }
+                }
               }
 
             }
@@ -219,14 +258,18 @@
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
-          this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database));
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database);
 
-        } catch (e) {
-          alert('setResponseHint  try { ... } catch (e) {\n' + e.message)
+          if (StringUtil.isEmpty(c, true) == false) {
+            s += (StringUtil.isEmpty(column) ? table : column) + ': ' + c
+          }
+        }
+        catch (e) {
+          s += '\n' + e.message
         }
 
+        return s;
       }
-
 
     }
   })
