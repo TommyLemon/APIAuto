@@ -311,8 +311,13 @@
       },
       //获取基地址长度，以://后的第一个/分割baseUrl和method
       getBaseUrlLength: function (url_) {
-        var url = url_ == null ? '' : '' + url_
-        var index = url.indexOf('://')
+        var url = StringUtil.trim(url_)
+        var index = url.indexOf(' ')
+        if (index >= 0) {
+          return index + 1
+        }
+
+        index = url.indexOf('://')
         return index < 0 ? 0 : index + 3 + url.substring(index + 3).indexOf('/')
       },
       //获取操作方法
