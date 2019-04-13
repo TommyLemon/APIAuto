@@ -1,7 +1,7 @@
 
 (function () {
   Vue.component('vue-item', {
-    props: ['jsondata', 'theme'],
+    props: ['path', 'index', 'jsondata', 'theme'],
     template: '#item-template'
   })
 
@@ -16,7 +16,7 @@
   })
 
   Vue.component('vue-val', {
-    props: ['field', 'val', 'isend', 'theme'],
+    props: ['path', 'index', 'field', 'val', 'isend', 'theme'],
     template: '#val-template'
   })
 
@@ -86,6 +86,45 @@
       Vue.prototype.objLength = function (obj) {
         return Object.keys(obj).length
       }
+
+      /**显示 Response JSON 的注释
+       * 方案一：
+       * 拿到父组件的 key，逐层向下传递
+       * 问题：拿不到爷爷组件 "Comment[]": [ { "id": 1, "content": "content1" }, { "id": 2 }... ]
+       *
+       * 方案二：
+       * 改写 jsonon 的 refKey 为 key0/key1/.../refKey
+       * 问题：遍历，改 key；容易和特殊情况下返回的同样格式的字段冲突
+       *
+       * 方案三：
+       * 改写 jsonon 的结构，val 里加 .path 或 $.path 之类的隐藏字段
+       * 问题：遍历，改 key；容易和特殊情况下返回的同样格式的字段冲突
+       *
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param index
+       * @return {string}
+       */
+      Vue.prototype.setResponseHint = function (val, key, index) {
+        if (isSingle) {
+          return
+        }
+
+        // alert('Vue.prototype.setResponseHint setResponseHint key = ' + key + '; index = ' + index)
+
+        // var d = val == null ? null : item.Document;
+        // var r = d == null ? null : d.request;
+        //TODO this.$refs.responseKeys.setAttribute('data-hint', r == null ? '' : JSON.stringify(this.getRequest(r), null, ' '));
+        // this.$refs.responseKeys.setAttribute('data-hint', 'setResponseHint key = ' + key + '; index = ' + index + '; val = ' + JSON.stringify(val));
+
+        // setTimeout(function () {
+          // if (App.path == key) {
+        this.$refs.responseKeys.setAttribute('data-hint', CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], key, '', App.getMethod(), App.database));
+          // }
+        // }, 1000)
+      }
+
     }
   })
 

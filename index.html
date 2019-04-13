@@ -427,7 +427,7 @@
 <!--内层每个键值对-->
 <script type="text/x-template" id="item-template">
   <ul class="json-item">
-    <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - 1" v-for="(val, key, index) in jsondata"></vue-val>
+    <vue-val :path="path" :index="index" :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - 1" v-for="(val, key, index) in jsondata"></vue-val>
   </ul>
 </script>
 
@@ -435,7 +435,7 @@
 <script type="text/x-template" id="val-template">
   <div class="keyval">
     <template v-if="!isObjectArr(val)">
-      <span class="key" v-show="field" :style="{color: theme.key}">"{{field}}": </span>
+      <span class="key hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}" ref="responseKeys" @mouseover="setResponseHint(val, field, index)">"{{field}}": </span>
       <span  :class="'val val-' + getTyp(val)" :style="{color: theme[getTyp(val)]}">
             <span v-if="!isaLink(val)">{{formatVal(val)}}</span>
             <a v-if="isaLink(val)" :href="val" target="_blank" class="json-link" :style="{color: theme['link-link']}">{{formatVal(val)}}</a>
@@ -446,7 +446,7 @@
 
     <!--key + 展开折叠ICON-->
     <template v-if="isObjectArr(val)">
-      <span class="key" :style="{color: theme.key}" v-show="field">"{{field}}": </span>
+      <span class="key hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field" ref="responseKeys" @mouseover="setResponseHint(val, field, index)">"{{field}}": </span>
       <vue-expand></vue-expand>
     </template>
 
