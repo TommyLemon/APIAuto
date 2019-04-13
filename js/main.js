@@ -1331,7 +1331,7 @@
         // axios.defaults.withcredentials = true
         axios({
           method: 'post',
-          url: url,
+          url: StringUtil.noBlank(url),
           data: req,
           withCredentials: true
         })
