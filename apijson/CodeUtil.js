@@ -514,7 +514,7 @@ var CodeUtil = {
 
 
         doc += '/*'
-          + '\nAPIJSONAuto自动生成JavaBean\n主页: http://apijson.cn'
+          + '\nAPIJSONAuto自动生成JavaBean\n主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n\n使用方法\n1.修改包名package \n2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
           + '\n*/\n'
           + '\npackage apijson.demo.server.model;\n\n\n'
@@ -561,7 +561,7 @@ var CodeUtil = {
 
 
           for (var j = 0; j < columnList.length; j++) {
-            column = columnList[j];
+            column = (columnList[j] || {}).Column;
 
             name = CodeUtil.getFieldName(column == null ? null : column.column_name);
             if (name == '') {
