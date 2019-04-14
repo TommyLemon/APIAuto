@@ -731,6 +731,9 @@
             else if  (clazz.endsWith('.ts')) {
               txt = CodeUtil.parseTypeScriptClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
+            else if  (clazz.endsWith('.js')) {
+              txt = CodeUtil.parseJavaScriptClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
             else if  (clazz.endsWith('.h')) {
               txt = CodeUtil.parseObjectCH(docObj, clazz.substring(0, clazz.length - 2), App.database)
             }
