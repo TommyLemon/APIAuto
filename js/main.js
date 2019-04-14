@@ -569,7 +569,7 @@
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             }
             else if (App.view == 'markdown' || App.view == 'output') {
-              App.exTxt.name = 'User'
+              App.exTxt.name = 'User.java'
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
@@ -722,13 +722,33 @@
             //   , App.exTxt.name + '.txt')
 
 
-            var clazz = App.exTxt.name
-            var txt = CodeUtil.parseJavaBean(docObj, clazz, App.database)
+            var clazz = StringUtil.trim(App.exTxt.name)
+
+            var txt
+            if (clazz.endsWith('.kt')) {
+              txt = CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.ts')) {
+              txt = CodeUtil.parseTypeScriptClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.h')) {
+              txt = CodeUtil.parseObjectCH(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if  (clazz.endsWith('.m')) {
+              txt = CodeUtil.parseObjectCM(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if (clazz.endsWith('.java')) {
+              txt = CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
+            }
+            else {
+              alert('请正确输入对应语言的类名后缀，例如 .java .kt .ts .h .m 等！')
+            }
+
             if (StringUtil.isEmpty(txt, true)) {
               alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
               return
             }
-            saveTextAs(txt, clazz + '.java')
+            saveTextAs(txt, clazz)
           }
           else {
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'

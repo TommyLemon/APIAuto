@@ -513,10 +513,10 @@ var CodeUtil = {
         console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-        doc += '/*'
-          + '\nAPIJSONAuto自动生成JavaBean\n主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n\n使用方法\n1.修改包名package \n2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
-          + '\n*/\n'
+        doc += '/**'
+          + '\n *APIJSONAuto自动生成JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名package \n *2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
+          + '\n */\n'
           + '\npackage apijson.demo.server.model;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
@@ -581,6 +581,86 @@ var CodeUtil = {
               + '\n    return this;\n  }\n';
 
           }
+        }
+
+        doc += '\n\n}';
+
+      }
+    }
+    //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    return doc;
+  },
+
+
+  /**用数据字典转为 TypeScript 类
+   * @param docObj
+   */
+  parseTypeScriptClass: function(docObj, clazz, database) {
+
+    //转为Java代码格式
+    var doc = '';
+    var item;
+
+    //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    var list = docObj == null ? null : docObj['[]'];
+    if (list != null) {
+      console.log('parseTypeScriptClass  [] = \n' + format(JSON.stringify(list)));
+
+      var table;
+      var model;
+      var columnList;
+      var column;
+      for (var i = 0; i < list.length; i++) {
+        item = list[i];
+
+        //Table
+        table = item == null ? null : item.Table;
+        model = CodeUtil.getModelName(table == null ? null : table.table_name);
+        if (model != clazz) {
+          continue;
+        }
+
+        console.log('parseTypeScriptClass [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+
+
+        doc += '/**'
+          + '\n *APIJSONAuto自动生成 TypeScript Class\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n */\n\n\n'
+          + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
+          + '\n@MethodAccess'
+          + '\nclass ' + model + ' {\n';
+
+        //Column[]
+        columnList = item['[]'];
+        if (columnList != null) {
+
+          console.log('parseTypeScriptClass [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+          var name;
+          var type;
+
+          doc += '\n    constructor(';
+
+          for (var j = 0; j < columnList.length; j++) {
+            column = (columnList[j] || {}).Column;
+
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+            if (name == '') {
+              continue;
+            }
+            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+
+
+            console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+
+            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+            doc += '\n        public '+ name + ': ' + type + ', ' + CodeUtil.getComment((o || {}).column_comment, false);
+
+          }
+
+          doc += '\n    ) { }';
+
         }
 
         doc += '\n\n}';
