@@ -1616,7 +1616,7 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
+        return '\n\n\n### 请求代码(自动生成) \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
           + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
           + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。')
           + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
@@ -1642,7 +1642,7 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n\n' + d
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
         );
 
         App.view = 'markdown';
@@ -1794,7 +1794,7 @@
           if (list != null) {
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
+            doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
               + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
               + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
@@ -1828,7 +1828,7 @@
           if (list != null) {
             log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 远程函数'
+            doc += '\n\n\n\n\n\n\n\n\n### 远程函数\n自动查 Function 表写入的数据来生成\n'
               + ' \n 说明  |  示例'
               + ' \n --------  |  -------------- ';
 
@@ -1854,7 +1854,7 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
               + ' \n 版本  |  方法  |  数据和结构'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
