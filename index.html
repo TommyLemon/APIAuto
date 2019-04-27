@@ -427,7 +427,7 @@
 <!--内层每个键值对-->
 <script type="text/x-template" id="item-template">
   <ul class="json-item">
-    <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - 1"
+    <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - (jsondata.hasOwnProperty('_$_table_$_') ? 2 : 1)"
              v-show="onRenderJSONItem(val, key)"
              v-for="(val, key, index) in jsondata"></vue-val>
   </ul>
