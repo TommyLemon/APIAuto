@@ -230,7 +230,7 @@
 
                   var s0 = this.getResponseHint({}, table, $event)
                   if (StringUtil.isEmpty(s0, true) == false) {
-                    s = s0 + '    \n'
+                    s = s0 + '  -  '
                   }
                 }
               }
