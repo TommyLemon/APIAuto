@@ -975,14 +975,17 @@ var CodeUtil = {
     }
     var length = index < 0 || saveLength != true ? '' : type.substring(index);
 
-    if (t.endsWith('char') || t.endsWith('text') || t == 'enum' || t == 'set') {
+    if (t.indexOf('char') >= 0 || t.indexOf('text') >= 0 || t == 'enum' || t == 'set') {
       return 'String' + length;
     }
     if (t.endsWith('int') || t == 'integer') {
       return (t == 'bigint' ? 'Long' : 'Integer') + length;
     }
-    if (t.endsWith('binary') || t.endsWith('blob')) {
+    if (t.endsWith('binary') || t.indexOf('blob') >= 0 || t.indexOf('clob') >= 0) {
       return 'byte[]' + length;
+    }
+    if (t.indexOf('timestamp') >= 0) {
+      return 'Timestamp' + length;
     }
 
     switch (t) {
@@ -1000,6 +1003,7 @@ var CodeUtil = {
       case 'decimal':
         return 'BigDecimal' + length;
       case 'json':
+      case 'jsonb':
         return 'List<String>' + length;
       default:
         return StringUtil.firstCase(t, true) + length;

@@ -110,6 +110,7 @@
 
             if (JSONObject.isTableKey(objName)) {
               val._$_table_$_ = objName
+              // val = Object.assign({ _$_table_$_: objName }, val) //解决多显示一个逗号 ,
 
               // this._$_table_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
               // alert('this._$_table_$_ = ' + this._$_table_$_)
@@ -152,6 +153,7 @@
        * @param $event
        */
       Vue.prototype.setResponseHint = function (val, key, $event) {
+        console.log('setResponseHint')
         this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event));
       }
       /**获取 Response JSON 的注释
@@ -1087,6 +1089,9 @@
           password: vPassword.value,
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
+          default: {
+            '@database': App.database
+          }
         }
 
         if (isAdminOperation) {
