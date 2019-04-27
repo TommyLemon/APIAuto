@@ -90,9 +90,9 @@
                    {{ User.id != null && User.id > 0 ? User.name : '设置' }}
                 </a>
                 <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 270px">
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型: {{ database || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式: {{ schema || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">托管服务器URL: {{ server || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型Database: {{ database || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式Schema: {{ schema || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">托管服务器地址URL: {{ server || '点击设置' }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 3)">当前账号: {{ Privacy.phone || '点击更新'  }} <br/> 可用余额: {{ Privacy.balance == null ? '点击更新' : Privacy.balance + ' 元'  }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 4)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
 

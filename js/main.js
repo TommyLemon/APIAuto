@@ -1090,7 +1090,8 @@
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
           default: {
-            '@database': App.database
+            '@database': App.database,
+            '@schema': App.schema
           }
         }
 
