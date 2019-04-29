@@ -1089,7 +1089,7 @@
           password: vPassword.value,
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
-          default: {
+          defaults: {
             '@database': App.database,
             '@schema': App.schema
           }
