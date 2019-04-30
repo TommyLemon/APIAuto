@@ -365,7 +365,7 @@
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
-      language: 'Swift,Java'
+      language: 'Kotlin,Java'
     },
     methods: {
 
@@ -1639,13 +1639,13 @@
             break;
           case 'Swift':
             s += '\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
-              + CodeUtil.parseSwift(null, JSON.parse(rq))
-              + '\n ``` \n注：空对象请用 [:] 表示。 \n';
+              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：空对象用 [:] 表示。 \n';
             break;
           case 'Kotlin':
-            s += '\n#### <= Android-Kotlin\n ```kotlin \n'
-              + CodeUtil.parseKotlin(null, JSON.parse(rq))
-              + '\n ```  \n';
+            s += '\n#### <= Android-Kotlin: 对象 {} 用 mapOf()，数组 [] 用 listOf() \n ```kotlin \n'
+              + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：空对象用 HashMap<String, Any>() 表示，空数组用 ArrayList<Any>() 表示。 \n';
             break;
           case 'Objective-C':
             s += '\n#### <= iOS-Objective-C\n ```kotlin \n'

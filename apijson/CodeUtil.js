@@ -131,70 +131,12 @@ var CodeUtil = {
 
         var v; //避免改变原来的value
         if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
+          log(CodeUtil.TAG, 'parseSwift  for typeof value === "string" >>  ' );
 
           v = '"' + value + '"';
         }
         else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
-
-          v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
-        }
-        else {
-          v = value
-        }
-
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
-      }
-    })
-
-  },
-
-  /**解析出 生成iOS-Swift请求JSON 的代码
-   * 只需要把所有 对象标识{} 改为数组标识 []
-   * @param name
-   * @param reqObj
-   * @param depth
-   * @return parseCode
-   */
-  parseKotlin: function(name, reqObj, depth) {
-    name = name || '';
-    if (depth == null || depth < 0) {
-      depth = 0;
-    }
-    var hasContent = false;
-
-    return CodeUtil.parseCode(name, reqObj, {
-
-      onParseParentStart: function () {
-        return '[\n';
-      },
-
-      onParseParentEnd: function () {
-        return (hasContent ? '\n' : CodeUtil.getBlank(depth + 1) + ':\n') + CodeUtil.getBlank(depth) + ']';
-      },
-
-      onParseChildArray: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
-      },
-
-      onParseChildObject: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
-      },
-
-      onParseChildOther: function (key, value, index) {
-        hasContent = true;
-
-        var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
-
-          v = '"' + value + '"';
-        }
-        else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+          log(CodeUtil.TAG, 'parseSwift  for typeof value === "array" >>  ' );
 
           v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
         }
@@ -261,6 +203,66 @@ var CodeUtil = {
         }
 
         return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
+      }
+    })
+
+  },
+
+
+  /**解析出 生成Android-Kotlin 请求JSON 的代码
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   * @return isSmart 是否智能
+   */
+  parseKotlin: function(name, reqObj, depth) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+    var hasContent = false;
+    var isEmpty = Object.keys(reqObj).length <= 0;
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n';
+      },
+
+      onParseParentEnd: function () {
+        return isEmpty ? ')' : '\n' + CodeUtil.getBlank(depth) + ')';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+      },
+
+      onParseChildOther: function (key, value, index) {
+        hasContent = true;
+
+        var v; //避免改变原来的value
+        if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parseKotlin  for typeof value === "string" >>  ' );
+
+          v = '"' + value + '"';
+        }
+        else if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseKotlin  for typeof value === "array" >>  ' );
+
+          v = value.length <= 0 ? 'ArrayList<Any>()' : 'listOf(' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ')';
+        }
+        else {
+          v = value
+        }
+
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + v;
       }
     })
 
