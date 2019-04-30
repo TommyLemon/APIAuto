@@ -1635,7 +1635,7 @@
           case 'Java':
             s += '\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
               + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
+              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap&lt;String, Object&gt;()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
             break;
           case 'Swift':
             s += '\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
@@ -1645,7 +1645,7 @@
           case 'Kotlin':
             s += '\n#### <= Android-Kotlin: 对象 {} 用 mapOf()，数组 [] 用 listOf() \n ```kotlin \n'
               + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：空对象用 HashMap<String, Any>() 表示，空数组用 ArrayList<Any>() 表示。 \n';
+              + '\n ``` \n注：空对象用 HashMap&lt;String, Any&gt;() 表示，空数组用 ArrayList&lt;Any&gt;() 表示。 \n';
             break;
           case 'Objective-C':
             s += '\n#### <= iOS-Objective-C\n ```kotlin \n'
