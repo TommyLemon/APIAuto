@@ -524,6 +524,111 @@ var CodeUtil = {
     })
 
   },
+  /**TODO 为for循环生成函数
+   * 生成 iOS-Swift 解析 Response JSON 的代码
+   * @param name
+   * @param resObj
+   * @param depth
+   * @return parseCode
+   */
+  parseTypeScriptResponse: function(name, resObj, depth) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    if (name == null || name == '') {
+      name = 'response';
+    }
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': object = JSON.parse(resultJson); \n';
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = (typeof value) || 'any';
+
+        return '\n' + CodeUtil.getBlank(depth) + 'var ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"];';
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        value = value || []
+
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = padding + CodeUtil.getBlank(1);
+        var k = JSONResponse.getVariableName(key);
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = (typeof value[0]) || 'any';
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'var ' + k + ': Array<' + type + '> = ' + name + '["' + key + '"];';
+
+        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+
+        s += padding + 'var item: ' +  + type + ';';
+
+        s += padding + 'for (int i = 0; i < ' + k + '.length; i++) {';
+
+        s += innerPadding + 'item = ' + k + '[i];';
+        s += innerPadding + 'if (item == null) {';
+        s += innerPadding + '    continue;';
+        s += innerPadding + '}';
+        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseTypeScriptResponse('item', value[0], depth + 1);
+        }
+        // }
+
+        s += padding + '}';
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var k = JSONResponse.getVariableName(key);
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'var ' + k + ': object = ' + name + '["' + key + '"];\n'
+
+        s += CodeUtil.parseTypeScriptResponse(k, value, depth);
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
 
   /**TODO 为for循环生成函数
    * 解析出 生成Android-Java返回结果JSON 的代码

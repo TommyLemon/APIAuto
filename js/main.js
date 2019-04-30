@@ -773,8 +773,11 @@
               case 'Objective-C':
                 s += '(Swift):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
                 break;
+              case 'TypeScript':
+                s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', JSON.parse(App.jsoncon), 0)
+                break;
               default:
-                s += ':\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C。 \n';
+                s += ':\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';
                 break;
             }
 
@@ -1673,8 +1676,13 @@
               + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
               + '\n ```  \n';
             break;
+          case 'TypeScript':
+            s += '\n#### <= iOS-Objective-C\n ```kotlin \n'
+              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
           default:
-            s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C。 \n';
+            s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';
             break;
         }
         s += '\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
