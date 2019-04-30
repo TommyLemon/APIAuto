@@ -539,7 +539,9 @@ var CodeUtil = {
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -567,7 +569,8 @@ var CodeUtil = {
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type);
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -649,8 +652,8 @@ var CodeUtil = {
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
             console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -820,8 +823,8 @@ var CodeUtil = {
             if (name == '') {
               continue;
             }
-            type = name == 'id' ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
             console.log('parseKotlinDataClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -942,7 +945,7 @@ var CodeUtil = {
       if (String(value).indexOf(".") >= 0) {
         return baseFirst ? 'double' : 'Double';
       }
-      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key)) {
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint')) {
         return baseFirst ? 'long' : 'Long';
       }
       return baseFirst ? 'int' : 'Integer';
@@ -960,11 +963,46 @@ var CodeUtil = {
     return 'Object';
   },
 
+  getColumnType: function (column, database) {
+    if (column == null) {
+      return 'text';
+    }
+
+    log(CodeUtil.TAG, 'getColumnType  database = ' + database + '; column = ' + JSON.stringify(column, null, '  '));
+
+    if (column.column_type == null) { // && database == 'POSTGRESQL') {
+      var dt = column.data_type || '';
+      log(CodeUtil.TAG, 'getColumnType  column.data_type = ' + column.data_type);
+
+      var len;
+      if (column.character_maximum_length != null) { // dt.indexOf('char') >= 0) {
+        log(CodeUtil.TAG, 'getColumnType  column.character_maximum_length != null >>  column.character_maximum_length = ' + column.character_maximum_length);
+
+        len = '(' + column.character_maximum_length + ')';
+      }
+      else if (column.numeric_precision != null) { // dt.indexOf('int') >= 0) {
+        log(CodeUtil.TAG, 'getColumnType  column.numeric_precision != null >>  column.numeric_precision = ' + column.numeric_precision + '; column.numeric_scale = ' + column.numeric_scale);
+
+        len = '(' + column.numeric_precision + (column.numeric_scale == null || column.numeric_scale <= 0 ? '' : ',' + column.numeric_scale) + ')';
+      }
+      else {
+        len = ''
+      }
+
+      log(CodeUtil.TAG, 'getColumnType  return dt + len; = ' + (dt + len));
+      return dt + len;
+    }
+
+    log(CodeUtil.TAG, 'getColumnType  return column.column_type; = ' + column.column_type);
+    return column.column_type;
+  },
+
   /**根据数据库类型获取Java类型
    * @param t
    * @param saveLength
    */
   getJavaType: function(type, saveLength) {
+    log(CodeUtil.TAG, 'getJavaType  type = ' + type + '; saveLength = ' + saveLength);
     type = StringUtil.noBlank(type);
 
     var index = type.indexOf('(');
@@ -978,7 +1016,7 @@ var CodeUtil = {
     if (t.indexOf('char') >= 0 || t.indexOf('text') >= 0 || t == 'enum' || t == 'set') {
       return 'String' + length;
     }
-    if (t.endsWith('int') || t == 'integer') {
+    if (t.indexOf('int') >= 0) {
       return (t == 'bigint' ? 'Long' : 'Integer') + length;
     }
     if (t.endsWith('binary') || t.indexOf('blob') >= 0 || t.indexOf('clob') >= 0) {
@@ -1001,6 +1039,7 @@ var CodeUtil = {
       case 'year':
         return 'Date' + length;
       case 'decimal':
+      case 'numeric':
         return 'BigDecimal' + length;
       case 'json':
       case 'jsonb':
@@ -1078,8 +1117,8 @@ var CodeUtil = {
    * @param column
    * @return {boolean}
    */
-  isId: function (column) {
-    if (column == null) {
+  isId: function (column, type) {
+    if (column == null || type == null || type.indexOf('int') < 0) {
       return false;
     }
     if (column.endsWith('Id')) { // lowerCamelCase
@@ -1448,6 +1487,7 @@ var CodeUtil = {
 
         var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
 
+        column.column_type = CodeUtil.getColumnType(column, database);
         return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + (o || {}).column_comment;
       }
 

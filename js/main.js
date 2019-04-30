@@ -1684,7 +1684,9 @@
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
-                '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
+                '@column': App.database == 'POSTGRESQL'
+                  ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
+                  : 'column_name,column_type,column_comment'
               },
               'PgAttribute': App.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
@@ -1774,6 +1776,8 @@
                 if (name == null) {
                   continue;
                 }
+
+                column.column_type = CodeUtil.getColumnType(column, App.database);
                 type = CodeUtil.getJavaType(column.column_type, false);
                 length = CodeUtil.getMaxLength(column.column_type);
 
