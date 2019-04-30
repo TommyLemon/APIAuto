@@ -418,6 +418,113 @@ var CodeUtil = {
   },
 
 
+
+  /**TODO 为for循环生成函数
+   * 生成 iOS-Swift 解析 Response JSON 的代码
+   * @param name
+   * @param resObj
+   * @param depth
+   * @return parseCode
+   */
+  parseSwiftResponse: function(name, resObj, depth) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    if (name == null || name == '') {
+      name = 'response';
+    }
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = CodeUtil.getSwiftTypeFromJS(key, value);
+
+        return '\n' + CodeUtil.getBlank(depth) + 'let ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type;
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        value = value || []
+
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = padding + CodeUtil.getBlank(1);
+        var k = JSONResponse.getVariableName(key);
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'let ' + k + ': NSArray = ' + name + '["' + key + '"] as! NSArray';
+
+        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+
+        s += padding + 'let item: ' +  + type;
+
+        s += padding + 'for (int i = 0; i < ' + k + '.size(); i++) {';
+
+        s += innerPadding + 'item = ' + k + '[i] as! ' + type;
+        s += innerPadding + 'if (item == nil) {';
+        s += innerPadding + '    continue';
+        s += innerPadding + '}';
+        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseSwiftResponse('item', value[0], depth + 1);
+        }
+        // }
+
+        s += padding + '}';
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var k = JSONResponse.getVariableName(key);
+
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
+
+        s += CodeUtil.parseSwiftResponse(k, value, depth);
+
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
+
   /**TODO 为for循环生成函数
    * 解析出 生成Android-Java返回结果JSON 的代码
    * @param name
@@ -472,6 +579,8 @@ var CodeUtil = {
       },
 
       onParseJSONArray: function (key, value, index) {
+        value = value || []
+
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = padding + CodeUtil.getBlank(1);
         var k = JSONResponse.getVariableName(key);
@@ -1078,6 +1187,29 @@ var CodeUtil = {
     }
 
     return 'Object';
+  },
+
+  getSwiftTypeFromJS: function (key, value) {
+    if (typeof value == 'boolean') {
+      return 'Bool';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return 'Double';
+      }
+      return 'Int';
+    }
+    if (typeof value == 'string') {
+      return 'String';
+    }
+    if (value instanceof Array) {
+      return 'NSArray';
+    }
+    if (value instanceof Object) {
+      return 'NSDictionary';
+    }
+
+    return 'NSObject';
   },
 
   getColumnType: function (column, database) {

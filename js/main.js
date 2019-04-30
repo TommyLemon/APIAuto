@@ -758,11 +758,32 @@
             saveTextAs(txt, clazz)
           }
           else {
+            var s = ''
+            var ls = StringUtil.split(App.language) || []
+            switch (ls[1]) {
+              case 'Java':
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'Swift':
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'Kotlin':
+                s += '(Swift):\n\n' + CodeUtil.parseKotlinResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'Objective-C':
+                s += '(Swift):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              default:
+                s += ':\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C。 \n';
+                break;
+            }
+
+
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nURL: ' + vUrl.value
               + '\n\nRequest:\n' + vInput.value
               + '\n\n\nResponse:\n' + App.jsoncon
-              + '\n\n\n## Java解析Response的代码 \n\n' + CodeUtil.parseJavaResponse('', JSON.parse(App.jsoncon), 0)
+              + '\n\n\n## 解析Response的代码' + s
               , App.exTxt.name + '.txt')
           }
         }
