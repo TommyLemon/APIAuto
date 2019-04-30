@@ -150,6 +150,121 @@ var CodeUtil = {
 
   },
 
+  /**解析出 生成iOS-Swift请求JSON 的代码
+   * 只需要把所有 对象标识{} 改为数组标识 []
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   */
+  parseKotlin: function(name, reqObj, depth) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+    var hasContent = false;
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return '[\n';
+      },
+
+      onParseParentEnd: function () {
+        return (hasContent ? '\n' : CodeUtil.getBlank(depth + 1) + ':\n') + CodeUtil.getBlank(depth) + ']';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+      },
+
+      onParseChildOther: function (key, value, index) {
+        hasContent = true;
+
+        var v; //避免改变原来的value
+        if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
+
+          v = '"' + value + '"';
+        }
+        else if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+
+          v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+        }
+        else {
+          v = value
+        }
+
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
+      }
+    })
+
+  },
+
+  /**解析出 生成iOS-Swift请求JSON 的代码
+   * 只需要把所有 对象标识{} 改为数组标识 []
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   */
+  parseObjectiveC: function(name, reqObj, depth) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+    var hasContent = false;
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return '[\n';
+      },
+
+      onParseParentEnd: function () {
+        return (hasContent ? '\n' : CodeUtil.getBlank(depth + 1) + ':\n') + CodeUtil.getBlank(depth) + ']';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+      },
+
+      onParseChildOther: function (key, value, index) {
+        hasContent = true;
+
+        var v; //避免改变原来的value
+        if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
+
+          v = '"' + value + '"';
+        }
+        else if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+
+          v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+        }
+        else {
+          v = value
+        }
+
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
+      }
+    })
+
+  },
 
 
   /**解析出 生成Android-Java请求JSON 的代码

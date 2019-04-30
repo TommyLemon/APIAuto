@@ -364,7 +364,8 @@
       },
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://vip.apijson.org'
+      server: 'http://vip.apijson.org',
+      language: 'Swift,Java'
     },
     methods: {
 
@@ -591,13 +592,14 @@
             case 0:
             case 1:
             case 2:
-              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : App.server)
+            case 3:
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
               break
-            case 3:
+            case 4:
               App.getCurrentUser(true)
               break
-            case 4:
+            case 5:
               App.showAndSend(App.server + '/get', {
                 'Goods[]': {
                   'count': 0,
@@ -804,15 +806,20 @@
       saveConfig: function () {
         App.isConfigShow = false
 
-
-        if (App.exTxt.index <= 1) {
-          if (App.exTxt.index == 0) {
-            App.database = App.exTxt.name
-            App.saveCache('', 'database', App.database)
-          }
-          else {
-            App.schema = App.exTxt.name
-            App.saveCache('', 'schema', App.schema)
+        if (App.exTxt.index <= 2) {
+          switch (App.exTxt.index) {
+            case 0:
+              App.database = App.exTxt.name
+              App.saveCache('', 'database', App.database)
+              break;
+            case 1:
+              App.schema = App.exTxt.name
+              App.saveCache('', 'schema', App.schema)
+              break;
+            case 2:
+              App.language = App.exTxt.name
+              App.saveCache('', 'language', App.language)
+              break;
           }
 
           doc = null
@@ -1622,20 +1629,45 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n### 请求代码(自动生成) \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
-          + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-          + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。')
-          + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
-          + CodeUtil.parseSwift(null, JSON.parse(rq))
-          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
-          + '\n\n#### 开放源码 '
+        var s = '\n\n\n### 请求代码(自动生成) \n';
+        var ls = StringUtil.split(App.language) || []
+        switch (ls[0]) {
+          case 'Java':
+            s += '\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
+              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
+              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
+            break;
+          case 'Swift':
+            s += '\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
+              + CodeUtil.parseSwift(null, JSON.parse(rq))
+              + '\n ``` \n注：空对象请用 [:] 表示。 \n';
+            break;
+          case 'Kotlin':
+            s += '\n#### <= Android-Kotlin\n ```kotlin \n'
+              + CodeUtil.parseKotlin(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
+          case 'Objective-C':
+            s += '\n#### <= iOS-Objective-C\n ```kotlin \n'
+              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
+          default:
+            s += '\n\n可能生成代码语言配置错误，没有自动生成代码 \n';
+            break;
+        }
+        s += '\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
+
+        s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
           + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
           + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
           + '\nAPIJSON - PHP版: [https://github.com/qq547057827/apijson-php](https://github.com/qq547057827/apijson-php) '
-          + '\nAPIJSON - PHP版: [https://github.com/orchie/apijson](https://github.com/orchie/apijson) '
           + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) '
+          + '\nAPIJSON - Go 版: [https://github.com/crazytaxi824/APIJSON](https://github.com/crazytaxi824/APIJSON) '
           + '\nAPIJSON -Python: [https://github.com/zhangchunlin/uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) ';
+
+        return s;
       },
 
 
@@ -2355,6 +2387,10 @@
         var schema = this.getCache('', 'schema')
         if (StringUtil.isEmpty(schema, true) == false) {
           this.schema = schema
+        }
+        var language = this.getCache('', 'language')
+        if (StringUtil.isEmpty(language, true) == false) {
+          this.language = language
         }
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
