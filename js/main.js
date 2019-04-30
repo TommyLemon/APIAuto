@@ -1653,7 +1653,7 @@
               + '\n ```  \n';
             break;
           default:
-            s += '\n\n可能生成代码语言配置错误，没有自动生成代码 \n';
+            s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C。 \n';
             break;
         }
         s += '\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
