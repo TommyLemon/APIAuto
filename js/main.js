@@ -365,7 +365,7 @@
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
-      language: 'Kotlin,Java'
+      language: 'Java'
     },
     methods: {
 
@@ -595,6 +595,13 @@
             case 3:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
+
+              if (index == 0) {
+                alert('可填数据库:MYSQL,POSTGRESQL')
+              }
+              else if (index == 2) {
+                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript')
+              }
               break
             case 4:
               App.getCurrentUser(true)
@@ -759,8 +766,7 @@
           }
           else {
             var s = ''
-            var ls = StringUtil.split(App.language) || []
-            switch (ls[1]) {
+            switch (App.language) {
               case 'Java':
                 s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', JSON.parse(App.jsoncon), 0)
                 break;
@@ -1654,12 +1660,11 @@
        */
       getCode: function (rq) {
         var s = '\n\n\n### 请求代码(自动生成) \n';
-        var ls = StringUtil.split(App.language) || []
-        switch (ls[0]) {
+        switch (App.language) {
           case 'Java':
             s += '\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
               + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap&lt;String, Object&gt;()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
+              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap&lt;&gt;()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
             break;
           case 'Swift':
             s += '\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
