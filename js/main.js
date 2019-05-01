@@ -600,7 +600,7 @@
                 alert('可填数据库:MYSQL,POSTGRESQL')
               }
               else if (index == 2) {
-                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,C#,PHP,Python')
+                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,C#,PHP,Python,Go')
               }
               break
             case 4:
@@ -1695,6 +1695,12 @@
               + ' \n ```php \n'
               + CodeUtil.parsePHP(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
+            break;
+          case 'Go':
+            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key 最后都要加逗号 ","'
+              + ' \n ```php \n'
+              + CodeUtil.parseGo(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
             //以下都不需要解析，直接用左侧的 JSON
           case 'JavaScript':
