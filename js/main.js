@@ -774,10 +774,10 @@
                 s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', JSON.parse(App.jsoncon), 0)
                 break;
               case 'Kotlin':
-                s += '(Swift):\n\n' + CodeUtil.parseKotlinResponse('', JSON.parse(App.jsoncon), 0)
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', JSON.parse(App.jsoncon), 0)
                 break;
               case 'Objective-C':
-                s += '(Swift):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
+                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
                 break;
               case 'TypeScript':
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', JSON.parse(App.jsoncon), 0)
@@ -792,7 +792,7 @@
               + '\n\nURL: ' + vUrl.value
               + '\n\nRequest:\n' + vInput.value
               + '\n\n\nResponse:\n' + App.jsoncon
-              + '\n\n\n## 解析Response的代码' + s
+              + '\n\n\n## 解析 Response 的代码' + s
               , App.exTxt.name + '.txt')
           }
         }
