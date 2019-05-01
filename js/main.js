@@ -600,7 +600,7 @@
                 alert('可填数据库:MYSQL,POSTGRESQL')
               }
               else if (index == 2) {
-                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript')
+                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,PHP,Python')
               }
               break
             case 4:
@@ -1677,20 +1677,22 @@
               + '\n ``` \n注：空对象用 HashMap&lt;String, Any&gt;() 表示，空数组用 ArrayList&lt;Any&gt;() 表示。 \n';
             break;
           case 'Objective-C':
-            s += '\n#### <= iOS-Objective-C\n ```kotlin \n'
+            s += '\n#### <= iOS-Objective-C\n ```objective-c \n'
               + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
               + '\n ```  \n';
             break;
           case 'TypeScript':
-            s += '\n#### <= iOS-Objective-C\n ```kotlin \n'
-              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
-              + '\n ```  \n';
+            break;
+          case 'PHP':
+            s += '\n#### <= Web-PHP: 所有对象标识 {} 改为数组标识 [] \n ```php \n'
+              + CodeUtil.parsePHP(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：空对象用 [:] 表示。 \n';
             break;
           default:
             s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';
             break;
         }
-        s += '\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n';
+        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求JSON一样 \n';
 
         s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '

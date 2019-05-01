@@ -150,6 +150,65 @@ var CodeUtil = {
 
   },
 
+  /**生成封装 Web-PHP 请求JSON 的代码
+   * 只需要把所有 对象标识{} 改为数组标识 []
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   */
+  parsePHP: function(name, reqObj, depth) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+    var hasContent = false;
+    var isEmpty = Object.keys(reqObj).length <= 0;
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return isEmpty ? '(object) array(' : 'array(\n';
+      },
+
+      onParseParentEnd: function () {
+        return isEmpty ? ')' : '\n' + CodeUtil.getBlank(depth) + ')';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '\'' + key + '\' => ' + CodeUtil.parsePHP(key, value, depth + 1);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '\'' + key + '\' => ' + CodeUtil.parsePHP(key, value, depth + 1);
+      },
+
+      onParseChildOther: function (key, value, index) {
+        hasContent = true;
+
+        var v; //避免改变原来的value
+        if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parsePHP  for typeof value === "string" >>  ' );
+
+          v = '\'' + value + '\'';
+        }
+        else if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parsePHP  for typeof value === "array" >>  ' );
+
+          v = 'array(' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ')';
+        }
+        else {
+          v = value
+        }
+
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '\'' + key + '\' => ' + v;
+      }
+    })
+
+  },
+
   /**解析出 生成iOS-Swift请求JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
    * @param name
