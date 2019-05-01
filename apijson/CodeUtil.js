@@ -168,7 +168,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return isEmpty ? 'new JObject {' : 'new JObject {\n';
+        return isEmpty ? 'new JObject{' : 'new JObject{\n';
       },
 
       onParseParentEnd: function () {
@@ -197,7 +197,7 @@ var CodeUtil = {
         else if (value instanceof Array) {
           log(CodeUtil.TAG, 'parseCSharp  for typeof value === "array" >>  ' );
 
-          v = 'new JArray {' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+          v = 'new JArray{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
         }
         else {
           v = value

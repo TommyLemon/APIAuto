@@ -1662,34 +1662,39 @@
         var s = '\n\n\n### 请求代码(自动生成) \n';
         switch (App.language) {
           case 'Java':
-            s += '\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
+            s += '\n#### <= Android-Java: 同名变量需要重命名'
+              + ' \n ```java \n'
               + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。\n' : 'LinkedHashMap&lt;&gt;()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。\n');
+              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
             break;
           case 'Swift':
-            s += '\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
+            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
+              + '\n ```swift \n'
               + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：空对象用 [:] 表示。 \n';
+              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
             break;
           case 'Kotlin':
-            s += '\n#### <= Android-Kotlin: 对象 {} 用 mapOf()，数组 [] 用 listOf() \n ```kotlin \n'
+            s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
+              + '```kotlin \n'
               + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：空对象用 HashMap&lt;String, Any&gt;() 表示，空数组用 ArrayList&lt;Any&gt;() 表示。 \n';
+              + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
           case 'Objective-C':
-            s += '\n#### <= iOS-Objective-C\n ```objective-c \n'
+            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
               + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
               + '\n ```  \n';
             break;
           case 'C#':
-            s += '\n#### <= Unity3D-C#: 所有对象标识 {} 改为数组标识 [] \n ```csharp \n'
+            s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
+              '\n ```csharp \n'
               + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：空对象用 [:] 表示。 \n';
+              + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
           case 'PHP':
-            s += '\n#### <= Web-PHP: 所有对象标识 {} 改为数组标识 [] \n ```php \n'
+            s += '\n#### <= Web-PHP: 空对象用 (object) array()'
+              + ' \n ```php \n'
               + CodeUtil.parsePHP(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：空对象用 [:] 表示。 \n';
+              + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
             break;
             //以下都不需要解析，直接用左侧的 JSON
           case 'JavaScript':
@@ -1697,10 +1702,10 @@
           case 'Python':
             break;
           default:
-            s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';
+            s += '\n\n没有自动生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
             break;
         }
-        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求JSON一样 \n';
+        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
