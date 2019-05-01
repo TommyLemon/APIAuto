@@ -783,7 +783,7 @@
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', JSON.parse(App.jsoncon), 0)
                 break;
               default:
-                s += ':\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';
+                s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
                 break;
             }
 
@@ -1698,7 +1698,7 @@
             break;
           case 'Go':
             s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key 最后都要加逗号 ","'
-              + ' \n ```php \n'
+              + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
@@ -1708,7 +1708,7 @@
           case 'Python':
             break;
           default:
-            s += '\n\n没有自动生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
+            s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
             break;
         }
         s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
