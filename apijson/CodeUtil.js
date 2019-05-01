@@ -1033,7 +1033,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONResponse = JSONResponse(resultJson) as JSONResponse\n';
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson) as JSONObject\n';
       },
 
       onParseParentEnd: function () {
@@ -1063,7 +1063,7 @@ var CodeUtil = {
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, true);
 
-        return '\n' + CodeUtil.getBlank(depth + 1) + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
+        return '\n' + CodeUtil.getBlank(depth) + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
           + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '")';
       },
 
@@ -1074,10 +1074,10 @@ var CodeUtil = {
         var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
         var innerPadding2 = '\n' + CodeUtil.getBlank(depth + 2);
 
-        var k = JSONResponse.getVariableName(key);
+        var k = JSONResponse.getVariableName(key) + (depth <= 0 ? '' : depth);
         var itemName = 'item' + (depth <= 0 ? '' : depth);
-
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+
         var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
 
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
@@ -1085,13 +1085,14 @@ var CodeUtil = {
         s += innerPadding + 'var ' + k + ': JSONArray = ' + name + '.getJSONArray("' + key + '") as JSONArray';
         s += innerPadding + 'if (' + k + ' == null) {';
         s += innerPadding + blank + k + ' = JSONArray()';
-        s += innerPadding + '}';
+        s += innerPadding + '}\n';
 
         s += innerPadding + 'var ' + itemName + ': ' + type;
 
-        s += innerPadding + 'for (i in 0..' + k + '.size - 1) {';
+        var indexName = 'i' + (depth <= 0 ? '' : depth);
+        s += innerPadding + 'for (' + indexName + ' in 0..' + k + '.size - 1) {';
 
-        s += innerPadding2 + itemName + ' = ' + k + '.get' + type + '(i) as ' + type;
+        s += innerPadding2 + itemName + ' = ' + k + '.get' + (type == 'Object' ? '' : type) + '(' + indexName + ') as ' + type;
         s += innerPadding2 + 'if (' + itemName + ' == null) {';
         s += innerPadding2 + blank + 'continue';
         s += innerPadding2 + '}';
@@ -1099,7 +1100,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 1);
+          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 2);
         }
         // }
 
@@ -1120,9 +1121,9 @@ var CodeUtil = {
         s += innerPadding + 'var ' + k + ': JSONObject = ' + name + '.getJSONObject("' + key + '") as JSONObject'
         s += innerPadding + 'if (' + k + ' == null) {';
         s += innerPadding + blank + k + ' = JSONObject()';
-        s += innerPadding + '}';
+        s += innerPadding + '}\n';
 
-        s += CodeUtil.parseKotlinResponse(k, value, depth);
+        s += CodeUtil.parseKotlinResponse(k, value, depth + 1);
 
         s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -1151,7 +1152,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
 
       onParseParentEnd: function () {
