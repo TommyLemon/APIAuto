@@ -600,7 +600,7 @@
                 alert('可填数据库:MYSQL,POSTGRESQL')
               }
               else if (index == 2) {
-                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,PHP,Python')
+                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,C#,PHP,Python')
               }
               break
             case 4:
@@ -1681,12 +1681,20 @@
               + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
               + '\n ```  \n';
             break;
-          case 'TypeScript':
+          case 'C#':
+            s += '\n#### <= Unity3D-C#: 所有对象标识 {} 改为数组标识 [] \n ```csharp \n'
+              + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：空对象用 [:] 表示。 \n';
             break;
           case 'PHP':
             s += '\n#### <= Web-PHP: 所有对象标识 {} 改为数组标识 [] \n ```php \n'
               + CodeUtil.parsePHP(null, JSON.parse(rq), 0)
               + '\n ``` \n注：空对象用 [:] 表示。 \n';
+            break;
+            //以下都不需要解析，直接用左侧的 JSON
+          case 'JavaScript':
+          case 'TypeScript':
+          case 'Python':
             break;
           default:
             s += '\n\n可能生成代码语言配置错误，没有自动生成代码。\n封装 Request JSON 与 解析 Response JSON 支持语言: Java,Swift,Kotlin,Objective-C,TypeScript。 \n';

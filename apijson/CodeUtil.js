@@ -92,7 +92,7 @@ var CodeUtil = {
     return lines.join('\n');
   },
 
-  /**解析出 生成iOS-Swift请求JSON 的代码
+  /**封装 生成 iOS-Swift 请求 JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
    * @param name
    * @param reqObj
@@ -145,6 +145,65 @@ var CodeUtil = {
         }
 
         return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
+      }
+    })
+
+  },
+
+  /**生成封装 Unity3D-C# 请求 JSON 的代码
+   * 只需要把所有 对象标识{} 改为数组标识 []
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   */
+  parseCSharp: function(name, reqObj, depth) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+    var hasContent = false;
+    var isEmpty = Object.keys(reqObj).length <= 0;
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return isEmpty ? 'new JObject {' : 'new JObject {\n';
+      },
+
+      onParseParentEnd: function () {
+        return isEmpty ? '}' : '\n' + CodeUtil.getBlank(depth) + '}';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '{"' + key + '", ' + CodeUtil.parseCSharp(key, value, depth + 1) + '}';
+      },
+
+      onParseChildObject: function (key, value, index) {
+        hasContent = true;
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '{"' + key + '", ' + CodeUtil.parseCSharp(key, value, depth + 1) + '}';
+      },
+
+      onParseChildOther: function (key, value, index) {
+        hasContent = true;
+
+        var v; //避免改变原来的value
+        if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parseCSharp  for typeof value === "string" >>  ' );
+
+          v = '"' + value + '"';
+        }
+        else if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseCSharp  for typeof value === "array" >>  ' );
+
+          v = 'new JArray {' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+        }
+        else {
+          v = value
+        }
+
+        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '{"' + key + '", ' + v + '}';
       }
     })
 
@@ -475,6 +534,155 @@ var CodeUtil = {
     })
 
   },
+
+  // FIXME 未测试通过
+  // /**解析出 生成 Unity3D-C# 封装请求 JSON 的代码
+  //  * @param name
+  //  * @param reqObj
+  //  * @param depth
+  //  * @return parseCode
+  //  * @return isSmart 是否智能
+  //  */
+  // parseCSharp: function(name, reqObj, depth, isSmart) {
+  //   name = name || '';
+  //   if (depth == null || depth < 0) {
+  //     depth = 0;
+  //   }
+  //
+  //   const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+  //
+  //   const prefix = CodeUtil.getBlank(depth);
+  //   const nextPrefix = CodeUtil.getBlank(depth + 1);
+  //
+  //   return CodeUtil.parseCode(name, reqObj, {
+  //
+  //     onParseParentStart: function () {
+  //       return '\n' + prefix + (isSmart ? 'JObject' : 'Dictionary<string, object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JObject' : 'Dictionary<string, object>') + '();';
+  //     },
+  //
+  //     onParseParentEnd: function () {
+  //       return '';
+  //     },
+  //
+  //     onParseChildArray: function (key, value, index) {
+  //
+  //       var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+  //
+  //       const count = isSmart ? (value.count || 0) : 0;
+  //       const page = isSmart ? (value.page || 0) : 0;
+  //       const query = isSmart ? value.query : null;
+  //       const join = isSmart ? value.join : null;
+  //
+  //       log(CodeUtil.TAG, 'parseCSharp  for  count = ' + count + '; page = ' + page);
+  //
+  //       if (isSmart) {
+  //         delete value.count;
+  //         delete value.page;
+  //         delete value.query;
+  //         delete value.join;
+  //       }
+  //
+  //       s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
+  //
+  //       log(CodeUtil.TAG, 'parseCSharp  for delete >> count = ' + count + '; page = ' + page);
+  //
+  //       var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
+  //
+  //       if (isSmart) {
+  //         var alias = key.substring(0, key.length - 2);
+  //
+  //         s += '\n\n';
+  //         if (query != null) {
+  //           s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+  //         }
+  //         if (StringUtil.isEmpty(join, true) == false) {
+  //           s += nextPrefix + name + '.setJoin("' + join + '");\n';
+  //         }
+  //
+  //         s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
+  //           + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
+  //       }
+  //       else {
+  //         s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.Add("' + key + '", ' + name + ');';
+  //       }
+  //
+  //       s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+  //
+  //       return s;
+  //     },
+  //
+  //     onParseChildObject: function (key, value, index) {
+  //       var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+  //
+  //       const isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
+  //
+  //       const column = isTable ? value['@column'] : null;
+  //       const group = isTable ? value['@group'] : null;
+  //       const having = isTable ? value['@having'] : null;
+  //       const order = isTable ? value['@order'] : null;
+  //       const combine = isTable ? value['@combine'] : null;
+  //       const schema = isTable ? value['@schema'] : null;
+  //       const database = isTable ? value['@database'] : null;
+  //       const role = isTable ? value['@role'] : null;
+  //
+  //       if (isTable) {
+  //         delete value['@column'];
+  //         delete value['@group'];
+  //         delete value['@having'];
+  //         delete value['@order'];
+  //         delete value['@combine'];
+  //         delete value['@schema'];
+  //         delete value['@database'];
+  //         delete value['@role'];
+  //       }
+  //
+  //       s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
+  //
+  //       const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
+  //       if (isTable) {
+  //         s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
+  //         s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
+  //         s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+  //         s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
+  //         s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
+  //         s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
+  //         s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
+  //         s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+  //       }
+  //
+  //       s += '\n\n' + nextPrefix + parentKey + '.Add("' + key + '", ' + name + ');';
+  //
+  //       s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+  //
+  //       return s;
+  //     },
+  //
+  //     onParseChildOther: function (key, value, index) {
+  //       if (depth <= 0 && isSmart) {
+  //         if (key == 'tag') {
+  //           return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //         if (key == 'version') {
+  //           return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //         if (key == 'format') {
+  //           return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //         if (key == '@schema') {
+  //           return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //         if (key == '@database') {
+  //           return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //         if (key == '@role') {
+  //           return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //         }
+  //       }
+  //       return '\n' + prefix + parentKey + '.Add("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //     }
+  //   })
+  //
+  // },
 
 
 
