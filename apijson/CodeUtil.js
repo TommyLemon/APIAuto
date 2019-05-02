@@ -1015,6 +1015,7 @@ var CodeUtil = {
   },
 
   /**生成 Android-Kotlin 解析 Response JSON 的代码
+   * 不能像 Java 那样执行 {} 代码段里的代码，所以不能用 Java 那种代码段隔离的方式
    * @param name
    * @param resObj
    * @param depth
@@ -1033,7 +1034,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson) as JSONObject\n';
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
       },
 
       onParseParentEnd: function () {
@@ -1062,6 +1063,9 @@ var CodeUtil = {
         }
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, true);
+        if (type == 'Object') {
+          type = 'Any';
+        }
 
         return '\n' + CodeUtil.getBlank(depth) + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
           + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '")';
@@ -1072,60 +1076,61 @@ var CodeUtil = {
 
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
-        var innerPadding2 = '\n' + CodeUtil.getBlank(depth + 2);
 
         var k = JSONResponse.getVariableName(key) + (depth <= 0 ? '' : depth);
         var itemName = 'item' + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
         var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
+        if (type == 'Object') {
+          type = 'Any';
+        }
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += innerPadding + 'var ' + k + ': JSONArray = ' + name + '.getJSONArray("' + key + '") as JSONArray';
-        s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = JSONArray()';
-        s += innerPadding + '}\n';
+        s += padding + 'var ' + k + ': JSONArray? = ' + name + '.getJSONArray("' + key + '")';
+        s += padding + 'if (' + k + ' == null) {';
+        s += padding + blank + k + ' = JSONArray()';
+        s += padding + '}\n';
 
-        s += innerPadding + 'var ' + itemName + ': ' + type;
+        s += padding + 'var ' + itemName + ': ' + (type == 'Integer' ? 'Int' : type) + '?';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += innerPadding + 'for (' + indexName + ' in 0..' + k + '.size - 1) {';
+        s += padding + 'for (' + indexName + ' in 0..' + k + '.size - 1) {';
 
-        s += innerPadding2 + itemName + ' = ' + k + '.get' + (type == 'Object' ? '' : type) + '(' + indexName + ') as ' + type;
-        s += innerPadding2 + 'if (' + itemName + ' == null) {';
-        s += innerPadding2 + blank + 'continue';
-        s += innerPadding2 + '}';
-        s += innerPadding2 + '//TODO 你的代码\n';
+        s += innerPadding + itemName + ' = ' + k + '.get' + (type == 'Any' ? '' : type) + '(' + indexName + ')';
+        s += innerPadding + 'if (' + itemName + ' == null) {';
+        s += innerPadding + blank + 'continue';
+        s += innerPadding + '}';
+        s += innerPadding + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 2);
+          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 1);
         }
         // }
 
-        s += innerPadding + '}';
+        s += padding + '}';
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
       onParseJSONObject: function (key, value, index) {
         var padding = '\n' + CodeUtil.getBlank(depth);
-        var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += innerPadding + 'var ' + k + ': JSONObject = ' + name + '.getJSONObject("' + key + '") as JSONObject'
-        s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = JSONObject()';
-        s += innerPadding + '}\n';
+        s += padding + 'var ' + k + ': JSONObject? = ' + name + '.getJSONObject("' + key + '")'
+        s += padding + 'if (' + k + ' == null) {';
+        s += padding + blank + k + ' = JSONObject()';
+        s += padding + '}\n';
 
-        s += CodeUtil.parseKotlinResponse(k, value, depth + 1);
+        s += CodeUtil.parseKotlinResponse(k, value, depth);
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
