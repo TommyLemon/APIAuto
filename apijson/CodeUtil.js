@@ -803,8 +803,7 @@ var CodeUtil = {
 
 
 
-  /**TODO 为for循环生成函数
-   * 生成 iOS-Swift 解析 Response JSON 的代码
+  /**生成 iOS-Swift 解析 Response JSON 的代码
    * @param name
    * @param resObj
    * @param depth
@@ -851,8 +850,10 @@ var CodeUtil = {
         }
 
         var type = CodeUtil.getSwiftTypeFromJS(key, value);
+        var padding = '\n' + CodeUtil.getBlank(depth);
 
-        return '\n' + CodeUtil.getBlank(depth) + 'let ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type;
+        return padding + 'let ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
+          + padding + 'print("' + name + '.' + key + ' = " + ' + key + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -860,7 +861,10 @@ var CodeUtil = {
 
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = padding + CodeUtil.getBlank(1);
+
         var k = JSONResponse.getVariableName(key);
+        var itemName = 'item' + (depth <= 0 ? '' : depth);
+
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
 
@@ -870,17 +874,21 @@ var CodeUtil = {
 
         s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + 'let item: ' +  + type;
+        s += padding + 'let ' + itemName + ': ' +  + type;
 
-        s += padding + 'for (int i = 0; i < ' + k + '.size(); i++) {';
+        var indexName = 'i' + (depth <= 0 ? '' : depth);
+        s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++) {';
 
-        s += innerPadding + 'item = ' + k + '[i] as! ' + type;
-        s += innerPadding + 'if (item == nil) {';
+        s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
+        s += innerPadding + 'if (' + itemName + ' == nil) {';
         s += innerPadding + '    continue';
         s += innerPadding + '}';
+        s += innerPadding + 'print("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
+        s += innerPadding + '//TODO 你的代码\n';
+
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseSwiftResponse('item', value[0], depth + 1);
+          s += CodeUtil.parseSwiftResponse(itemName, value[0], depth + 1);
         }
         // }
 
@@ -908,8 +916,9 @@ var CodeUtil = {
     })
 
   },
-  /**TODO 为for循环生成函数
-   * 生成 iOS-Swift 解析 Response JSON 的代码
+
+
+  /**生成 Web-TypeScript 解析 Response JSON 的代码
    * @param name
    * @param resObj
    * @param depth
@@ -956,8 +965,10 @@ var CodeUtil = {
         }
 
         var type = (typeof value) || 'any';
+        var padding = '\n' + CodeUtil.getBlank(depth);
 
-        return '\n' + CodeUtil.getBlank(depth) + 'var ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"];';
+        return padding + 'var ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"];'
+        + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -965,27 +976,34 @@ var CodeUtil = {
 
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = padding + CodeUtil.getBlank(1);
+
         var k = JSONResponse.getVariableName(key);
+        var itemName = 'item' + (depth <= 0 ? '' : depth);
+
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = (typeof value[0]) || 'any';
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + 'var ' + k + ': Array<' + type + '> = ' + name + '["' + key + '"];';
+        s += padding + 'var ' + k + ': ' + type + '[] = ' + name + '["' + key + '"];';
 
         s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + 'var item: ' +  + type + ';';
+        s += padding + 'var ' + itemName + ': ' +  + type + ';';
 
-        s += padding + 'for (int i = 0; i < ' + k + '.length; i++) {';
+        var indexName = 'i' + (depth <= 0 ? '' : depth);
+        s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.length; ' + indexName + '++) {';
 
-        s += innerPadding + 'item = ' + k + '[i];';
-        s += innerPadding + 'if (item == null) {';
+        s += innerPadding + itemName + ' = ' + k + '[' + indexName + '];';
+        s += innerPadding + 'if (' + itemName + ' == null) {';
         s += innerPadding + '    continue;';
         s += innerPadding + '}';
+        s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
+        s += innerPadding + '//TODO 你的代码\n';
+
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseTypeScriptResponse('item', value[0], depth + 1);
+          s += CodeUtil.parseTypeScriptResponse(itemName, value[0], depth + 1);
         }
         // }
 
@@ -1066,9 +1084,11 @@ var CodeUtil = {
         if (type == 'Object') {
           type = 'Any';
         }
+        var padding = '\n' + CodeUtil.getBlank(depth);
 
-        return '\n' + CodeUtil.getBlank(depth) + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
-          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '")';
+        return padding + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
+          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '")'
+          + padding + 'println("' + name + '.' + key + ' = " + ' + key + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1102,6 +1122,7 @@ var CodeUtil = {
         s += innerPadding + 'if (' + itemName + ' == null) {';
         s += innerPadding + blank + 'continue';
         s += innerPadding + '}';
+        s += innerPadding + 'println("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
         s += innerPadding + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
@@ -1186,9 +1207,11 @@ var CodeUtil = {
         }
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, true);
+        var padding = '\n' + CodeUtil.getBlank(depth);
 
-        return '\n' + CodeUtil.getBlank(depth) + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
-          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");';
+        return padding + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
+          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");'
+          + padding + 'System.out.println("' + name + '.' + key + ' = " + ' + key + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1220,6 +1243,7 @@ var CodeUtil = {
         s += innerPadding2 + 'if (' + itemName + ' == null) {';
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
+        s += innerPadding2 + 'System.out.println("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
         s += innerPadding2 + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
@@ -1248,6 +1272,127 @@ var CodeUtil = {
         s += innerPadding + '}\n';
 
         s += CodeUtil.parseJavaResponse(k, value, depth + 1);
+
+        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
+
+
+  /**生成 Unity3D-C# 解析 Response JSON 的代码
+   * @param name
+   * @param resObj
+   * @param depth
+   * @return parseCode
+   */
+  parseCSharpResponse: function(name, resObj, depth) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    if (name == null || name == '') {
+      name = 'response';
+    }
+    const blank = CodeUtil.getBlank(1);
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JObject ' + name + ' = JObject.Parse(resultJson);\n';
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseCSharpResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseCSharpResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = CodeUtil.getCSharpTypeFromJS(key, value);
+        var padding = '\n' + CodeUtil.getBlank(depth);
+
+        return padding + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '["' + key + '"]'
+          + '.ToObject<' + type + '>()' + ';'
+          + padding + 'Console.WriteLine("' + name + '.' + key + ' = " + ' + key + ');';
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        value = value || []
+
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
+        var innerPadding2 = '\n' + CodeUtil.getBlank(depth + 2);
+
+        var k = JSONResponse.getVariableName(key) + (depth <= 0 ? '' : depth);
+        var itemName = 'item' + (depth <= 0 ? '' : depth);
+
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = CodeUtil.getCSharpTypeFromJS('item', value[0]);
+
+        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += innerPadding + 'JArray ' + k + ' = ' + name + '["' + key + '"].ToObject<JArray>();';
+        s += innerPadding + 'if (' + k + ' == null) {';
+        s += innerPadding + blank + k + ' = new JArray();';
+        s += innerPadding + '}\n';
+
+        s += '\n' + innerPadding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+
+        s += innerPadding + 'foreach (' + type + ' ' + itemName + ' in ' + k + ') {';
+
+        s += innerPadding2 + 'if (' + itemName + ' == null) {';
+        s += innerPadding2 + blank + 'continue;';
+        s += innerPadding2 + '}';
+        s += innerPadding2 + 'Console.WriteLine("\\n' + itemName + ' in ' + k + ' = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
+        s += innerPadding2 + '//TODO 你的代码\n';
+
+        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseCSharpResponse(itemName, value[0], depth + 2);
+        }
+        // }
+
+        s += innerPadding + '}';
+
+        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
+        var k = JSONResponse.getVariableName(key);
+
+        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += innerPadding + 'JObject ' + k + ' = ' + name + '["' + key + '"].ToObject<JObject>();'
+        s += innerPadding + 'if (' + k + ' == null) {';
+        s += innerPadding + blank + k + ' = new JObject();';
+        s += innerPadding + '}\n';
+
+        s += CodeUtil.parseCSharpResponse(k, value, depth + 1);
 
         s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -1926,6 +2071,32 @@ var CodeUtil = {
     }
 
     return 'Object';
+  },
+
+  getCSharpTypeFromJS: function (key, value, baseFirst) {
+    if (typeof value == 'boolean') {
+      return baseFirst ? 'bool' : 'Boolean';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return baseFirst ? 'double' : 'Double';
+      }
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint')) {
+        return baseFirst ? 'long' : 'Int64';
+      }
+      return baseFirst ? 'int' : 'Int32';
+    }
+    if (typeof value == 'string') {
+      return 'String';
+    }
+    if (value instanceof Array) {
+      return 'JArray';
+    }
+    if (value instanceof Object) {
+      return 'JObject';
+    }
+
+    return baseFirst ? 'object' : 'Object';
   },
 
   getSwiftTypeFromJS: function (key, value) {

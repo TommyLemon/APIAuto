@@ -835,13 +835,29 @@
               case 'Objective-C':
                 s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
                 break;
+              case 'C#':
+                s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'PHP':
+                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'Go':
+                s += '(Go):\n\n' + CodeUtil.parseGoResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'JavaScript':
+                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', JSON.parse(App.jsoncon), 0)
+                break;
               case 'TypeScript':
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', JSON.parse(App.jsoncon), 0)
+                break;
+              case 'Python':
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', JSON.parse(App.jsoncon), 0)
                 break;
               default:
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
                 break;
             }
+
 
 
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
