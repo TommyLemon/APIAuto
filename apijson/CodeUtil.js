@@ -1456,7 +1456,7 @@ var CodeUtil = {
   /**用数据字典转为JavaBean
    * @param docObj
    */
-  parseCSharpBean: function(docObj, clazz, database) {
+  parseCSharpEntity: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
