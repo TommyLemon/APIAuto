@@ -572,7 +572,48 @@
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             }
             else if (App.view == 'markdown' || App.view == 'output') {
-              App.exTxt.name = 'User.java'
+              var suffix
+              switch (App.language) {
+                case 'Java':
+                  suffix = '.java';
+                  break;
+                case 'Swift':
+                  suffix = '.swift';
+                  break;
+                case 'Kotlin':
+                  suffix = '.kt';
+                  break;
+                case 'Objective-C':
+                  suffix = '.h';
+                  break;
+                case 'C#':
+                  suffix = '.cs';
+                  break;
+                case 'PHP':
+                  suffix = '.php';
+                  break;
+                case 'Go':
+                  suffix = '.go';
+                  break;
+                //以下都不需要解析，直接用左侧的 JSON
+                case 'JavaScript':
+                  suffix = '.js';
+                  break;
+                case 'TypeScript':
+                  suffix = '.ts';
+                  break;
+                case 'Python':
+                  suffix = '.python';
+                  break;
+                default:
+                  suffix = '.java';
+                  break;
+              }
+
+              App.exTxt.name = 'User' + suffix
+              alert('自动生成模型代码，可填类名后缀:\n'
+                + '.java(Java), .kt(Kotlin), .swift(Swift) , .h(Objective-C),  .m(Objective-C),' +
+                '\n.ts(TypeScript), .js(JavaScript, .cs(C#), .php(PHP), ,python(Python), .go(Go)');
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
@@ -597,10 +638,10 @@
               App.isConfigShow = true
 
               if (index == 0) {
-                alert('可填数据库:MYSQL,POSTGRESQL')
+                alert('可填数据库:\nMYSQL,POSTGRESQL')
               }
               else if (index == 2) {
-                alert('可填语言:Java,Kotlin,Swift,Objective-C,TypeScript,JavaScript,C#,PHP,Python,Go')
+                alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
               }
               break
             case 4:
@@ -736,26 +777,41 @@
             var clazz = StringUtil.trim(App.exTxt.name)
 
             var txt
-            if (clazz.endsWith('.kt')) {
-              txt = CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.ts')) {
-              txt = CodeUtil.parseTypeScriptClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.js')) {
-              txt = CodeUtil.parseJavaScriptClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.h')) {
-              txt = CodeUtil.parseObjectCH(docObj, clazz.substring(0, clazz.length - 2), App.database)
-            }
-            else if  (clazz.endsWith('.m')) {
-              txt = CodeUtil.parseObjectCM(docObj, clazz.substring(0, clazz.length - 2), App.database)
-            }
-            else if (clazz.endsWith('.java')) {
+            if (clazz.endsWith('.java')) {
               txt = CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
             }
+            else if (clazz.endsWith('.swift')) {
+              txt = CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
+            }
+            else if (clazz.endsWith('.kt')) {
+              txt = CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.h')) {
+              txt = CodeUtil.parseObjectiveCEntityH(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if  (clazz.endsWith('.m')) {
+              txt = CodeUtil.parseObjectiveCEntityM(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if  (clazz.endsWith('.cs')) {
+              txt = CodeUtil.parseCSharpEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.php')) {
+              txt = CodeUtil.parsePHPEntity(docObj, clazz.substring(0, clazz.length - 4), App.database)
+            }
+            else if  (clazz.endsWith('.go')) {
+              txt = CodeUtil.parseGoEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.js')) {
+              txt = CodeUtil.parseJavaScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.ts')) {
+              txt = CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if (clazz.endsWith('.python')) {
+              txt = CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
+            }
             else {
-              alert('请正确输入对应语言的类名后缀，例如 .java .kt .ts .h .m 等！')
+              alert('请正确输入对应语言的类名后缀！')
             }
 
             if (StringUtil.isEmpty(txt, true)) {
@@ -1702,7 +1758,7 @@
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
-            //以下都不需要解析，直接用左侧的 JSON
+          //以下都不需要解析，直接用左侧的 JSON
           case 'JavaScript':
           case 'TypeScript':
           case 'Python':

@@ -1342,6 +1342,9 @@ var CodeUtil = {
     var doc = '';
     var item;
 
+    var blank = CodeUtil.getBlank(1);
+    var blank2 = CodeUtil.getBlank(2);
+
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
@@ -1365,20 +1368,30 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIJSONAuto自动生成JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n *使用方法：\n *1.修改包名package \n *2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
-          + '\n */\n'
+          + '\n *APIJSONAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n */'
           + '\npackage apijson.demo.server.model;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
           + '\npublic class ' + model + ' implements Serializable {'
-          + '\n  private static final long serialVersionUID = 1L;\n';
+          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
           console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+          doc += '\n'
+            + '\n' + blank + 'public ' + model + '() {'
+            + '\n' + blank2 + 'super();'
+            + '\n' + blank + '}'
+            + '\n' + blank + 'public ' + model + '(long id) {'
+            + '\n' + blank2 + 'this();'
+            + '\n' + blank2 + 'setId(id);'
+            + '\n' + blank + '}'
+            + '\n\n'
 
           var name;
           var type;
@@ -1398,20 +1411,11 @@ var CodeUtil = {
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n  private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
           doc += '\n\n'
-            + '\n  public ' + model + '() {'
-            + '\n    super();'
-            + '\n  }'
-            + '\n  public ' + model + '(long id) {'
-            + '\n    this();'
-            + '\n    setId(id);'
-            + '\n  }'
-            + '\n\n\n\n'
-
 
           for (var j = 0; j < columnList.length; j++) {
             column = (columnList[j] || {}).Column;
@@ -1426,13 +1430,15 @@ var CodeUtil = {
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             //getter
-            doc += '\n  public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n    return ' + name + ';\n  }\n';
+            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
+              + '\n' + blank2 + 'return ' + name + ';'
+              + '\n' + blank + '}';
 
             //setter
-            doc += '\n  public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n    this.' + name + ' = ' + name + ';'
-              + '\n    return this;\n  }\n';
+            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
+              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
+              + '\n' + blank2 + 'return this;'
+              + '\n' + blank + '}\n';
 
           }
         }
@@ -1447,10 +1453,107 @@ var CodeUtil = {
   },
 
 
+  /**用数据字典转为JavaBean
+   * @param docObj
+   */
+  parseCSharpBean: function(docObj, clazz, database) {
+
+    //转为Java代码格式
+    var doc = '';
+    var item;
+
+    var blank = CodeUtil.getBlank(1);
+    var blank2 = CodeUtil.getBlank(2);
+
+    //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    var list = docObj == null ? null : docObj['[]'];
+    if (list != null) {
+      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+
+      var table;
+      var model;
+      var columnList;
+      var column;
+      for (var i = 0; i < list.length; i++) {
+        item = list[i];
+
+        //Table
+        table = item == null ? null : item.Table;
+        model = CodeUtil.getModelName(table == null ? null : table.table_name);
+        if (model != clazz) {
+          continue;
+        }
+
+        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+
+
+        doc += '/**'
+          + '\n *APIJSONAuto 自动生成 C# Bean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 namespace \n *2. using 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n */\n'
+          + '\nnamespace apijson.demo.server.model'
+          + '\n{'
+          + '\n' + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
+          + '\n' + blank + '[MethodAccess]'
+          + '\n' + blank + '[Serializable]'
+          + '\n' + blank + 'public class ' + model;
+          + '\n' + blank + '{';
+
+        //Column[]
+        columnList = item['[]'];
+        if (columnList != null) {
+
+          console.log('parseCSharpBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+          doc += '\n'
+            + '\n' + blank2 + 'public ' + model + '()'
+            + '\n' + blank2 + '{'
+            + '\n' + blank2 + '}'
+            + '\n' + blank2 + 'public ' + model + '(long id)'
+            + '\n' + blank2 + '{'
+            + '\n' + blank2 + blank + 'setId(id);'
+            + '\n' + blank2 + '}'
+            + '\n\n'
+
+          var name;
+          var type;
+
+          for (var j = 0; j < columnList.length; j++) {
+            column = (columnList[j] || {}).Column;
+
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+            if (name == '') {
+              continue;
+            }
+
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+
+
+            console.log('parseCSharpBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+
+            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+            doc += '\n' + blank2 + 'private ' + type + ' ' + name + ' { get; set; } ' + CodeUtil.getComment((o || {}).column_comment, false);
+
+          }
+
+        }
+
+        doc += '\n\n' + blank + '}';
+        doc += '\n\n}';
+
+      }
+    }
+    //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    return doc;
+  },
+
+
   /**用数据字典转为 TypeScript 类
    * @param docObj
    */
-  parseTypeScriptClass: function(docObj, clazz, database) {
+  parseTypeScriptEntity: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
@@ -1479,7 +1582,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIJSONAuto自动生成 TypeScript Class\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *APIJSONAuto 自动生成 TypeScript Entity\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n */\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
@@ -1529,7 +1632,7 @@ var CodeUtil = {
   /**用数据字典转为 TypeScript 类
    * @param docObj
    */
-  parseJavaScriptClass: function(docObj, clazz, database) {
+  parseJavaScriptEntity: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
@@ -1558,7 +1661,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIJSONAuto自动生成 JavaScript Class\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *APIJSONAuto 自动生成 JavaScript Entity\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n */\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
@@ -1626,6 +1729,9 @@ var CodeUtil = {
     var doc = '';
     var item;
 
+    var blank = CodeUtil.getBlank(1);
+    var blank2 = CodeUtil.getBlank(2);
+
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
@@ -1649,14 +1755,22 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIJSONAuto自动生成JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n *使用方法：\n *1.修改包名package \n *2.import需要引入的类，可使用快捷键Ctrl+Shift+O '
-          + '\n */\n'
+          + '\n *APIJSONAuto 自动生成 Kotlin Data Class\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n */'
           + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
           + '\ndata class ' + model + ': Serializable {'
-          + '\n    private val Long serialVersionUID = 1L\n';
+          + '\n' + blank + 'private val Long serialVersionUID = 1L\n';
+
+        doc += '\n'
+          + '\n' + blank + 'public constructor(): super() {'
+          + '\n' + blank + '}'
+          + '\n' + blank + 'public constructor(id: Long): this(id: Long) {'
+          + '\n' + blank2 + 'setId(id)'
+          + '\n' + blank + '}'
+          + '\n\n'
 
         //Column[]
         columnList = item['[]'];
@@ -1680,7 +1794,7 @@ var CodeUtil = {
             console.log('parseKotlinDataClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n    var '+ name + ': ' + type + '? = null ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + 'var '+ name + ': ' + type + '? = null ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
