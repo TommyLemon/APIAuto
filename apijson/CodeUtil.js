@@ -885,13 +885,13 @@ var CodeUtil = {
 
         s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + 'let ' + itemName + ': ' + type;
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         if (isSmart) {
           s += padding + 'for (' + indexName + ', ' + itemName + ') in ' + k + ' {';
         }
         else {
+          s += padding + 'let ' + itemName + ': ' + type;
           s += padding + 'for var ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++ {';
           s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
         }
