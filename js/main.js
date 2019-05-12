@@ -776,43 +776,43 @@
 
             var clazz = StringUtil.trim(App.exTxt.name)
 
-            var txt
-            if (clazz.endsWith('.java')) {
-              txt = CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
-            }
-            else if (clazz.endsWith('.swift')) {
-              txt = CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
-            }
-            else if (clazz.endsWith('.kt')) {
-              txt = CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.h')) {
-              txt = CodeUtil.parseObjectiveCEntityH(docObj, clazz.substring(0, clazz.length - 2), App.database)
-            }
-            else if  (clazz.endsWith('.m')) {
-              txt = CodeUtil.parseObjectiveCEntityM(docObj, clazz.substring(0, clazz.length - 2), App.database)
-            }
-            else if  (clazz.endsWith('.cs')) {
-              txt = CodeUtil.parseCSharpEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.php')) {
-              txt = CodeUtil.parsePHPEntity(docObj, clazz.substring(0, clazz.length - 4), App.database)
-            }
-            else if  (clazz.endsWith('.go')) {
-              txt = CodeUtil.parseGoEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.js')) {
-              txt = CodeUtil.parseJavaScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if  (clazz.endsWith('.ts')) {
-              txt = CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
-            }
-            else if (clazz.endsWith('.python')) {
-              txt = CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
-            }
-            else {
-              alert('请正确输入对应语言的类名后缀！')
-            }
+            var txt = '' //配合下面 +=，实现注释判断，一次全生成，方便测试
+            // if (clazz.endsWith('.java')) {
+              txt += CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
+            // }
+            // else if (clazz.endsWith('.swift')) {
+              txt += CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
+            // }
+            // else if (clazz.endsWith('.kt')) {
+              txt += CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            // }
+            // else if  (clazz.endsWith('.h')) {
+              txt += CodeUtil.parseObjectiveCEntityH(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            // }
+            // else if  (clazz.endsWith('.m')) {
+              txt += CodeUtil.parseObjectiveCEntityM(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            // }
+            // else if  (clazz.endsWith('.cs')) {
+              txt += CodeUtil.parseCSharpEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            // }
+            // else if  (clazz.endsWith('.php')) {
+              txt += CodeUtil.parsePHPEntity(docObj, clazz.substring(0, clazz.length - 4), App.database)
+            // }
+            // else if  (clazz.endsWith('.go')) {
+              txt += CodeUtil.parseGoEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            // }
+            // else if  (clazz.endsWith('.js')) {
+              txt += CodeUtil.parseJavaScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            // }
+            // else if  (clazz.endsWith('.ts')) {
+              txt += CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            // }
+            // else if (clazz.endsWith('.python')) {
+              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
+            // }
+            // else {
+            //   alert('请正确输入对应语言的类名后缀！')
+            // }
 
             if (StringUtil.isEmpty(txt, true)) {
               alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
@@ -821,42 +821,47 @@
             saveTextAs(txt, clazz)
           }
           else {
+            var res = JSON.parse(App.jsoncon)
+            delete res["sql:generate/cache/execute/maxExecute"]
+            delete res["depth:count/max"]
+            delete res["time:start/duration/end"]
+
             var s = ''
-            switch (App.language) {
-              case 'Java':
-                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'Swift':
-                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'Kotlin':
-                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'Objective-C':
-                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'C#':
-                s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'PHP':
-                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'Go':
-                s += '(Go):\n\n' + CodeUtil.parseGoResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'JavaScript':
-                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'TypeScript':
-                s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              case 'Python':
-                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', JSON.parse(App.jsoncon), 0)
-                break;
-              default:
-                s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
-                break;
-            }
+            // switch (App.language) {
+            //   case 'Java':
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0)
+              //   break;
+              // case 'Swift':
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0)
+              //   break;
+              // case 'Kotlin':
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0)
+              //   break;
+              // case 'Objective-C':
+                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+              //   break;
+              // case 'C#':
+                s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', res, 0)
+              //   break;
+              // case 'PHP':
+                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+              //   break;
+              // case 'Go':
+                s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
+              //   break;
+              // case 'JavaScript':
+                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
+              //   break;
+              // case 'TypeScript':
+                s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
+              //   break;
+              // case 'Python':
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0)
+            //     break;
+            //   default:
+            //     s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
+            //     break;
+            // }
 
 
 
@@ -1732,57 +1737,57 @@
        */
       getCode: function (rq) {
         var s = '\n\n\n### 请求代码(自动生成) \n';
-        switch (App.language) {
-          case 'Java':
+        // switch (App.language) {
+        //   case 'Java':
             s += '\n#### <= Android-Java: 同名变量需要重命名'
               + ' \n ```java \n'
               + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
-            break;
-          case 'Swift':
+          //   break;
+          // case 'Swift':
             s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
               + '\n ```swift \n'
               + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
-            break;
-          case 'Kotlin':
+          //   break;
+          // case 'Kotlin':
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
               + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
-            break;
-          case 'Objective-C':
+          //   break;
+          // case 'Objective-C':
             s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
               + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
               + '\n ```  \n';
-            break;
-          case 'C#':
+          //   break;
+          // case 'C#':
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
               '\n ```csharp \n'
               + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
-            break;
-          case 'PHP':
+          //   break;
+          // case 'PHP':
             s += '\n#### <= Web-PHP: 空对象用 (object) array()'
               + ' \n ```php \n'
-              + CodeUtil.parsePHP(null, JSON.parse(rq), 0)
+              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
               + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
-            break;
-          case 'Go':
-            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key 最后都要加逗号 ","'
+          //   break;
+          // case 'Go':
+            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
-            break;
-          //以下都不需要解析，直接用左侧的 JSON
-          case 'JavaScript':
-          case 'TypeScript':
-          case 'Python':
-            break;
-          default:
-            s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
-            break;
-        }
+        //     break;
+        //   //以下都不需要解析，直接用左侧的 JSON
+        //   case 'JavaScript':
+        //   case 'TypeScript':
+        //   case 'Python':
+        //     break;
+        //   default:
+        //     s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
+        //     break;
+        // }
         s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
