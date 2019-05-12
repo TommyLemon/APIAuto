@@ -2734,11 +2734,10 @@ var CodeUtil = {
           + '\n */\n'
           + '\nnamespace apijson.demo.server.model'
           + '\n{'
-          + '\n' + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n' + blank + '[MethodAccess]'
           + '\n' + blank + '[Serializable]'
-          + '\n' + blank + 'public class ' + model;
-        + '\n' + blank + '{';
+          + '\n' + blank + 'public class ' + model + '  ' + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, false)
+          + '\n' + blank + '{';
 
         //Column[]
         columnList = item['[]'];
