@@ -832,7 +832,7 @@
                 s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0)
                 break;
               case 'Swift':
-                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0)
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
               case 'Kotlin':
                 s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0)

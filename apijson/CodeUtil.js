@@ -816,9 +816,10 @@ var CodeUtil = {
    * @param name
    * @param resObj
    * @param depth
+   * @param isSmart
    * @return parseCode
    */
-  parseSwiftResponse: function(name, resObj, depth) {
+  parseSwiftResponse: function(name, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -887,9 +888,14 @@ var CodeUtil = {
         s += padding + 'let ' + itemName + ': ' + type;
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++) {';
+        if (isSmart) {
+          s += padding + 'for (' + indexName + ', ' + itemName + ') in ' + k + ' {';
+        }
+        else {
+          s += padding + 'for var ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++ {';
+          s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
+        }
 
-        s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
         s += innerPadding + 'if (' + itemName + ' == nil) {';
         s += innerPadding + '    continue';
         s += innerPadding + '}';
@@ -898,7 +904,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseSwiftResponse(itemName, value[0], depth + 1);
+          s += CodeUtil.parseSwiftResponse(itemName, value[0], depth + 1, isSmart);
         }
         // }
 
@@ -917,7 +923,7 @@ var CodeUtil = {
 
         s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
 
-        s += CodeUtil.parseSwiftResponse(k, value, depth);
+        s += CodeUtil.parseSwiftResponse(k, value, depth, isSmart);
 
         s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -1245,9 +1251,9 @@ var CodeUtil = {
         }
         else {
           s += padding + 'for (' + '$' + indexName + ' = 0; $' + indexName + ' < count($' + k + '); $' + indexName + '++) {';
+          s += innerPadding + '$' + itemName + ' = $' + k + '[$' + indexName + '];';
         }
 
-        s += innerPadding + '$' + itemName + ' = $' + k + '[$' + indexName + '];';
         s += innerPadding + 'if ($' + itemName + ' === null) {';
         s += innerPadding + '    continue;';
         s += innerPadding + '}';
