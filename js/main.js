@@ -2531,7 +2531,7 @@
 
         this.locals = this.getCache('', 'locals') || []
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nvar schema = this.getCache(, schema)' +
           '\n} catch (e) {\n' + e.message)
       }
@@ -2542,17 +2542,17 @@
           this.currentAccountIndex = this.getCache(URL_BASE, 'currentAccountIndex')
         }
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nvar accounts = this.getCache(URL_BASE, accounts)' +
           '\n} catch (e) {\n' + e.message)
       }
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User') || {}
-        this.isMLEnabled = this.getCache(server, 'isMLEnabled')
+        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled')
         this.testProcess = this.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +
           '\n} catch (e) {\n' + e.message)
       }
