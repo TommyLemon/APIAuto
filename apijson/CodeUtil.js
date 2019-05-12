@@ -1216,7 +1216,7 @@ var CodeUtil = {
         var varName = JSONResponse.getVariableName(key);
 
         return padding + '$' + varName + ' = $' + name + '[' + quote + key + quote + '];'
-          + padding + 'echo (' + quote + '\$' + name + '->\$' + varName + ' = ' + quote + ' . $' + varName + ');';
+          + padding + 'echo (' + quote + (isSmart ? '' : '\\') + '$' + name + '->' + (isSmart ? '' : '\\') + '$' + varName + ' = ' + quote + ' . $' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1251,7 +1251,7 @@ var CodeUtil = {
         s += innerPadding + 'if ($' + itemName + ' === null) {';
         s += innerPadding + '    continue;';
         s += innerPadding + '}';
-        s += innerPadding + 'echo (' + quote + '\\n\$' + itemName + ' = \$' + k + '[' + quote + ' . ' + '\$' + indexName + ' . ' + quote + '] = \\n' + quote + ' . $' + itemName + ' . ' + quote + '\\n\\n' + quote + ');';
+        s += innerPadding + 'echo (' + quote + '\\n' + (isSmart ? '' : '\\') + '$' + itemName + ' = ' + (isSmart ? '' : '\\') + '$' + k + '[' + quote + ' . ' + '$' + indexName + ' . ' + quote + '] = \\n' + quote + ' . $' + itemName + ' . ' + quote + '\\n\\n' + quote + ');';
         s += innerPadding + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
