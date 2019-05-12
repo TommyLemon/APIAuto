@@ -860,9 +860,10 @@ var CodeUtil = {
 
         var type = CodeUtil.getSwiftTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + 'let ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
-          + padding + 'print("' + name + '.' + key + ' = " + ' + key + ');';
+        return padding + 'let ' + varName + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
+          + padding + 'print("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -975,9 +976,10 @@ var CodeUtil = {
 
         var type = CodeUtil.getSwiftTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + 'let ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
-          + padding + 'print("' + name + '.' + key + ' = " + ' + key + ');';
+        return padding + 'let ' + varName + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
+          + padding + 'print("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1093,10 +1095,11 @@ var CodeUtil = {
         }
 
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ' = ' + name
+        return padding + varKey + ' ' + varName + ' = ' + name
           + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ')';
+          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1210,10 +1213,11 @@ var CodeUtil = {
         }
 
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
         return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ' = ' + name
           + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ')';
+          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1327,10 +1331,11 @@ var CodeUtil = {
         }
 
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ' = ' + name
+        return padding + varKey + ' ' + varName + ' = ' + name
           + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ')';
+          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1444,10 +1449,11 @@ var CodeUtil = {
         }
 
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ' = ' + name
+        return padding + varKey + ' ' + varName + ' = ' + name
           + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ')';
+          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1562,9 +1568,10 @@ var CodeUtil = {
 
         var type = value == null ? 'any' : (typeof value);
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ': ' + type + ' = ' + name + '[' + quote + key + quote + '];'
-          + padding + 'console.log("' + name + '.' + key + ' = " + ' + key + ');';
+        return padding + varKey + ' ' + varName + ': ' + type + ' = ' + name + '[' + quote + key + quote + '];'
+          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1681,10 +1688,11 @@ var CodeUtil = {
           type = 'Any';
         }
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + 'var ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
+        return padding + 'var ' + varName + ' = ' + name + '.get'
           + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '")'
-          + padding + 'println("' + name + '.' + key + ' = " + ' + key + ');';
+          + padding + 'println("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1804,10 +1812,11 @@ var CodeUtil = {
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, true);
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '.get'
+        return padding + type + ' ' + varName + ' = ' + name + '.get'
           + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");'
-          + padding + 'System.out.println("' + name + '.' + key + ' = " + ' + key + ');';
+          + padding + 'System.out.println("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1927,10 +1936,11 @@ var CodeUtil = {
 
         var type = CodeUtil.getCSharpTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
 
-        return padding + type + ' ' + JSONResponse.getVariableName(key) + ' = ' + name + '["' + key + '"]'
+        return padding + type + ' ' + varName + ' = ' + name + '["' + key + '"]'
           + '.ToObject<' + type + '>()' + ';'
-          + padding + 'Console.WriteLine("' + name + '.' + key + ' = " + ' + key + ');';
+          + padding + 'Console.WriteLine("' + name + '.' + varName + ' = " + ' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
