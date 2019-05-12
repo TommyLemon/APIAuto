@@ -1178,13 +1178,13 @@ var CodeUtil = {
       name = 'response';
     }
 
-    var varKey = isSmart ? 'let' : 'var'
-    var quote = isSmart ? "'" : '"'
+    var blank = CodeUtil.getBlank(1);
+    var quote = isSmart ? "'" : '"';
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 ? '' : CodeUtil.getBlank(depth) + '$' + name + ' = json_decode($resultJson, true); \n';
       },
 
       onParseParentEnd: function () {
@@ -1215,9 +1215,8 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + JSONResponse.getVariableName(key) + ' = ' + name
-          + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
+        return padding + '$' + varName + ' = $' + name + '[' + quote + key + quote + '];'
+          + padding + 'echo (' + quote + '\$' + name + '->\$' + varName + ' = ' + quote + ' . $' + varName + ');';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1233,20 +1232,26 @@ var CodeUtil = {
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || []';
+        s += padding + '$' + k + ' = $' + name + '[' + quote + key + quote + ']' + ';';
+        s += padding + 'if ($' + k + ' === null) {';
+        s += padding + blank + '$' + k + ' = ' + (isSmart ? '[];' : 'array();');
+        s += padding + '}\n';
 
         s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + varKey + ' ' + itemName;
-
         var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += padding + 'for (' + varKey + ' ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.length; ' + indexName + '++) {';
+        if (isSmart) {
+          s += padding + 'foreach ($' + k + ' as $' + indexName + ' => $' + itemName + ') {';
+        }
+        else {
+          s += padding + 'for (' + '$' + indexName + ' = 0; $' + indexName + ' < count($' + k + '); $' + indexName + '++) {';
+        }
 
-        s += innerPadding + itemName + ' = ' + k + '[' + indexName + ']';
-        s += innerPadding + 'if (' + itemName + ' == null) {';
-        s += innerPadding + '    continue';
+        s += innerPadding + '$' + itemName + ' = $' + k + '[$' + indexName + '];';
+        s += innerPadding + 'if ($' + itemName + ' === null) {';
+        s += innerPadding + '    continue;';
         s += innerPadding + '}';
-        s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
+        s += innerPadding + 'echo (' + quote + '\\n\$' + itemName + ' = \$' + k + '[' + quote + ' . ' + '\$' + indexName + ' . ' + quote + '] = \\n' + quote + ' . $' + itemName + ' . ' + quote + '\\n\\n' + quote + ');';
         s += innerPadding + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
@@ -1268,7 +1273,10 @@ var CodeUtil = {
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || {} \n'
+        s += padding + '$' + k + ' = $' + name + '[' + quote + key + quote + '];'
+        s += padding + 'if ($' + k + ' === null) {';
+        s += padding + blank + '$' + k + ' = (object) ' + (isSmart ? '[];' : 'array();');
+        s += padding + '}\n';
 
         s += CodeUtil.parsePHPResponse(k, value, depth, isSmart);
 
