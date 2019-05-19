@@ -822,9 +822,7 @@
           }
           else {
             var res = JSON.parse(App.jsoncon)
-            delete res["sql:generate/cache/execute/maxExecute"]
-            delete res["depth:count/max"]
-            delete res["time:start/duration/end"]
+            res = this.removeDebugInfo(res)
 
             var s = ''
             switch (App.language) {
@@ -2269,6 +2267,7 @@
               App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
             const response = JSON.stringify(res.data || {})
+            const releaseResponse = App.removeDebugInfo(JSON.parse(response))
 
             const it = item || {} //请求异步
             const d = it.Document || {} //请求异步
@@ -2278,13 +2277,13 @@
               const standardKey = App.isMLEnabled == true ? 'standard' : 'response';
               const standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
 
-              tr.compare = JSONResponse.compareResponse(standard, res.data, '', App.isMLEnabled) || {}
+              tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
               App.onTestResponse(allCount, it, d, tr, response, tr.compare || {});
             }
             else {
               App.request(false, App.server + '/get/testcompare/ml', {
                 "documentId": d.id,
-                "response": response
+                "response": releaseResponse
               }, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code != 200) {
@@ -2299,6 +2298,7 @@
       },
 
       onTestResponse: function(allCount, it, d, tr, response, cmp) {
+
         doneCount ++
         App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
 
@@ -2342,6 +2342,18 @@
         App.tests = tests
         // App.showTestCase(true)
 
+      },
+
+      /**移除调试字段
+       * @param obj
+       */
+      removeDebugInfo: function (obj) {
+        if (obj != null) {
+          delete obj["sql:generate/cache/execute/maxExecute"]
+          delete obj["depth:count/max"]
+          delete obj["time:start/duration/end"]
+        }
+        return obj
       },
 
       /**
