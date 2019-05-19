@@ -1798,9 +1798,9 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        if (isSmart) {
-          return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
-        }
+        // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
+        //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
+        // }
         return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
 
@@ -1850,7 +1850,8 @@ var CodeUtil = {
         var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
         var innerPadding2 = '\n' + CodeUtil.getBlank(depth + 2);
 
-        var k = JSONResponse.getVariableName(key) + (depth <= 0 ? '' : depth);
+        var vn = JSONResponse.getVariableName(key);
+        var k = vn + (depth <= 0 ? '' : depth);
         var itemName = 'item' + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
@@ -1859,24 +1860,27 @@ var CodeUtil = {
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = isSmart ? JSONResponse.getTableName(key) : null;
-        var isTable = JSONObject.isTableKey(t);
+        var isTableKey = JSONObject.isTableKey(t);
         if (isTable) {
-          s += innerPadding + 'List<' + t + '> ' + k + ' = ' + name + '.getList("' + key + '", ' + t + '.class);';
+          s += innerPadding + 'List<' + (isTableKey ? t : type) + '> ' + k + ' = ' + name + '.get' + StringUtil.firstCase(vn, true) + '();'
+        }
+        else if (isTableKey) {
+          s += innerPadding + 'List<' + t + '> ' + k + ' = JSON.parseArray(' + name + '.getString("' + key + '"), ' + t + '.class);';
         }
         else {
           s += innerPadding + 'JSONArray ' + k + ' = ' + name + '.getJSONArray("' + key + '");';
         }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new ' + (isTable ? 'ArrayList<>' : 'JSONArray') + '();';
+        s += innerPadding + blank + k + ' = new ' + (isTable || isTableKey ? 'ArrayList<>' : 'JSONArray') + '();';
         s += innerPadding + '}\n';
 
 
-        s += innerPadding + (isTable ? t : type) + ' ' + itemName + ';';
+        s += innerPadding + (isTableKey ? t : type) + ' ' + itemName + ';';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         s += innerPadding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + ' ++) {';
 
-        s += innerPadding2 + itemName + ' = ' + k + '.get' + (isTable || type == 'Object' ? '' : type) + '(' + indexName + ');';
+        s += innerPadding2 + itemName + ' = ' + k + '.get' + (isTable || isTableKey || type == 'Object' ? '' : type) + '(' + indexName + ');';
         s += innerPadding2 + 'if (' + itemName + ' == null) {';
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
@@ -1885,7 +1889,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseJavaResponse(itemName, value[0], depth + 2, isTable, isSmart);
+          s += CodeUtil.parseJavaResponse(itemName, value[0], depth + 2, isTableKey, isSmart);
         }
         // }
 
@@ -1904,18 +1908,21 @@ var CodeUtil = {
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = isSmart ? JSONResponse.getTableName(key) : null;
-        var isTable = JSONObject.isTableKey(t);
+        var isTableKey = JSONObject.isTableKey(t);
         if (isTable) {
+          s += innerPadding + (isTableKey ? t : 'JSONObject') + ' ' + k + ' = ' + name + '.get' + StringUtil.firstCase(k, true) + '();'
+        }
+        else if (isTableKey) {
           s += innerPadding + t + ' ' + k + ' = ' + name + '.getObject("' + key + '", ' + t + '.class);'
         }
         else {
           s += innerPadding + 'JSONObject ' + k + ' = ' + name + '.getJSONObject("' + key + '");'
         }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new ' + (isTable ? t : 'JSONObject') + '();';
+        s += innerPadding + blank + k + ' = new ' + (isTableKey ? t : 'JSONObject') + '();';
         s += innerPadding + '}\n';
 
-        s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTable, isSmart);
+        s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTableKey, isSmart);
 
         s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
