@@ -1859,28 +1859,32 @@ var CodeUtil = {
 
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        var t = isSmart ? JSONResponse.getTableName(key) : null;
+        var t = JSONResponse.getTableName(key);
+        if (t.endsWith('[]')) {
+          t = t.substring(0, t.length - 2);
+        }
+
         var isTableKey = JSONObject.isTableKey(t);
-        if (isTable) {
+        if (isTable && isSmart) {
           s += innerPadding + 'List<' + (isTableKey ? t : type) + '> ' + k + ' = ' + name + '.get' + StringUtil.firstCase(vn, true) + '();'
         }
-        else if (isTableKey) {
+        else if (isTableKey && isSmart) {
           s += innerPadding + 'List<' + t + '> ' + k + ' = JSON.parseArray(' + name + '.getString("' + key + '"), ' + t + '.class);';
         }
         else {
           s += innerPadding + 'JSONArray ' + k + ' = ' + name + '.getJSONArray("' + key + '");';
         }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new ' + (isTable || isTableKey ? 'ArrayList<>' : 'JSONArray') + '();';
+        s += innerPadding + blank + k + ' = new ' + ((isTable || isTableKey) && isSmart ? 'ArrayList<>' : 'JSONArray') + '();';
         s += innerPadding + '}\n';
 
 
-        s += innerPadding + (isTableKey ? t : type) + ' ' + itemName + ';';
+        s += innerPadding + (isTableKey && isSmart ? t : type) + ' ' + itemName + ';';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         s += innerPadding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + ' ++) {';
 
-        s += innerPadding2 + itemName + ' = ' + k + '.get' + (isTable || isTableKey || type == 'Object' ? '' : type) + '(' + indexName + ');';
+        s += innerPadding2 + itemName + ' = ' + k + '.get' + (((isTable || isTableKey) && isSmart) || type == 'Object' ? '' : type) + '(' + indexName + ');';
         s += innerPadding2 + 'if (' + itemName + ' == null) {';
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
@@ -1907,19 +1911,19 @@ var CodeUtil = {
 
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        var t = isSmart ? JSONResponse.getTableName(key) : null;
+        var t = JSONResponse.getTableName(key);
         var isTableKey = JSONObject.isTableKey(t);
-        if (isTable) {
+        if (isTable && isSmart) {
           s += innerPadding + (isTableKey ? t : 'JSONObject') + ' ' + k + ' = ' + name + '.get' + StringUtil.firstCase(k, true) + '();'
         }
-        else if (isTableKey) {
+        else if (isTableKey && isSmart) {
           s += innerPadding + t + ' ' + k + ' = ' + name + '.getObject("' + key + '", ' + t + '.class);'
         }
         else {
           s += innerPadding + 'JSONObject ' + k + ' = ' + name + '.getJSONObject("' + key + '");'
         }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new ' + (isTableKey ? t : 'JSONObject') + '();';
+        s += innerPadding + blank + k + ' = new ' + (isTableKey && isSmart ? t : 'JSONObject') + '();';
         s += innerPadding + '}\n';
 
         s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTableKey, isSmart);
