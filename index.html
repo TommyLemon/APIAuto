@@ -117,7 +117,10 @@
   <div class="side-left">
     <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
-      <input class="url" id="vUrl" type="text" placeholder="请输入请求的接口地址" @keyup="doOnKeyUp(event)" />
+      <!--<div style="width: 100%;height: 100%;">-->
+        <input class="url" id="vUrlComment" type="text" style="position: absolute; margin-left: 58px; width: 100%; z-index: -100; color: darkseagreen; background-color: white;" disabled />
+        <input class="url" id="vUrl" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
+      <!--</div>-->
       <button class="send" id="vSend" @click="send(false)">发送请求</button>
     </div>
     <div v-show="isTestCaseShow" class="left-bar">
@@ -157,7 +160,7 @@
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
         <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
         </textarea>
-        <textarea id="vInput" @keyup="onChange(true)"style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
+        <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
 {
     "User": {
         "id": 82001
@@ -527,12 +530,14 @@
 
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
+  var vUrl = document.getElementById("vUrl");
+  var vUrlComment = document.getElementById("vUrlComment");
+  var vTransfer = document.getElementById("vTransfer");
+  var vSend = document.getElementById("vSend");
+
   var vInput = document.getElementById("vInput");
   var vComment = document.getElementById("vComment");
   var vOutput = document.getElementById("vOutput");
-  var vUrl = document.getElementById("vUrl");
-  var vTransfer = document.getElementById("vTransfer");
-  var vSend = document.getElementById("vSend");
 
   var vAccount = document.getElementById("vAccount");
   var vPassword = document.getElementById("vPassword");
@@ -544,7 +549,6 @@
   var vMarkdown = document.getElementById('vMarkdown');
 
 
-
   function onScrollChanged() {
     $(vComment).scrollLeft(vInput.scrollLeft);
     $(vComment).scrollTop(vInput.scrollTop);
@@ -552,6 +556,14 @@
 
   //vComment跟随vInput滚动，避免JSON重叠"露馅"
   $(vInput).on('scroll', onScrollChanged);
+
+
+  function onURLScrollChanged() {
+    $(vUrlComment).scrollLeft(vUrl.scrollLeft);
+  }
+
+  //vURLComment跟随vUrl滚动，避免JSON重叠"露馅"
+  $(vUrl).on('scroll', onURLScrollChanged);
 
 
 

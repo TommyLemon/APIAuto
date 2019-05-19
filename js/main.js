@@ -316,6 +316,7 @@
       jsonhtml: initJson,
       compressStr: '',
       error: {},
+      urlComment: '',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -733,7 +734,10 @@
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
           }
+
+          App.urlComment = item.name;
           vUrl.value = baseUrl + branch
+
           App.showTestCase(false, App.isLocalShow)
           vInput.value = item.request
           App.onChange(false)
@@ -1478,6 +1482,7 @@
 
         App.view = 'output';
         vComment.value = '';
+        vUrlComment.value = '';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -1537,8 +1542,10 @@
               }
             }
             vComment.value = c
+            vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
 
             onScrollChanged()
+            onURLScrollChanged()
           } catch (e) {
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
@@ -1560,6 +1567,7 @@
         this.setBaseUrl();
         inputted = new String(vInput.value);
         vComment.value = '';
+        vUrlComment.value = '';
 
         clearTimeout(handler);
 
@@ -1587,7 +1595,7 @@
         // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
 
-        this.onChange();
+        this.onChange(false);
       },
 
       /**
@@ -1725,6 +1733,10 @@
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
         if (keyCode == 13) { // enter
           this.send(false);
+        }
+        else {
+          App.urlComment = '';
+          this.onChange(true);
         }
       },
 
