@@ -2460,7 +2460,7 @@ var CodeUtil = {
   },
 
 
-  /**用数据字典转为JavaBean
+  /**用数据字典转为 PHP 实体类
    * @param docObj
    */
   parsePHPEntity: function(docObj, clazz, database) {
@@ -2491,37 +2491,38 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parsePHPEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
-          + '\n *APIJSONAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n *APIJSONAuto 自动生成 PHP 实体类代码\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 namespace \n *2.use 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\npackage apijson.demo.server.model;\n\n\n'
+          + '\n<?php'
+          + '\nnamespace apijson\\demo\\server\\model;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n@MethodAccess'
-          + '\npublic class ' + model + ' implements Serializable {'
-          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
+          + '\n/**'
+          + '\n * @MethodAccess'
+          + '\n */'
+          + '\npublic class ' + model + ' {';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+          console.log('parsePHPEntity [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
           doc += '\n'
-            + '\n' + blank + 'public ' + model + '() {'
-            + '\n' + blank2 + 'super();'
+            + '\n' + blank + 'public function construct() {'
+            + '\n' + blank2 + 'parent::construct();'
             + '\n' + blank + '}'
-            + '\n' + blank + 'public ' + model + '(long id) {'
-            + '\n' + blank2 + 'this();'
-            + '\n' + blank2 + 'setId(id);'
+            + '\n' + blank + 'public function construct($id) {'
+            + '\n' + blank2 + '$this->construct();'
+            + '\n' + blank2 + '$this->setId($id);'
             + '\n' + blank + '}'
             + '\n\n'
 
           var name;
-          var type;
 
           for (var j = 0; j < columnList.length; j++) {
             column = (columnList[j] || {}).Column;
@@ -2532,13 +2533,12 @@ var CodeUtil = {
             }
 
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parsePHPEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + 'private $' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
@@ -2552,25 +2552,25 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parsePHPEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             //getter
-            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n' + blank2 + 'return ' + name + ';'
+            doc += '\n' + blank + 'public function ' + CodeUtil.getMethodName('get', name) + '() {'
+              + '\n' + blank2 + 'return $' + name + ';'
               + '\n' + blank + '}';
 
             //setter
-            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
-              + '\n' + blank2 + 'return this;'
+            doc += '\n' + blank + 'public function ' + CodeUtil.getMethodName('set', name) + '($' + name + ') {'
+              + '\n' + blank2 + '$this->$' + name + ' = $' + name + ';'
+              + '\n' + blank2 + 'return $this;'
               + '\n' + blank + '}\n';
 
           }
         }
 
         doc += '\n\n}';
+        doc += '\n?>';
 
       }
     }
