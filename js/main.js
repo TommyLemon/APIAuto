@@ -829,7 +829,7 @@
             var s = ''
             switch (App.language) {
               case 'Java':
-                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0)
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
                 break;
               case 'Swift':
                 s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)

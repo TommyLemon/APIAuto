@@ -1781,9 +1781,11 @@ var CodeUtil = {
    * @param name
    * @param resObj
    * @param depth
+   * @param isTable
+   * @param isSmart
    * @return parseCode
    */
-  parseJavaResponse: function(name, resObj, depth) {
+  parseJavaResponse: function(name, resObj, depth, isTable, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -1796,6 +1798,9 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
+        if (isSmart) {
+          return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
+        }
         return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
 
@@ -1828,9 +1833,14 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
-        return padding + type + ' ' + varName + ' = ' + name + '.get'
-          + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");'
-          + padding + 'System.out.println("' + name + '.' + varName + ' = " + ' + varName + ');';
+        if (isSmart && isTable) { // JSONObject.isTableKey(name)) {
+          return padding + type + ' ' + varName + ' = ' + name + '.get' + StringUtil.firstCase(varName, true) + '();'
+            + padding + 'System.out.println("' + name + '.' + varName + ' = " + ' + varName + ');';
+        } else {
+          return padding + type + ' ' + varName + ' = ' + name + '.get'
+            + (/[A-Z]/.test(type.substring(0, 1)) ? type : StringUtil.firstCase(type + 'Value', true)) + '("' + key + '");'
+            + padding + 'System.out.println("' + name + '.' + varName + ' = " + ' + varName + ');';
+        }
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1848,17 +1858,25 @@ var CodeUtil = {
 
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += innerPadding + 'JSONArray ' + k + ' = ' + name + '.getJSONArray("' + key + '");';
+        var t = isSmart ? JSONResponse.getTableName(key) : null;
+        var isTable = JSONObject.isTableKey(t);
+        if (isTable) {
+          s += innerPadding + 'List<' + t + '> ' + k + ' = ' + name + '.getList("' + key + '", ' + t + '.class);';
+        }
+        else {
+          s += innerPadding + 'JSONArray ' + k + ' = ' + name + '.getJSONArray("' + key + '");';
+        }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new JSONArray();';
+        s += innerPadding + blank + k + ' = new ' + (isTable ? 'ArrayList<>' : 'JSONArray') + '();';
         s += innerPadding + '}\n';
 
-        s += innerPadding + type + ' ' + itemName + ';';
+
+        s += innerPadding + (isTable ? t : type) + ' ' + itemName + ';';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         s += innerPadding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + ' ++) {';
 
-        s += innerPadding2 + itemName + ' = ' + k + '.get' + (type == 'Object' ? '' : type) + '(' + indexName + ');';
+        s += innerPadding2 + itemName + ' = ' + k + '.get' + (isTable || type == 'Object' ? '' : type) + '(' + indexName + ');';
         s += innerPadding2 + 'if (' + itemName + ' == null) {';
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
@@ -1867,7 +1885,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseJavaResponse(itemName, value[0], depth + 2);
+          s += CodeUtil.parseJavaResponse(itemName, value[0], depth + 2, isTable, isSmart);
         }
         // }
 
@@ -1885,12 +1903,19 @@ var CodeUtil = {
 
         var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += innerPadding + 'JSONObject ' + k + ' = ' + name + '.getJSONObject("' + key + '");'
+        var t = isSmart ? JSONResponse.getTableName(key) : null;
+        var isTable = JSONObject.isTableKey(t);
+        if (isTable) {
+          s += innerPadding + t + ' ' + k + ' = ' + name + '.getObject("' + key + '", ' + t + '.class);'
+        }
+        else {
+          s += innerPadding + 'JSONObject ' + k + ' = ' + name + '.getJSONObject("' + key + '");'
+        }
         s += innerPadding + 'if (' + k + ' == null) {';
-        s += innerPadding + blank + k + ' = new JSONObject();';
+        s += innerPadding + blank + k + ' = new ' + (isTable ? t : 'JSONObject') + '();';
         s += innerPadding + '}\n';
 
-        s += CodeUtil.parseJavaResponse(k, value, depth + 1);
+        s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTable, isSmart);
 
         s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
