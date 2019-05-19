@@ -2494,17 +2494,17 @@ var CodeUtil = {
         console.log('parsePHPEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
-        doc += '/**'
+        doc += '<?php'
+          + '\n/**'
           + '\n *APIJSONAuto 自动生成 PHP 实体类代码\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n *使用方法：\n *1.修改包名 namespace \n *2.use 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\n<?php'
-          + '\nnamespace apijson\\demo\\server\\model;\n\n\n'
+          + '\n\nnamespace apijson\\demo\\server\\model;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n/**'
           + '\n * @MethodAccess'
           + '\n */'
-          + '\npublic class ' + model + ' {';
+          + '\nclass ' + model + ' {';
 
         //Column[]
         columnList = item['[]'];
@@ -2516,10 +2516,10 @@ var CodeUtil = {
             + '\n' + blank + 'public function construct() {'
             + '\n' + blank2 + 'parent::construct();'
             + '\n' + blank + '}'
-            + '\n' + blank + 'public function construct($id) {'
-            + '\n' + blank2 + '$this->construct();'
-            + '\n' + blank2 + '$this->setId($id);'
-            + '\n' + blank + '}'
+            // + '\n' + blank + 'public function construct($id) {' //导致外部 setId 会报错 cannot access empty property $id
+            // + '\n' + blank2 + '$this->construct();'
+            // + '\n' + blank2 + '$this->setId($id);'
+            // + '\n' + blank + '}'
             + '\n\n'
 
           var name;
