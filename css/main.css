@@ -479,7 +479,7 @@ textarea {
   top: 50px;
   bottom: 0;
   left: 40%;
-  z-index: 50;
+  z-index: 100;
   cursor: w-resize;
   border-right: rgba(221, 221, 221, 0.34) 1px solid;
   border-left: rgba(221, 221, 221, 0.34) 1px solid;

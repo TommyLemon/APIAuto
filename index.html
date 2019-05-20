@@ -62,7 +62,7 @@
     <a v-show="isDelayShow" >2s</a>
 
 
-    <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=TommyLemon&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
+    <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=APIJSON&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
 
     <!--只用60%避免拦截左右两侧View的触摸事件-->
     <div style="width: 40%;height: 100%;left: 30%;display: inline-block;text-align: center;position: fixed;padding-top: 10px">
@@ -89,17 +89,18 @@
                 <a href="javascript:void(0)" >
                    {{ User.id != null && User.id > 0 ? User.name : '设置' }}
                 </a>
-                <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 270px">
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型: {{ database || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式: {{ schema || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">托管服务器URL: {{ server || '点击设置' }}</a>
-                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 3)">当前账号: {{ Privacy.phone || '点击更新'  }} <br/> 可用余额: {{ Privacy.balance == null ? '点击更新' : Privacy.balance + ' 元'  }}</a>
-                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 4)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
+                <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 300px">
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型Database: {{ database || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式Schema: {{ schema || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析): {{ language || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 3)">托管服务器地址URL: {{ server || '点击设置' }}</a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 4)">当前账号: {{ Privacy.phone || '点击更新'  }} <br/> 可用余额: {{ Privacy.balance == null ? '点击更新' : Privacy.balance + ' 元'  }}</a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 5)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
 
                   <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
                     <div style="margin-top: 10px">微信扫码充值<br />没有账号会帮你创建</div>
                     <img src="img/wechat_collect.jpg" />
-                    <div style="margin: 10px">备注填: APIJSON+你的手机号</div>
+                    <div style="margin-bottom: 10px">备注填: APIJSON+你的手机号</div>
                   </li>
                 </ul>
       </span>
@@ -116,7 +117,10 @@
   <div class="side-left">
     <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
-      <input class="url" id="vUrl" type="text" placeholder="请输入请求的接口地址" @keyup="doOnKeyUp(event)" />
+      <div style="height: 100%;display: flex;flex-grow: 1">
+        <input class="url" id="vUrlComment" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
+        <input class="url" id="vUrl" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
+      </div>
       <button class="send" id="vSend" @click="send(false)">发送请求</button>
     </div>
     <div v-show="isTestCaseShow" class="left-bar">
@@ -156,7 +160,7 @@
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
         <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
         </textarea>
-        <textarea id="vInput" @keyup="onChange(true)"style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
+        <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
 {
     "User": {
         "id": 82001
@@ -427,7 +431,9 @@
 <!--内层每个键值对-->
 <script type="text/x-template" id="item-template">
   <ul class="json-item">
-    <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - 1" v-for="(val, key, index) in jsondata"></vue-val>
+    <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - (jsondata.hasOwnProperty('_$_table_$_') ? 2 : 1)"
+             v-show="onRenderJSONItem(val, key)"
+             v-for="(val, key, index) in jsondata"></vue-val>
   </ul>
 </script>
 
@@ -435,7 +441,9 @@
 <script type="text/x-template" id="val-template">
   <div class="keyval">
     <template v-if="!isObjectArr(val)">
-      <span class="key" v-show="field" :style="{color: theme.key}">"{{field}}": </span>
+      <span class="key hint--top-right hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}"
+            ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
+
       <span  :class="'val val-' + getTyp(val)" :style="{color: theme[getTyp(val)]}">
             <span v-if="!isaLink(val)">{{formatVal(val)}}</span>
             <a v-if="isaLink(val)" :href="val" target="_blank" class="json-link" :style="{color: theme['link-link']}">{{formatVal(val)}}</a>
@@ -446,7 +454,8 @@
 
     <!--key + 展开折叠ICON-->
     <template v-if="isObjectArr(val)">
-      <span class="key" :style="{color: theme.key}" v-show="field">"{{field}}": </span>
+      <span class="key hint--right hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field"
+            ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
       <vue-expand></vue-expand>
     </template>
 
@@ -521,12 +530,14 @@
 
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
+  var vUrl = document.getElementById("vUrl");
+  var vUrlComment = document.getElementById("vUrlComment");
+  var vTransfer = document.getElementById("vTransfer");
+  var vSend = document.getElementById("vSend");
+
   var vInput = document.getElementById("vInput");
   var vComment = document.getElementById("vComment");
   var vOutput = document.getElementById("vOutput");
-  var vUrl = document.getElementById("vUrl");
-  var vTransfer = document.getElementById("vTransfer");
-  var vSend = document.getElementById("vSend");
 
   var vAccount = document.getElementById("vAccount");
   var vPassword = document.getElementById("vPassword");
@@ -538,7 +549,6 @@
   var vMarkdown = document.getElementById('vMarkdown');
 
 
-
   function onScrollChanged() {
     $(vComment).scrollLeft(vInput.scrollLeft);
     $(vComment).scrollTop(vInput.scrollTop);
@@ -546,6 +556,14 @@
 
   //vComment跟随vInput滚动，避免JSON重叠"露馅"
   $(vInput).on('scroll', onScrollChanged);
+
+
+  function onURLScrollChanged() {
+    $(vUrlComment).scrollLeft(vUrl.scrollLeft);
+  }
+
+  //vURLComment跟随vUrl滚动，避免JSON重叠"露馅"
+  $(vUrl).on('scroll', onURLScrollChanged);
 
 
 

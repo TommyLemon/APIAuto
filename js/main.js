@@ -86,6 +86,193 @@
       Vue.prototype.objLength = function (obj) {
         return Object.keys(obj).length
       }
+
+      /**渲染 JSON key:value 项
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @return {boolean}
+       */
+      Vue.prototype.onRenderJSONItem = function (val, key) {
+        if (key == null) {
+          return true
+        }
+        if (key == '_$_table_$_') {
+          // return true
+          return false
+        }
+
+        try {
+          if (val instanceof Array == false) {
+
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            if (JSONObject.isTableKey(objName)) {
+              val._$_table_$_ = objName
+              // val = Object.assign({ _$_table_$_: objName }, val) //解决多显示一个逗号 ,
+
+              // this._$_table_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
+              // alert('this._$_table_$_ = ' + this._$_table_$_)
+            }
+          }
+          else if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
+            // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
+
+            key = key.substring(0, key.lastIndexOf('[]'));
+
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            var firstIndex = objName.indexOf('-');
+            var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+            if (JSONObject.isTableKey(firstKey)) {
+              for (var i = 0; i < val.length; i++) {
+                val[i]._$_table_$_ = firstKey
+
+                // this.$children[i]._$_table_$_ = key
+                // alert('this.$children[i]._$_table_$_ = ' + this.$children[i]._$_table_$_)
+              }
+            }
+          }
+
+        } catch (e) {
+          alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+        }
+
+        return true
+
+      }
+
+
+      /**显示 Response JSON 的注释
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.setResponseHint = function (val, key, $event) {
+        console.log('setResponseHint')
+        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event));
+      }
+      /**获取 Response JSON 的注释
+       * 方案一：
+       * 拿到父组件的 key，逐层向下传递
+       * 问题：拿不到爷爷组件 "Comment[]": [ { "id": 1, "content": "content1" }, { "id": 2 }... ]
+       *
+       * 方案二：
+       * 改写 jsonon 的 refKey 为 key0/key1/.../refKey
+       * 问题：遍历，改 key；容易和特殊情况下返回的同样格式的字段冲突
+       *
+       * 方案三：
+       * 改写 jsonon 的结构，val 里加 .path 或 $.path 之类的隐藏字段
+       * 问题：遍历，改 key；容易和特殊情况下返回的同样格式的字段冲突
+       *
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.getResponseHint = function (val, key, $event) {
+        // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
+
+        var s = ''
+
+        try {
+
+          var table = null
+          var column = null
+          if (val instanceof Object && (val instanceof Array == false)) {
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            if (JSONObject.isTableKey(objName)) {
+              table = objName
+              // table = this._$_table_$_
+            }
+            else {
+              var parent = $event.currentTarget.parentElement.parentElement
+              var valString = parent.textContent
+
+              // alert('valString = ' + valString)
+
+              var i = valString.indexOf('"_$_table_$_":  "')
+              if (i >= 0) {
+                valString = valString.substring(i + '"_$_table_$_":  "'.length)
+                // alert('valString = ' + valString)
+                i = valString.indexOf('"')
+                if (i >= 0) {
+                  table = valString.substring(0, i)
+                }
+              }
+
+              column = key
+            }
+          }
+          else {
+            if (val instanceof Array && JSONObject.isArrayKey(key)) {
+              key = key.substring(0, key.lastIndexOf('[]'));
+
+              var aliaIndex = key.indexOf(':');
+              var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+              var firstIndex = objName.indexOf('-');
+              var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+              if (JSONObject.isTableKey(firstKey)) {
+                table = firstKey
+
+                if (firstIndex > 0) {
+                  objName = objName.substring(firstIndex + 1);
+                  firstIndex = objName.indexOf('-');
+                  column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
+
+                  var s0 = this.getResponseHint({}, table, $event)
+                  if (StringUtil.isEmpty(s0, true) == false) {
+                    s = s0 + '  -  '
+                  }
+                }
+              }
+
+            }
+            else {
+
+              var parent = $event.currentTarget.parentElement.parentElement
+              var valString = parent.textContent
+
+              // alert('valString = ' + valString)
+
+              var i = valString.indexOf('"_$_table_$_":  "')
+              if (i >= 0) {
+                valString = valString.substring(i + '"_$_table_$_":  "'.length)
+                // alert('valString = ' + valString)
+                i = valString.indexOf('"')
+                if (i >= 0) {
+                  table = valString.substring(0, i)
+                }
+              }
+
+              // table = parent._$_table_$_
+
+              column = key
+            }
+          }
+          // alert('setResponseHint  table = ' + table + '; column = ' + column)
+
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true);
+
+          if (StringUtil.isEmpty(c, true) == false) {
+            s += (StringUtil.isEmpty(column) ? table : column) + ': ' + c
+          }
+        }
+        catch (e) {
+          s += '\n' + e.message
+        }
+
+        return s;
+      }
+
     }
   })
 
@@ -129,6 +316,7 @@
       jsonhtml: initJson,
       compressStr: '',
       error: {},
+      urlComment: '',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -177,7 +365,8 @@
       },
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://vip.apijson.org'
+      server: 'http://vip.apijson.org',
+      language: 'Java'
     },
     methods: {
 
@@ -311,8 +500,13 @@
       },
       //获取基地址长度，以://后的第一个/分割baseUrl和method
       getBaseUrlLength: function (url_) {
-        var url = url_ == null ? '' : '' + url_
-        var index = url.indexOf('://')
+        var url = StringUtil.trim(url_)
+        var index = url.indexOf(' ')
+        if (index >= 0) {
+          return index + 1
+        }
+
+        index = url.indexOf('://')
         return index < 0 ? 0 : index + 3 + url.substring(index + 3).indexOf('/')
       },
       //获取操作方法
@@ -379,7 +573,48 @@
               App.exTxt.name = 'APIJSON自动化文档 ' + App.formatDateTime()
             }
             else if (App.view == 'markdown' || App.view == 'output') {
-              App.exTxt.name = 'User'
+              var suffix
+              switch (App.language) {
+                case 'Java':
+                  suffix = '.java';
+                  break;
+                case 'Swift':
+                  suffix = '.swift';
+                  break;
+                case 'Kotlin':
+                  suffix = '.kt';
+                  break;
+                case 'Objective-C':
+                  suffix = '.h';
+                  break;
+                case 'C#':
+                  suffix = '.cs';
+                  break;
+                case 'PHP':
+                  suffix = '.php';
+                  break;
+                case 'Go':
+                  suffix = '.go';
+                  break;
+                //以下都不需要解析，直接用左侧的 JSON
+                case 'JavaScript':
+                  suffix = '.js';
+                  break;
+                case 'TypeScript':
+                  suffix = '.ts';
+                  break;
+                case 'Python':
+                  suffix = '.python';
+                  break;
+                default:
+                  suffix = '.java';
+                  break;
+              }
+
+              App.exTxt.name = 'User' + suffix
+              alert('自动生成模型代码，可填类名后缀:\n'
+                + '.java(Java), .kt(Kotlin), .swift(Swift) , .h(Objective-C),  .m(Objective-C),'
+                + '\n.ts(TypeScript), .js(JavaScript, .cs(C#), .php(PHP), python(Python), .go(Go)');
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
@@ -399,13 +634,21 @@
             case 0:
             case 1:
             case 2:
-              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : App.server)
-              App.isConfigShow = true
-              break
             case 3:
-              App.getCurrentUser(true)
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
+              App.isConfigShow = true
+
+              if (index == 0) {
+                alert('可填数据库:\nMYSQL,POSTGRESQL')
+              }
+              else if (index == 2) {
+                alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
+              }
               break
             case 4:
+              App.getCurrentUser(true)
+              break
+            case 5:
               App.showAndSend(App.server + '/get', {
                 'Goods[]': {
                   'count': 0,
@@ -491,7 +734,10 @@
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
           }
+
+          App.urlComment = item.name;
           vUrl.value = baseUrl + branch
+
           App.showTestCase(false, App.isLocalShow)
           vInput.value = item.request
           App.onChange(false)
@@ -532,20 +778,99 @@
             //   , App.exTxt.name + '.txt')
 
 
-            var clazz = App.exTxt.name
-            var txt = CodeUtil.parseJavaBean(docObj, clazz, App.database)
+            var clazz = StringUtil.trim(App.exTxt.name)
+
+            var txt = '' //配合下面 +=，实现注释判断，一次全生成，方便测试
+            if (clazz.endsWith('.java')) {
+              txt += CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
+            }
+            else if (clazz.endsWith('.swift')) {
+              txt += CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
+            }
+            else if (clazz.endsWith('.kt')) {
+              txt += CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.h')) {
+              txt += CodeUtil.parseObjectiveCEntityH(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if  (clazz.endsWith('.m')) {
+              txt += CodeUtil.parseObjectiveCEntityM(docObj, clazz.substring(0, clazz.length - 2), App.database)
+            }
+            else if  (clazz.endsWith('.cs')) {
+              txt += CodeUtil.parseCSharpEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.php')) {
+              txt += CodeUtil.parsePHPEntity(docObj, clazz.substring(0, clazz.length - 4), App.database)
+            }
+            else if  (clazz.endsWith('.go')) {
+              txt += CodeUtil.parseGoEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.js')) {
+              txt += CodeUtil.parseJavaScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.ts')) {
+              txt += CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if (clazz.endsWith('.python')) {
+              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
+            }
+            else {
+              alert('请正确输入对应语言的类名后缀！')
+            }
+
             if (StringUtil.isEmpty(txt, true)) {
               alert('找不到 ' + clazz + ' 对应的表！请检查数据库中是否存在！\n如果不存在，请重新输入存在的表；\n如果存在，请刷新网页后重试。')
               return
             }
-            saveTextAs(txt, clazz + '.java')
+            saveTextAs(txt, clazz)
           }
           else {
+            var res = JSON.parse(App.jsoncon)
+            res = this.removeDebugInfo(res)
+
+            var s = ''
+            switch (App.language) {
+              case 'Java':
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
+                break;
+              case 'Swift':
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
+                break;
+              case 'Kotlin':
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0)
+                break;
+              case 'Objective-C':
+                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+                break;
+              case 'C#':
+                s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', res, 0)
+                break;
+              case 'PHP':
+                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+                break;
+              case 'Go':
+                s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
+                break;
+              case 'JavaScript':
+                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
+                break;
+              case 'TypeScript':
+                s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
+                break;
+              case 'Python':
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0)
+                break;
+              default:
+                s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
+                break;
+            }
+
+
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nURL: ' + vUrl.value
               + '\n\nRequest:\n' + vInput.value
               + '\n\n\nResponse:\n' + App.jsoncon
-              + '\n\n\n## Java解析Response的代码 \n\n' + CodeUtil.parseJavaResponse('', JSON.parse(App.jsoncon), 0)
+              + '\n\n\n## 解析 Response 的代码' + s
               , App.exTxt.name + '.txt')
           }
         }
@@ -589,15 +914,20 @@
       saveConfig: function () {
         App.isConfigShow = false
 
-
-        if (App.exTxt.index <= 1) {
-          if (App.exTxt.index == 0) {
-            App.database = App.exTxt.name
-            App.saveCache('', 'database', App.database)
-          }
-          else {
-            App.schema = App.exTxt.name
-            App.saveCache('', 'schema', App.schema)
+        if (App.exTxt.index <= 2) {
+          switch (App.exTxt.index) {
+            case 0:
+              App.database = App.exTxt.name
+              App.saveCache('', 'database', App.database)
+              break;
+            case 1:
+              App.schema = App.exTxt.name
+              App.saveCache('', 'schema', App.schema)
+              break;
+            case 2:
+              App.language = App.exTxt.name
+              App.saveCache('', 'language', App.language)
+              break;
           }
 
           doc = null
@@ -874,6 +1204,10 @@
           password: vPassword.value,
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
+          defaults: {
+            '@database': App.database,
+            '@schema': App.schema
+          }
         }
 
         if (isAdminOperation) {
@@ -1148,6 +1482,7 @@
 
         App.view = 'output';
         vComment.value = '';
+        vUrlComment.value = '';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -1207,8 +1542,10 @@
               }
             }
             vComment.value = c
+            vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
 
             onScrollChanged()
+            onURLScrollChanged()
           } catch (e) {
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
@@ -1230,6 +1567,7 @@
         this.setBaseUrl();
         inputted = new String(vInput.value);
         vComment.value = '';
+        vUrlComment.value = '';
 
         clearTimeout(handler);
 
@@ -1257,7 +1595,7 @@
         // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
 
-        this.onChange();
+        this.onChange(false);
       },
 
       /**
@@ -1326,7 +1664,7 @@
         // axios.defaults.withcredentials = true
         axios({
           method: 'post',
-          url: url,
+          url: StringUtil.noBlank(url),
           data: req,
           withCredentials: true
         })
@@ -1396,6 +1734,10 @@
         if (keyCode == 13) { // enter
           this.send(false);
         }
+        else {
+          App.urlComment = '';
+          this.onChange(true);
+        }
       },
 
 
@@ -1403,20 +1745,70 @@
        * @param rq
        */
       getCode: function (rq) {
-        return '\n\n\n### 请求代码 \n\n#### <= Android-Java: 同名变量需要重命名\n ```java \n'
-          + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-          + '\n ``` \n注：' + (isSingle ? '用了APIJSON的JSONRequest类。也可使用其它类封装，只要JSON有序就行。' : 'LinkedHashMap()可替换为fastjson中的JSONObject(true)等有序JSON构造方法。')
-          + '\n\n#### <= iOS-Swift: 所有对象标识{}改为数组标识[]\n ```swift \n'
-          + CodeUtil.parseSwift(null, JSON.parse(rq))
-          + '\n ``` \n注：空对象请用 [:] 表示。 \n\n#### <= Web-JavaScript 或 Python: 和左边的请求JSON一样 \n'
-          + '\n\n#### 开放源码 '
+        var s = '\n\n\n### 请求代码(自动生成) \n';
+        switch (App.language) {
+          case 'Java':
+            s += '\n#### <= Android-Java: 同名变量需要重命名'
+              + ' \n ```java \n'
+              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
+              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
+            break;
+          case 'Swift':
+            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
+              + '\n ```swift \n'
+              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
+            break;
+          case 'Kotlin':
+            s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
+              + '```kotlin \n'
+              + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
+            break;
+          case 'Objective-C':
+            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
+              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
+          case 'C#':
+            s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
+              '\n ```csharp \n'
+              + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
+            break;
+          case 'PHP':
+            s += '\n#### <= Web-PHP: 空对象用 (object) array()'
+              + ' \n ```php \n'
+              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
+              + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
+            break;
+          case 'Go':
+            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key: value 最后都要加逗号 ","'
+              + ' \n ```go \n'
+              + CodeUtil.parseGo(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
+            break;
+          //以下都不需要解析，直接用左侧的 JSON
+          case 'JavaScript':
+          case 'TypeScript':
+          case 'Python':
+            break;
+          default:
+            s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
+            break;
+        }
+        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
+
+        s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
           + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
           + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
           + '\nAPIJSON - PHP版: [https://github.com/qq547057827/apijson-php](https://github.com/qq547057827/apijson-php) '
-          + '\nAPIJSON - PHP版: [https://github.com/orchie/apijson](https://github.com/orchie/apijson) '
           + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) '
+          + '\nAPIJSON - Go 版: [https://github.com/crazytaxi824/APIJSON](https://github.com/crazytaxi824/APIJSON) '
           + '\nAPIJSON -Python: [https://github.com/zhangchunlin/uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) ';
+
+        return s;
       },
 
 
@@ -1429,7 +1821,7 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n\n' + d
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
         );
 
         App.view = 'markdown';
@@ -1465,7 +1857,9 @@
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
-                '@column': App.database == 'POSTGRESQL' ? 'column_name,data_type:column_type' : 'column_name,column_type,column_comment'
+                '@column': App.database == 'POSTGRESQL'
+                  ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
+                  : 'column_name,column_type,column_comment'
               },
               'PgAttribute': App.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
@@ -1555,6 +1949,8 @@
                 if (name == null) {
                   continue;
                 }
+
+                column.column_type = CodeUtil.getColumnType(column, App.database);
                 type = CodeUtil.getJavaType(column.column_type, false);
                 length = CodeUtil.getMaxLength(column.column_type);
 
@@ -1581,7 +1977,7 @@
           if (list != null) {
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 访问权限'
+            doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
               + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
               + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
@@ -1615,7 +2011,7 @@
           if (list != null) {
             log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 远程函数'
+            doc += '\n\n\n\n\n\n\n\n\n### 远程函数\n自动查 Function 表写入的数据来生成\n'
               + ' \n 说明  |  示例'
               + ' \n --------  |  -------------- ';
 
@@ -1641,7 +2037,7 @@
           if (list != null) {
             log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求'
+            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
               + ' \n 版本  |  方法  |  数据和结构'
               + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
@@ -1832,7 +2228,7 @@
        4-code/值类型 改变，红色；
        */
       test: function () {
-        var baseUrl = App.getBaseUrl() || ''
+        var baseUrl = StringUtil.trim(App.getBaseUrl())
         if (baseUrl == '') {
           alert('请先输入有效的URL！')
           return
@@ -1883,6 +2279,7 @@
               App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
             const response = JSON.stringify(res.data || {})
+            const releaseResponse = App.removeDebugInfo(JSON.parse(response))
 
             const it = item || {} //请求异步
             const d = it.Document || {} //请求异步
@@ -1892,13 +2289,13 @@
               const standardKey = App.isMLEnabled == true ? 'standard' : 'response';
               const standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
 
-              tr.compare = JSONResponse.compareResponse(standard, res.data, '', App.isMLEnabled) || {}
+              tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
               App.onTestResponse(allCount, it, d, tr, response, tr.compare || {});
             }
             else {
               App.request(false, App.server + '/get/testcompare/ml', {
                 "documentId": d.id,
-                "response": response
+                "response": releaseResponse
               }, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code != 200) {
@@ -1913,6 +2310,7 @@
       },
 
       onTestResponse: function(allCount, it, d, tr, response, cmp) {
+
         doneCount ++
         App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
 
@@ -1956,6 +2354,18 @@
         App.tests = tests
         // App.showTestCase(true)
 
+      },
+
+      /**移除调试字段
+       * @param obj
+       */
+      removeDebugInfo: function (obj) {
+        if (obj != null) {
+          delete obj["sql:generate/cache/execute/maxExecute"]
+          delete obj["depth:count/max"]
+          delete obj["time:start/duration/end"]
+        }
+        return obj
       },
 
       /**
@@ -2133,6 +2543,10 @@
         if (StringUtil.isEmpty(schema, true) == false) {
           this.schema = schema
         }
+        var language = this.getCache('', 'language')
+        if (StringUtil.isEmpty(language, true) == false) {
+          this.language = language
+        }
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
           this.server = server
@@ -2140,7 +2554,7 @@
 
         this.locals = this.getCache('', 'locals') || []
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nvar schema = this.getCache(, schema)' +
           '\n} catch (e) {\n' + e.message)
       }
@@ -2151,17 +2565,17 @@
           this.currentAccountIndex = this.getCache(URL_BASE, 'currentAccountIndex')
         }
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nvar accounts = this.getCache(URL_BASE, accounts)' +
           '\n} catch (e) {\n' + e.message)
       }
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User') || {}
-        this.isMLEnabled = this.getCache(server, 'isMLEnabled')
+        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled')
         this.testProcess = this.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
       } catch (e) {
-        this.log('created  try { ' +
+        console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +
           '\n} catch (e) {\n' + e.message)
       }
