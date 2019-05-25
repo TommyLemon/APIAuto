@@ -363,6 +363,7 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
@@ -473,8 +474,26 @@
       },
 
 
+      showUrl: function (isAdminOperation, branchUrl) {
+        if (StringUtil.isEmpty(this.host, true)) {  //显示(可编辑)URL Host
+          if (isAdminOperation != true) {
+            baseUrl = this.getBaseUrl()
+          }
+          vUrl.value = (isAdminOperation ? App.server : baseUrl) + branchUrl
+        }
+        else {  //隐藏(固定)URL Host
+          if (isAdminOperation) {
+            this.host = App.server
+          }
+          vUrl.value = branchUrl
+        }
+      },
+
       //设置基地址
       setBaseUrl: function () {
+        if (StringUtil.isEmpty(this.host, true) != true) {
+          return
+        }
         // 重新拉取文档
         var bu = this.getBaseUrl()
         if (baseUrl != bu) {
@@ -634,7 +653,7 @@
             case 0:
             case 1:
             case 2:
-            case 3:
+            case 4:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
 
@@ -645,11 +664,16 @@
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
               }
               break
-            case 4:
-              App.getCurrentUser(true)
+            case 3:
+              App.host = App.getBaseUrl()
+              vUrl.value = StringUtil.trim(new String(vUrl.value).substring(App.host.length))
+              App.onChange(false)
               break
             case 5:
-              App.showAndSend(App.server + '/get', {
+              App.getCurrentUser(true)
+              break
+            case 6:
+              App.showAndSend('/get', {
                 'Goods[]': {
                   'count': 0,
                   'Goods': {
@@ -659,6 +683,11 @@
               }, true)
               break
           }
+        }
+        else if (index == 3) {
+          vUrl.value = StringUtil.get(App.host) + new String(vUrl.value)
+          App.host = ''
+          App.onChange(false)
         }
       },
 
@@ -729,14 +758,13 @@
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key || '', function (err, value) {
-          baseUrl = App.getBaseUrl()
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
           }
 
           App.urlComment = item.name;
-          vUrl.value = baseUrl + branch
+          App.showUrl(false, branch)
 
           App.showTestCase(false, App.isLocalShow)
           vInput.value = item.request
@@ -1196,8 +1224,6 @@
       login: function (isAdminOperation, callback) {
         App.isLoginShow = false
 
-        baseUrl = App.getBaseUrl()
-        var url = (isAdminOperation ? App.server : baseUrl) + '/login'
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
           phone: vAccount.value,
@@ -1211,7 +1237,7 @@
         }
 
         if (isAdminOperation) {
-          App.request(isAdminOperation, url, req, function (url, res, err) {
+          App.request(isAdminOperation, App.server + '/login', req, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1271,7 +1297,8 @@
             }
           }
 
-          vUrl.value = url
+          App.showUrl(isAdminOperation, '/login')
+
           vInput.value = JSON.stringify(req, null, '    ')
           App.showTestCase(false, App.isLocalShow)
           App.onChange(false)
@@ -1307,8 +1334,7 @@
       /**注册
        */
       register: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/register'
+        App.showUrl(isAdminOperation, '/register')
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -1342,8 +1368,7 @@
       /**重置密码
        */
       resetPassword: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/put/password'
+        App.showUrl(isAdminOperation, '/put/password')
         vInput.value = JSON.stringify(
           {
             verify: vVerify.value,
@@ -1374,8 +1399,6 @@
       /**退出
        */
       logout: function (isAdminOperation, callback) {
-        baseUrl = App.getBaseUrl()
-        var url = (isAdminOperation ? App.server : baseUrl) + '/logout'
         var req = {}
 
         if (isAdminOperation) {
@@ -1385,7 +1408,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, url, req, function (url, res, err) {
+          this.request(isAdminOperation, App.server + '/logout', req, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1399,7 +1422,7 @@
           })
         }
         else {
-          vUrl.value = url
+          App.showUrl(isAdminOperation, '/logout')
           vInput.value = JSON.stringify(req, null, '    ')
           this.showTestCase(false, App.isLocalShow)
           this.onChange(false)
@@ -1410,8 +1433,7 @@
       /**获取验证码
        */
       getVerify: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/post/verify'
+        App.showUrl(isAdminOperation, '/post/verify')
         var type = App.loginType == 'login' ? 0 : (App.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
           {
@@ -1436,8 +1458,7 @@
       /**获取当前用户
        */
       getCurrentUser: function (isAdminOperation, callback) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/gets'
+        App.showUrl(isAdminOperation, '/gets')
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -1613,8 +1634,8 @@
         return json;
       },
 
-      showAndSend: function (url, req, isAdminOperation, callback) {
-        vUrl.value = url
+      showAndSend: function (branchUrl, req, isAdminOperation, callback) {
+        App.showUrl(isAdminOperation, branchUrl)
         vInput.value = JSON.stringify(req, null, '    ')
         App.showTestCase(false, App.isLocalShow)
         App.onChange(false)
@@ -1634,8 +1655,10 @@
 
         var req = this.getRequest(vInput.value);
 
-        var url = new String(vUrl.value)
+        var url = StringUtil.get(this.host) + new String(vUrl.value)
         url = url.replace(/ /g, '')
+
+
         vOutput.value = "requesting... \nURL = " + url;
         this.view = 'output';
 
