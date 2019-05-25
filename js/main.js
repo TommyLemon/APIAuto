@@ -859,7 +859,7 @@
                 s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
               case 'Kotlin':
-                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0)
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle)
                 break;
               case 'Objective-C':
                 s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
