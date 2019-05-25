@@ -2993,19 +2993,22 @@ var CodeUtil = {
   },
 
 
-  /**用数据字典转为 TypeScript 类
+  /**用数据字典转为 Swift Entity 类
    * @param docObj
    */
-  parseSwiftEntity: function(docObj, clazz, database) {
+  parseSwiftStruct: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
     var item;
 
+    var blank = CodeUtil.getBlank(1);
+    var blank2 = CodeUtil.getBlank(2);
+
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseTypeScriptClass  [] = \n' + format(JSON.stringify(list)));
+      console.log('parseSwiftStruct  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -3021,26 +3024,26 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseTypeScriptClass [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parseSwiftStruct [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
-          + '\n *APIJSONAuto 自动生成 TypeScript Entity\n *主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n */\n\n\n'
+          + '\n *APIJSONAuto 自动生成 Swift Struct\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n */'
+          + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
-          + '\nclass ' + model + ' {\n';
+          + '\nstruct ' + model + ': Codable {';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseTypeScriptClass [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+          console.log('parseSwiftStruct [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
           var name;
           var type;
-
-          doc += '\n    constructor(';
 
           for (var j = 0; j < columnList.length; j++) {
             column = (columnList[j] || {}).Column;
@@ -3050,16 +3053,14 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'Int' : CodeUtil.getType4Language('Swift', column.column_type, false);
 
-            console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parseSwiftStruct [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n        public '+ name + ': ' + type + ', ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + 'var '+ name + ': ' + type + '? ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
-
-          doc += '\n    ) { }';
 
         }
 
@@ -3459,6 +3460,9 @@ var CodeUtil = {
    * @param saveLength
    */
   getJavaType: function(type, saveLength) {
+    return CodeUtil.getType4Language('Java', type, saveLength);
+  },
+  getType4Language: function(language, type, saveLength) {
     log(CodeUtil.TAG, 'getJavaType  type = ' + type + '; saveLength = ' + saveLength);
     type = StringUtil.noBlank(type);
 
@@ -3466,7 +3470,35 @@ var CodeUtil = {
 
     var t = index < 0 ? type : type.substring(0, index);
     if (t == '') {
-      return 'Object';
+      switch (language) {
+        case 'Java':
+          return 'Object';
+        case 'Swift':
+         return 'NSDictionary';
+        case 'Kotlin':
+         return 'Object';
+        case 'Objective-C':
+         return 'Object';
+        case 'C#':
+         return 'Object';
+        case 'PHP':
+         return 'object';
+        case 'Go':
+         return 'map[string]interface{}';
+          break;
+        //以下都不需要解析，直接用左侧的 JSON
+        case 'JavaScript':
+         return 'object';
+          break;
+        case 'TypeScript':
+         return 'object';
+          break;
+        case 'Python':
+         return 'dictionary';
+          break;
+        default:
+          return 'Object';
+      }
     }
     var length = index < 0 || saveLength != true ? '' : type.substring(index);
 
@@ -3485,12 +3517,58 @@ var CodeUtil = {
 
     switch (t) {
       case 'id':
-        return 'Long' + length;
+        switch (language) {
+          case 'Java':
+            return 'Long' + length;
+          case 'Swift':
+            return 'Int' + length;
+          case 'Kotlin':
+            return 'Int' + length;
+          case 'Objective-C':
+            return 'Int' + length;
+          case 'C#':
+            return 'Int64' + length;
+          case 'PHP':
+            return 'int' + length;
+          case 'Go':
+            return 'Int' + length;
+          case 'JavaScript':
+            return 'number' + length;
+          case 'TypeScript':
+            return 'number' + length;
+          case 'Python':
+            return 'int' + length;
+          default:
+            return 'Long' + length;
+        }
       case 'bit':
         return 'Boolean' + length;
       case 'bool': //同tinyint
       case 'boolean': //同tinyint
-        return 'Integer' + length;
+        switch (language) {
+          case 'Java':
+            return 'Integer' + length;
+          case 'Swift':
+            return 'Int' + length;
+          case 'Kotlin':
+            return 'Int' + length;
+          case 'Objective-C':
+            return 'Int' + length;
+          case 'C#':
+            return 'Int32' + length;
+          case 'PHP':
+            return 'int' + length;
+          case 'Go':
+            return 'Int' + length;
+          case 'JavaScript':
+            return 'number' + length;
+          case 'TypeScript':
+            return 'number' + length;
+          case 'Python':
+            return 'int' + length;
+          default:
+            return 'Integer' + length;
+        }
       case 'datetime':
         return 'Timestamp' + length;
       case 'year':
@@ -3500,7 +3578,31 @@ var CodeUtil = {
         return 'BigDecimal' + length;
       case 'json':
       case 'jsonb':
-        return 'List<String>' + length;
+        switch (language) {
+          case 'Java':
+            return 'List<String>' + length;
+          case 'Swift':
+            return 'NSArray';
+          case 'Kotlin':
+            return 'Object';
+          case 'Objective-C':
+            return 'Object';
+          case 'C#':
+            return 'Object';
+          case 'PHP':
+            return 'object';
+          case 'Go':
+            return 'map[string]interface{}';
+          //以下都不需要解析，直接用左侧的 JSON
+          case 'JavaScript':
+            return 'object';
+          case 'TypeScript':
+            return 'object';
+          case 'Python':
+            return 'list';
+          default:
+            return 'List<String>' + length;
+        }
       default:
         return StringUtil.firstCase(t, true) + length;
     }

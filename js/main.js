@@ -623,7 +623,7 @@
                   suffix = '.ts';
                   break;
                 case 'Python':
-                  suffix = '.python';
+                  suffix = '.py';
                   break;
                 default:
                   suffix = '.java';
@@ -800,12 +800,6 @@
               , App.exTxt.name + '.txt')
           }
           else if (App.view == 'markdown' || App.view == 'output') { //model
-            // saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
-            //   + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
-            //   + '\n\n## Java model类 \n\n' + CodeUtil.parseJavaBean(docObj)
-            //   , App.exTxt.name + '.txt')
-
-
             var clazz = StringUtil.trim(App.exTxt.name)
 
             var txt = '' //配合下面 +=，实现注释判断，一次全生成，方便测试
@@ -813,7 +807,7 @@
               txt += CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
             }
             else if (clazz.endsWith('.swift')) {
-              txt += CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
+              txt += CodeUtil.parseSwiftStruct(docObj, clazz.substring(0, clazz.length - 6), App.database)
             }
             else if (clazz.endsWith('.kt')) {
               txt += CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
@@ -839,8 +833,8 @@
             else if  (clazz.endsWith('.ts')) {
               txt += CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
-            else if (clazz.endsWith('.python')) {
-              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
+            else if (clazz.endsWith('.py')) {
+              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
             else {
               alert('请正确输入对应语言的类名后缀！')
@@ -892,7 +886,6 @@
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
                 break;
             }
-
 
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nURL: ' + vUrl.value
@@ -1800,13 +1793,13 @@
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
           case 'PHP':
-            s += '\n#### <= Web-PHP: 空对象用 (object) array()'
+            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
               + ' \n ```php \n'
               + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
-              + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
+              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
             break;
           case 'Go':
-            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key: value 最后都要加逗号 ","'
+            s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
