@@ -487,6 +487,8 @@
           }
           vUrl.value = branchUrl
         }
+
+        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
       },
 
       //设置基地址
@@ -666,8 +668,7 @@
               break
             case 3:
               App.host = App.getBaseUrl()
-              vUrl.value = StringUtil.trim(new String(vUrl.value).substring(App.host.length))
-              App.onChange(false)
+              App.showUrl(false, new String(vUrl.value).substring(App.host.length)) //没必要导致必须重新获取 Response，App.onChange(false)
               break
             case 5:
               App.getCurrentUser(true)
@@ -685,9 +686,12 @@
           }
         }
         else if (index == 3) {
-          vUrl.value = StringUtil.get(App.host) + new String(vUrl.value)
+          var host = StringUtil.get(App.host)
+          var branch = new String(vUrl.value)
           App.host = ''
-          App.onChange(false)
+          vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = App.host (http://apijson.cn:8080/put /balance)
+          App.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
+          App.showUrl(false, branch) //没必要导致必须重新获取 Response，App.onChange(false)
         }
       },
 
@@ -940,19 +944,29 @@
             case 0:
               App.database = App.exTxt.name
               App.saveCache('', 'database', App.database)
+
+              doc = null
+              var item = App.accounts[App.currentAccountIndex]
+              item.isLoggedIn = false
+              App.onClickAccount(App.currentAccountIndex, item)
               break;
             case 1:
               App.schema = App.exTxt.name
               App.saveCache('', 'schema', App.schema)
+
+              doc = null
+              var item = App.accounts[App.currentAccountIndex]
+              item.isLoggedIn = false
+              App.onClickAccount(App.currentAccountIndex, item)
               break;
             case 2:
               App.language = App.exTxt.name
               App.saveCache('', 'language', App.language)
+
+              doc = null
+              App.onChange(false)
               break;
           }
-
-          doc = null
-          App.onChange(false)
         }
         else {
           App.server = App.exTxt.name
