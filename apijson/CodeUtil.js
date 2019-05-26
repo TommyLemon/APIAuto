@@ -2364,7 +2364,7 @@ var CodeUtil = {
             }
 
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getType4Language('Objective-C', column.column_type, false);
 
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -2725,7 +2725,7 @@ var CodeUtil = {
             }
 
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'int64' : CodeUtil.getType4Language('Go', column.column_type, false);
 
 
             console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -2846,7 +2846,7 @@ var CodeUtil = {
             }
 
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'Int64' : CodeUtil.getType4Language('C#', column.column_type, false);
 
 
             console.log('parseCSharpBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -2926,7 +2926,7 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'number' : CodeUtil.getType4Language('TypeScript', column.column_type, false);
 
             console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -3007,7 +3007,7 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'int' : CodeUtil.getType4Language('Python', column.column_type, false);
 
             console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -3270,7 +3270,7 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getType4Language('Kotlin', column.column_type, false);
 
             console.log('parseKotlinDataClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
@@ -3507,144 +3507,256 @@ var CodeUtil = {
 
     var t = index < 0 ? type : type.substring(0, index);
     if (t == '') {
-      switch (language) {
-        case 'Java':
-          return 'Object';
-        case 'Swift':
-         return 'NSDictionary';
-        case 'Kotlin':
-         return 'Object';
-        case 'Objective-C':
-         return 'Object';
-        case 'C#':
-         return 'Object';
-        case 'PHP':
-         return 'object';
-        case 'Go':
-         return 'map[string]interface{}';
-          break;
-        //以下都不需要解析，直接用左侧的 JSON
-        case 'JavaScript':
-         return 'object';
-          break;
-        case 'TypeScript':
-         return 'object';
-          break;
-        case 'Python':
-         return 'dictionary';
-          break;
-        default:
-          return 'Object';
-      }
+      return CodeUtil.getType4Any(language, '');
     }
     var length = index < 0 || saveLength != true ? '' : type.substring(index);
 
     if (t.indexOf('char') >= 0 || t.indexOf('text') >= 0 || t == 'enum' || t == 'set') {
-      return 'String' + length;
+      return CodeUtil.getType4String(language, length);
     }
     if (t.indexOf('int') >= 0) {
-      return (t == 'bigint' ? 'Long' : 'Integer') + length;
+      return t == 'bigint' ? CodeUtil.getType4Long(language, length) : CodeUtil.getType4Integer(language, length);
     }
     if (t.endsWith('binary') || t.indexOf('blob') >= 0 || t.indexOf('clob') >= 0) {
-      return 'byte[]' + length;
+      return CodeUtil.getType4ByteArray(language, length);
     }
     if (t.indexOf('timestamp') >= 0) {
-      return 'Timestamp' + length;
+      return CodeUtil.getType4Timestamp(language, length);
     }
 
     switch (t) {
       case 'id':
-        switch (language) {
-          case 'Java':
-            return 'Long' + length;
-          case 'Swift':
-            return 'Int' + length;
-          case 'Kotlin':
-            return 'Int' + length;
-          case 'Objective-C':
-            return 'Int' + length;
-          case 'C#':
-            return 'Int64' + length;
-          case 'PHP':
-            return 'int' + length;
-          case 'Go':
-            return 'Int' + length;
-          case 'JavaScript':
-            return 'number' + length;
-          case 'TypeScript':
-            return 'number' + length;
-          case 'Python':
-            return 'int' + length;
-          default:
-            return 'Long' + length;
-        }
+        return CodeUtil.getType4Long(language, length);
       case 'bit':
-        return 'Boolean' + length;
+        return CodeUtil.getType4Boolean(language, length);
       case 'bool': //同tinyint
       case 'boolean': //同tinyint
-        switch (language) {
-          case 'Java':
-            return 'Integer' + length;
-          case 'Swift':
-            return 'Int' + length;
-          case 'Kotlin':
-            return 'Int' + length;
-          case 'Objective-C':
-            return 'Int' + length;
-          case 'C#':
-            return 'Int32' + length;
-          case 'PHP':
-            return 'int' + length;
-          case 'Go':
-            return 'Int' + length;
-          case 'JavaScript':
-            return 'number' + length;
-          case 'TypeScript':
-            return 'number' + length;
-          case 'Python':
-            return 'int' + length;
-          default:
-            return 'Integer' + length;
-        }
+        return CodeUtil.getType4Integer(language, length);
       case 'datetime':
-        return 'Timestamp' + length;
+        return CodeUtil.getType4Timestamp(language, length);
       case 'year':
-        return 'Date' + length;
+        return CodeUtil.getType4Date(language, length);
       case 'decimal':
       case 'numeric':
-        return 'BigDecimal' + length;
+        return CodeUtil.getType4Decimal(language, length);
       case 'json':
       case 'jsonb':
-        switch (language) {
-          case 'Java':
-            return 'List<String>' + length;
-          case 'Swift':
-            return 'NSArray';
-          case 'Kotlin':
-            return 'Object';
-          case 'Objective-C':
-            return 'Object';
-          case 'C#':
-            return 'Object';
-          case 'PHP':
-            return 'object';
-          case 'Go':
-            return 'map[string]interface{}';
-          //以下都不需要解析，直接用左侧的 JSON
-          case 'JavaScript':
-            return 'object';
-          case 'TypeScript':
-            return 'object';
-          case 'Python':
-            return 'list';
-          default:
-            return 'List<String>' + length;
-        }
+        return CodeUtil.getType4Array(language, length);
       default:
         return StringUtil.firstCase(t, true) + length;
     }
 
   },
+
+  getType4Any: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Object' + length;
+      case 'Swift':
+        return 'Any' + length;
+      case 'Kotlin':
+        return 'Any';
+      case 'Objective-C':
+        return 'Object' + length;
+      case 'C#':
+        return 'any' + length;
+      case 'PHP':
+        return 'object' + length;
+      case 'Go':
+        return 'map[string]interface{}' + length;
+        break;
+      //以下都不需要解析，直接用左侧的 JSON
+      case 'JavaScript':
+        return 'object' + length;
+        break;
+      case 'TypeScript':
+        return 'object' + length;
+        break;
+      case 'Python':
+        return 'dictionary' + length;
+        break;
+      default:
+        return 'Object' + length;
+    }
+  },
+  getType4Boolean: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Boolean' + length;
+      case 'Swift':
+        return 'Bool' + length;
+      case 'Kotlin':
+        return 'Boolean' + length;
+      case 'Objective-C':
+        return 'Boolean' + length;
+      case 'C#':
+        return 'Bool' + length;
+      case 'PHP':
+        return 'boolean' + length;
+      case 'Go':
+        return 'bool' + length;
+      case 'JavaScript':
+        return 'boolean' + length;
+      case 'TypeScript':
+        return 'boolean' + length;
+      case 'Python':
+        return 'bool' + length;
+      default:
+        return 'Boolean' + length;
+    }
+  },
+  getType4Integer: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Integer' + length;
+      case 'Swift':
+        return 'Int' + length;
+      case 'Kotlin':
+        return 'Int' + length;
+      case 'Objective-C':
+        return 'Int' + length;
+      case 'C#':
+        return 'Int32' + length;
+      case 'PHP':
+        return 'int' + length;
+      case 'Go':
+        return 'int' + length;
+      case 'JavaScript':
+        return 'number' + length;
+      case 'TypeScript':
+        return 'number' + length;
+      case 'Python':
+        return 'int' + length;
+      default:
+        return 'Integer' + length;
+    }
+  },
+  getType4Long: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Long' + length;
+      case 'Swift':
+        return 'Int' + length;
+      case 'Kotlin':
+        return 'Int' + length;
+      case 'Objective-C':
+        return 'Int' + length;
+      case 'C#':
+        return 'Int64' + length;
+      case 'PHP':
+        return 'int' + length;
+      case 'Go':
+        return 'int' + length;
+      case 'JavaScript':
+        return 'number' + length;
+      case 'TypeScript':
+        return 'number' + length;
+      case 'Python':
+        return 'int' + length;
+      default:
+        return 'Long' + length;
+    }
+  },
+  getType4Decimal: function (language, length) {
+    return 'BigDecimal' + length;
+  },
+  getType4String: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'String' + length;
+      case 'Swift':
+        return 'String' + length;
+      case 'Kotlin':
+        return 'String';
+      case 'Objective-C':
+        return 'String' + length;
+      case 'C#':
+        return 'String' + length;
+      case 'PHP':
+        return 'string' + length;
+      case 'Go':
+        return 'string' + length;
+        break;
+      //以下都不需要解析，直接用左侧的 JSON
+      case 'JavaScript':
+        return 'string' + length;
+        break;
+      case 'TypeScript':
+        return 'string' + length;
+        break;
+      case 'Python':
+        return 'str' + length;
+        break;
+      default:
+        return 'String' + length;
+    }
+  },
+  getType4Date: function (language, length) {
+    return 'Date' + length;
+  },
+  getType4Timestamp: function (language, length) {
+    return 'Timestamp' + length;
+  },
+  getType4Object: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Object';
+      case 'Swift':
+        return 'NSDictionary';
+      case 'Kotlin':
+        return 'Object';
+      case 'Objective-C':
+        return 'Object';
+      case 'C#':
+        return 'Object';
+      case 'PHP':
+        return 'object';
+      case 'Go':
+        return 'map[string]interface{}';
+        break;
+      case 'JavaScript':
+        return 'object';
+        break;
+      case 'TypeScript':
+        return 'object';
+        break;
+      case 'Python':
+        return 'dictionary';
+        break;
+      default:
+        return 'Object';
+    }
+  },
+  getType4ByteArray: function (language, length) {
+    return 'byte[]' + length;
+  },
+  getType4Array: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'List<String>' + length;
+      case 'Swift':
+        return 'NSArray' + length;
+      case 'Kotlin':
+        return 'List<String>' + length;
+      case 'Objective-C':
+        return 'List' + length;
+      case 'C#':
+        return 'List<String>' + length;
+      case 'PHP':
+        return 'string[]' + length;
+      case 'Go':
+        return '[]string' + length;
+      case 'JavaScript':
+        return 'string[]' + length;
+      case 'TypeScript':
+        return 'string[]' + length;
+      case 'Python':
+        return 'list[str]' + length;
+      default:
+        return 'List<String>' + length;
+    }
+  },
+
 
   /**获取字段对应值的最大长度
    * @param columnType

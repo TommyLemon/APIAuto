@@ -634,8 +634,8 @@
 
               App.exTxt.name = 'User' + suffix
               alert('自动生成模型代码，可填类名后缀:\n'
-                + '.java(Java), .kt(Kotlin), .swift(Swift) , .h(Objective-C),  .m(Objective-C),'
-                + '\n.ts(TypeScript), .js(JavaScript, .cs(C#), .php(PHP), python(Python), .go(Go)');
+                + 'Java.java, Kotlin.kt, Swift.swift, Objective-C.h, Objective-C.m,'
+                + '\nTypeScript.ts, JavaScript.js, C#.cs, PHP.php, Python.py, Go.go');
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
