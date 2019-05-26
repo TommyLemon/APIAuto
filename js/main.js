@@ -363,6 +363,7 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
@@ -473,8 +474,28 @@
       },
 
 
+      showUrl: function (isAdminOperation, branchUrl) {
+        if (StringUtil.isEmpty(this.host, true)) {  //显示(可编辑)URL Host
+          if (isAdminOperation != true) {
+            baseUrl = this.getBaseUrl()
+          }
+          vUrl.value = (isAdminOperation ? App.server : baseUrl) + branchUrl
+        }
+        else {  //隐藏(固定)URL Host
+          if (isAdminOperation) {
+            this.host = App.server
+          }
+          vUrl.value = branchUrl
+        }
+
+        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
+      },
+
       //设置基地址
       setBaseUrl: function () {
+        if (StringUtil.isEmpty(this.host, true) != true) {
+          return
+        }
         // 重新拉取文档
         var bu = this.getBaseUrl()
         if (baseUrl != bu) {
@@ -604,7 +625,7 @@
                   suffix = '.ts';
                   break;
                 case 'Python':
-                  suffix = '.python';
+                  suffix = '.py';
                   break;
                 default:
                   suffix = '.java';
@@ -634,7 +655,7 @@
             case 0:
             case 1:
             case 2:
-            case 3:
+            case 4:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
 
@@ -645,11 +666,15 @@
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
               }
               break
-            case 4:
-              App.getCurrentUser(true)
+            case 3:
+              App.host = App.getBaseUrl()
+              App.showUrl(false, new String(vUrl.value).substring(App.host.length)) //没必要导致必须重新获取 Response，App.onChange(false)
               break
             case 5:
-              App.showAndSend(App.server + '/get', {
+              App.getCurrentUser(true)
+              break
+            case 6:
+              App.showAndSend('/get', {
                 'Goods[]': {
                   'count': 0,
                   'Goods': {
@@ -659,6 +684,14 @@
               }, true)
               break
           }
+        }
+        else if (index == 3) {
+          var host = StringUtil.get(App.host)
+          var branch = new String(vUrl.value)
+          App.host = ''
+          vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = App.host (http://apijson.cn:8080/put /balance)
+          App.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
+          App.showUrl(false, branch) //没必要导致必须重新获取 Response，App.onChange(false)
         }
       },
 
@@ -729,14 +762,13 @@
       // 根据历史恢复数据
       restore: function (item) {
         localforage.getItem(item.key || '', function (err, value) {
-          baseUrl = App.getBaseUrl()
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
           }
 
           App.urlComment = item.name;
-          vUrl.value = baseUrl + branch
+          App.showUrl(false, branch)
 
           App.showTestCase(false, App.isLocalShow)
           vInput.value = item.request
@@ -772,12 +804,6 @@
               , App.exTxt.name + '.txt')
           }
           else if (App.view == 'markdown' || App.view == 'output') { //model
-            // saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
-            //   + '\n\n\n## 使用方法\n1.新建java文件，例如A.java <br/> \n2.将以下与A同名的class代码复制粘贴到A文件内 <br/> \n3.import需要引入的类，可使用快捷键Ctrl+Shift+O <br/> '
-            //   + '\n\n## Java model类 \n\n' + CodeUtil.parseJavaBean(docObj)
-            //   , App.exTxt.name + '.txt')
-
-
             var clazz = StringUtil.trim(App.exTxt.name)
 
             var txt = '' //配合下面 +=，实现注释判断，一次全生成，方便测试
@@ -785,7 +811,7 @@
               txt += CodeUtil.parseJavaBean(docObj, clazz.substring(0, clazz.length - 5), App.database)
             }
             else if (clazz.endsWith('.swift')) {
-              txt += CodeUtil.parseSwiftEntity(docObj, clazz.substring(0, clazz.length - 6), App.database)
+              txt += CodeUtil.parseSwiftStruct(docObj, clazz.substring(0, clazz.length - 6), App.database)
             }
             else if (clazz.endsWith('.kt')) {
               txt += CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
@@ -811,8 +837,8 @@
             else if  (clazz.endsWith('.ts')) {
               txt += CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
-            else if (clazz.endsWith('.python')) {
-              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 7), App.database)
+            else if (clazz.endsWith('.py')) {
+              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
             else {
               alert('请正确输入对应语言的类名后缀！')
@@ -837,7 +863,7 @@
                 s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
               case 'Kotlin':
-                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0)
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle)
                 break;
               case 'Objective-C':
                 s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
@@ -864,7 +890,6 @@
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
                 break;
             }
-
 
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
               + '\n\nURL: ' + vUrl.value
@@ -919,19 +944,29 @@
             case 0:
               App.database = App.exTxt.name
               App.saveCache('', 'database', App.database)
+
+              doc = null
+              var item = App.accounts[App.currentAccountIndex]
+              item.isLoggedIn = false
+              App.onClickAccount(App.currentAccountIndex, item)
               break;
             case 1:
               App.schema = App.exTxt.name
               App.saveCache('', 'schema', App.schema)
+
+              doc = null
+              var item = App.accounts[App.currentAccountIndex]
+              item.isLoggedIn = false
+              App.onClickAccount(App.currentAccountIndex, item)
               break;
             case 2:
               App.language = App.exTxt.name
               App.saveCache('', 'language', App.language)
+
+              doc = null
+              App.onChange(false)
               break;
           }
-
-          doc = null
-          App.onChange(false)
         }
         else {
           App.server = App.exTxt.name
@@ -1196,8 +1231,6 @@
       login: function (isAdminOperation, callback) {
         App.isLoginShow = false
 
-        baseUrl = App.getBaseUrl()
-        var url = (isAdminOperation ? App.server : baseUrl) + '/login'
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
           phone: vAccount.value,
@@ -1211,7 +1244,7 @@
         }
 
         if (isAdminOperation) {
-          App.request(isAdminOperation, url, req, function (url, res, err) {
+          App.request(isAdminOperation, App.server + '/login', req, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1271,7 +1304,8 @@
             }
           }
 
-          vUrl.value = url
+          App.showUrl(isAdminOperation, '/login')
+
           vInput.value = JSON.stringify(req, null, '    ')
           App.showTestCase(false, App.isLocalShow)
           App.onChange(false)
@@ -1307,8 +1341,7 @@
       /**注册
        */
       register: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/register'
+        App.showUrl(isAdminOperation, '/register')
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -1342,8 +1375,7 @@
       /**重置密码
        */
       resetPassword: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/put/password'
+        App.showUrl(isAdminOperation, '/put/password')
         vInput.value = JSON.stringify(
           {
             verify: vVerify.value,
@@ -1374,8 +1406,6 @@
       /**退出
        */
       logout: function (isAdminOperation, callback) {
-        baseUrl = App.getBaseUrl()
-        var url = (isAdminOperation ? App.server : baseUrl) + '/logout'
         var req = {}
 
         if (isAdminOperation) {
@@ -1385,7 +1415,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, url, req, function (url, res, err) {
+          this.request(isAdminOperation, App.server + '/logout', req, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1399,7 +1429,7 @@
           })
         }
         else {
-          vUrl.value = url
+          App.showUrl(isAdminOperation, '/logout')
           vInput.value = JSON.stringify(req, null, '    ')
           this.showTestCase(false, App.isLocalShow)
           this.onChange(false)
@@ -1410,8 +1440,7 @@
       /**获取验证码
        */
       getVerify: function (isAdminOperation) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/post/verify'
+        App.showUrl(isAdminOperation, '/post/verify')
         var type = App.loginType == 'login' ? 0 : (App.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
           {
@@ -1436,8 +1465,7 @@
       /**获取当前用户
        */
       getCurrentUser: function (isAdminOperation, callback) {
-        baseUrl = App.getBaseUrl()
-        vUrl.value = (isAdminOperation ? App.server : baseUrl) + '/gets'
+        App.showUrl(isAdminOperation, '/gets')
         vInput.value = JSON.stringify(
           {
             Privacy: {
@@ -1613,8 +1641,8 @@
         return json;
       },
 
-      showAndSend: function (url, req, isAdminOperation, callback) {
-        vUrl.value = url
+      showAndSend: function (branchUrl, req, isAdminOperation, callback) {
+        App.showUrl(isAdminOperation, branchUrl)
         vInput.value = JSON.stringify(req, null, '    ')
         App.showTestCase(false, App.isLocalShow)
         App.onChange(false)
@@ -1634,8 +1662,10 @@
 
         var req = this.getRequest(vInput.value);
 
-        var url = new String(vUrl.value)
+        var url = StringUtil.get(this.host) + new String(vUrl.value)
         url = url.replace(/ /g, '')
+
+
         vOutput.value = "requesting... \nURL = " + url;
         this.view = 'output';
 
@@ -1777,13 +1807,13 @@
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
           case 'PHP':
-            s += '\n#### <= Web-PHP: 空对象用 (object) array()'
+            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
               + ' \n ```php \n'
               + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
-              + '\n ``` \n注：对象 {} 用 array(\'key\' => value)，数组 [] 用 array(value0, value1)\n';
+              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
             break;
           case 'Go':
-            s += '\n#### <= Web-Go: 对象 key 会被强制排序，每个 key: value 最后都要加逗号 ","'
+            s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
