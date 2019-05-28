@@ -316,7 +316,8 @@
       jsonhtml: initJson,
       compressStr: '',
       error: {},
-      urlComment: '',
+      requestVersion: 3,
+      urlComment: '关联查询 Comment.userId = User/id',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -488,7 +489,9 @@
           vUrl.value = branchUrl
         }
 
-        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
+        vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
+          ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
+          + ' - ' + (App.requestVersion > 0 ? 'V' + App.requestVersion : 'V*');
       },
 
       //设置基地址
@@ -768,6 +771,7 @@
           }
 
           App.urlComment = item.name;
+          App.requestVersion = item.version;
           App.showUrl(false, branch)
 
           App.showTestCase(false, App.isLocalShow)
@@ -1570,7 +1574,9 @@
               }
             }
             vComment.value = c
-            vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true) ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ');
+            vUrlComment.value = isSingle || StringUtil.isEmpty(App.urlComment, true)
+              ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
+              + ' - ' + (App.requestVersion > 0 ? 'V' + App.requestVersion : 'V*');
 
             onScrollChanged()
             onURLScrollChanged()
@@ -1766,6 +1772,7 @@
         }
         else {
           App.urlComment = '';
+          App.requestVersion = '';
           this.onChange(true);
         }
       },
