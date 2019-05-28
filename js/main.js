@@ -1664,7 +1664,7 @@
         }
         if (StringUtil.isEmpty(App.host, true)) {
           if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
-            alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n将会自动在前面加同域的 Host，可能访问出错！')
+            alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n可能使用同域的 Host，很可能访问出错！')
           }
         }
         else {
