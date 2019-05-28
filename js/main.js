@@ -1662,6 +1662,17 @@
           alert('请先输入请求内容！')
           return
         }
+        if (StringUtil.isEmpty(App.host, true)) {
+          if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
+            alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n将会自动在前面加同域的 Host，可能访问出错！')
+          }
+        }
+        else {
+          if (StringUtil.get(vUrl.value).indexOf('://') >= 0) {
+            alert('URL Host 已经隐藏(固定) 为 \n' + App.host + ' \n将会自动在前面补全，导致 URL 不合法访问出错！\n如果要改 Host，右上角设置 > 显示(编辑)URL Host')
+          }
+        }
+
         this.onHandle(vInput.value)
 
         clearTimeout(handler);
