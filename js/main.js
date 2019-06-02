@@ -317,7 +317,7 @@
       compressStr: '',
       error: {},
       requestVersion: 3,
-      urlComment: '关联查询 Comment.userId = User/id',
+      urlComment: '关联查询 Comment.userId = User.id',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -341,6 +341,8 @@
       isTestCaseShow: false,
       isLoginShow: false,
       isConfigShow: false,
+      isDeleteShow: false,
+      currentDocItem: {},
       isAdminOperation: false,
       loginType: 'login',
       isExportRemote: false,
@@ -698,6 +700,51 @@
         }
       },
 
+      // 显示删除弹窗
+      showDelete: function (show, item, index) {
+        this.isDeleteShow = show
+        this.exTxt.name = '请输入接口名来确认'
+        this.currentDocItem = Object.assign(item, {
+          index: index
+        })
+      },
+
+      // 删除接口文档
+      deleteDoc: function () {
+        var item = this.currentDocItem || {}
+        var doc = item.Document || {}
+        if (doc.id == null) {
+          alert('未选择接口或接口不存在！')
+          return
+        }
+        if (doc.name != this.exTxt.name) {
+          alert('输入的接口名和要删除的接口名不匹配！')
+          return
+        }
+
+        this.showDelete(false, {})
+
+        this.isTestCaseShow = false
+
+        var url = this.server + '/delete'
+        var req = {
+          'Document': {
+            'id': doc.id
+          },
+          'tag': 'Document'
+        }
+        this.request(true, url, req, function (url, res, err) {
+          App.onResponse(url, res, err)
+
+          var rpObj = res.data
+
+          if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
+            App.remotes.splice(item.index, 1)
+            App.showTestCase(true, App.isLocalShow)
+          }
+        })
+      },
+
       // 保存当前的JSON
       save: function () {
         if (App.history.name.trim() === '') {
@@ -736,25 +783,7 @@
             return
           }
 
-          App.isTestCaseShow = false
-
-          var url = App.server + '/delete'
-          var req = {
-            'Document': {
-              'id': item.Document == null ? 0 : item.Document.id
-            },
-            'tag': 'Document'
-          }
-          App.request(true, url, req, function (url, res, err) {
-            App.onResponse(url, res, err)
-
-            var rpObj = res.data
-
-            if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
-              App.remotes.splice(index, 1)
-              App.showTestCase(true, App.isLocalShow)
-            }
-          })
+          this.showDelete(true, item, index)
         }
       },
 

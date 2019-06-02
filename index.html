@@ -339,6 +339,16 @@
     <button @click="saveConfig()">切换</button>
   </div>
 
+  <!--弹出删除文本框-->
+  <div class="save-box" v-show="isDeleteShow">
+    <svg class="icon close-icon" @click="showDelete(false, {})">
+      <use xlink:href="svg/icon.svg#close"></use>
+    </svg>
+
+    <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
+    <button @click="deleteDoc()">删除</button>
+  </div>
+
 
   <!-- 登录 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
   <div class="my-login-page" v-show="isLoginShow">
