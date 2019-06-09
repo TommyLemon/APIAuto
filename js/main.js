@@ -2347,6 +2347,7 @@
           // App.restore(item)
           // App.onChange(false)
 
+          const index = i
           App.request(false, baseUrl + document.url, App.getRequest(document.request), function (url, res, err) {
 
             try {
@@ -2355,38 +2356,41 @@
             } catch (e) {
               App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
-            const response = JSON.stringify(res.data || {})
-            const releaseResponse = App.removeDebugInfo(JSON.parse(response))
 
-            const it = item || {} //请求异步
-            const d = it.Document || {} //请求异步
-            const tr = it.TestRecord || {} //请求异步
-
-            if (App.isMLEnabled != true) {
-              const standardKey = App.isMLEnabled == true ? 'standard' : 'response';
-              const standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
-
-              tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
-              App.onTestResponse(allCount, it, d, tr, response, tr.compare || {});
-            }
-            else {
-              App.request(false, App.server + '/get/testcompare/ml', {
-                "documentId": d.id,
-                "response": releaseResponse
-              }, function (url, res, err) {
-                var data = res.data || {}
-                if (data.code != 200) {
-                  App.onResponse(url, res, err)
-                  return
-                }
-                App.onTestResponse(allCount, it, d, tr, response, data.compare || {});
-              })
-            }
+            App.compareResponse(allCount, index, item, res.data)
           })
         }
       },
 
-      onTestResponse: function(allCount, it, d, tr, response, cmp) {
+      compareResponse: function (allCount, index, item, response) {
+        var it = item || {} //请求异步
+        var d = it.Document || {} //请求异步
+        var tr = it.TestRecord || {} //请求异步
+
+        var releaseResponse = App.removeDebugInfo(response)
+
+        if (App.isMLEnabled != true) {
+          var standard = StringUtil.isEmpty(tr.response, true) ? null : JSON.parse(tr.response);
+
+          tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
+          App.onTestResponse(allCount, index, it, d, tr, response, tr.compare || {});
+        }
+        else {
+          App.request(false, App.server + '/get/testcompare/ml', {
+            "documentId": d.id,
+            "response": releaseResponse
+          }, function (url, res, err) {
+            var data = res.data || {}
+            if (data.code != 200) {
+              App.onResponse(url, res, err)
+              return
+            }
+            App.onTestResponse(allCount, index, it, d, tr, response, data.compare || {});
+          })
+        }
+      },
+
+      onTestResponse: function(allCount, index, it, d, tr, response, cmp) {
 
         doneCount ++
         App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
@@ -2400,7 +2404,7 @@
         switch (it.compareType) {
           case JSONResponse.COMPARE_NO_STANDARD:
             it.compareColor = 'white'
-            it.compareMessage = '确认正确后点击[这是对的]'
+            it.compareMessage = '确认正确后点击[对的，纠正]'
             break;
           case JSONResponse.COMPARE_KEY_MORE:
             it.compareColor = 'green'
@@ -2425,6 +2429,8 @@
         }
         it.Document = d
         it.TestRecord = tr
+
+        Vue.set(App.remotes, index, it);
 
         var tests = App.tests || {}
         tests[d.id] = response
@@ -2503,75 +2509,119 @@
         var document = item.Document = item.Document || {}
         var testRecord = item.TestRecord = item.TestRecord || {}
 
-        if (right) {
-          var tests = App.tests || {}
-          testRecord.response = tests[document.id]
-        }
+        var tests = App.tests || {}
+        var currentResponse = tests[document.id]
 
+        var isBefore = item.showType == 'before'
         if (right != true) {
-          var isBefore = item.showType != 'before'
-          item.showType = isBefore ? 'before' : 'after'
+          item.showType = isBefore ? 'after' : 'before'
           Vue.set(App.remotes, index, item);
 
+          var res = isBefore ? JSON.stringify(App.tests[document.id]) : testRecord.response
+
           App.view = 'code'
-          App.jsoncon = isBefore ? (testRecord.response || '') : (App.tests[document.id] || '')
+          App.jsoncon = res || ''
         }
         else {
           const isML = App.isMLEnabled
-
           var url
           var req
-          if (isML != true) {
-            var response = StringUtil.isEmpty(testRecord.response, true) ? null : JSON.parse(testRecord.response);
-            var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
 
-            var code = response.code;
-            delete response.code; //code必须一致，下面没用到，所以不用还原
-
-            var stddObj = isML ? JSONResponse.updateStandard(standard || {}, response) : {};
-            stddObj.code = code;
-            var stdd = isML ? JSON.stringify(stddObj) : null;
-
-            url = App.server + '/post'
+          if (isBefore) { //撤回原来错误提交的校验标准
+            url = App.server + '/delete'
             req = {
               TestRecord: {
-                userId: App.User.id, //TODO 权限问题？ item.userId,
-                documentId: document.id,
-                compare: JSON.stringify(testRecord.compare || {}),
-                response: testRecord.response
+                id: testRecord.id, //TODO 权限问题？ item.userId,
               },
               tag: 'TestRecord'
             }
-          }
-          else {
-            url = App.server + '/post/testrecord/ml'
-            req = {
-              documentId: document.id
-            }
-          }
 
-          App.request(true, url, req, function (url, res, err) {
-            App.onResponse(url, res, err)
+            App.request(true, url, req, function (url, res, err) {
+              App.onResponse(url, res, err)
 
-            var data = res.data || {}
-            if (data.code != 200) {
-              if (isML) {
-                alert('机器学习更新标准 异常：\n' + data.msg)
+              var data = res.data || {}
+              if (data.code != 200) {
+                alert('撤回最新的校验标准 异常：\n' + data.msg)
+                return
+              }
+
+              App.updateTestRecord(0, index, item, currentResponse)
+            })
+          }
+          else { //上传新的校验标准
+            if (isML != true) {
+              url = App.server + '/post'
+              req = {
+                TestRecord: {
+                  userId: App.User.id, //TODO 权限问题？ item.userId,
+                  documentId: document.id,
+                  compare: JSON.stringify(testRecord.compare || {}),
+                  response: JSON.stringify(currentResponse || {}),
+                },
+                tag: 'TestRecord'
               }
             }
             else {
-              item.compareType = 0
-              item.compareMessage = '查看结果'
-              item.compareColor = 'white'
-              item.hintMessage = '结果正确'
-              testRecord.compare = {}
-              // testRecord.standard = stdd
-              App.showTestCase(true, false)
+              url = App.server + '/post/testrecord/ml'
+              req = {
+                documentId: document.id
+              }
             }
 
-          })
+            App.request(true, url, req, function (url, res, err) {
+              App.onResponse(url, res, err)
 
+              var data = res.data || {}
+              if (data.code != 200) {
+                if (isML) {
+                  alert('机器学习更新标准 异常：\n' + data.msg)
+                }
+              }
+              else {
+                item.compareType = 0
+                item.compareMessage = '查看结果'
+                item.compareColor = 'white'
+                item.hintMessage = '结果正确'
+                testRecord.compare = {
+                  code: 0,
+                  msg: '结果正确'
+                }
+                testRecord.response = JSON.stringify(currentResponse)
+
+                // testRecord.standard = stdd
+                App.showTestCase(true, false)
+
+                App.updateTestRecord(0, index, item, currentResponse)
+              }
+
+            })
+
+          }
         }
+      },
+
+      updateTestRecord: function (allCount, index, item, response) {
+        item = item || {}
+        var doc = item.Document || {}
+
+        App.request(true, App.server + '/get', {
+          TestRecord: {
+            documentId: doc.id,
+            '@order': 'date-',
+            '@column': 'id,userId,documentId,response'
+          }
+        }, function (url, res, err) {
+          App.onResponse(url, res, err)
+
+          var data = (res || {}).data || {}
+          if (data.code != 200) {
+            alert('获取最新的校验标准 异常：\n' + data.msg)
+            return
+          }
+
+          item.TestRecord = data.TestRecord
+          App.compareResponse(allCount, index, item, response);
+        })
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样

@@ -150,8 +150,8 @@
             <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
               <use xlink:href="svg/icon.svg#export-txt"></use>
             </svg>
-            <button v-show="item.compareType != 0" @click="handleTest(true, index, item)">这是对的</button>
-            <button style="color: white;background: white;border: white;" v-show="item.compareType == 0" disabled>这是对的</button>
+            <button v-show="item.compareType != 0 || (item.showType == 'before' && item.TestRecord != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
+            <button v-show="item.compareType == 0 && item.showType != 'before'" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
           </div>
           <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
