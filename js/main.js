@@ -952,6 +952,11 @@
               'url': '/' + App.getMethod(),
               'request': App.toDoubleJSON(inputted)
             },
+            'TestRecord': {
+              'documentId@': '/Document/id',
+              'userId': App.User.id,
+              'response': App.jsoncon
+            },
             'tag': 'Document'
           }
 
