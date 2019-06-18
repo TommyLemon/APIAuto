@@ -32,7 +32,7 @@
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br />
 [https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
 <br />
-然后在右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
+然后在 APIJSONAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
 
 
 ### 感谢开源
