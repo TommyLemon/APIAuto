@@ -1882,13 +1882,14 @@
         s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口工具: [https://github.com/TommyLemon/APIJSONAuto](https://github.com/TommyLemon/APIJSONAuto) '
-          + '\nAPIJSON -Java版: [https://github.com/TommyLemon/APIJSON](https://github.com/TommyLemon/APIJSON) '
-          + '\nAPIJSON - C# 版: [https://github.com/liaozb/APIJSON.NET](https://github.com/liaozb/APIJSON.NET) '
-          + '\nAPIJSON - PHP版: [https://github.com/qq547057827/apijson-php](https://github.com/qq547057827/apijson-php) '
-          + '\nAPIJSON -Node版: [https://github.com/TEsTsLA/apijson](https://github.com/TEsTsLA/apijson) '
-          + '\nAPIJSON - Go 版: [https://github.com/crazytaxi824/APIJSON](https://github.com/crazytaxi824/APIJSON) '
-          + '\nAPIJSON -Python: [https://github.com/zhangchunlin/uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) ';
+          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIJSONAuto '
+          + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+          + '\nAPIJSON -Java版: https://github.com/TommyLemon/APIJSON '
+          + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
+          + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
+          + '\nAPIJSON -Node版: https://github.com/TEsTsLA/apijson '
+          + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
+          + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson ';
 
         return s;
       },
