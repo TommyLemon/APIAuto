@@ -34,6 +34,24 @@
 <br />
 然后在 APIJSONAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
 
+### 使用登记
+<div style="float:left">
+  <a href="http://www.transsion.com"><img src="http://www.transsion.com/static/images/logo.jpg" height="90"></a>
+  <a href="http://shebaochina.com"><img src="http://shebaochina.com/static/cn/img/index/logo.png" height="90"></a>
+  <a href="http://www.shaoshi.com.cn/"><img src="http://www.shaoshi.com.cn/images/logo.png" height="90"></a>
+  <a href="http://www.xmfish.com"><img src="http://www.xmfish.com/images/chanel/www/f_logo.gif" height="90"></a>
+  <a href="http://www.xxwolo.com"><img src="http://img.qichacha.com/Product/a917fcca-fbb1-44a2-a079-56985ebf8f9c.jpg" height="90"></a>
+  <a href="http://www.8soo.com"><img src="http://ww1.sinaimg.cn/large/756dd729gw1f9n5ckuq6vj208902it8v.jpg" height="90"></a>
+  <a href="https://www.kanhanman.com"><img src="http://images.cnblogs.com/cnblogs_com/tommylemon/992090/o_kanhanman.com.jpg" height="90"</a>
+  <a href="http://juting.vip"><img src="http://i.juting.vip/wp-file/2018/12/logo1-1.png" height="90"></a>
+  <a href="http://www.aipaipai-inc.com"><img src="http://www.aipaipai-inc.com/uploadfile/upload/2019042913403029.png" height="90"></a>
+  <a href="https://www.51it.wang"><img src="https://www.51it.wang/usr/uploads/2019/02/2420857313.png" height="90"></a>
+</div>
+  <a href="https://www.shulian8.com"><img src="https://bookstore-prod.oss-cn-hangzhou.aliyuncs.com/%E5%90%8E%E5%8F%B0%E9%A1%B5%E9%9D%A2_03.png" height="90"></a>
+</div>
+  <a href="http://www.hec-bang.com"><img src="http://www.hec-bang.com/assets/images/logo-200x50.png" height="90"></a>
+</div>
+<br />
 
 ### 感谢开源
 * jsonon
