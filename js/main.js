@@ -1927,8 +1927,8 @@
               'table_schema': App.schema,
               'table_type': 'BASE TABLE',
               'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
-              '@order': 'table_name+',
-              '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name,table_comment'
+              '@order': 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
+              '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment'
             },
             'PgClass': App.database != 'POSTGRESQL' ? null : {
               'relname@': '/Table/table_name',
@@ -1940,9 +1940,9 @@
               'Column': {
                 'table_schema': App.schema,
                 'table_name@': '[]/Table/table_name',
-                '@column': App.database == 'POSTGRESQL'
+                '@column': App.database == 'POSTGRESQL'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
-                  : 'column_name,column_type,column_comment'
+                  : 'column_name:column_name,column_type:column_type,column_comment:column_comment'
               },
               'PgAttribute': App.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
