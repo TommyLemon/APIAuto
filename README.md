@@ -73,6 +73,8 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 
 [apijson-doc](https://github.com/vincentCheng/apijson-doc) APIJSON 官方文档，提供排版清晰、搜索方便的文档内容展示，包括设计规范、图文教程等
 
+[apijson.org](https://github.com/APIJSON/apijson.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
+
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, MS SQL Server, Oracle, SQLite
 
 [apijson-php](https://github.com/qq547057827/apijson-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, MS SQL Server, Oracle 等
@@ -94,8 +96,8 @@ QQ技术交流群：739316921（群2） 607020115（群1）
 感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
 
 ### 持续更新
-https://github.com/TommyLemon/APIJSONAuto/commits/master
+https://github.com/TommyLemon/APIAuto/commits/master
 
 ### 我要赞赏
 创作不易，右上角点 ⭐Star 支持下本项目吧，谢谢 ^_^ <br />
-https://github.com/TommyLemon/APIJSONAuto
+https://github.com/TommyLemon/APIAuto

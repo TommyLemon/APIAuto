@@ -2953,16 +2953,18 @@ var CodeUtil = {
   /**用数据字典转为 Python 类
    * @param docObj
    */
-  parsePythonBean: function(docObj, clazz, database) {
-
+  parsePythonEntity: function(docObj, clazz, database) {
     //转为Java代码格式
     var doc = '';
     var item;
 
+    var blank = CodeUtil.getBlank(1);
+    var blank2 = CodeUtil.getBlank(2);
+
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseTypeScriptClass  [] = \n' + format(JSON.stringify(list)));
+      console.log('parsePythonEntity  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -2978,26 +2980,53 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseTypeScriptClass [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parsePythonEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
-          + '\n *APIJSONAuto 自动生成 TypeScript Entity\n *主页: https://github.com/TommyLemon/APIJSONAuto'
-          + '\n */\n\n\n'
+          + '\n *APIJSONAuto 自动生成 Python Entity\n *主页: https://github.com/TommyLemon/APIJSONAuto'
+          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n */'
+          + '\npackage apijson.demo.server.model;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
-          + '\nclass ' + model + ' {\n';
+          + '\nclass ' + model + ':';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseTypeScriptClass [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+          console.log('parsePythonEntity [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+
+          doc += '\n'
+            + '\n' + blank + 'def __init__(self, id: int = 0):'
+            + '\n' + blank2 + 'super().__init__()'
+            + '\n' + blank2 + 'setId(id)'
+            + '\n\n';
 
           var name;
           var type;
 
-          doc += '\n    constructor(';
+          for (var j = 0; j < columnList.length; j++) {
+            column = (columnList[j] || {}).Column;
+
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+            if (name == '') {
+              continue;
+            }
+
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.getType4Language('Python', column.column_type, false);
+
+
+            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+
+            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+            doc += '\n' + blank + name + ': ' + type + ' = None ' + CodeUtil.getComment((o || {}).column_comment, false);
+
+          }
+
+          doc += '\n\n'
 
           for (var j = 0; j < columnList.length; j++) {
             column = (columnList[j] || {}).Column;
@@ -3007,17 +3036,20 @@ var CodeUtil = {
               continue;
             }
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'int' : CodeUtil.getType4Language('Python', column.column_type, false);
+            type = CodeUtil.getType4Language('Python', column.column_type, false);
 
-            console.log('parseTypeScriptClass [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parsePythonEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n        public '+ name + ': ' + type + ', ' + CodeUtil.getComment((o || {}).column_comment, false);
+            //getter
+            doc += '\n' + blank + 'def ' + CodeUtil.getMethodName('get', name) + '() -> ' + type + ':'
+              + '\n' + blank2 + 'return ' + name;
+
+            //setter
+            doc += '\n' + blank + 'def ' + CodeUtil.getMethodName('set', name) + '(' + name + ': ' + type + '):'
+              + '\n' + blank2 + 'self.' + name + ' = ' + name
+              + '\n' + blank2 + 'return this';
 
           }
-
-          doc += '\n    ) { }';
-
         }
 
         doc += '\n\n}';
@@ -3028,6 +3060,7 @@ var CodeUtil = {
 
     return doc;
   },
+
 
 
   /**用数据字典转为 Swift Entity 类

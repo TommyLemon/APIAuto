@@ -871,7 +871,7 @@
               txt += CodeUtil.parseTypeScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
             else if (clazz.endsWith('.py')) {
-              txt += CodeUtil.parsePythonBean(docObj, clazz.substring(0, clazz.length - 3), App.database)
+              txt += CodeUtil.parsePythonEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
             else {
               alert('请正确输入对应语言的类名后缀！')
