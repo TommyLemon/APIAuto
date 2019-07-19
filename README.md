@@ -62,7 +62,7 @@
 
 ### 关于作者
 TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
-QQ技术交流群：739316921（群2） 607020115（群1） 
+QQ技术交流群：734652054（群2） 607020115（群1） 
 
 如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIJSONAuto/issues) 或 加群，交流技术，分享经验。<br >
 如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIJSONAuto/pulls)，感激不尽。
