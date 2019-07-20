@@ -813,25 +813,26 @@ var CodeUtil = {
 
 
   /**生成 iOS-Swift 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseSwiftResponse: function(name, resObj, depth, isSmart) {
+  parseSwiftResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
       },
 
       onParseParentEnd: function () {
@@ -935,24 +936,25 @@ var CodeUtil = {
 
 
   /**生成 iOS-Objective-C 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseObjectiveCResponse: function(name, resObj, depth) {
+  parseObjectiveCResponse: function(name_, resObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
       },
 
       onParseParentEnd: function () {
@@ -1051,18 +1053,19 @@ var CodeUtil = {
 
 
   /**生成 Web-JavaScript 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseJavaScriptResponse: function(name, resObj, depth, isSmart) {
+  parseJavaScriptResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1072,7 +1075,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -1169,18 +1172,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-PHP 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parsePHPResponse: function(name, resObj, depth, isSmart) {
+  parsePHPResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1190,7 +1194,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + '$' + name + ' = json_decode($resultJson, true); \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + '$' + name + ' = json_decode($resultJson, true); \n';
       },
 
       onParseParentEnd: function () {
@@ -1295,18 +1299,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-Go 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseGoResponse: function(name, resObj, depth, isSmart) {
+  parseGoResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1316,7 +1321,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -1413,18 +1418,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-Python 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parsePythonResponse: function(name, resObj, depth, isSmart) {
+  parsePythonResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1432,8 +1438,8 @@ var CodeUtil = {
 
     return CodeUtil.parseCode(name, resObj, {
 
-      onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + name + (isSmart ? '' : ': dict') + ' = json.loads(resultJson) \n';
+      onParseParentStart: function () { //解决生成多余的解析最外层的初始化代码
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + name + (isSmart ? '' : ': dict') + ' = json.loads(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -1461,7 +1467,7 @@ var CodeUtil = {
           return this.onParseJSONObject(key, value, index);
         }
 
-        var type = value == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value[0]);
+        var type = value == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
@@ -1483,7 +1489,8 @@ var CodeUtil = {
 
         var s = '\n' + padding + '#' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + k + (isSmart ? '' : ': list[' + type + ']') + ' = ' + name + '[' + quote + key + quote + ']'
+        //不支持 varname: list[int] 这种语法   s += padding + k + (isSmart ? '' : ': list[' + type + ']') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + k + (isSmart ? '' : ': list') + ' = ' + name + '[' + quote + key + quote + ']'
         s += padding + 'if ' + k + ' == None:';
         s += padding + '    ' + k + ' = []\n';
 
@@ -1532,18 +1539,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-TypeScript 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseTypeScriptResponse: function(name, resObj, depth, isSmart) {
+  parseTypeScriptResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1553,7 +1561,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = JSON.parse(resultJson); \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = JSON.parse(resultJson); \n';
       },
 
       onParseParentEnd: function () {
@@ -1652,17 +1660,18 @@ var CodeUtil = {
 
   /**生成 Android-Kotlin 解析 Response JSON 的代码
    * 不能像 Java 那样执行 {} 代码段里的代码，所以不能用 Java 那种代码段隔离的方式
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseKotlinResponse: function(name, resObj, depth, isTable, isSmart) {
+  parseKotlinResponse: function(name_, resObj, depth, isTable, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1673,7 +1682,7 @@ var CodeUtil = {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
         //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
       },
 
       onParseParentEnd: function () {
@@ -1816,19 +1825,20 @@ var CodeUtil = {
 
 
   /**生成 Android-Java 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isTable
    * @param isSmart
    * @return parseCode
    */
-  parseJavaResponse: function(name, resObj, depth, isTable, isSmart) {
+  parseJavaResponse: function(name_, resObj, depth, isTable, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1839,7 +1849,7 @@ var CodeUtil = {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
         //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
 
       onParseParentEnd: function () {
@@ -1976,17 +1986,18 @@ var CodeUtil = {
 
 
   /**生成 Unity3D-C# 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseCSharpResponse: function(name, resObj, depth) {
+  parseCSharpResponse: function(name_, resObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1994,7 +2005,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JObject ' + name + ' = JObject.Parse(resultJson);\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'JObject ' + name + ' = JObject.Parse(resultJson);\n';
       },
 
       onParseParentEnd: function () {
