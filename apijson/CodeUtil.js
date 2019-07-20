@@ -2688,7 +2688,7 @@ var CodeUtil = {
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+      console.log('parseGoEntity  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -2704,34 +2704,23 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parseGoEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
           + '\n *APIJSONAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\npackage apijson.demo.server.model;\n\n\n'
+          + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n@MethodAccess'
-          + '\npublic class ' + model + ' implements Serializable {'
-          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
+          + '\n//@MethodAccess'
+          + '\ntype ' + model + ' struct {';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
-
-          doc += '\n'
-            + '\n' + blank + 'public ' + model + '() {'
-            + '\n' + blank2 + 'super();'
-            + '\n' + blank + '}'
-            + '\n' + blank + 'public ' + model + '(long id) {'
-            + '\n' + blank2 + 'this();'
-            + '\n' + blank2 + 'setId(id);'
-            + '\n' + blank + '}'
-            + '\n\n'
+          console.log('parseGoEntity [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
           var name;
           var type;
@@ -2748,42 +2737,16 @@ var CodeUtil = {
             type = CodeUtil.isId(name, column.column_type) ? 'int64' : CodeUtil.getType4Language('Go', column.column_type, false);
 
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parseGoEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + name + ' ' + type + '  `json:"' + name + '"`  ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
-          doc += '\n\n'
-
-          for (var j = 0; j < columnList.length; j++) {
-            column = (columnList[j] || {}).Column;
-
-            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
-            if (name == '') {
-              continue;
-            }
-            column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-            //getter
-            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n' + blank2 + 'return ' + name + ';'
-              + '\n' + blank + '}';
-
-            //setter
-            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
-              + '\n' + blank2 + 'return this;'
-              + '\n' + blank + '}\n';
-
-          }
         }
 
-        doc += '\n\n}';
+        doc += '\n}';
 
       }
     }
@@ -3794,6 +3757,34 @@ var CodeUtil = {
     return 'Date' + length;
   },
   getType4Timestamp: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Timestamp';
+      case 'Swift':
+        return 'Timestamp';
+      case 'Kotlin':
+        return 'Timestamp';
+      case 'Objective-C':
+        return 'Timestamp';
+      case 'C#':
+        return 'Timestamp';
+      case 'PHP':
+        return 'Timestamp';
+      case 'Go':
+        return 'Time';
+        break;
+      case 'JavaScript':
+        return 'Timestamp';
+        break;
+      case 'TypeScript':
+        return 'Timestamp';
+        break;
+      case 'Python':
+        return 'Timestamp';
+        break;
+      default:
+        return 'Timestamp';
+    }
     return 'Timestamp' + length;
   },
   getType4Object: function (language, length) {
