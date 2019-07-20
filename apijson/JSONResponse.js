@@ -145,9 +145,9 @@ var JSONResponse = {
    * @param fullName
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = true, formatAt = true, formatHyphen = true, firstCase = true
    */
-  getVariableName(fullName) {
+  getVariableName(fullName, listSuffix) {
     if (JSONObject.isArrayKey(fullName)) {
-      fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), "list");
+      fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
     return JSONResponse.formatKey(fullName, true, true, true, true);
   },

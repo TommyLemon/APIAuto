@@ -917,7 +917,7 @@
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
                 break;
               case 'Python':
-                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0)
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0, isSingle)
                 break;
               default:
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
