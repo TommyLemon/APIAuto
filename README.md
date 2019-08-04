@@ -33,7 +33,7 @@
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br />
 [https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
 <br />
-然后在 APIJSONAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
+然后在 APIAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
 
 ### 使用登记
 <div style="float:left">
@@ -64,8 +64,8 @@
 TommyLemon：[https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
 QQ技术交流群：734652054（群2） 607020115（群1） 
 
-如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIJSONAuto/issues) 或 加群，交流技术，分享经验。<br >
-如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIJSONAuto/pulls)，感激不尽。
+如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIAuto/issues) 或 加群，交流技术，分享经验。<br >
+如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
 
 
 
