@@ -2013,7 +2013,7 @@
           'Access[]': {
             'count': 0,
             'Access': {
-              '@column': 'schema,name,alias,get,head,gets,heads,post,put,delete',
+              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
               'r0()': 'removeKey(alias)'
@@ -2119,7 +2119,7 @@
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
             doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
-              + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
+              + ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
               + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
             for (var i = 0; i < list.length; i++) {
@@ -2130,16 +2130,18 @@
               log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + (item.name + '(' + item.schema + ')')
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete))
-                + '  |  ' + (item.name + '(' + item.schema + ')');
+              doc += '\n' + (item.name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post), 1)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put), 1)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete), 1)
+                + '  |  ' + (item.name); //右上角设置指定了 Schema  + '(' + item.schema + ')');
             }
+
+            doc += ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
 
             doc += '\n' //避免没数据时表格显示没有网格
           }

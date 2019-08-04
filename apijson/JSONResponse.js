@@ -478,11 +478,21 @@ var JSONResponse = {
     return StringUtil.isEmpty(folder, true) ? name : folder + '/' + name;
   },
 
-  getShowString(arr) {
+  getShowString(arr, lineItemCount) {
     if (arr == null || arr.length <= 0) {
       return '';
     }
-    return arr.join();
+    if (lineItemCount == null || lineItemCount <= 0) {
+      return arr.join();
+    }
+
+    var s2 = '';
+    for (var i = 0; i < arr.length; i += lineItemCount) {
+      var lineArr = arr.slice(i, i < arr.length - lineItemCount ? (i + lineItemCount) : arr.length);
+      s2 += (i > 0 ? '<br/>' : '') + lineArr.join();
+    }
+
+    return s2;
   },
 
   log(msg) {
