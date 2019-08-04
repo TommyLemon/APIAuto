@@ -785,7 +785,8 @@
         var val = {
           name: App.history.name,
           url: '/' + this.getMethod(),
-          request: inputted
+          request: inputted,
+          header: vHeader.value
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -835,7 +836,8 @@
           App.showUrl(false, branch)
 
           App.showTestCase(false, App.isLocalShow)
-          vInput.value = item.request
+          vInput.value = StringUtil.get(item.request)
+          vHeader.value = StringUtil.get(item.header)
           App.onChange(false)
         })
       },
@@ -956,9 +958,10 @@
             }
 
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
-              + '\n\nURL: ' + vUrl.value
-              + '\n\nRequest:\n' + vInput.value
-              + '\n\n\nResponse:\n' + App.jsoncon
+              + '\n\n\nURL: ' + StringUtil.get(vUrl.value)
+              + '\n\n\nHeader:\n' + StringUtil.get(vHeader.value)
+              + '\n\n\nRequest:\n' + StringUtil.get(vInput.value)
+              + '\n\n\nResponse:\n' + StringUtil.get(App.jsoncon)
               + '\n\n\n## 解析 Response 的代码' + s
               , App.exTxt.name + '.txt')
           }
@@ -981,7 +984,8 @@
               'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
               'name': App.exTxt.name,
               'url': '/' + App.getMethod(),
-              'request': App.toDoubleJSON(inputted)
+              'request': App.toDoubleJSON(inputted),
+              'header': vHeader.value
             },
             'TestRecord': {
               'documentId@': '/Document/id',
@@ -2408,7 +2412,15 @@
           // App.onChange(false)
 
           const index = i
-          App.request(false, baseUrl + document.url, App.getRequest(document.request), document.header, function (url, res, err) {
+
+          var header = null
+          try {
+            header = App.getHeader(document.header)
+          } catch (e) {
+            App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
+          }
+
+          App.request(false, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
