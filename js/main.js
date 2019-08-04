@@ -574,14 +574,16 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf(':')
+            var index = item.indexOf('//') //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var item2 = index < 0 ? item : item.substring(0, index)
+
+            index = item2.indexOf(':')
             if (index <= 0) {
-              vHeader.select()
               throw new Error('请求头 Request Header 输入错误！请按照每行 key:value 的格式输入，不要有多余的换行或空格！'
-                + '\n错误位置：第 ' + (i + 1) + ' 行'
+                + '\n错误位置: 第 ' + (i + 1) + ' 行'
                 + '\n错误文本: ' + item)
             }
-            header[item.substring(0, index)] = item.substring(index + 1, item.length)
+            header[item2.substring(0, index)] = item2.substring(index + 1, item2.length)
           }
         }
 
@@ -1585,6 +1587,7 @@
           try {
             this.header = this.getHeader(vHeader.value)
           } catch (e2) {
+            vHeader.select()
             throw new Error(e2.message)
           }
 
@@ -1736,13 +1739,6 @@
           alert('请先输入请求内容！')
           return
         }
-        var header
-        try {
-          header = this.getHeader(vHeader.value)
-        } catch (e) {
-          alert(e.message)
-          return
-        }
 
         if (StringUtil.isEmpty(App.host, true)) {
           if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
@@ -1759,7 +1755,16 @@
 
         clearTimeout(handler)
 
+        var header
+        try {
+          header = this.getHeader(vHeader.value)
+        } catch (e) {
+          // alert(e.message)
+          return
+        }
+
         var req = this.getRequest(vInput.value)
+
 
         var url = StringUtil.get(this.host) + new String(vUrl.value)
         url = url.replace(/ /g, '')

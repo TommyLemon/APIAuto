@@ -100,9 +100,9 @@
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">付费功能: <br/>接口用例托管、机器学习测试 等</a>
 
                   <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
-                    <div style="margin-top: 10px">微信扫码充值<br />没有账号会帮你创建</div>
-                    <img src="img/wechat_collect.jpg" />
-                    <div style="margin-bottom: 10px">备注填: APIJSON+你的手机号</div>
+                    <div style="margin-top: 5px;margin-bottom: 0px">微信扫码充值<br />备注填: APIJSON+你的手机号</div>
+                    <img style="padding: 0px;margin: 0px" src="img/wechat_collect.jpg" />
+                    <div style="margin-top: 0px;margin-bottom: 5px">没有账号会帮你创建</div>
                   </li>
                 </ul>
       </span>
@@ -179,14 +179,14 @@
         </div>
         <div v-show="isHeaderShow" style="width: 100%; height: 30%; position: absolute;bottom: 0px; z-index: 100; background: white;" >
           <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-            <a style="padding: 10px;display: flex;flex-grow: 1;font-size: medium;color: black" >请求头 Request Header(按 key: value 换行分隔)</a>
+            <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key: value 格式)</a></a>
             <a  class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
               <svg class="icon close-icon"  >
                 <use xlink:href="svg/icon.svg#close"></use>
               </svg>
             </a>
           </div>
-          <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization:Basic YWRtaW46YWRtaW4="></textarea>
+          <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization:Basic YWRtaW46YWRtaW4=  //示例，支持单行注释"></textarea>
         </div>
       </div>
     </div>
