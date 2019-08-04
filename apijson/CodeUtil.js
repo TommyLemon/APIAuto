@@ -2711,9 +2711,9 @@ var CodeUtil = {
           + '\n *APIJSONAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\npackage apijson.demo.server.model\n\n\n'
+          + '\npackage model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n//@MethodAccess'
+          + '\n// @MethodAccess'
           + '\ntype ' + model + ' struct {';
 
         //Column[]
@@ -3720,6 +3720,9 @@ var CodeUtil = {
     }
   },
   getType4Decimal: function (language, length) {
+    if (language == 'Go') {
+      return 'float64'
+    }
     return 'BigDecimal' + length;
   },
   getType4String: function (language, length) {
@@ -3754,6 +3757,9 @@ var CodeUtil = {
     }
   },
   getType4Date: function (language, length) {
+    if (language == 'Go') {
+      return 'time.Time'
+    }
     return 'Date' + length;
   },
   getType4Timestamp: function (language, length) {
@@ -3771,7 +3777,7 @@ var CodeUtil = {
       case 'PHP':
         return 'Timestamp';
       case 'Go':
-        return 'Time';
+        return 'time.Time';
         break;
       case 'JavaScript':
         return 'Timestamp';
