@@ -1941,8 +1941,9 @@
         s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIJSONAuto '
+          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+          + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
           + '\nAPIJSON -Java版: https://github.com/TommyLemon/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '

@@ -1,4 +1,4 @@
-/*Copyright ©2017 TommyLemon(https://github.com/TommyLemon/APIJSONAuto)
+/*Copyright ©2017 TommyLemon(https://github.com/TommyLemon/APIAuto)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use StringUtil file except in compliance with the License.
