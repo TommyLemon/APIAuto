@@ -339,6 +339,7 @@
       isSaveShow: false,
       isExportShow: false,
       isTestCaseShow: false,
+      isHeaderShow: true,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
@@ -370,7 +371,8 @@
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
-      language: 'Java'
+      language: 'Java',
+      header: {}
     },
     methods: {
 
@@ -564,6 +566,27 @@
           return jsonlint.parse(App.removeComment(s));
         }
       },
+      getHeader: function (text) {
+        var header = {}
+        var hs = StringUtil.isEmpty(text, true) ? null : StringUtil.split(text, '\n')
+
+        if (hs != null && hs.length > 0) {
+          var item
+          for (var i = 0; i < hs.length; i++) {
+            item = hs[i]
+            var index = item.indexOf(':')
+            if (index <= 0) {
+              vHeader.select()
+              throw new Error('请求头 Request Header 输入错误！请按照每行 key:value 的格式输入，不要有多余的换行或空格！'
+                + '\n错误位置：第 ' + (i + 1) + ' 行'
+                + '\n错误文本: ' + item)
+            }
+            header[item.substring(0, index)] = item.substring(index + 1, item.length)
+          }
+        }
+
+        return header
+      },
 
       // 显示保存弹窗
       showSave: function (show) {
@@ -660,7 +683,7 @@
             case 0:
             case 1:
             case 2:
-            case 4:
+            case 5:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
 
@@ -675,10 +698,13 @@
               App.host = App.getBaseUrl()
               App.showUrl(false, new String(vUrl.value).substring(App.host.length)) //没必要导致必须重新获取 Response，App.onChange(false)
               break
-            case 5:
-              App.getCurrentUser(true)
+            case 4:
+              App.isHeaderShow = show
               break
             case 6:
+              App.getCurrentUser(true)
+              break
+            case 7:
               App.showAndSend('/get', {
                 'Goods[]': {
                   'count': 0,
@@ -697,6 +723,9 @@
           vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = App.host (http://apijson.cn:8080/put /balance)
           App.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
           App.showUrl(false, branch) //没必要导致必须重新获取 Response，App.onChange(false)
+        }
+        else if (index == 4) {
+          App.isHeaderShow = show
         }
       },
 
@@ -733,7 +762,7 @@
           },
           'tag': 'Document'
         }
-        this.request(true, url, req, function (url, res, err) {
+        this.request(true, url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data
@@ -960,7 +989,7 @@
             'tag': 'Document'
           }
 
-          App.request(true, url, req, function (url, res, err) {
+          App.request(true, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1176,7 +1205,7 @@
           }
 
           App.onChange(false)
-          App.request(true, url, req, function (url, res, err) {
+          App.request(true, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1282,7 +1311,7 @@
         }
 
         if (isAdminOperation) {
-          App.request(isAdminOperation, App.server + '/login', req, function (url, res, err) {
+          App.request(isAdminOperation, App.server + '/login', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1312,7 +1341,7 @@
                   'id': user.id
                 },
                 'tag': 'Privacy'
-              }, function (url, res, err) {
+              }, {}, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code == 200 && data.Privacy != null) {
                   App.Privacy = data.Privacy
@@ -1453,7 +1482,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, App.server + '/logout', req, function (url, res, err) {
+          this.request(isAdminOperation, App.server + '/logout', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1553,6 +1582,12 @@
 
         //格式化输入代码
         try {
+          try {
+            this.header = this.getHeader(vHeader.value)
+          } catch (e2) {
+            throw new Error(e2.message)
+          }
+
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
@@ -1566,8 +1601,13 @@
           catch (e) {
             log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
             log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-            afterObj = jsonlint.parse(App.removeComment(before));
-            after = JSON.stringify(afterObj, null, "    ");
+
+            try {
+              afterObj = jsonlint.parse(App.removeComment(before));
+              after = JSON.stringify(afterObj, null, "    ");
+            } catch (e2) {
+              throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+            }
           }
 
           //关键词let在IE和Safari上不兼容
@@ -1623,7 +1663,7 @@
 
           App.view = 'error'
           App.error = {
-            msg: 'JSON格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e.message
+            msg: e.message
           }
         }
       },
@@ -1696,6 +1736,14 @@
           alert('请先输入请求内容！')
           return
         }
+        var header
+        try {
+          header = this.getHeader(vHeader.value)
+        } catch (e) {
+          alert(e.message)
+          return
+        }
+
         if (StringUtil.isEmpty(App.host, true)) {
           if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
             alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n可能使用同域的 Host，很可能访问出错！')
@@ -1709,9 +1757,9 @@
 
         this.onHandle(vInput.value)
 
-        clearTimeout(handler);
+        clearTimeout(handler)
 
-        var req = this.getRequest(vInput.value);
+        var req = this.getRequest(vInput.value)
 
         var url = StringUtil.get(this.host) + new String(vUrl.value)
         url = url.replace(/ /g, '')
@@ -1722,7 +1770,7 @@
 
 
         this.setBaseUrl()
-        this.request(isAdminOperation, url, req, callback)
+        this.request(isAdminOperation, url, req, isAdminOperation ? {} : header, callback)
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
@@ -1734,19 +1782,21 @@
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
-            'request': JSON.stringify(req, null, '    ')
+            'request': JSON.stringify(req, null, '    '),
+            'header': JSON.stringify(header, null, '    ')
           }
         })
         App.saveCache('', 'locals', this.locals)
       },
 
       //请求
-      request: function (isAdminOperation, url, req, callback) {
+      request: function (isAdminOperation, url, req, header, callback) {
         // axios.defaults.withcredentials = true
         axios({
           method: 'post',
           url: StringUtil.noBlank(url),
           data: req,
+          headers: header,
           withCredentials: true
         })
           .then(function (res) {
@@ -1918,7 +1968,6 @@
        */
       getDoc: function (callback) {
 
-
         App.request(false, this.getBaseUrl() + '/get', {
           '@database': App.database,
           '[]': {
@@ -1978,7 +2027,7 @@
               '@order': 'version-,method-'
             }
           }
-        }, function (url, res, err) {
+        }, {}, function (url, res, err) {
           if (err != null || res == null || res.data == null) {
             log('getDoc  err != null || res == null || res.data == null >> return;');
             return;
@@ -2354,7 +2403,7 @@
           // App.onChange(false)
 
           const index = i
-          App.request(false, baseUrl + document.url, App.getRequest(document.request), function (url, res, err) {
+          App.request(false, baseUrl + document.url, App.getRequest(document.request), document.header, function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -2385,7 +2434,7 @@
           App.request(false, App.server + '/get/testcompare/ml', {
             "documentId": d.id,
             "response": releaseResponse
-          }, function (url, res, err) {
+          }, {}, function (url, res, err) {
             var data = res.data || {}
             if (data.code != 200) {
               App.onResponse(url, res, err)
@@ -2542,7 +2591,7 @@
               tag: 'TestRecord'
             }
 
-            App.request(true, url, req, function (url, res, err) {
+            App.request(true, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -2574,7 +2623,7 @@
               }
             }
 
-            App.request(true, url, req, function (url, res, err) {
+            App.request(true, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -2616,7 +2665,7 @@
             '@order': 'date-',
             '@column': 'id,userId,documentId,response'
           }
-        }, function (url, res, err) {
+        }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var data = (res || {}).data || {}
