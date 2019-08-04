@@ -339,6 +339,7 @@
       isSaveShow: false,
       isExportShow: false,
       isTestCaseShow: false,
+      isHeaderShow: true,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
@@ -370,7 +371,8 @@
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
       server: 'http://vip.apijson.org',
-      language: 'Java'
+      language: 'Java',
+      header: {}
     },
     methods: {
 
@@ -564,6 +566,29 @@
           return jsonlint.parse(App.removeComment(s));
         }
       },
+      getHeader: function (text) {
+        var header = {}
+        var hs = StringUtil.isEmpty(text, true) ? null : StringUtil.split(text, '\n')
+
+        if (hs != null && hs.length > 0) {
+          var item
+          for (var i = 0; i < hs.length; i++) {
+            item = hs[i]
+            var index = item.indexOf('//') //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var item2 = index < 0 ? item : item.substring(0, index)
+
+            index = item2.indexOf(':')
+            if (index <= 0) {
+              throw new Error('请求头 Request Header 输入错误！请按照每行 key:value 的格式输入，不要有多余的换行或空格！'
+                + '\n错误位置: 第 ' + (i + 1) + ' 行'
+                + '\n错误文本: ' + item)
+            }
+            header[item2.substring(0, index)] = item2.substring(index + 1, item2.length)
+          }
+        }
+
+        return header
+      },
 
       // 显示保存弹窗
       showSave: function (show) {
@@ -660,7 +685,7 @@
             case 0:
             case 1:
             case 2:
-            case 4:
+            case 5:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
 
@@ -675,10 +700,13 @@
               App.host = App.getBaseUrl()
               App.showUrl(false, new String(vUrl.value).substring(App.host.length)) //没必要导致必须重新获取 Response，App.onChange(false)
               break
-            case 5:
-              App.getCurrentUser(true)
+            case 4:
+              App.isHeaderShow = show
               break
             case 6:
+              App.getCurrentUser(true)
+              break
+            case 7:
               App.showAndSend('/get', {
                 'Goods[]': {
                   'count': 0,
@@ -697,6 +725,9 @@
           vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = App.host (http://apijson.cn:8080/put /balance)
           App.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
           App.showUrl(false, branch) //没必要导致必须重新获取 Response，App.onChange(false)
+        }
+        else if (index == 4) {
+          App.isHeaderShow = show
         }
       },
 
@@ -733,7 +764,7 @@
           },
           'tag': 'Document'
         }
-        this.request(true, url, req, function (url, res, err) {
+        this.request(true, url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data
@@ -754,7 +785,8 @@
         var val = {
           name: App.history.name,
           url: '/' + this.getMethod(),
-          request: inputted
+          request: inputted,
+          header: vHeader.value
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -804,7 +836,8 @@
           App.showUrl(false, branch)
 
           App.showTestCase(false, App.isLocalShow)
-          vInput.value = item.request
+          vInput.value = StringUtil.get(item.request)
+          vHeader.value = StringUtil.get(item.header)
           App.onChange(false)
         })
       },
@@ -917,7 +950,7 @@
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
                 break;
               case 'Python':
-                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0)
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0, isSingle)
                 break;
               default:
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
@@ -925,9 +958,10 @@
             }
 
             saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
-              + '\n\nURL: ' + vUrl.value
-              + '\n\nRequest:\n' + vInput.value
-              + '\n\n\nResponse:\n' + App.jsoncon
+              + '\n\n\nURL: ' + StringUtil.get(vUrl.value)
+              + '\n\n\nHeader:\n' + StringUtil.get(vHeader.value)
+              + '\n\n\nRequest:\n' + StringUtil.get(vInput.value)
+              + '\n\n\nResponse:\n' + StringUtil.get(App.jsoncon)
               + '\n\n\n## 解析 Response 的代码' + s
               , App.exTxt.name + '.txt')
           }
@@ -950,7 +984,8 @@
               'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
               'name': App.exTxt.name,
               'url': '/' + App.getMethod(),
-              'request': App.toDoubleJSON(inputted)
+              'request': App.toDoubleJSON(inputted),
+              'header': vHeader.value
             },
             'TestRecord': {
               'documentId@': '/Document/id',
@@ -960,7 +995,7 @@
             'tag': 'Document'
           }
 
-          App.request(true, url, req, function (url, res, err) {
+          App.request(true, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1176,7 +1211,7 @@
           }
 
           App.onChange(false)
-          App.request(true, url, req, function (url, res, err) {
+          App.request(true, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1282,7 +1317,7 @@
         }
 
         if (isAdminOperation) {
-          App.request(isAdminOperation, App.server + '/login', req, function (url, res, err) {
+          App.request(isAdminOperation, App.server + '/login', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1312,7 +1347,7 @@
                   'id': user.id
                 },
                 'tag': 'Privacy'
-              }, function (url, res, err) {
+              }, {}, function (url, res, err) {
                 var data = res.data || {}
                 if (data.code == 200 && data.Privacy != null) {
                   App.Privacy = data.Privacy
@@ -1453,7 +1488,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, App.server + '/logout', req, function (url, res, err) {
+          this.request(isAdminOperation, App.server + '/logout', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1553,6 +1588,13 @@
 
         //格式化输入代码
         try {
+          try {
+            this.header = this.getHeader(vHeader.value)
+          } catch (e2) {
+            vHeader.select()
+            throw new Error(e2.message)
+          }
+
           before = App.toDoubleJSON(before);
           log('onHandle  before = \n' + before);
 
@@ -1566,8 +1608,13 @@
           catch (e) {
             log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
             log('main.onHandle', 'return jsonlint.parse(App.removeComment(before));')
-            afterObj = jsonlint.parse(App.removeComment(before));
-            after = JSON.stringify(afterObj, null, "    ");
+
+            try {
+              afterObj = jsonlint.parse(App.removeComment(before));
+              after = JSON.stringify(afterObj, null, "    ");
+            } catch (e2) {
+              throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+            }
           }
 
           //关键词let在IE和Safari上不兼容
@@ -1623,7 +1670,7 @@
 
           App.view = 'error'
           App.error = {
-            msg: 'JSON格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e.message
+            msg: e.message
           }
         }
       },
@@ -1696,6 +1743,7 @@
           alert('请先输入请求内容！')
           return
         }
+
         if (StringUtil.isEmpty(App.host, true)) {
           if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
             alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n可能使用同域的 Host，很可能访问出错！')
@@ -1709,9 +1757,18 @@
 
         this.onHandle(vInput.value)
 
-        clearTimeout(handler);
+        clearTimeout(handler)
 
-        var req = this.getRequest(vInput.value);
+        var header
+        try {
+          header = this.getHeader(vHeader.value)
+        } catch (e) {
+          // alert(e.message)
+          return
+        }
+
+        var req = this.getRequest(vInput.value)
+
 
         var url = StringUtil.get(this.host) + new String(vUrl.value)
         url = url.replace(/ /g, '')
@@ -1722,7 +1779,7 @@
 
 
         this.setBaseUrl()
-        this.request(isAdminOperation, url, req, callback)
+        this.request(isAdminOperation, url, req, isAdminOperation ? {} : header, callback)
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
@@ -1734,19 +1791,21 @@
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
-            'request': JSON.stringify(req, null, '    ')
+            'request': JSON.stringify(req, null, '    '),
+            'header': JSON.stringify(header, null, '    ')
           }
         })
         App.saveCache('', 'locals', this.locals)
       },
 
       //请求
-      request: function (isAdminOperation, url, req, callback) {
+      request: function (isAdminOperation, url, req, header, callback) {
         // axios.defaults.withcredentials = true
         axios({
           method: 'post',
           url: StringUtil.noBlank(url),
           data: req,
+          headers: header,
           withCredentials: true
         })
           .then(function (res) {
@@ -1918,7 +1977,6 @@
        */
       getDoc: function (callback) {
 
-
         App.request(false, this.getBaseUrl() + '/get', {
           '@database': App.database,
           '[]': {
@@ -1955,7 +2013,7 @@
           'Access[]': {
             'count': 0,
             'Access': {
-              '@column': 'schema,name,alias,get,head,gets,heads,post,put,delete',
+              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
               'r0()': 'removeKey(alias)'
@@ -1978,7 +2036,7 @@
               '@order': 'version-,method-'
             }
           }
-        }, function (url, res, err) {
+        }, {}, function (url, res, err) {
           if (err != null || res == null || res.data == null) {
             log('getDoc  err != null || res == null || res.data == null >> return;');
             return;
@@ -2061,7 +2119,7 @@
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
 
             doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
-              + ' \n 表名(Schema)  |  允许 get 的角色  |  允许 head 的角色  |  允许 gets 的角色  |  允许 heads 的角色  |  允许 post 的角色  |  允许 put 的角色  |  允许 delete 的角色  |  表名(Schema)'
+              + ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
               + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
             for (var i = 0; i < list.length; i++) {
@@ -2072,16 +2130,18 @@
               log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
 
 
-              doc += '\n' + (item.name + '(' + item.schema + ')')
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put))
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete))
-                + '  |  ' + (item.name + '(' + item.schema + ')');
+              doc += '\n' + (item.name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads), 2)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post), 1)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put), 1)
+                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete), 1)
+                + '  |  ' + (item.name); //右上角设置指定了 Schema  + '(' + item.schema + ')');
             }
+
+            doc += ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
 
             doc += '\n' //避免没数据时表格显示没有网格
           }
@@ -2354,7 +2414,15 @@
           // App.onChange(false)
 
           const index = i
-          App.request(false, baseUrl + document.url, App.getRequest(document.request), function (url, res, err) {
+
+          var header = null
+          try {
+            header = App.getHeader(document.header)
+          } catch (e) {
+            App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
+          }
+
+          App.request(false, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -2385,7 +2453,7 @@
           App.request(false, App.server + '/get/testcompare/ml', {
             "documentId": d.id,
             "response": releaseResponse
-          }, function (url, res, err) {
+          }, {}, function (url, res, err) {
             var data = res.data || {}
             if (data.code != 200) {
               App.onResponse(url, res, err)
@@ -2542,7 +2610,7 @@
               tag: 'TestRecord'
             }
 
-            App.request(true, url, req, function (url, res, err) {
+            App.request(true, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -2574,7 +2642,7 @@
               }
             }
 
-            App.request(true, url, req, function (url, res, err) {
+            App.request(true, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -2616,7 +2684,7 @@
             '@order': 'date-',
             '@column': 'id,userId,documentId,response'
           }
-        }, function (url, res, err) {
+        }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var data = (res || {}).data || {}

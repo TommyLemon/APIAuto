@@ -813,25 +813,26 @@ var CodeUtil = {
 
 
   /**生成 iOS-Swift 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseSwiftResponse: function(name, resObj, depth, isSmart) {
+  parseSwiftResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
       },
 
       onParseParentEnd: function () {
@@ -935,24 +936,25 @@ var CodeUtil = {
 
 
   /**生成 iOS-Objective-C 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseObjectiveCResponse: function(name, resObj, depth) {
+  parseObjectiveCResponse: function(name_, resObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
       },
 
       onParseParentEnd: function () {
@@ -1051,18 +1053,19 @@ var CodeUtil = {
 
 
   /**生成 Web-JavaScript 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseJavaScriptResponse: function(name, resObj, depth, isSmart) {
+  parseJavaScriptResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1072,7 +1075,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -1169,18 +1172,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-PHP 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parsePHPResponse: function(name, resObj, depth, isSmart) {
+  parsePHPResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1190,7 +1194,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + '$' + name + ' = json_decode($resultJson, true); \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + '$' + name + ' = json_decode($resultJson, true); \n';
       },
 
       onParseParentEnd: function () {
@@ -1295,28 +1299,31 @@ var CodeUtil = {
   },
 
   /**生成 Web-Go 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseGoResponse: function(name, resObj, depth, isSmart) {
+  parseGoResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
-    var varKey = isSmart ? 'let' : 'var'
-    var quote = isSmart ? "'" : '"'
+    var quote = '"'
 
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false
+          ? ''
+          : CodeUtil.getBlank(depth) + name + ' := map[string]interface{} {} \n'
+          + CodeUtil.getBlank(depth) + 'json.NewDecoder(bytes.NewBuffer(response.Body)).Decode(&' + name + ') \n';
       },
 
       onParseParentEnd: function () {
@@ -1334,22 +1341,22 @@ var CodeUtil = {
       onParseChildOther: function (key, value, index) {
 
         if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parsePHPResponse  for typeof value === "array" >>  ' );
+          log(CodeUtil.TAG, 'parseGoResponse  for typeof value === "array" >>  ' );
 
           return this.onParseJSONArray(key, value, index);
         }
         if (value instanceof Object) {
-          log(CodeUtil.TAG, 'parsePHPResponse  for typeof value === "array" >>  ' );
+          log(CodeUtil.TAG, 'parseGoResponse  for typeof value === "array" >>  ' );
 
           return this.onParseJSONObject(key, value, index);
         }
 
+        var type = CodeUtil.getGoTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + varName + ' = ' + name
-          + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
+        return padding + varName + ' := ' + name + '[' + quote + key + quote + '].(' + type + ')'
+          + padding + 'log.Println("' + name + '.' + varName + ' = " + string(' + varName + '))';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1362,28 +1369,30 @@ var CodeUtil = {
         var itemName = 'item' + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = value[0] == null ? 'interface{}' : CodeUtil.getGoTypeFromJS(key, value[0]);
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || []';
+        s += padding + k + ' := ' + name + '[' + quote + key + quote + '].([]interface{})'
+        s += padding + 'if ' + k + ' == nil {';
+        s += padding + '    ' + k + ' = []interface{} {}';
+        s += padding + '}\n';
 
         s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + varKey + ' ' + itemName;
-
         var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += padding + 'for (' + varKey + ' ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.length; ' + indexName + '++) {';
+        s += padding + 'for ' + indexName + ' := range ' + k + ' {'; // let i in arr; let item of arr
 
-        s += innerPadding + itemName + ' = ' + k + '[' + indexName + ']';
-        s += innerPadding + 'if (' + itemName + ' == null) {';
+        s += innerPadding + itemName + ' := ' + k + '[' + indexName + '].(' + type + ')';
+        s += innerPadding + 'if ' + itemName + ' == nil {';
         s += innerPadding + '    continue';
         s += innerPadding + '}';
-        s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
+        s += innerPadding + 'log.Println("\\n' + itemName + ' = ' + k + '[" + string(' + indexName + ') + "] = \\n" + string(' + itemName + ') + "\\n\\n"' + ')';
         s += innerPadding + '//TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parsePHPResponse(itemName, value[0], depth + 1, isSmart);
+          s += CodeUtil.parseGoResponse(itemName, value[0], depth + 1, isSmart);
         }
         // }
 
@@ -1400,9 +1409,12 @@ var CodeUtil = {
 
         var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || {} \n'
+        s += padding + k + ' := ' + name + '[' + quote + key + quote + '].(map[string]interface{})'
+        s += padding + 'if ' + k + ' == nil {';
+        s += padding + '    ' + k + ' = map[string]interface{} {}';
+        s += padding + '}\n';
 
-        s += CodeUtil.parsePHPResponse(k, value, depth, isSmart);
+        s += CodeUtil.parseGoResponse(k, value, depth, isSmart);
 
         s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -1412,29 +1424,30 @@ var CodeUtil = {
 
   },
 
-  /**生成 Web-PHP 解析 Response JSON 的代码
-   * @param name
+
+  /**生成 Web-Python 解析 Response JSON 的代码
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parsePythonResponse: function(name, resObj, depth, isSmart) {
+  parsePythonResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
-    var varKey = isSmart ? 'let' : 'var'
-    var quote = isSmart ? "'" : '"'
+    var quote = "'";
 
     return CodeUtil.parseCode(name, resObj, {
 
-      onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+      onParseParentStart: function () { //解决生成多余的解析最外层的初始化代码
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + name + (isSmart ? '' : ': dict') + ' = json.loads(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -1452,22 +1465,22 @@ var CodeUtil = {
       onParseChildOther: function (key, value, index) {
 
         if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parsePHPResponse  for typeof value === "array" >>  ' );
+          log(CodeUtil.TAG, 'parsePythonResponse  for typeof value === "array" >>  ' );
 
           return this.onParseJSONArray(key, value, index);
         }
         if (value instanceof Object) {
-          log(CodeUtil.TAG, 'parsePHPResponse  for typeof value === "array" >>  ' );
+          log(CodeUtil.TAG, 'parsePythonResponse  for typeof value === "array" >>  ' );
 
           return this.onParseJSONObject(key, value, index);
         }
 
+        var type = value == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
-        return padding + varKey + ' ' + varName + ' = ' + name
-          + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']')
-          + padding + 'console.log("' + name + '.' + varName + ' = " + ' + varName + ')';
+        return padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + name + '[' + quote + key + quote + ']'
+          + padding + 'print(\'' + name + '.' + varName + ' = \' + str(' + varName + '))';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -1476,38 +1489,39 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var innerPadding = padding + CodeUtil.getBlank(1);
 
-        var k = JSONResponse.getVariableName(key);
+        var k = JSONResponse.getVariableName(key, 'array');
         var itemName = 'item' + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+        var type = value[0] == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value[0]);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '#' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || []';
+        //不支持 varname: list[int] 这种语法   s += padding + k + (isSmart ? '' : ': list[' + type + ']') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + k + (isSmart ? '' : ': list') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + 'if ' + k + ' == None:';
+        s += padding + '    ' + k + ' = []\n';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '#TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
-        s += padding + varKey + ' ' + itemName;
+        s += padding + itemName + (isSmart ? '' : ': ' + type) + ' = None';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += padding + 'for (' + varKey + ' ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.length; ' + indexName + '++) {';
+        s += padding + 'for ' + indexName + ' in range(len(' + k + ')):'; // let i in arr; let item of arr
 
         s += innerPadding + itemName + ' = ' + k + '[' + indexName + ']';
-        s += innerPadding + 'if (' + itemName + ' == null) {';
+        s += innerPadding + 'if ' + itemName + ' == None:';
         s += innerPadding + '    continue';
-        s += innerPadding + '}';
-        s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + 'print(\'\\n' + itemName + ' = ' + k + '[\' + str(' + indexName + ') + \'] = \\n\' + str(' + itemName + ') + \'\\n\\n\'' + ')';
+        s += innerPadding + '#TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parsePHPResponse(itemName, value[0], depth + 1, isSmart);
+          s += CodeUtil.parsePythonResponse(itemName, value[0], depth + 1, isSmart);
         }
         // }
 
-        s += padding + '}';
-
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '#' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1516,13 +1530,15 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '#' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || {} \n'
+        s += padding + k + (isSmart ? '' : ': dict') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + 'if ' + k + ' == None:';
+        s += padding + '    ' + k + ' = {}\n';
 
-        s += CodeUtil.parsePHPResponse(k, value, depth, isSmart);
+        s += CodeUtil.parsePythonResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '#' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1531,18 +1547,19 @@ var CodeUtil = {
   },
 
   /**生成 Web-TypeScript 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isSmart
    * @return parseCode
    */
-  parseTypeScriptResponse: function(name, resObj, depth, isSmart) {
+  parseTypeScriptResponse: function(name_, resObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
 
@@ -1552,7 +1569,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = JSON.parse(resultJson); \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = JSON.parse(resultJson); \n';
       },
 
       onParseParentEnd: function () {
@@ -1651,17 +1668,18 @@ var CodeUtil = {
 
   /**生成 Android-Kotlin 解析 Response JSON 的代码
    * 不能像 Java 那样执行 {} 代码段里的代码，所以不能用 Java 那种代码段隔离的方式
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseKotlinResponse: function(name, resObj, depth, isTable, isSmart) {
+  parseKotlinResponse: function(name_, resObj, depth, isTable, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1672,7 +1690,7 @@ var CodeUtil = {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
         //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
       },
 
       onParseParentEnd: function () {
@@ -1815,19 +1833,20 @@ var CodeUtil = {
 
 
   /**生成 Android-Java 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @param isTable
    * @param isSmart
    * @return parseCode
    */
-  parseJavaResponse: function(name, resObj, depth, isTable, isSmart) {
+  parseJavaResponse: function(name_, resObj, depth, isTable, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1838,7 +1857,7 @@ var CodeUtil = {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
         //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
 
       onParseParentEnd: function () {
@@ -1975,17 +1994,18 @@ var CodeUtil = {
 
 
   /**生成 Unity3D-C# 解析 Response JSON 的代码
-   * @param name
+   * @param name_
    * @param resObj
    * @param depth
    * @return parseCode
    */
-  parseCSharpResponse: function(name, resObj, depth) {
+  parseCSharpResponse: function(name_, resObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    if (name == null || name == '') {
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
       name = 'response';
     }
     var blank = CodeUtil.getBlank(1);
@@ -1993,7 +2013,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JObject ' + name + ' = JObject.Parse(resultJson);\n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'JObject ' + name + ' = JObject.Parse(resultJson);\n';
       },
 
       onParseParentEnd: function () {
@@ -2668,7 +2688,7 @@ var CodeUtil = {
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+      console.log('parseGoEntity  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -2684,34 +2704,23 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parseGoEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
           + '\n *APIJSONAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIJSONAuto'
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\npackage apijson.demo.server.model;\n\n\n'
+          + '\npackage model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n@MethodAccess'
-          + '\npublic class ' + model + ' implements Serializable {'
-          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
+          + '\n// @MethodAccess'
+          + '\ntype ' + model + ' struct {';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
-
-          doc += '\n'
-            + '\n' + blank + 'public ' + model + '() {'
-            + '\n' + blank2 + 'super();'
-            + '\n' + blank + '}'
-            + '\n' + blank + 'public ' + model + '(long id) {'
-            + '\n' + blank2 + 'this();'
-            + '\n' + blank2 + 'setId(id);'
-            + '\n' + blank + '}'
-            + '\n\n'
+          console.log('parseGoEntity [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
           var name;
           var type;
@@ -2728,42 +2737,16 @@ var CodeUtil = {
             type = CodeUtil.isId(name, column.column_type) ? 'int64' : CodeUtil.getType4Language('Go', column.column_type, false);
 
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parseGoEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+            doc += '\n' + blank + name + ' ' + type + '  `json:"' + name + '"`  ' + CodeUtil.getComment((o || {}).column_comment, false);
 
           }
 
-          doc += '\n\n'
-
-          for (var j = 0; j < columnList.length; j++) {
-            column = (columnList[j] || {}).Column;
-
-            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
-            if (name == '') {
-              continue;
-            }
-            column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-            //getter
-            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n' + blank2 + 'return ' + name + ';'
-              + '\n' + blank + '}';
-
-            //setter
-            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
-              + '\n' + blank2 + 'return this;'
-              + '\n' + blank + '}\n';
-
-          }
         }
 
-        doc += '\n\n}';
+        doc += '\n}';
 
       }
     }
@@ -3491,6 +3474,52 @@ var CodeUtil = {
     return 'NSObject';
   },
 
+  getPythonTypeFromJS: function (key, value) {
+    if (typeof value == 'boolean') {
+      return 'bool';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return 'double';
+      }
+      return 'int';
+    }
+    if (typeof value == 'string') {
+      return 'str';
+    }
+    if (value instanceof Array) {
+      return 'list';
+    }
+    if (value instanceof Object) {
+      return 'dict';
+    }
+
+    return 'any';
+  },
+
+  getGoTypeFromJS: function (key, value) {
+    if (typeof value == 'boolean') {
+      return 'bool';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return 'double';
+      }
+      return 'int';
+    }
+    if (typeof value == 'string') {
+      return 'string';
+    }
+    if (value instanceof Array) {
+      return '[]interface{}';
+    }
+    if (value instanceof Object) {
+      return 'map[string]interface{}';
+    }
+
+    return 'map[string]interface{}';
+  },
+
   getColumnType: function (column, database) {
     if (column == null) {
       return 'text';
@@ -3606,7 +3635,7 @@ var CodeUtil = {
         return 'object' + length;
         break;
       case 'Python':
-        return 'dictionary' + length;
+        return 'any' + length;
         break;
       default:
         return 'Object' + length;
@@ -3691,6 +3720,9 @@ var CodeUtil = {
     }
   },
   getType4Decimal: function (language, length) {
+    if (language == 'Go') {
+      return 'float64'
+    }
     return 'BigDecimal' + length;
   },
   getType4String: function (language, length) {
@@ -3725,9 +3757,40 @@ var CodeUtil = {
     }
   },
   getType4Date: function (language, length) {
+    if (language == 'Go') {
+      return 'time.Time'
+    }
     return 'Date' + length;
   },
   getType4Timestamp: function (language, length) {
+    switch (language) {
+      case 'Java':
+        return 'Timestamp';
+      case 'Swift':
+        return 'Timestamp';
+      case 'Kotlin':
+        return 'Timestamp';
+      case 'Objective-C':
+        return 'Timestamp';
+      case 'C#':
+        return 'Timestamp';
+      case 'PHP':
+        return 'Timestamp';
+      case 'Go':
+        return 'time.Time';
+        break;
+      case 'JavaScript':
+        return 'Timestamp';
+        break;
+      case 'TypeScript':
+        return 'Timestamp';
+        break;
+      case 'Python':
+        return 'Timestamp';
+        break;
+      default:
+        return 'Timestamp';
+    }
     return 'Timestamp' + length;
   },
   getType4Object: function (language, length) {
@@ -3754,7 +3817,7 @@ var CodeUtil = {
         return 'object';
         break;
       case 'Python':
-        return 'dictionary';
+        return 'dict[str,any]';
         break;
       default:
         return 'Object';
