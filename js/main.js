@@ -339,7 +339,7 @@
       isSaveShow: false,
       isExportShow: false,
       isTestCaseShow: false,
-      isHeaderShow: true,
+      isHeaderShow: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
@@ -702,6 +702,7 @@
               break
             case 4:
               App.isHeaderShow = show
+              App.saveCache('', 'isHeaderShow', show)
               break
             case 6:
               App.getCurrentUser(true)
@@ -728,6 +729,7 @@
         }
         else if (index == 4) {
           App.isHeaderShow = show
+          App.saveCache('', 'isHeaderShow', show)
         }
       },
 
@@ -2755,9 +2757,11 @@
         }
 
         this.locals = this.getCache('', 'locals') || []
+
+        this.isHeaderShow = (this.getCache('', 'isHeaderShow')) || false
       } catch (e) {
         console.log('created  try { ' +
-          '\nvar schema = this.getCache(, schema)' +
+          '\nvar url = this.getCache(, url) ...' +
           '\n} catch (e) {\n' + e.message)
       }
       try { //这里是初始化，不能出错
