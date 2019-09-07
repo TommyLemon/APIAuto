@@ -114,9 +114,11 @@
                 var cPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
 
                 if (JSONObject.isTableKey(firstKey)) {
-                  var newVal = JSON.parse(JSON.stringify(val[i]))
+                  // var newVal = JSON.parse(JSON.stringify(val[i]))
 
+                  var newVal = {}
                   for (var k in val[i]) {
+                    newVal[k] = val[i][k] //提升性能
                     delete val[i][k]
                   }
 
@@ -142,8 +144,11 @@
             var aliaIndex = key.indexOf(':');
             var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-            var newVal = JSON.parse(JSON.stringify(val))
+            // var newVal = JSON.parse(JSON.stringify(val))
+
+            var newVal = {}
             for (var k in val) {
+              newVal[k] = val[k] //提升性能
               delete val[k]
             }
 
