@@ -1856,7 +1856,7 @@
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
-            'header': JSON.stringify(header, null, '    ')
+            'header': vHeader.value
           }
         })
         App.saveCache('', 'locals', this.locals)
