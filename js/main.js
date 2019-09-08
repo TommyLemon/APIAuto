@@ -2014,7 +2014,7 @@
           + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
           + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
           + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
-          + '\n感谢热心的作者们的贡献，GitHub 或 码云 右上角点 ⭐Star 支持下他们吧 ^_^';
+          + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
 
         return s;
       },
