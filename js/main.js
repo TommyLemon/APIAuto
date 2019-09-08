@@ -2617,7 +2617,7 @@
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
-            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[document.id] || '{}'), null, '    ')
+            + '\n返回结果: \n' + JSON.stringify(tests[document.id] || {}, null, '    ')
             , '测试：' + document.name + '-后.txt'
           )
 
