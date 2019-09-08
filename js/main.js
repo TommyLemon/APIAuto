@@ -2032,7 +2032,7 @@
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">简介</h3>'
           + '<p align="center">本站为 APIAuto-自动化接口管理平台'
-          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成代码和注释 等服务'
+          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
           + '<br>Copyright &copy; 2016-2019 Tommy Lemon</p>'
