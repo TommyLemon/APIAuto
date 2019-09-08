@@ -6,7 +6,7 @@
   })
 
   Vue.component('vue-outer', {
-    props: ['jsondata', 'isend', 'theme'],
+    props: ['jsondata', 'isend', 'path', 'theme'],
     template: '#outer-template'
   })
 
@@ -16,7 +16,7 @@
   })
 
   Vue.component('vue-val', {
-    props: ['field', 'val', 'isend', 'theme'],
+    props: ['field', 'val', 'isend', 'path', 'theme'],
     template: '#val-template'
   })
 
@@ -65,15 +65,10 @@
         switch(Vue.prototype.getTyp(val)) {
           case 'String':
             return '"' + val + '"'
-            break
-
           case 'Null':
             return 'null'
-            break
-
           default:
             return val
-
         }
       }
 
@@ -93,49 +88,85 @@
        * @param key
        * @return {boolean}
        */
-      Vue.prototype.onRenderJSONItem = function (val, key) {
-        if (key == null) {
+      Vue.prototype.onRenderJSONItem = function (val, key, path) {
+        if (isSingle || key == null) {
           return true
         }
-        if (key == '_$_table_$_') {
+        if (key == '_$_this_$_') {
           // return true
           return false
         }
 
         try {
-          if (val instanceof Array == false) {
+          if (val instanceof Array) {
+            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
+              // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
-            var aliaIndex = key.indexOf(':');
-            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+              var ckey = key.substring(0, key.lastIndexOf('[]'));
 
-            if (JSONObject.isTableKey(objName)) {
-              val._$_table_$_ = objName
-              // val = Object.assign({ _$_table_$_: objName }, val) //解决多显示一个逗号 ,
+              var aliaIndex = ckey.indexOf(':');
+              var objName = aliaIndex < 0 ? ckey : ckey.substring(0, aliaIndex);
 
-              // this._$_table_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
-              // alert('this._$_table_$_ = ' + this._$_table_$_)
-            }
-          }
-          else if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
-            // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
+              var firstIndex = objName.indexOf('-');
+              var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
-            key = key.substring(0, key.lastIndexOf('[]'));
-
-            var aliaIndex = key.indexOf(':');
-            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
-
-            var firstIndex = objName.indexOf('-');
-            var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
-
-            if (JSONObject.isTableKey(firstKey)) {
               for (var i = 0; i < val.length; i++) {
-                val[i]._$_table_$_ = firstKey
+                var cPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
 
-                // this.$children[i]._$_table_$_ = key
-                // alert('this.$children[i]._$_table_$_ = ' + this.$children[i]._$_table_$_)
+                if (JSONObject.isTableKey(firstKey)) {
+                  // var newVal = JSON.parse(JSON.stringify(val[i]))
+
+                  var newVal = {}
+                  for (var k in val[i]) {
+                    newVal[k] = val[i][k] //提升性能
+                    delete val[i][k]
+                  }
+
+                  val[i]._$_this_$_ = JSON.stringify({
+                    path: cPath + '/' + i,
+                    table: firstKey
+                  })
+
+                  for (var k in newVal) {
+                    val[i][k] = newVal[k]
+                  }
+                }
+                else {
+                  this.onRenderJSONItem(val[i], '' + i, cPath);
+                }
+
+                // this.$children[i]._$_this_$_ = key
+                // alert('this.$children[i]._$_this_$_ = ' + this.$children[i]._$_this_$_)
               }
             }
           }
+          else if (val instanceof Object) {
+            var aliaIndex = key.indexOf(':');
+            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+            // var newVal = JSON.parse(JSON.stringify(val))
+
+            var newVal = {}
+            for (var k in val) {
+              newVal[k] = val[k] //提升性能
+              delete val[k]
+            }
+
+            val._$_this_$_ = JSON.stringify({
+              path: (StringUtil.isEmpty(path, false) ? '' : path + '/') + key,
+              table: JSONObject.isTableKey(objName) ? objName : null
+            })
+
+            for (var k in newVal) {
+              val[k] = newVal[k]
+            }
+
+            // val = Object.assign({ _$_this_$_: objName }, val) //解决多显示一个逗号 ,
+
+            // this._$_this_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
+            // alert('this._$_this_$_ = ' + this._$_this_$_)
+          }
+
 
         } catch (e) {
           alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
@@ -181,90 +212,109 @@
 
         try {
 
+          var path = null
           var table = null
           var column = null
           if (val instanceof Object && (val instanceof Array == false)) {
-            var aliaIndex = key.indexOf(':');
-            var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-            if (JSONObject.isTableKey(objName)) {
-              table = objName
-              // table = this._$_table_$_
-            }
-            else {
-              var parent = $event.currentTarget.parentElement.parentElement
-              var valString = parent.textContent
+            var parent = $event.currentTarget.parentElement.parentElement
+            var valString = parent.textContent
 
-              // alert('valString = ' + valString)
+            // alert('valString = ' + valString)
 
-              var i = valString.indexOf('"_$_table_$_":  "')
+            var i = valString.indexOf('"_$_this_$_":  "')
+            if (i >= 0) {
+              valString = valString.substring(i + '"_$_this_$_":  "'.length)
+              i = valString.indexOf('}"')
               if (i >= 0) {
-                valString = valString.substring(i + '"_$_table_$_":  "'.length)
+                valString = valString.substring(0, i + 1)
                 // alert('valString = ' + valString)
-                i = valString.indexOf('"')
-                if (i >= 0) {
-                  table = valString.substring(0, i)
-                }
+                var _$_this_$_ = JSON.parse(valString) || {}
+                path = _$_this_$_.path
+                table = _$_this_$_.table
               }
 
-              column = key
+
+              var aliaIndex = key == null ? -1 : key.indexOf(':');
+              var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+
+              if (JSONObject.isTableKey(objName)) {
+                table = objName
+              }
+              else if (JSONObject.isTableKey(table)) {
+                column = key
+              }
+
+              // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
             }
           }
           else {
+            var parent = $event.currentTarget.parentElement.parentElement
+            var valString = parent.textContent
+
+            // alert('valString = ' + valString)
+
+            var i = valString.indexOf('"_$_this_$_":  "')
+            if (i >= 0) {
+              valString = valString.substring(i + '"_$_this_$_":  "'.length)
+              i = valString.indexOf('}"')
+              if (i >= 0) {
+                valString = valString.substring(0, i + 1)
+                // alert('valString = ' + valString)
+                var _$_this_$_ = JSON.parse(valString) || {}
+                path = _$_this_$_.path
+                table = _$_this_$_.table
+              }
+            }
+
             if (val instanceof Array && JSONObject.isArrayKey(key)) {
-              key = key.substring(0, key.lastIndexOf('[]'));
+              var key2 = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
 
-              var aliaIndex = key.indexOf(':');
-              var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
+              var aliaIndex = key2 == null ? -1 : key2.indexOf(':');
+              var objName = aliaIndex < 0 ? key2 : key2.substring(0, aliaIndex);
 
-              var firstIndex = objName.indexOf('-');
+              var firstIndex = objName == null ? -1 : objName.indexOf('-');
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
+              // alert('key = ' + key + '; firstKey = ' + firstKey + '; firstIndex = ' + firstIndex)
               if (JSONObject.isTableKey(firstKey)) {
                 table = firstKey
 
+                var s0 = '';
                 if (firstIndex > 0) {
                   objName = objName.substring(firstIndex + 1);
                   firstIndex = objName.indexOf('-');
                   column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
 
-                  var s0 = this.getResponseHint({}, table, $event)
-                  if (StringUtil.isEmpty(s0, true) == false) {
-                    s = s0 + '  -  '
-                  }
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true); // this.getResponseHint({}, table, $event
+                  s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
-              }
 
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, null, App.getMethod(), App.database, true);
+                s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
+                  + (
+                    StringUtil.isEmpty(c, true) ? '' : table + ': '
+                    + c + ((StringUtil.isEmpty(s0, true) ? '' : '  -  ' + s0) )
+                  );
+
+                return s;
+              }
+              //导致 key[] 的 hint 显示为  key[]key[]   else {
+              //   s = (StringUtil.isEmpty(path) ? '' : path + '/') + key
+              // }
             }
             else {
-
-              var parent = $event.currentTarget.parentElement.parentElement
-              var valString = parent.textContent
-
-              // alert('valString = ' + valString)
-
-              var i = valString.indexOf('"_$_table_$_":  "')
-              if (i >= 0) {
-                valString = valString.substring(i + '"_$_table_$_":  "'.length)
-                // alert('valString = ' + valString)
-                i = valString.indexOf('"')
-                if (i >= 0) {
-                  table = valString.substring(0, i)
-                }
+              if (JSONObject.isTableKey(table)) {
+                column = key
               }
-
-              // table = parent._$_table_$_
-
-              column = key
+              // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
             }
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true);
 
-          if (StringUtil.isEmpty(c, true) == false) {
-            s += (StringUtil.isEmpty(column) ? table : column) + ': ' + c
-          }
+          s += (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? (StringUtil.isEmpty(table) ? key : table) : column) + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
         catch (e) {
           s += '\n' + e.message
@@ -280,7 +330,7 @@
 
   var initJson = {}
 
-  // 主题 [key, String, Number, Boolean, Null, link-link, link-hover]
+// 主题 [key, String, Number, Boolean, Null, link-link, link-hover]
   var themes = [
     ['#92278f', '#3ab54a', '#25aae2', '#f3934e', '#f34e5c', '#717171'],
     ['rgb(19, 158, 170)', '#cf9f19', '#ec4040', '#7cc500', 'rgb(211, 118, 126)', 'rgb(15, 189, 170)'],
@@ -291,8 +341,8 @@
 
 
 
-  // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  //这些全局变量不能放在data中，否则会报undefined错误
+// APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//这些全局变量不能放在data中，否则会报undefined错误
 
   var baseUrl
   var inputted
@@ -305,7 +355,7 @@
 
   var doneCount
 
-  // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   var App = new Vue({
     el: '#app',
@@ -468,7 +518,19 @@
             App.view = 'empty'
           } else {
             App.view = 'code'
-            App.jsonhtml = jsonlint.parse(this.jsoncon)
+
+            if (isSingle) {
+              App.jsonhtml = jsonlint.parse(this.jsoncon)
+            }
+            else {
+              App.jsonhtml = Object.assign({
+                _$_this_$_: JSON.stringify({
+                  path: null,
+                  table: null
+                })
+              }, jsonlint.parse(this.jsoncon))
+            }
+
           }
         } catch (ex) {
           App.view = 'error'
@@ -1794,7 +1856,7 @@
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
-            'header': JSON.stringify(header, null, '    ')
+            'header': vHeader.value
           }
         })
         App.saveCache('', 'locals', this.locals)
@@ -1949,9 +2011,10 @@
           + '\nAPIJSON -Java版: https://github.com/TommyLemon/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
-          + '\nAPIJSON -Node版: https://github.com/TEsTsLA/apijson '
+          + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
           + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
-          + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson ';
+          + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
+          + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
 
         return s;
       },
@@ -1967,6 +2030,12 @@
         doc = d;
         vOutput.value += (
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
+          + '<h3 align="center">简介</h3>'
+          + '<p align="center">本站为 APIAuto-自动化接口管理平台'
+          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
+          + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
+          + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
+          + '<br>Copyright &copy; 2016-2019 Tommy Lemon</p>'
         );
 
         App.view = 'markdown';
@@ -2555,7 +2624,7 @@
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
-            + '\n返回结果: \n' + JSON.stringify(JSON.parse(tests[document.id] || '{}'), null, '    ')
+            + '\n返回结果: \n' + JSON.stringify(tests[document.id] || {}, null, '    ')
             , '测试：' + document.name + '-后.txt'
           )
 
