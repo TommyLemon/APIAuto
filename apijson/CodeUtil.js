@@ -3950,7 +3950,7 @@ var CodeUtil = {
     OWNER: '拥有者',
     ADMIN: '管理员'
   },
-  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'ORACLE'],
+  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE'],
 
   /**获取请求JSON的注释
    * @param tableList
@@ -4068,7 +4068,7 @@ var CodeUtil = {
           try {
             value = value.substring(1, value.length - 1);
           } catch (e) {}
-          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL ORACLE ...', false, '  ');
+          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL SQLSERVER ORACLE ...', false, '  ');
         case '@role':
           try {
             value = value.substring(1, value.length - 1);
@@ -4109,7 +4109,7 @@ var CodeUtil = {
           try {
             value = value.substring(1, value.length - 1);
           } catch (e) {}
-          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL ORACLE ...', false, '  ');
+          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL SQLSERVER ORACLE ...', false, '  ');
         case '@role':
           try {
             value = value.substring(1, value.length - 1);

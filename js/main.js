@@ -752,7 +752,7 @@
               App.isConfigShow = true
 
               if (index == 0) {
-                alert('可填数据库:\nMYSQL,POSTGRESQL')
+                alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE')
               }
               else if (index == 2) {
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
