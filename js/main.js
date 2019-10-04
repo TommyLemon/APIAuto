@@ -294,7 +294,7 @@
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
-                    + c + ((StringUtil.isEmpty(s0, true) ? '' : '  -  ' + s0) )
+                      + c + ((StringUtil.isEmpty(s0, true) ? '' : '  -  ' + s0) )
                   );
 
                 return s;
@@ -2053,7 +2053,7 @@
           '@database': App.database,
           '[]': {
             'count': 0,
-            'Table': {
+            'Table': App.database == 'SQLSERVER' ? null : {
               'table_schema': App.schema,
               'table_type': 'BASE TABLE',
               'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
@@ -2065,12 +2065,27 @@
               //FIXME  多个 schema 有同名表时数据总是取前面的  不属于 pg_class 表 'nspname': App.schema,
               '@column': 'oid;obj_description(oid):table_comment'
             },
+            'SysTable': App.database != 'SQLSERVER' ? null : {
+              'name!$': [
+                '\\_%',
+                'sys\\_%',
+                'system\\_%'
+              ],
+              '@order': 'name+',
+              '@column': 'name,object_id'
+            },
+            'ExtendedProperty': App.database != 'SQLSERVER' ? null : {
+              '@order': 'name+',
+              'major_id@': '/SysTable/object_id',
+              '@column': 'value:table_comment'
+            },
             '[]': {
               'count': 0,
               'Column': {
                 'table_schema': App.schema,
-                'table_name@': '[]/Table/table_name',
-                '@column': App.database == 'POSTGRESQL'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
+                'table_name@': App.database != 'SQLSERVER' ? '[]/Table/table_name' : "[]/SysTable/name",
+                "@order": App.database != 'SQLSERVER' ? null : "table_name+",
+                '@column': App.database == 'POSTGRESQL' || App.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
                   : 'column_name:column_name,column_type:column_type,column_comment:column_comment'
               },
@@ -2079,6 +2094,18 @@
                 'attname@': '/Column/column_name',
                 'attnum>': 0,
                 '@column': 'col_description(attrelid,attnum):column_comment'
+              },
+              'SysColumn': App.database != 'SQLSERVER' ? null : {
+                'object_id@': '[]/SysTable/object_id',
+                'name@': '/Column/column_name',
+                '@order': 'object_id+',
+                '@column': 'object_id,column_id'
+              },
+              'ExtendedProperty': App.database != 'SQLSERVER' ? null : {
+                '@order': 'major_id+',
+                'major_id@': '/SysColumn/object_id',
+                'minor_id@': '/SysColumn/column_id',
+                '@column': 'value:column_comment'
               }
             }
           },
@@ -2133,7 +2160,7 @@
               item = list[i];
 
               //Table
-              table = item == null ? null : item.Table;
+              table = item == null ? null : (App.database != 'SQLSERVER' ? item.Table : item.SysTable);
               if (table == null) {
                 continue;
               }
@@ -2141,7 +2168,13 @@
 
 
               doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n'
-                + App.toMD(App.database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment);
+                + App.toMD(App.database == 'POSTGRESQL'
+                  ? (item.PgClass || {}).table_comment
+                  : (App.database == 'SQLSERVER'
+                      ? (item.ExtendedProperty || {}).table_comment
+                      : table.table_comment
+                  )
+                );
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
@@ -2169,7 +2202,12 @@
 
                 log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-                var o = App.database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+                var o = App.database == 'POSTGRESQL'
+                  ? (columnList[j] || {}).PgAttribute
+                  : (App.database == 'SQLSERVER'
+                      ? (columnList[j] || {}).ExtendedProperty
+                      : column
+                  );
 
                 doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD((o || {}).column_comment);
 
@@ -2590,9 +2628,9 @@
        */
       removeDebugInfo: function (obj) {
         if (obj != null) {
-          delete obj["sql:generate/cache/execute/maxExecute"]
-          delete obj["depth:count/max"]
-          delete obj["time:start/duration/end"]
+          delete obj["sql:generate|cache|execute|maxExecute"]
+          delete obj["depth:count|max"]
+          delete obj["time:start|duration|end"]
         }
         return obj
       },
