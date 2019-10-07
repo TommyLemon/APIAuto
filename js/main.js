@@ -420,7 +420,7 @@
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://vip.apijson.org',
+      server: 'http://apijson.org:9090',
       language: 'Java',
       header: {}
     },
