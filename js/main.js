@@ -2072,7 +2072,7 @@
                 'system\\_%'
               ],
               '@order': 'name+',
-              '@column': 'name,object_id'
+              '@column': 'name:table_name,object_id'
             },
             'ExtendedProperty': App.database != 'SQLSERVER' ? null : {
               '@order': 'name+',
@@ -2083,7 +2083,7 @@
               'count': 0,
               'Column': {
                 'table_schema': App.schema,
-                'table_name@': App.database != 'SQLSERVER' ? '[]/Table/table_name' : "[]/SysTable/name",
+                'table_name@': App.database != 'SQLSERVER' ? '[]/Table/table_name' : "[]/SysTable/table_name",
                 "@order": App.database != 'SQLSERVER' ? null : "table_name+",
                 '@column': App.database == 'POSTGRESQL' || App.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
@@ -2166,15 +2166,18 @@
               }
               log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
+              var table_comment = App.database == 'POSTGRESQL'
+                ? (item.PgClass || {}).table_comment
+                : (App.database == 'SQLSERVER'
+                    ? (item.ExtendedProperty || {}).table_comment
+                    : table.table_comment
+                );
+              // item.Table.table_name = table.table_name
+              // item.Table.table_comment = table_comment
 
               doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n'
-                + App.toMD(App.database == 'POSTGRESQL'
-                  ? (item.PgClass || {}).table_comment
-                  : (App.database == 'SQLSERVER'
-                      ? (item.ExtendedProperty || {}).table_comment
-                      : table.table_comment
-                  )
-                );
+                + App.toMD(table_comment);
+
 
               //Column[]
               doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
@@ -2208,8 +2211,10 @@
                       ? (columnList[j] || {}).ExtendedProperty
                       : column
                   );
+                var column_comment = (o || {}).column_comment
 
-                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD((o || {}).column_comment);
+                // column.column_comment = column_comment
+                doc += '\n' + name + '  |  ' + type + '  |  ' + length + '  |  ' + App.toMD(column_comment);
 
               }
 
