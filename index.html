@@ -211,24 +211,14 @@
             </svg>
           </a>
 
-          <a class="hint--top save-tool"  data-hint="保存到本地" href="javascript:void(0)" @click="showSave(true)">
-            <svg class="icon">
-              <use xlink:href="svg/icon.svg#save"></use>
-            </svg>
-          </a>
 
           <span class="pop-btn" > <!--v-show="historys.length > 0">-->
-                <a v-show="isTestCaseShow" class="hint--top" data-hint="本地保存，点击隐藏共享" href="javascript:void(0)">
-                  <svg class="icon" @click="showTestCase(false, isLocalShow)">
-                    <use xlink:href="svg/icon.svg#record"></use>
-                  </svg>
-                </a>
-                <a v-show="! isTestCaseShow" class="hint--top" data-hint="本地保存，点击查看共享" href="javascript:void(0)">
-                  <svg class="icon" @click="showTestCase(true, isLocalShow)">
-                    <use xlink:href="svg/icon.svg#record"></use>
-                  </svg>
-                </a>
-                <ul class="historys pop" style="width: 240px">
+              <a class="hint--top save-tool"  data-hint="保存到本地" href="javascript:void(0)" @click="showSave(true)">
+                <svg class="icon">
+                  <use xlink:href="svg/icon.svg#save"></use>
+                </svg>
+              </a>
+              <ul class="historys pop" style="width: 240px">
                   <li v-for="(his, index) in historys">
                     <a href="javascript:void(0)" @click="restore(his)"  > {{his.name}}</a>
 
@@ -236,8 +226,19 @@
                       <use xlink:href="svg/icon.svg#trash"></use>
                     </svg>
                   </li>
-                </ul>
+              </ul>
           </span>
+
+          <a v-show="isTestCaseShow" class="hint--top" data-hint="隐藏共享用例" href="javascript:void(0)">
+            <svg class="icon" @click="showTestCase(false, isLocalShow)">
+              <use xlink:href="svg/icon.svg#record"></use>
+            </svg>
+          </a>
+          <a v-show="! isTestCaseShow" class="hint--top" data-hint="查看共享用例" href="javascript:void(0)">
+            <svg class="icon" @click="showTestCase(true, isLocalShow)">
+              <use xlink:href="svg/icon.svg#record"></use>
+            </svg>
+          </a>
 
         </div>
 
