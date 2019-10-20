@@ -823,6 +823,7 @@
 
         var url = this.server + '/delete'
         var req = {
+          format: false,
           'Document': {
             'id': doc.id
           },
@@ -1043,6 +1044,7 @@
 
           var url = App.server + '/post'
           var req = {
+            format: false,
             'Document': {
               'userId': App.User.id,
               'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
@@ -1258,6 +1260,7 @@
 
           var url = App.server + '/get'
           var req = {
+            format: false,
             '[]': {
               'count': 0,
               'Document': {
@@ -1374,6 +1377,7 @@
           password: vPassword.value,
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
+          format: false,
           defaults: {
             '@database': App.database,
             '@schema': App.schema
@@ -1407,6 +1411,7 @@
 
               //查询余额
               App.request(true, App.server + '/gets', {
+                format: false,
                 'Privacy': {
                   'id': user.id
                 },
@@ -2050,13 +2055,30 @@
       getDoc: function (callback) {
 
         App.request(false, this.getBaseUrl() + '/get', {
+          format: false,
           '@database': App.database,
+          'sql@': {
+            'from': 'Access',
+            'Access': {
+              '@column': 'name'
+            }
+          },
+          'Access[]': {
+            'count': 0,
+            'Access': {
+              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@order': 'date-,name+',
+              'name()': 'getWithDefault(alias,name)',
+              'r0()': 'removeKey(alias)'
+            }
+          },
           '[]': {
             'count': 0,
             'Table': App.database == 'SQLSERVER' ? null : {
               'table_schema': App.schema,
               'table_type': 'BASE TABLE',
-              'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
+              // 'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
+              'table_name{}@': 'sql',
               '@order': 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
               '@column': App.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment'
             },
@@ -2107,15 +2129,6 @@
                 'minor_id@': '/SysColumn/column_id',
                 '@column': 'value:column_comment'
               }
-            }
-          },
-          'Access[]': {
-            'count': 0,
-            'Access': {
-              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
-              '@order': 'date-,name+',
-              'name()': 'getWithDefault(alias,name)',
-              'r0()': 'removeKey(alias)'
             }
           },
           'Function[]': {
