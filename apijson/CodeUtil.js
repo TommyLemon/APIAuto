@@ -4152,14 +4152,19 @@ var CodeUtil = {
       item = tableList[i];
 
       //Table
-      table = item == null ? null : item.Table;
+      table = item == null ? null : (database != 'SQLSERVER' ? item.Table : item.SysTable);
       if (table == null || tableName != CodeUtil.getModelName(table.table_name)) {
         continue;
       }
       log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
       if (StringUtil.isEmpty(columnName)) {
-        return database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment;
+        return database == 'POSTGRESQL'
+          ? (item.PgClass || {}).table_comment
+          : (database == 'SQLSERVER'
+              ? (item.ExtendedProperty || {}).table_comment
+              : table.table_comment
+          );
       }
 
       var at = '';
@@ -4301,7 +4306,12 @@ var CodeUtil = {
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
 
-        var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+        var o = database == 'POSTGRESQL'
+          ? (columnList[j] || {}).PgAttribute
+          : (database == 'SQLSERVER'
+              ? (columnList[j] || {}).ExtendedProperty
+              : column
+          );
 
         column.column_type = CodeUtil.getColumnType(column, database);
         return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + (o || {}).column_comment;
