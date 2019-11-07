@@ -2388,7 +2388,7 @@
           var v;
           var nk;
           for (var k in obj) {
-            if (k == null || k == '' || k == 'ADD' || k == 'REMOVE' || k == 'REPLACE' || k == 'PUT') {
+            if (k == null || k == '' || k == 'INSERT' || k == 'REMOVE' || k == 'REPLACE' || k == 'UPDATE') {
               delete obj[k];
               continue;
             }
@@ -2410,6 +2410,9 @@
             }
             else if (k == 'VERIFY') {
               nk = '满足条件';
+            }
+            else if (k == 'TYPE') {
+              nk = '满足类型';
             }
             else {
               nk = null;
