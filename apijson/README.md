@@ -19,7 +19,7 @@ parseComment <br />
 * 自动检查表对象里的字段是否在表里真实存在
 * 自动检查 APIJSON 关键词对应的值是否合法
 
-## <h2 id="4">4.自动化接口测试 
+## <h2 id="4">4.自动化接口测试<h2>
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 前后对比测试  compareWithBefore
