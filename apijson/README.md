@@ -1,11 +1,11 @@
-<h2 id="1">1.自动生成代码<h2>
+## <h2 id="1">1.自动生成代码<h2>
   
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
 模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
 
-<h2 id="2">2.自动生成注释<h2>
+## <h2 id="2">2.自动生成注释<h2>
   
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
@@ -13,7 +13,7 @@ parseComment, getComment4Request, getCommentFromDoc <br />
 * 对左侧请求 JSON 自动在每行右边生成字段的类型、长度、描述等
 * 对右侧结果 JSON 自动在光标移到字段时显示类型、长度、描述等
 
-<h2 id="3">3.自动静态检查<h2>  
+## <h2 id="3">3.自动静态检查<h2>  
   
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
@@ -22,7 +22,7 @@ parseComment <br />
 * 自动检查表对象里的字段是否在表里真实存在
 * 自动检查 APIJSON 关键词对应的值是否合法
 
-<h2 id="4">4.自动化接口测试<h2>
+## <h2 id="4">4.自动化接口测试<h2>
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 前后对比测试  compareWithBefore
@@ -53,7 +53,7 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，
 所以今天花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。
 
-<h2 id="5">5.对开源的感慨<h2>
+## <h2 id="5">5.对开源的感慨<h2>
   
 如果我把维护、推广开源项目的时间用在看各种大厂面经上，或许这次手 Q 部门四面就不会挂得这么不甘心。
 
