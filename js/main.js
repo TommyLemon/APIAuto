@@ -1056,7 +1056,7 @@
             'TestRecord': {
               'documentId@': '/Document/id',
               'userId': App.User.id,
-              'response': App.jsoncon
+              'response': JSON.stringify(StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon)))
             },
             'tag': 'Document'
           }
@@ -1270,11 +1270,12 @@
               'TestRecord': {
                 'documentId@': '/Document/id',
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,response',
-                'userId': App.User.id
+                '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
+                'userId': App.User.id,
+                '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
-            '@role': 'login'
+            '@role': 'LOGIN'
           }
 
           App.onChange(false)
@@ -2388,7 +2389,7 @@
           var v;
           var nk;
           for (var k in obj) {
-            if (k == null || k == '' || k == 'ADD' || k == 'REMOVE' || k == 'REPLACE' || k == 'PUT') {
+            if (k == null || k == '' || k == 'INSERT' || k == 'REMOVE' || k == 'REPLACE' || k == 'UPDATE') {
               delete obj[k];
               continue;
             }
@@ -2410,6 +2411,9 @@
             }
             else if (k == 'VERIFY') {
               nk = '满足条件';
+            }
+            else if (k == 'TYPE') {
+              nk = '满足类型';
             }
             else {
               nk = null;
@@ -2479,8 +2483,10 @@
 
       enableML: function (enable) {
         App.isMLEnabled = enable
-        App.testProcess = enable ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
+        App.testProcess = enable ? '机器学习:已开启' : '机器学习:已关闭'
         App.saveCache(App.server, 'isMLEnabled', enable)
+        App.remotes = null
+        App.showTestCase(true, false)
       },
 
 
@@ -2515,7 +2521,7 @@
         }
 
         const list = App.remotes || []
-        const allCount = list.length;
+        const allCount = list.length
         doneCount = 0
 
         if (allCount <= 0) {
@@ -2571,31 +2577,31 @@
 
         var releaseResponse = App.removeDebugInfo(response)
 
-        if (App.isMLEnabled != true) {
-          var standard = StringUtil.isEmpty(tr.response, true) ? null : JSON.parse(tr.response);
-
+        // if (App.isMLEnabled != true) {
+          var standardKey = App.isMLEnabled != true ? 'response' : 'standard'
+          var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
           tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
           App.onTestResponse(allCount, index, it, d, tr, response, tr.compare || {});
-        }
-        else {
-          App.request(false, App.server + '/get/testcompare/ml', {
-            "documentId": d.id,
-            "response": releaseResponse
-          }, {}, function (url, res, err) {
-            var data = res.data || {}
-            if (data.code != 200) {
-              App.onResponse(url, res, err)
-              return
-            }
-            App.onTestResponse(allCount, index, it, d, tr, response, data.compare || {});
-          })
-        }
+        // }
+        // else {
+        //   App.request(false, App.server + '/get/testcompare/ml', {
+        //     "documentId": d.id,
+        //     "response": releaseResponse
+        //   }, {}, function (url, res, err) {
+        //     var data = res.data || {}
+        //     if (data.code != 200) {
+        //       App.onResponse(url, res, err)
+        //       return
+        //     }
+        //     App.onTestResponse(allCount, index, it, d, tr, response, data.compare || {});
+        //   })
+        // }
       },
 
       onTestResponse: function(allCount, index, it, d, tr, response, cmp) {
 
         doneCount ++
-        App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
+        App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
 
         App.log('doneCount = ' + doneCount + '; d.name = ' + d.name + '; tr.compareType = ' + tr.compareType)
 
@@ -2751,7 +2757,16 @@
             })
           }
           else { //上传新的校验标准
-            if (isML != true) {
+
+          var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
+          var code = currentResponse.code;
+          delete currentResponse.code; //code必须一致，下面没用到，所以不用还原
+
+          var stddObj = App.isMLEnabled ? JSONResponse.updateStandard(standard || {}, currentResponse) : {};
+          stddObj.code = code;
+          currentResponse.code = code;
+	  
+            // if (isML != true) {
               url = App.server + '/post'
               req = {
                 TestRecord: {
@@ -2759,16 +2774,17 @@
                   documentId: document.id,
                   compare: JSON.stringify(testRecord.compare || {}),
                   response: JSON.stringify(currentResponse || {}),
+                  standard: isML ? JSON.stringify(stddObj) : null
                 },
                 tag: 'TestRecord'
               }
-            }
-            else {
-              url = App.server + '/post/testrecord/ml'
-              req = {
-                documentId: document.id
-              }
-            }
+            // }
+            // else {
+            //   url = App.server + '/post/testrecord/ml'
+            //   req = {
+            //     documentId: document.id
+            //   }
+            // }
 
             App.request(true, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
@@ -2810,7 +2826,8 @@
           TestRecord: {
             documentId: doc.id,
             '@order': 'date-',
-            '@column': 'id,userId,documentId,response'
+            '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
+            '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
@@ -2904,7 +2921,7 @@
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User') || {}
         this.isMLEnabled = this.getCache(this.server, 'isMLEnabled')
-        this.testProcess = this.isMLEnabled ? '机器学习:已开启,按量付费' : '机器学习:已关闭'
+        this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
       } catch (e) {
         console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +

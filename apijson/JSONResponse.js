@@ -47,6 +47,11 @@ const KEY_ID_IN = KEY_ID + "{}";
 const KEY_COUNT = "count";
 const KEY_TOTAL = "total";
 
+
+function log(msg) {
+  console.log(msg);
+}
+
 var JSONResponse = {
   TAG: 'JSONResponse',
 
@@ -301,7 +306,9 @@ var JSONResponse = {
     // delete target.msg;
     // delete real.msg;
 
-    var result = JSONResponse.compareWithBefore(target, real, folder);
+    var result = isMachineLearning == true
+      ? JSONResponse.compareWithStandard(target, real, folder)
+      : JSONResponse.compareWithBefore(target, real, folder);
 
     target.code = tCode;
     real.code = rCode;
@@ -472,6 +479,522 @@ var JSONResponse = {
   },
 
 
+  /**测试compare: 对比 新的请求与上次请求的结果
+   0-相同，无颜色；
+   1-新增字段/新增值，绿色；
+   2-值改变，蓝色；
+   3-缺少字段/整数变小数，黄色；
+   4-类型/code 改变，红色；
+   */
+  compareWithStandard: function(target, real, folder) {
+    folder = folder == null ? '' : folder;
+
+    if (target == null) {
+      return {
+        code: JSONResponse.COMPARE_NO_STANDARD,
+        msg: '没有校验标准！',
+        path: folder,
+        value: real
+      };
+    }
+    if (target instanceof Array) { // JSONArray
+      throw new Error('Standard 在 ' + folder + ' 语法错误，不应该有 array！');
+    }
+
+    log('\n\n\n\n\ncompareWithStandard <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n' +
+      ' \ntarget = ' + JSON.stringify(target, null, '    ') + '\n\n\nreal = ' + JSON.stringify(real, null, '    '));
+
+    var notnull = target.notnull;
+    log('compareWithStandard  notnull = target.notnull = ' + notnull + ' >>');
+
+    var type = target.type;
+    log('compareWithStandard  type = target.type = ' + type + ' >>');
+
+    var valueLevel = target.valueLevel;
+    log('compareWithStandard  valueLevel = target.valueLevel = ' + valueLevel + ' >>');
+
+    var values = target.values;
+    log('compareWithStandard  values = target.values = ' + JSON.stringify(values, null, '    ') + ' >>');
+
+    if ((values == null || values[0] == null) && (type == 'object' || type == 'array')) {
+      if (notnull == true) { // values{} values&{}
+        throw new Error('Standard 在 ' + folder + ' 语法错误，Object 或 Array 在 notnull: true 时 values 必须为有值的数组 !');
+      }
+
+      log('compareWithStandard  values == null; real ' + (real == null ? '=' : '!') + '= null >> return ' + (real == null ? 'COMPARE_EQUAL' : 'COMPARE_KEY_MORE'));
+      return {
+        code: real == null ? JSONResponse.COMPARE_EQUAL : JSONResponse.COMPARE_KEY_MORE,
+        msg: real == null ? '结果正确' : '是新增的',
+        path: real == null ? '' : folder,
+        value: real
+      };
+    }
+
+    if (real == null) { //少了key
+      log('compareWithStandard  real == null >> return ' + (notnull == true ? 'COMPARE_KEY_LESS' : 'COMPARE_EQUAL'));
+      return {
+        code: notnull == true ? JSONResponse.COMPARE_KEY_LESS : JSONResponse.COMPARE_EQUAL,
+        msg: notnull == true ? '是缺少的' : '结果正确',
+        path: notnull == true ? folder : '',
+        value: real
+      };
+    }
+
+
+
+    if (type != JSONResponse.getType(real)) { //类型改变
+      log('compareWithStandard  type != getType(real) >> return COMPARE_TYPE_CHANGE');
+      return {
+        code: JSONResponse.COMPARE_TYPE_CHANGE,
+        msg: '不是 ' + type + ' 类型',
+        path: folder,
+        value: real
+      };
+    }
+
+    var max = {
+      code: JSONResponse.COMPARE_EQUAL,
+      msg: '结果正确',
+      path: '', //导致正确时也显示 folder,
+      value: null //导致正确时也显示  real
+    };
+
+    var each;
+
+    if (type == 'array') { // JSONArray
+      log('compareWithStandard  type == array >> ');
+
+      for (var i = 0; i < real.length; i ++) { //检查real的每一项
+        log('compareWithStandard  for i = ' + i + ' >> ');
+
+        each = JSONResponse.compareWithStandard(values[0], real[i], JSONResponse.getAbstractPath(folder, i));
+
+        if (max.code < each.code) {
+          max = each;
+        }
+        if (max.code >= JSONResponse.COMPARE_TYPE_CHANGE) {
+          log('compareWithStandard  max >= COMPARE_TYPE_CHANGE >> return max = ' + max);
+          return max;
+        }
+      }
+
+      if (max.code < JSONResponse.COMPARE_LENGTH_CHANGE
+        && JSONResponse.isValueCorrect(target.lengthLevel, target.lengths, real.length) != true) {
+        max.code = JSONResponse.COMPARE_LENGTH_CHANGE;
+        max.msg = '长度超出范围';
+        max.path = folder;
+        max.value = real.length;
+      }
+    }
+    else if (type == 'object') { // JSONObject
+      log('compareWithStandard  type == object >> ');
+
+      var tks = values == null ? [] : Object.keys(values[0]);
+      var tk;
+      for (var i = 0; i < tks.length; i++) { //遍历并递归下一层
+        tk = tks[i];
+        if (tk == null) {
+          continue;
+        }
+        log('compareWithStandard  for tk = ' + tk + ' >> ');
+
+        each = JSONResponse.compareWithStandard(values[0][tk], real[tk], JSONResponse.getAbstractPath(folder,  tk));
+        if (max.code < each.code) {
+          max = each;
+        }
+        if (max.code >= JSONResponse.COMPARE_TYPE_CHANGE) {
+          log('compareWithStandard  max >= COMPARE_TYPE_CHANGE >> return max = ' + max);
+          return max;
+        }
+      }
+
+
+      if (max.code < JSONResponse.COMPARE_KEY_MORE) { //多出key
+        log('compareWithStandard  max < COMPARE_KEY_MORE >> ');
+
+        for (var k in real) {
+          log('compareWithStandard  for k = ' + k + ' >> ');
+
+          if (k != null && tks.indexOf(k) < 0) {
+            log('compareWithStandard  k != null && tks.indexOf(k) < 0 >> max = COMPARE_KEY_MORE;');
+
+            max.code = JSONResponse.COMPARE_KEY_MORE;
+            max.msg = '是新增的';
+            max.path = JSONResponse.getAbstractPath(folder,  k);
+            max.value = real[k];
+            break;
+          }
+        }
+      }
+
+    }
+    else { // Boolean, Number, String
+      log('compareWithStandard  type == boolean | number | string >> ');
+
+      if (max.code < JSONResponse.COMPARE_VALUE_CHANGE
+        && JSONResponse.isValueCorrect(valueLevel, values, real) != true) {
+        max.code = JSONResponse.COMPARE_VALUE_CHANGE;
+        max.msg = '值超出范围';
+        max.path = folder;
+        max.value = real;
+      }
+
+      if (max.code < JSONResponse.COMPARE_LENGTH_CHANGE) {
+        log('compareWithStandard  max < COMPARE_LENGTH_CHANGE >> ');
+
+        var realLength = JSONResponse.getLength(real);
+        log('compareWithStandard  realLength = ' + realLength + ' >> ');
+
+        if (realLength != null
+          && JSONResponse.isValueCorrect(target.lengthLevel, target.lengths, realLength) != true) {
+          max.code = JSONResponse.COMPARE_LENGTH_CHANGE;
+          max.msg = '长度超出范围';
+          max.path = folder;
+          max.value = realLength;
+        }
+      }
+    }
+
+    log('\ncompareWithStandard >> return max = ' + max + '\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n\n\n\n');
+    return max;
+  },
+
+
+  isValueCorrect: function(level, target, real) {
+    log('isValueCorrect  \nlevel = ' + level + '; \ntarget = ' + JSON.stringify(target)
+      + '\nreal = ' + JSON.stringify(real, null, '    '));
+    if (target == null) {
+      log('isValueCorrect  target == null >>  return true;');
+      return true;
+    }
+    if (level == null) {
+      level = 0;
+    }
+
+    if (level == 0) {
+      if (target.indexOf(real) < 0) { // 'key{}': [0, 1]
+        log('isValueCorrect  target.indexOf(real) < 0 >>  return false;');
+        return false;
+      }
+    }
+    else if (level == 1) { //real <= max; real >= min
+      if (target[0] != null && target[0] < real) {
+        log('isValueCorrect  target[0] != null && target[0] < real >>  return false;');
+        return false;
+      }
+      if (target.length > 1 && target[target.length - 1] != null && target[target.length - 1] > real) {
+        log('isValueCorrect  target.length > 1 && target[target.length - 1] != null && target[target.length - 1] > real >>  return false;');
+        return false;
+      }
+    }
+    else if (level == 2) {
+      for (var i = 0; i < target.length; i ++) {
+
+        if (eval(real + target[i]) != true) {
+          log('isValueCorrect  eval(' + (real + target[i]) + ') != true >>  return false;');
+          return false;
+        }
+      }
+    }
+    else {
+      //不限
+    }
+
+    log('isValueCorrect >> return true;');
+    return true;
+  },
+
+  getType: function(o) { //typeof [] = 'object'
+    log('getType  o = ' + JSON.stringify(o) + '>> return ' + (o instanceof Array ? 'array' : typeof o));
+
+    return o instanceof Array ? 'array' : typeof o;
+  },
+
+
+  /**更新测试标准，通过原来的标准与最新的数据合并来实现
+   */
+  updateStandard: function(target, real) {
+    if (target instanceof Array) { // JSONArray
+      throw new Error("Standard 语法错误，不应该有 array！");
+    }
+    if (real == null) { //少了key
+      log('updateStandard  real == null');
+      if (target != null) { //} && target.values != null && target.values[0] != null) {
+        log('updateStandard  target != null >> target.notnull = false;');
+        target.notnull = false;
+      }
+      log('updateStandard  return target;');
+      return target;
+    }
+
+    if (target == null) {
+      target = {};
+    }
+
+    log('\n\n\n\n\nupdateStandard <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n' +
+      ' \ntarget = ' + JSON.stringify(target, null, '    ') + '\n\n\nreal = ' + JSON.stringify(real, null, '    '));
+
+    var notnull = target.notnull;
+    log('updateStandard  notnull = target.notnull = ' + notnull + ' >>');
+    if (notnull == null) {
+      notnull = target.notnull = true;
+    }
+
+    var type = target.type;
+    log('updateStandard  type = target.type = ' + type + ' >>');
+    // if (type == null) { //强制用real的类型替代
+    type = target.type = JSONResponse.getType(real);
+    // }
+    log('updateStandard  type = target.type = getType(real) = ' + type + ' >>');
+
+
+    var lengthLevel = target.lengthLevel;
+    var lengths = target.lengths;
+    log('updateStandard  lengthLevel = target.lengthLevel = ' + lengthLevel + ' >>');
+    log('updateStandard  lengths = target.lengths = ' + lengths + ' >>');
+
+
+    var valueLevel = target.valueLevel;
+    var values = target.values;
+    log('updateStandard  valueLevel = target.valueLevel = ' + valueLevel + ' >>');
+    log('updateStandard  values = target.values = ' + JSON.stringify(values, null, '    ') + ' >>');
+
+    if (valueLevel == null) {
+      log('updateStandard  valueLevel == null >> valueLevel = target.valueLevel = 0;');
+      valueLevel = target.valueLevel = 0;
+    }
+
+
+    if (type == 'array') {
+      log('updateStandard  type == array >> ');
+
+      if (values == null) {
+        values = [];
+      }
+      if (values[0] == null) {
+        values[0] = {};
+      }
+
+      var child = values[0];
+      for (var i = 0; i < real.length; i ++) {
+        log('updateStandard for i = ' + i + '; child = '
+          + JSON.stringify(child, null, '    ') + ';\n real[i] = '  + JSON.stringify(real[i], null, '    ') + ' >>');
+
+        child = JSONResponse.updateStandard(child, real[i]);
+      }
+      if (child == null) {
+        log('updateStandard  child == null >> child = {}');
+        child = {} //啥都确定不了，level为null默认用0替代
+      }
+
+      values = [child];
+      target = JSONResponse.setValue(target, real.length, lengthLevel == null ? 1 : lengthLevel, lengths, true);
+      target = JSONResponse.setValue(target, null, valueLevel, values, false);
+    }
+    else if (type == 'object') {
+      log('updateStandard  type == object >> ');
+
+      target.valueLevel = valueLevel;
+
+      if (values == null) {
+        values = [];
+      }
+      if (values[0] == null) {
+        values[0] = {};
+      }
+
+      var realKeys = Object.keys(real) || [];
+      for(var k2 in values[0]) { //解决real不含k2时导致notnull不能变成false
+        // log('updateStandard for k2 in values[0] = ' + k2 + ' >>');
+        if (realKeys.indexOf(k2) < 0) {
+          // log('updateStandard Object.keys(real).indexOf(k2) < 0 >> real[k2] = null;');
+          real[k2] = null;
+        }
+      }
+
+      for(var k in real) {
+        log('updateStandard for k in real = ' + k + '; values[0][k] = '
+          + JSON.stringify(values[0][k], null, '    ') + ';\n real[k] = '  + JSON.stringify(real[k], null, '    ') + ' >>');
+        values[0][k] = JSONResponse.updateStandard(values[0][k], real[k]);
+      }
+
+      target.values = values;
+    }
+    else {
+      log('updateStandard  type == other >> ');
+
+      if (values == null) {
+        values = [];
+      }
+      if (valueLevel < 1 && type == 'number' && String(real).indexOf('.') >= 0) { //double 1.23
+        valueLevel = 1;
+      }
+      target.values = values;
+
+      target = JSONResponse.setValue(target, JSONResponse.getLength(real), lengthLevel == null ? 1 : lengthLevel, lengths, true);
+      target = JSONResponse.setValue(target, real, valueLevel, values, false);
+    }
+
+    log('\nupdateStandard >> return target = ' + JSON.stringify(target, null, '    ') + '\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n\n\n\n');
+
+    return target;
+  },
+
+
+  getLength: function(value) {
+    var type = JSONResponse.getType(value);
+    if (type == 'array') {
+      log('getLength  type == array >> return value.length = ' + value.length);
+      return value.length;
+    }
+    if (type == 'object') {
+      log('getLength  type == object >> return null;');
+      return null;
+    }
+
+    if (type == 'number') {
+      log('getLength  type == number >> ');
+
+      var rs = String(value);
+
+      //Double 比较整数长度
+      var index = rs.indexOf(".");
+      if (index >= 0) {
+        rs = rs.substring(0, index);
+      }
+
+      log('getLength >> return rs.length = ' + rs.length);
+      return rs.length
+    }
+
+    if (type == 'string') {
+      log('getLength  type == string >> return value.length = ' + value.length);
+      return value.length
+    }
+
+    //Boolean 不需要比较长度
+    log('getLength  type == other >> return null;');
+    return null;
+  },
+
+  /**
+   * @param target
+   * @param value
+   * @param lengthLevel 0 - [] , 1 - min-max, 2 - "conditions", 3 - 任何值都行
+   * @param originLength
+   * @return {*}
+   */
+  setValue: function(target, real, level, origin, isLength) {
+    log('setValue  level = ' + level + '; isLength = ' + isLength
+      + ' ;\n target = ' + JSON.stringify(target, null, '    ')
+      + ' ;\n real = ' + JSON.stringify(real, null, '    ')
+      + ' ;\n origin = ' + JSON.stringify(origin, null, '    ')
+      +  ' >> ');
+
+    if (target == null) {
+      target = {};
+    }
+    var type = target.type;
+    log('setValue  type = target.type = ' + type + ' >> ');
+
+    if (level == null) {
+      level = 0;
+    }
+    if (isLength != true || (type == 'array' || type == 'number' || type == 'string')) {
+
+      var levelName = isLength != true ? 'valueLevel' : 'lengthLevel';
+      target[levelName] = level;
+      if (level >= 3) { //无限
+        return target;
+      }
+      //String 类型在 长度超过一定值 或 不是 常量名 时，改成 无限模型
+      //不用 type 判断类型，这样可以保证 lengthType 不会自动升级
+      if (typeof real == 'string' && (real.length > 20 || StringUtil.isName(real) != true)) {
+        if (level != 2) { //自定义模型不受影响
+          target[levelName] = 3;
+        }
+        return target;
+      }
+
+      var vals = [];
+
+      if (level == 0 || level == 1) {
+        if (origin == null) {
+          origin = [];
+        }
+        if (real != null && origin.indexOf(real) < 0) {
+          origin.push(real);
+        }
+
+        vals = origin;
+      }
+      else {
+        if (real != null) {
+          vals.push(real);
+        }
+      }
+
+      vals = vals.sort(function (x, y) { //倒序排列，一般都是用最大长度(数据count，字符串长度等)
+        if (x < y) {
+          return 1;
+        }
+        if (x > y) {
+          return -1;
+        }
+        return 0;
+      })
+
+      var name = isLength != true ? 'values' : 'lengths';
+      log('setValue  name = ' + name + '; vals = ' + JSON.stringify(vals, null, '    ') + ' >> ');
+
+      switch (level) {
+        case 0:
+        case 1:
+          //当 离散区间模型 可取值超过最大数量时自动转为 连续区间模型
+          var maxCount = JSONResponse.getMaxValueCount(type);
+          var extraCount = maxCount <= 0 ? 0 : vals.length - maxCount;
+          if (extraCount > 0 && level < 1) {
+            if (typeof real == 'boolean') { //boolean 的 true 和 false 都行，说明不限
+              if (level != 2) { //自定义模型不受影响
+                target[levelName] = 3;
+              }
+              return target;
+            }
+
+            target[levelName] = 1;
+          }
+
+          //从中间删除多余的值
+          while (extraCount > 0) {
+            vals.splice(Math.ceil(vals.length/2), 1);
+            extraCount -= 1;
+          }
+          target[name] = vals;
+          break;
+        case 2: //自定义的复杂条件，一般是准确的，不会纠错
+          // target[name] = (StringUtil.isEmpty(origin, true) ? '' : origin + ',')
+          //   + ('<=' + vals[0] + (vals.length <= 1 ? '' : ',>=' + vals[vals.length - 1]));
+          break
+      }
+    }
+
+    return target;
+  },
+
+  getMaxValueCount: function(type) {
+    switch (type) {
+      case 'boolean':
+        return 2;
+      case 'number':
+        return 10;
+      case 'string':
+        return 10;
+    }
+
+    return 0;
+  },
+
+
   getAbstractPath: function (folder, name) {
     folder = folder == null ? '' : folder;
     name = name == null ? '' : name; //导致 0 变为 ''   name = name || '';
@@ -493,10 +1016,6 @@ var JSONResponse = {
     }
 
     return s2;
-  },
-
-  log(msg) {
-    // console.log(msg);
   }
 
 }
