@@ -16,7 +16,7 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_get.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_code.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_test.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_test_machine_learning.jpg) 
 
 <br /><br />
 
