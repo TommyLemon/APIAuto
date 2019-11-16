@@ -40,9 +40,11 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_machine_learning.png?raw=true) 
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_machine_learning_design.jpg?raw=true) 
 在 前后对比测试 的基础上，通过 简单统计 + 场景优化 来提取返回结果 Response JSON 的校验模型，<br />
-包括每一层的所有键值对的名称、类型、长度、取值范围等。它还能精准定位到数组内的数据，[]/7/Comment/id，原来只能到 []。<br />
+包括每一层的所有键值对的名称、类型、长度、取值范围等，它还能精准定位到数组内的数据，<br />
+例如 []/7/Comment/id，原来的 前后对比测试 只能到 []。<br />
 在第一次会生成校验模型，这时就已经比前后对比测试有约 20% 的准确度提升，<br />
-随着纠错次数增加，模型会更新地越来越精准，一般一个测试用例达到 12 次后就会相当于高级测试工程师编写测试代码达到的效果。
+随着纠错次数增加，模型会更新地越来越精准，一般一个测试用例达到 12 次后，<br />
+就会相当于高级测试工程师编写测试代码达到的效果。
 
 开启和使用机器测试：<br />
 1.点击右区域 第 3 个图标按钮（点击查看共享），会进入测试用例界面；<br />
