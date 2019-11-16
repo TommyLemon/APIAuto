@@ -4,14 +4,14 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
 模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
 
-## <h2 id="1">2.自动生成注释<h2>
+## <h2 id="2">2.自动生成注释<h2>
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
 parseComment, getComment4Request, getCommentFromDoc <br />
 * 对左侧请求 JSON 自动在每行右边生成字段的类型、长度、描述等
 * 对右侧结果 JSON 自动在光标移到字段时显示类型、长度、描述等
 
-## <h2 id="1">3.自动静态检查<h2>  
+## <h2 id="3">3.自动静态检查<h2>  
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
 parseComment <br />
@@ -19,7 +19,7 @@ parseComment <br />
 * 自动检查表对象里的字段是否在表里真实存在
 * 自动检查 APIJSON 关键词对应的值是否合法
 
-## <h2 id="1">4.自动化接口测试 
+## <h2 id="4">4.自动化接口测试 
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 前后对比测试  compareWithBefore
@@ -49,7 +49,7 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，
 所以今天花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。
 
-## <h2 id="1">5.对开源的感慨<h2>
+## <h2 id="5">5.对开源的感慨<h2>
 如果我把维护、推广开源项目的时间用在看各种大厂面经上，或许这次手 Q 部门四面就不会挂得这么不甘心。
 
 国内开源做得很艰难，我和很多开源作者有过交流，发现他们和我一样，总是遇到各种莫名其妙的鄙视(国外的月亮就是圆)，甚至人身攻击，发博客帖子推广下自己的项目总是遇到各种各样的喷子，写好的项目和功能介绍等文档不看，Demo 也不试试，更不用说看源码了，连项目是什么，解决什么问题的都不知道，就开始一副好为人师的样子指指点点，还各种喷不到点；Star 少的说你这项目都没人用，Star 多就质疑是不是淘宝买的，有时候真想把 [博客](https://my.oschina.net/tommylemon)、[Star History](https://star-history.t9t.io/#APIJSON/APIJSON)、 [Star 关注者信息](https://haochuan9421.github.io/stargazers/#/) 的链接甩过去给他看(当然也是被某些人带坏了风气，这种大家见一个举报一个就好); Issue 少是没人用看不上，Issue 多是 bug 多不敢用，把 [第三方代码扫描结果](https://github.com/APIJSON/APIJSON/issues/48) 发出来又说 “千行 BUG 率约 1.5，不算什么特别严谨可靠吧……”，我只想说 “Talk is useless, show me your code”。
