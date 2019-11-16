@@ -58,7 +58,7 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 原来是作为私有仓库托管在码云 Gitee 上 <br />
 https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，
-所以今天花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。
+花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。
 
 ## 5.对开源的感慨
 如果我把维护、推广开源项目的时间用在看各种大厂面经上，或许这次手 Q 部门四面就不会挂得这么不甘心。
