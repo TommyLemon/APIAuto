@@ -1,8 +1,8 @@
 ## 1.自动生成代码
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
-![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_entity.png?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_request_json.png?raw=true)
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_entity.png?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_response_json.png?raw=true)
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
 模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
