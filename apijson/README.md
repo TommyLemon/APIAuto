@@ -28,12 +28,14 @@ parseComment <br />
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 前后对比测试  compareWithBefore
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_compare_with_before.png?raw=true)
 不用写任何代码，只需要点一下 回测测试的图标按钮 （左区域右上角，类似刷新的图标），
 就会自动测试所有测试用例（除了登录和退出登录），并对比每一个测试用例前后两次请求的结果，然后给出结论：正确、新增字段、缺少字段、值改变、类型改变、状态码改变等。
 每一个测试用例测完后都会有 左侧按钮用于显示测试结果和切换前后的请求结果，右侧按钮用于 纠错，中间的是下载按钮用于下载两次的请求，背景色用于标记接口变更的严重程度。
 如果这次的结果是对的，可以点击 [对的，纠错] 按钮来上传新的正确结果作为后续的对比标准。
 
 #### 机器学习测试  compareWithStandard, updateStandard
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_machine_learning.png?raw=true)
 在 前后对比测试 的基础上，提取返回结果 Response JSON 的校验模型，包括每一层的所有键值对的名称、类型、长度、取值范围等。
 它还能精准定位到数组内的数据，[]/7/Comment/id，原来只能到 []。
 在第一次会生成校验模型，这时就已经比前后对比测试有约 20% 的准确度提升，随着纠错次数增加，模型会更新地越来越精准，
