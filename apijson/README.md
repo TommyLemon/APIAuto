@@ -36,6 +36,7 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 机器学习测试  compareWithStandard, updateStandard
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_machine_learning.png?raw=true)
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_machine_learning_design.png?raw=true)
 在 前后对比测试 的基础上，提取返回结果 Response JSON 的校验模型，包括每一层的所有键值对的名称、类型、长度、取值范围等。
 它还能精准定位到数组内的数据，[]/7/Comment/id，原来只能到 []。
 在第一次会生成校验模型，这时就已经比前后对比测试有约 20% 的准确度提升，随着纠错次数增加，模型会更新地越来越精准，
