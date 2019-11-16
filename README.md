@@ -33,8 +33,9 @@
 可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
 也可以直接访问 http://apijson.org:8000/auto ，把基地址改为你主机的地址(例如 http://localhost:8080 )即可。
 
-自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br />
-[https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server)
+自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
+[https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/TommyLemon/APIJSON/tree/master/APIJSON-Java-Server) 
+
 <br />
 然后在 APIAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
 
