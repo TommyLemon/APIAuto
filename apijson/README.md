@@ -1,15 +1,16 @@
 ## 1.自动生成代码
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
-![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_request_json.png?raw=true)
-![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_entity.png?raw=true)
-![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_generate_code_4_response_json.png?raw=true)
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_request_json.png?raw=true)
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_entity.png?raw=true)
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_response_json.png?raw=true)
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
 模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
 
 ## 2.自动生成注释
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_comment_4_request_and_response.png?raw=true)
 parseComment, getComment4Request, getCommentFromDoc <br />
 * 对左侧请求 JSON 自动在每行右边生成字段的类型、长度、描述等
 * 对右侧结果 JSON 自动在光标移到字段时显示类型、长度、描述等
@@ -17,6 +18,7 @@ parseComment, getComment4Request, getCommentFromDoc <br />
 ## 3.自动静态检查 
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 
+![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_static_checking.png?raw=true)
 parseComment <br />
 * 自动检查请求 JSON 是否符合 JSON 的格式
 * 自动检查表对象里的字段是否在表里真实存在
