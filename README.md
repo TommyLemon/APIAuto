@@ -18,7 +18,10 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_test_machine_learning.jpg) 
 
-<br /><br />
+<br />
+以上是简略图，机器学习测试、自动生成代码、自动静态检查、自动生成注释 等详细的功能介绍见
+https://github.com/TommyLemon/APIAuto/blob/master/apijson/README.md
+<br />
 
 ### 视频教程
 
