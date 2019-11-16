@@ -13,8 +13,8 @@
 
 <br />
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_get.jpg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_code.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_generate_comment_4_request_and_response.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_generate_code_4_request_json.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_test_machine_learning.jpg) 
 
