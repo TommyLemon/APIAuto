@@ -29,18 +29,20 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 
 #### 前后对比测试  compareWithBefore
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_compare_with_before.png?raw=true)
-不用写任何代码，只需要点一下 回测测试的图标按钮 （左区域右上角，类似刷新的图标），
-就会自动测试所有测试用例（除了登录和退出登录），并对比每一个测试用例前后两次请求的结果，然后给出结论：正确、新增字段、缺少字段、值改变、类型改变、状态码改变等。
-每一个测试用例测完后都会有 左侧按钮用于显示测试结果和切换前后的请求结果，右侧按钮用于 纠错，中间的是下载按钮用于下载两次的请求，背景色用于标记接口变更的严重程度。
+不用写任何代码，只需要点一下 回测测试的图标按钮 （左区域右上角，类似刷新的图标），<br />
+就会自动测试所有测试用例（除了登录和退出登录），并对比每一个测试用例前后两次请求的结果，<br />
+然后给出结论：正确、新增字段、缺少字段、值改变、类型改变、状态码改变等。<br />
+每一个测试用例测完后都会有 左侧按钮用于显示测试结果和切换前后的请求结果，<br />
+右侧按钮用于 纠错，中间的是下载按钮用于下载两次的请求，背景色用于标记接口变更的严重程度。<br />
 如果这次的结果是对的，可以点击 [对的，纠错] 按钮来上传新的正确结果作为后续的对比标准。
 
 #### 机器学习测试  compareWithStandard, updateStandard
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_test_machine_learning.png?raw=true) 
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_machine_learning_design.jpg?raw=true) 
-在 前后对比测试 的基础上，提取返回结果 Response JSON 的校验模型，包括每一层的所有键值对的名称、类型、长度、取值范围等。
-它还能精准定位到数组内的数据，[]/7/Comment/id，原来只能到 []。
-在第一次会生成校验模型，这时就已经比前后对比测试有约 20% 的准确度提升，随着纠错次数增加，模型会更新地越来越精准，
-一般一个测试用例达到 12 次后就会相当于高级测试工程师编写测试代码达到的效果。
+在 前后对比测试 的基础上，通过 简单统计 + 场景优化 来提取返回结果 Response JSON 的校验模型，<br />
+包括每一层的所有键值对的名称、类型、长度、取值范围等。它还能精准定位到数组内的数据，[]/7/Comment/id，原来只能到 []。<br />
+在第一次会生成校验模型，这时就已经比前后对比测试有约 20% 的准确度提升，<br />
+随着纠错次数增加，模型会更新地越来越精准，一般一个测试用例达到 12 次后就会相当于高级测试工程师编写测试代码达到的效果。
 
 开启和使用机器测试：<br />
 1.点击右区域 第 3 个图标按钮（点击查看共享），会进入测试用例界面；<br />
@@ -55,10 +57,11 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSONAuto_Enterprise_Git_Commit_About_Mathine_Learning.png?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_Server_Enterprise_Git_Commit_About_Machine_Learning.png?raw=true)
 
-之前 机器学习测试 是作为一个付费功能在 APIAuto-自动化接口管理平台 上使用，从 2018年11月6日 开始上线，现如今我已将全部相关代码开源。
+之前 机器学习测试 是作为一个付费功能在 APIAuto-自动化接口管理平台 上使用，
+从 2018年11月6日 开始上线，现如今我已将全部相关代码开源。<br />
 原来是作为私有仓库托管在码云 Gitee 上 <br />
 https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
-现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，
+现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，<br />
 花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。
 
 ## 5.对开源的感慨
