@@ -52,9 +52,11 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
 3.点击左区域 最右侧的图标按钮（回归测试）。
 
 #### 总结
-以前编写测试代码来实现自动化测试，解决手动测试的繁琐、无聊、易出错；APIAuto 的自动化接口回归测试连代码都不用写了。
-不仅能节约大量的测试代码开发成本，省去接口测试与接口开发人员的沟通时间，避免各种原来导致的误会、争吵等；
-还能通过每次改动代码后跑一遍测试，及时且提前(在同事、领导、用户发现前)发现bug，减少后续发现甚至在线上发生问题导致大量损失的风险。
+以前编写测试代码来实现自动化测试，解决手动测试的繁琐、无聊、易出错；<br />
+APIAuto 的自动化接口回归测试连代码都不用写了，点点按钮就能完成整个自动化测试过程。<br />
+不仅能节约大量的测试代码开发成本，省去接口测试与接口开发人员的沟通时间，避免各种原来导致的误会、争吵等；<br />
+还能通过每次改动代码后跑一遍测试，及时且提前(在同事、领导、用户发现前)发现bug，<br />
+减少后续发现甚至在线上发生问题导致大量损失的风险。
 
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSONAuto_Enterprise_Git_Commit_About_Mathine_Learning.jpg?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_Server_Enterprise_Git_Commit_About_Machine_Learning.jpg?raw=true)
