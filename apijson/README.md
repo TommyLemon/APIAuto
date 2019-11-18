@@ -61,9 +61,9 @@ APIAuto 的自动化接口回归测试连代码都不用写了，点点按钮就
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSONAuto_Enterprise_Git_Commit_About_Mathine_Learning.jpg?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIJSON_Server_Enterprise_Git_Commit_About_Machine_Learning.jpg?raw=true)
 
-之前 机器学习测试 是作为一个付费功能在 APIAuto-自动化接口管理平台 上使用，
+之前 机器学习测试 是作为一个付费功能在 APIAuto-自动化接口管理平台 上使用，<br />
 从 2018年11月6日 开始上线，一年时间才两个付费用户充了几百元。<br />
-现在也不像以前那样时间相对比较充裕了，现如今我已将全部相关代码免费开源。<br />
+现在也不像以前那样时间相对比较充裕了，我已将全部相关代码免费开源。<br />
 原来是作为私有仓库托管在码云 Gitee 上 <br />
 https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 现在这个仓库也公开了，单独维护了两年，和开源版本的 APIAuto(原名 APIJSONAuto) 至少有大半年没同步了，<br />
