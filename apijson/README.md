@@ -15,6 +15,7 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 parseComment, getComment4Request, getCommentFromDoc <br />
 * 对左侧请求 JSON 自动在每行右边生成字段的类型、长度、描述等
 * 对右侧结果 JSON 自动在光标移到字段时显示类型、长度、描述等
+<br />
 
 ## 3.自动静态检查 
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
