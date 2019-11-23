@@ -5,7 +5,8 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_entity.jpg?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_response_json.jpg?raw=true)
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
-模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
+模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。 <br />
+<br />
 
 ## 2.自动生成注释
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
@@ -23,6 +24,7 @@ parseComment <br />
 * 自动检查请求 JSON 是否符合 JSON 的格式
 * 自动检查表对象里的字段是否在表里真实存在
 * 自动检查 APIJSON 关键词对应的值是否合法
+<br />
 
 ## 4.自动化接口测试
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
@@ -91,7 +93,8 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 UI 上支持添加工作流，设置好顺序以及每个接口按路径取出对应的值，再按路径替换下一个接口请求 JSON 里的值，然后一键顺序调用。<br />
 <br />
 目前对我来说够用，暂时不会花时间精力更新，如果觉得不够可以自行解决。<br />
-希望解决后能发一个 Pull Request 贡献源码，大家一起把这个项目越做越好~
+希望解决后能发一个 Pull Request 贡献源码，大家一起把这个项目越做越好~ <br />
+<br />
 
 ## 5.给国内开源作者们说句公道话（包括我自己）
 如果我把维护、推广开源项目的时间用在看各种大厂面经上，或许这次手 Q 部门四面就不会挂得这么不甘心。
