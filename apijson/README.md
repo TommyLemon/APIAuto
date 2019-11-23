@@ -70,7 +70,7 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。<br />
 <br />
 纯手写算法，没有用任何第三方库。
-##### 目前仍然存在一些待优化的点：
+#### 目前仍然存在一些待优化的点：
 1.像 id 自增这种每次都比之前大的值，目前每次都会有蓝色提示 “值超出范围”<br />
 解决方案：<br />
 加一个 level，表示这个值永远是增加/减少，<br />
