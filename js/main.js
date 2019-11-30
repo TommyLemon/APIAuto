@@ -424,6 +424,7 @@
       isExportShow: false,
       isTestCaseShow: false,
       isHeaderShow: false,
+      isRandomShow: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
@@ -676,6 +677,10 @@
             item = hs[i]
             var index = item.indexOf('//') //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
+            item2 = item2.trim()
+            if (item2.length <= 0) {
+              continue;
+            }
 
             index = item2.indexOf(':')
             if (index <= 0) {
@@ -785,7 +790,7 @@
             case 0:
             case 1:
             case 2:
-            case 5:
+            case 6:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
               App.isConfigShow = true
 
@@ -804,18 +809,9 @@
               App.isHeaderShow = show
               App.saveCache('', 'isHeaderShow', show)
               break
-            case 6:
-              App.getCurrentUser(true)
-              break
-            case 7:
-              App.showAndSend('/get', {
-                'Goods[]': {
-                  'count': 0,
-                  'Goods': {
-                    '@column': 'name,detail'
-                  }
-                }
-              }, true)
+            case 5:
+              App.isRandomShow = show
+              App.saveCache('', 'isRandomShow', show)
               break
           }
         }
@@ -830,6 +826,10 @@
         else if (index == 4) {
           App.isHeaderShow = show
           App.saveCache('', 'isHeaderShow', show)
+        }
+        else if (index == 5) {
+          App.isRandomShow = show
+          App.saveCache('', 'isRandomShow', show)
         }
       },
 
@@ -2528,12 +2528,17 @@
        * @param show
        */
       testRandom: function (show) {
+        vExtra.value = vExtra.value.trim()
         try {
+          var lines = vExtra.value.split('\n');
+          if (lines == null || lines.length <= 0) {
+           return;
+          }
+
           var json = this.getRequest(vInput.value) || {};
 
-          alert('< json = ' + JSON.stringify(json, null, '    '))
+          // alert('< json = ' + JSON.stringify(json, null, '    '))
 
-          var lines = vExtra.value.trim().split('\n');
           var line;
 
           var path; // User/id
@@ -2548,9 +2553,12 @@
             line = lines[i] || '';
 
             // remove comment
-            index = line.indexOf('  //');
+            index = line.indexOf('//');
             if (index >= 0) {
-              line = line.substring(0, index);
+              line = line.substring(0, index).trim();
+            }
+            if (line.length <= 0) {
+              continue;
             }
 
             // path User/id  key id@
@@ -2630,14 +2638,14 @@
             if (current == null) {
               current = json;
             }
-            alert('< current = ' + JSON.stringify(current, null, '    '))
+            // alert('< current = ' + JSON.stringify(current, null, '    '))
 
             if (current.hasOwnProperty(key) == false) {
               delete current[lastKeyInPath];
             }
             current[key] = eval(value);
 
-            alert('> current = ' + JSON.stringify(current, null, '    '))
+            // alert('> current = ' + JSON.stringify(current, null, '    '))
           }
         }
         catch (e) {
@@ -2649,10 +2657,12 @@
             msg: e.message
           }
 
+          vExtra.select()
+
           return;
         }
 
-        alert('> json = ' + JSON.stringify(json, null, '    '))
+        // alert('> json = ' + JSON.stringify(json, null, '    '))
 
         if (show == true) {
           vInput.value = JSON.stringify(json, null, '    ');
@@ -3075,6 +3085,7 @@
         this.locals = this.getCache('', 'locals') || []
 
         this.isHeaderShow = (this.getCache('', 'isHeaderShow')) || false
+        this.isRandomShow = (this.getCache('', 'isRandomShow')) || false
       } catch (e) {
         console.log('created  try { ' +
           '\nvar url = this.getCache(, url) ...' +
