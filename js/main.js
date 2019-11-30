@@ -1699,6 +1699,7 @@
           try {
             this.header = this.getHeader(vHeader.value)
           } catch (e2) {
+            this.isHeaderShow = true
             vHeader.select()
             throw new Error(e2.message)
           }
@@ -2657,6 +2658,7 @@
             msg: e.message
           }
 
+          this.isRandomShow = true
           vExtra.select()
 
           return;
