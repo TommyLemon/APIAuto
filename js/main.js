@@ -401,12 +401,14 @@
       compressStr: '',
       error: {},
       requestVersion: 3,
+      requestCount: 1,
       urlComment: '关联查询 Comment.userId = User.id',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
       locals: [],
       testCases: [],
+      randoms: [],
       accounts: [
         {
           'isLoggedIn': false,
@@ -422,13 +424,17 @@
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
+      isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
       isRandomShow: false,
+      isRandomListShow: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
       currentDocItem: {},
+      currentRemoteItem: {},
+      currentRandomItem: {},
       isAdminOperation: false,
       loginType: 'login',
       isExportRemote: false,
@@ -710,9 +716,10 @@
       },
 
       // 显示导出弹窗
-      showExport: function (show, isRemote) {
+      showExport: function (show, isRemote, isRandom) {
         if (show) {
           if (isRemote) { //共享测试用例
+            App.isExportRandom = isRandom
             if (App.isTestCaseShow) {
               alert('请先输入请求内容！')
               return
@@ -721,8 +728,13 @@
               alert('请先测试请求，确保是正确可用的！')
               return
             }
-            var tag = App.getTag()
-            App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
+            if (isRandom) {
+              App.exTxt.name = '随机配置 ' + App.formatDateTime()
+            }
+            else {
+              var tag = App.getTag()
+              App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
+            }
           }
           else { //下载到本地
             if (App.isTestCaseShow) { //文档
@@ -834,9 +846,10 @@
       },
 
       // 显示删除弹窗
-      showDelete: function (show, item, index) {
+      showDelete: function (show, item, index, isRandom) {
         this.isDeleteShow = show
-        this.exTxt.name = '请输入接口名来确认'
+        this.isDeleteRandom = isRandom
+        this.exTxt.name = '请输入' + (isRandom ? '随机配置' : '接口') + '名来确认'
         this.currentDocItem = Object.assign(item, {
           index: index
         })
@@ -844,23 +857,33 @@
 
       // 删除接口文档
       deleteDoc: function () {
-        var item = this.currentDocItem || {}
-        var doc = item.Document || {}
+        var isDeleteRandom = this.isDeleteRandom
+        var item = (isDeleteRandom ? this.currentRandomItem : this.currentDocItem) || {}
+        var doc = (isDeleteRandom ? item.Random : item.Document) || {}
+
+        var type = isDeleteRandom ? '随机配置' : '接口'
         if (doc.id == null) {
-          alert('未选择接口或接口不存在！')
+          alert('未选择' + type + '或' + type + '不存在！')
           return
         }
         if (doc.name != this.exTxt.name) {
-          alert('输入的接口名和要删除的接口名不匹配！')
+          alert('输入的' + type + '名和要删除的' + type + '名不匹配！')
           return
         }
 
         this.showDelete(false, {})
 
         this.isTestCaseShow = false
+        this.isRandomListShow = false
 
         var url = this.server + '/delete'
-        var req = {
+        var req = isDeleteRandom ? {
+          format: false,
+          'Random': {
+            'id': doc.id
+          },
+          'tag': 'Random'
+        } : {
           format: false,
           'Document': {
             'id': doc.id
@@ -870,11 +893,18 @@
         this.request(true, url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
-          var rpObj = res.data
+          var rpObj = res.data || {}
 
-          if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
-            App.remotes.splice(item.index, 1)
-            App.showTestCase(true, App.isLocalShow)
+          if (isDeleteRandom) {
+            if (rpObj.Random != null && rpObj.Random.code == 200) {
+              App.randoms.splice(item.index, 1)
+              App.showRandomList(true, App.currentRemoteItem)
+            }
+          } else {
+            if (rpObj.Document != null && rpObj.Document.code == 200) {
+              App.remotes.splice(item.index, 1)
+              App.showTestCase(true, App.isLocalShow)
+            }
           }
         })
       },
@@ -907,7 +937,7 @@
       },
 
       // 删除已保存的
-      remove: function (item, index, isRemote) {
+      remove: function (item, index, isRemote, isRandom) {
         if (isRemote == null || isRemote == false) { //null != false
           localforage.removeItem(item.key, function () {
             App.historys.splice(index, 1)
@@ -918,16 +948,24 @@
             return
           }
 
-          this.showDelete(true, item, index)
+          this.showDelete(true, item, index, isRandom)
         }
       },
 
-      // 根据历史恢复数据
+      // 根据随机测试用例恢复数据
+      restoreRandom: function (item) {
+        this.currentRandomItem = item
+        this.isRandomListShow = false
+        vRandom.value = StringUtil.get(((item || {}).Random || {}).config)
+      },
+      // 根据测试用例恢复数据
       restoreRemote: function (item) {
-        this.restore(item.Document)
+        this.currentRemoteItem = item
+        this.restore((item || {}).Document, true)
       },
       // 根据历史恢复数据
-      restore: function (item) {
+      restore: function (item, isRemote) {
+        item = item || {}
         localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
@@ -942,6 +980,11 @@
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
           App.onChange(false)
+
+          if (isRemote) {
+            App.randoms = []
+            App.showRandomList(App.isRandomListShow, item)
+          }
         })
       },
 
@@ -1075,13 +1118,27 @@
             alert('请先登录！')
             return
           }
+          var isExportRandom = App.isExportRandom
+          var did = ((App.currentRemoteItem || {}).Document || {}).id
+          if (isExportRandom && did == null) {
+            alert('请先共享测试用例！')
+            return
+          }
 
           App.isTestCaseShow = false
 
           var currentAccount = App.accounts[App.currentAccountIndex];
 
           var url = App.server + '/post'
-          var req = {
+          var req = isExportRandom ? {
+            format: false,
+            'Random': {
+              documentId: did,
+              count: App.requestCount,
+              config: vRandom.value
+            },
+            'tag': 'Random'
+          } : {
             format: false,
             'Document': {
               'userId': App.User.id,
@@ -1102,11 +1159,19 @@
           App.request(true, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
-            var rpObj = res.data
+            var rpObj = res.data || {}
 
-            if (rpObj != null && rpObj.Document != null && rpObj.Document.code == 200) {
-              App.remotes = []
-              App.showTestCase(true, false)
+            if (isExportRandom) {
+              if (rpObj.Random != null && rpObj.Random.code == 200) {
+                App.randoms = []
+                App.showRandomList(true, (App.currentRemoteItem || {}).Document)
+              }
+            }
+            else {
+              if (rpObj.Document != null && rpObj.Document.code == 200) {
+                App.remotes = []
+                App.showTestCase(true, false)
+              }
             }
           })
         }
@@ -1334,6 +1399,51 @@
           })
         }
       },
+
+      //显示远程的测试用例文档
+      showRandomList: function (show, item) {
+        App.isRandomListShow = show
+
+        vOutput.value = show ? '' : (output || '')
+        App.showDoc()
+
+        App.randoms = App.randoms || []
+
+        if (show && App.isRandomShow && App.randoms.length <= 0 && item != null && item.id != null) {
+          App.isRandomListShow = false
+
+          var url = App.server + '/get'
+          var req = {
+            '[]': {
+              'count': 0,
+              'Random': {
+                'documentId': item.id
+              },
+              'TestRecord': {
+                'randomId@': '/Random/id',
+                '@order': 'date-'
+              }
+            }
+          }
+
+          App.onChange(false)
+          App.request(true, url, req, {}, function (url, res, err) {
+            App.onResponse(url, res, err)
+
+            var rpObj = res.data
+
+            if (rpObj != null && rpObj.code === 200) {
+              App.isRandomListShow = true
+              App.randoms = rpObj['[]']
+              vOutput.value = show ? '' : (output || '')
+              App.showDoc()
+
+              //App.onChange(false)
+            }
+          })
+        }
+      },
+
 
       // 设置文档
       showDoc: function () {
@@ -2529,9 +2639,9 @@
        * @param show
        */
       testRandom: function (show) {
-        vExtra.value = vExtra.value.trim()
+        vRandom.value = vRandom.value.trim()
         try {
-          var lines = vExtra.value.split('\n');
+          var lines = vRandom.value.split('\n');
           if (lines == null || lines.length <= 0) {
            return;
           }
@@ -2659,7 +2769,7 @@
           }
 
           this.isRandomShow = true
-          vExtra.select()
+          vRandom.select()
 
           return;
         }
@@ -3030,10 +3140,10 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
-      setRequestHint(index, item) {
-        var d = item == null ? null : item.Document;
-        var r = d == null ? null : d.request;
-        this.$refs.testCaseTexts[index].setAttribute('data-hint', r == null ? '' : JSON.stringify(this.getRequest(r), null, ' '));
+      setRequestHint(index, item, isRemote) {
+        var d = item == null ? null : (isRemote ? item.Random : item.Document);
+        var r = d == null ? null : (isRemote ? d.config : d.request);
+        this.$refs[isRemote ? 'randomTexts' : 'testCaseTexts'][index].setAttribute('data-hint', r == null ? '' : JSON.stringify(isRemote ? r : this.getRequest(r), null, ' '));
       },
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item) {

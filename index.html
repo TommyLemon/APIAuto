@@ -179,18 +179,43 @@
 
         <div v-show="isRandomShow" style="width: 100%; height: 270px; position: relative;" >
             <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-            <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >随机测试 Random Test<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (点击查看列表)</a></a>
-              <a class="hint--top @cli-tool" data-hint="测试" href="javascript:void(0)" @click="testRandom(true)">
+            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >随机测试 Random Test
+                <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 10px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
+                    查看列表
+                </a>
+            </a>
+                <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;" href="javascript:void(0)" @click="if(isRandomListShow) { isRandomListShow = false } else { showExport(true, true, true) }"> + </a>
+                <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="共享"  @click="showExport(true, true)">
+                    <svg class="icon">
+                        <use xlink:href="svg/icon.svg#share"></use>
+                    </svg>
+                </a>
+              <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="testRandom(true)">
                   <img class="icon" src="img/refresh.png"/>
               </a>
-              <a class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large;" href="javascript:void(0)" @click="addRandomConfig()"> + </a>
               <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 5)">
               <svg class="icon close-icon"  >
                 <use xlink:href="svg/icon.svg#close"></use>
               </svg>
               </a>
           </div>
-          <textarea id="vExtra" style="width: 100%;height: 100%;" wrap="off"
+            <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                <li style="width: 100%" v-for="(item, index) in randoms" >
+                    <a class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" > {{ (item.Random.count || 1) + '次 - ' + item.Random.name }}</a>
+                    <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
+                        <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                        <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
+                            <use xlink:href="svg/icon.svg#export-txt"></use>
+                        </svg>
+                        <button v-show="item.compareType != 0 || (item.showType == 'before' && item.TestRecord != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
+                        <button v-show="item.compareType == 0 && item.showType != 'before'" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
+                    </div>
+                    <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px" @click="remove(item, index, true, true)">
+                        <use xlink:href="svg/icon.svg#trash"></use>
+                    </svg>
+                </li>
+            </ul>
+          <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
                     placeholder="常用：
 RANDOM_REAL  // @ 从数据库随机取值
 RANDOM_REAL_IN  // {}@ 从数据库随机取值
@@ -602,7 +627,7 @@ User/sex : RANDOM_INT(0,2) //从 0-2 随机取整数
   var vInput = document.getElementById("vInput");
   var vComment = document.getElementById("vComment");
   var vHeader = document.getElementById("vHeader");
-  var vExtra = document.getElementById("vExtra");
+  var vRandom = document.getElementById("vRandom");
   var vOutput = document.getElementById("vOutput");
 
   var vAccount = document.getElementById("vAccount");
