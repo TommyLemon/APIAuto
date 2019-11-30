@@ -199,8 +199,8 @@ RANDOM_NUM(0.00,99.99)  //随机小数
 RANDOM_STR(1,10,'a-zA-Z0-9')  //随机字符串
 RANDOM_IN(1,'2',false,'str',[],{})  //随机取值
 模板：
-User/id : RANDOM_REAL
-User/id : RANDOM_INT(0,100000)
+User/id : RANDOM_REAL  //从数据库随机取值
+User/id id> : RANDOM_INT(0,100000)  //用 id> 替换 id
 User/id : Math.round(100000*Math.random())  //完全自定义
 ">
 User/id : RANDOM_IN(82001,82002,82003,70793,93793) //从这几个值随机取数
