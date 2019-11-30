@@ -342,7 +342,41 @@
 
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-//这些全局变量不能放在data中，否则会报undefined错误
+
+  var RANDOM_REAL = 'RANDOM_REAL'
+  var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
+  var RANDOM_INT = 'RANDOM_INT'
+  var RANDOM_NUM = 'RANDOM_NUM'
+  var RANDOM_STR = 'RANDOM_STR'
+  var RANDOM_IN = 'RANDOM_IN'
+
+  function randomReal(table, key, count) {
+    var json = {
+      count: count,
+      from: table
+    }
+    json[table] = {
+      '@column': key,
+      '@order': 'random()'
+    }
+    return json
+  }
+  function randomInt(start, end) {
+    return Math.round(randomNum(start, end));
+  }
+  function randomNum(start, end) {
+    start = start || 0
+    end = end || Math.MAX_SAFE_INTEGER
+    return end * Math.random() + start;
+  }
+  function randomStr(minLength, maxLength, availableChars) {
+    return '' + randomNum();
+  }
+  function randomIn(...args) {
+    return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)];
+  }
+
+  //这些全局变量不能放在data中，否则会报undefined错误
 
   var baseUrl
   var inputted
@@ -580,6 +614,10 @@
           // App.server = (index < 0 ? baseUrl : baseUrl.substring(0, baseUrl)) + ':9090'
 
         }
+      },
+      getUrl: function () {
+        var url = StringUtil.get(this.host) + new String(vUrl.value)
+        return url.replace(/ /g, '')
       },
       //获取基地址
       getBaseUrl: function () {
@@ -1839,12 +1877,9 @@
 
         var req = this.getRequest(vInput.value)
 
+        var url = this.getUrl()
 
-        var url = StringUtil.get(this.host) + new String(vUrl.value)
-        url = url.replace(/ /g, '')
-
-
-        vOutput.value = "requesting... \nURL = " + url;
+        vOutput.value = "requesting... \nURL = " + url
         this.view = 'output';
 
 
@@ -2489,6 +2524,145 @@
         App.showTestCase(true, false)
       },
 
+      /**随机测试，动态替换键值对
+       * @param show
+       */
+      testRandom: function (show) {
+        try {
+          var json = this.getRequest(vInput.value) || {};
+
+          alert('< json = ' + JSON.stringify(json, null, '    '))
+
+          var lines = vExtra.value.trim().split('\n');
+          var line;
+
+          var path; // User/id
+          var key; // id
+          var value; // RANDOM_DATABASE
+
+          var index;
+          var pathKeys;
+          var customizeKey;
+
+          for (var i = 0; i < lines.length; i ++) {
+            line = lines[i] || '';
+
+            // remove comment
+            index = line.indexOf('  //');
+            if (index >= 0) {
+              line = line.substring(0, index);
+            }
+
+            // path User/id  key id@
+            index = line.lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
+            var p_k = line.substring(0, index);
+            var bi = p_k.indexOf(' ');
+            path = bi < 0 ? p_k : p_k.substring(0, bi);
+
+            pathKeys = path.split('/')
+            if (pathKeys == null || pathKeys.length <= 0) {
+              throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+                '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            }
+
+            var lastKeyInPath = pathKeys[pathKeys.length - 1]
+            customizeKey = bi > 0;
+            key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
+            if (key == null || key.trim().length <= 0) {
+              throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + key + ' 不是合法的 JSON key!' +
+                '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            }
+
+            // value RANDOM_REAL
+            value = line.substring(index + ' : '.length);
+
+            if (value == RANDOM_REAL) {
+              value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
+              if (customizeKey != true) {
+                key += '@';
+              }
+            }
+            else if (value == RANDOM_REAL_IN) {
+              value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", null)';
+              if (customizeKey != true) {
+                key += '{}@';
+              }
+            }
+            else {
+              var start = value.indexOf('(');
+              var end = value.lastIndexOf(')');
+              if (start*end <= 0 || start >= end) {
+                throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+              }
+
+              var fun = value.substring(0, start);
+              if (fun == RANDOM_INT) {
+                value = 'randomInt' + value.substring(start);
+              }
+              if (fun == RANDOM_NUM) {
+                value = 'randomNum' + value.substring(start);
+              }
+              if (fun == RANDOM_STR) {
+                value = 'randomStr' + value.substring(start);
+              }
+              if (fun == RANDOM_IN) {
+                value = 'randomIn' + value.substring(start);
+              }
+            }
+
+            //先按照单行简单实现
+            //替换 JSON 里的键值对 key: value
+
+            var parent = json;
+            var current = null;
+            for (var j = 0; j < pathKeys.length - 1; j ++) {
+              current = parent[pathKeys[j]]
+              if (current == null) {
+                current = parent[pathKeys[j]] = {}
+              }
+              if (parent instanceof Array || parent instanceof Object == false) {
+                throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
+                  ' pathKeys[' + j + '] 在实际请求 JSON 内对应的值不是对象 {} !');
+              }
+              parent = current;
+            }
+
+            if (current == null) {
+              current = json;
+            }
+            alert('< current = ' + JSON.stringify(current, null, '    '))
+
+            if (current.hasOwnProperty(key) == false) {
+              delete current[lastKeyInPath];
+            }
+            current[key] = eval(value);
+
+            alert('> current = ' + JSON.stringify(current, null, '    '))
+          }
+        }
+        catch (e) {
+          log(e)
+          vSend.disabled = true
+
+          App.view = 'error'
+          App.error = {
+            msg: e.message
+          }
+
+          return;
+        }
+
+        alert('> json = ' + JSON.stringify(json, null, '    '))
+
+        if (show == true) {
+          vInput.value = JSON.stringify(json, null, '    ');
+          this.send(false, null);
+        }
+        else {
+          this.request(false, this.getUrl(), json, this.getHeader(vHeader.value), null)
+        }
+      },
+
 
       /**回归测试
        * 原理：
@@ -2765,7 +2939,7 @@
           var stddObj = App.isMLEnabled ? JSONResponse.updateStandard(standard || {}, currentResponse) : {};
           stddObj.code = code;
           currentResponse.code = code;
-	  
+
             // if (isML != true) {
               url = App.server + '/post'
               req = {

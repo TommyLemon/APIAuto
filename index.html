@@ -173,16 +173,57 @@
 }
           </textarea>
         </div>
-        <div v-show="isHeaderShow" style="width: 100%; height: 30%; position: absolute;bottom: 0px; z-index: 100; background: white;" >
+        <div v-show="isHeaderShow" style="width: 100%; height: 40%; position: absolute;bottom: 0px; z-index: 100; background: white;" >
           <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
             <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key: value 格式)</a></a>
-            <a  class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
+            <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
               <svg class="icon close-icon"  >
                 <use xlink:href="svg/icon.svg#close"></use>
               </svg>
             </a>
           </div>
           <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4=  //示例，支持单行注释"></textarea>
+        </div>
+
+        <div v-show="isHeaderShow" style="width: 100%; height: 40%; position: absolute;bottom: 0px; z-index: 100; background: white;" >
+          <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
+            <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >随机测试<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (点击查看列表)</a></a>
+              <a class="hint--top @cli-tool" data-hint="测试" href="javascript:void(0)" @click="testRandom(true)">
+                  <img class="icon" src="img/refresh.png"/>
+              </a>
+              <a class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large;" href="javascript:void(0)" @click="addRandomConfig()"> + </a>
+              <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
+              <svg class="icon close-icon"  >
+                <use xlink:href="svg/icon.svg#close"></use>
+              </svg>
+              </a>
+          </div>
+          <textarea id="vExtra" style="width: 100%;height: 100%;" wrap="off"
+                    placeholder="常用：
+RANDOM_REAL @ 从数据库随机取值
+RANDOM_REAL_IN {}@ 从数据库随机取值
+RANDOM_INT(0,100000) 随机整数
+RANDOM_NUM(0.00,99.99) 随机小数
+RANDOM_STR(1,10,'a-zA-Z0-9') 随机字符串
+RANDOM_IN(1,'2',false,'str',[],{}) 随机取值
+模板：
+User/id : RANDOM_REAL
+User/id : RANDOM_INT(0,100000)
+User/id : Math.round(100000*Math.random())  //完全自定义
+">
+User/id : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
+User/sex : RANDOM_INT(0,1)
+testNum : RANDOM_NUM(0.00,99.99)
+testScript : Math.round(100000*Math.random())
+User/id id@ : {  //id 替换为 id@
+  "from": "User",
+  "count": 1,
+  "User": {
+    "@column": "id",
+    "@order": "random()"
+  }
+}
+          </textarea>
         </div>
       </div>
     </div>
@@ -561,6 +602,7 @@
   var vInput = document.getElementById("vInput");
   var vComment = document.getElementById("vComment");
   var vHeader = document.getElementById("vHeader");
+  var vExtra = document.getElementById("vExtra");
   var vOutput = document.getElementById("vOutput");
 
   var vAccount = document.getElementById("vAccount");
