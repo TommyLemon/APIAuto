@@ -851,9 +851,16 @@
         this.isDeleteShow = show
         this.isDeleteRandom = isRandom
         this.exTxt.name = '请输入' + (isRandom ? '随机配置' : '接口') + '名来确认'
-        this.currentDocItem = Object.assign(item, {
-          index: index
-        })
+        if (isRandom) {
+          this.currentRandomItem = Object.assign(item, {
+            index: index
+          })
+        }
+        else {
+          this.currentDocItem = Object.assign(item, {
+            index: index
+          })
+        }
       },
 
       // 删除接口文档
