@@ -5,7 +5,8 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_entity.jpg?raw=true)
 ![](https://github.com/TommyLemon/StaticResources/blob/master/APIAuto/APIAuto_generate_code_4_response_json.jpg?raw=true)
 Java, Kotlin, Swift, C#, PHP, Go, JavaScript, TypeScript, Python <br />
-模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。
+模型类 Entity、封装请求 JSON、解析结果 JSON 等代码。 <br />
+<br />
 
 ## 2.自动生成注释
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
@@ -14,6 +15,7 @@ https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
 parseComment, getComment4Request, getCommentFromDoc <br />
 * 对左侧请求 JSON 自动在每行右边生成字段的类型、长度、描述等
 * 对右侧结果 JSON 自动在光标移到字段时显示类型、长度、描述等
+<br />
 
 ## 3.自动静态检查 
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/CodeUtil.js
@@ -23,6 +25,7 @@ parseComment <br />
 * 自动检查请求 JSON 是否符合 JSON 的格式
 * 自动检查表对象里的字段是否在表里真实存在
 * 自动检查 APIJSON 关键词对应的值是否合法
+<br />
 
 ## 4.自动化接口测试
 https://github.com/TommyLemon/APIAuto/blob/master/apijson/JSONResponse.js
@@ -70,7 +73,7 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 花了几小时把机器学习相关代码提取出来，整合到开源的 APIAuto 里面的 JSONResponse.js 了。<br />
 <br />
 纯手写算法，没有用任何第三方库。
-##### 目前仍然存在一些待优化的点：
+#### 目前仍然存在一些待优化的点：
 1.像 id 自增这种每次都比之前大的值，目前每次都会有蓝色提示 “值超出范围”<br />
 解决方案：<br />
 加一个 level，表示这个值永远是增加/减少，<br />
@@ -82,7 +85,7 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 牺牲一些性能，把所有有问题的 键值对/数组元素值 全都用一个数组记录，每次递归都传递这个值。<br />
 为了让 UI 显示比较简洁，可以只显示最严重的 键值对/数组元素值，下载的测试标准文本里显示所有有问题的 键值对/数组元素值。<br />
 <br />
-3.每次走完后，部分数据会因为调用 增删改 接口被修改，下次查询的值就不一样，影响判断<br />
+3.每次跑完测试用例后，部分数据会因为调用 增删改 接口被修改，下次查询的值就不一样，影响判断<br />
 解决方案：<br />
 按照 增删改查 来分组，每次可以只跑一组接口。还可以支持多选来部分测试，而不是目前的全部测试。<br />
 <br />
@@ -91,7 +94,8 @@ https://gitee.com/TommyLemon/APIJSONAuto-Enterprise  <br />
 UI 上支持添加工作流，设置好顺序以及每个接口按路径取出对应的值，再按路径替换下一个接口请求 JSON 里的值，然后一键顺序调用。<br />
 <br />
 目前对我来说够用，暂时不会花时间精力更新，如果觉得不够可以自行解决。<br />
-希望解决后能发一个 Pull Request 贡献源码，大家一起把这个项目越做越好~
+希望解决后能发一个 Pull Request 贡献源码，大家一起把这个项目越做越好~ <br />
+<br />
 
 ## 5.给国内开源作者们说句公道话（包括我自己）
 如果我把维护、推广开源项目的时间用在看各种大厂面经上，或许这次手 Q 部门四面就不会挂得这么不甘心。

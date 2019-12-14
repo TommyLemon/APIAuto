@@ -49,7 +49,7 @@ const KEY_TOTAL = "total";
 
 
 function log(msg) {
-  console.log(msg);
+  // console.log(msg);
 }
 
 var JSONResponse = {
