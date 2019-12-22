@@ -462,7 +462,8 @@
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://apijson.org:9090',
+      server: 'http://apijson.org:9090',  //apijson.org:8000
+      // server: 'http://47.74.39.68:9090',  // apijson.org
       language: 'Java',
       header: {}
     },
@@ -2514,12 +2515,9 @@
           s = '';
         }
         else {
-          while (s.indexOf('|') >= 0) {
-            s = s.replace('|', '\|');
-          }
-          while (s.indexOf('\n') >= 0) {
-            s = s.replace('\n', ' <br /> ');
-          }
+          //无效
+          s = s.replace(/\|/g, '\|');
+          s = s.replace(/\n/g, ' <br /> ');
         }
 
         return s;
