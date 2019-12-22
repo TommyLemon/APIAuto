@@ -350,6 +350,12 @@
   var RANDOM_STR = 'RANDOM_STR'
   var RANDOM_IN = 'RANDOM_IN'
 
+  var ORDER_REAL = 'ORDER_REAL'
+  var ORDER_IN = 'ORDER_IN'
+
+  var ORDER_MAP = {}
+
+  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
   function randomReal(table, key, count) {
     var json = {
       count: count,
@@ -367,13 +373,30 @@
   function randomNum(start, end) {
     start = start || 0
     end = end || Math.MAX_SAFE_INTEGER
-    return end * Math.random() + start;
+    return (end - start)*Math.random() + start;
   }
   function randomStr(minLength, maxLength, availableChars) {
-    return '' + randomNum();
+    return 'Ab_Cd' + randomNum();
   }
   function randomIn(...args) {
     return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)];
+  }
+
+  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
+  function orderReal(index, table, key, order) {
+    var json = {
+      count: 1,
+      page: index,
+      from: table
+    }
+    json[table] = {
+      '@column': key,
+      '@order': order || (key + '+')
+    }
+    return json
+  }
+  function orderIn(index, ...args) {
+    return args == null || args.length <= 0 ? null : args[index];
   }
 
   //这些全局变量不能放在data中，否则会报undefined错误
@@ -420,6 +443,7 @@
       currentAccountIndex: 0,
       tests: [],
       testProcess: '机器学习:已关闭',
+      randomTestTitle: null,
       testRandomProcess: '',
       compareColor: '#0000',
       isDelayShow: false,
@@ -928,7 +952,8 @@
           name: App.history.name,
           url: '/' + this.getMethod(),
           request: inputted,
-          header: vHeader.value
+          header: vHeader.value,
+          random: vRandom.value
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -965,7 +990,10 @@
       restoreRandom: function (item) {
         this.currentRandomItem = item
         this.isRandomListShow = false
-        vRandom.value = StringUtil.get(((item || {}).Random || {}).config)
+
+        var random = (item || {}).Random || {}
+        this.randomTestTitle = random.name
+        vRandom.value = StringUtil.get(random.config)
       },
       // 根据测试用例恢复数据
       restoreRemote: function (item) {
@@ -988,6 +1016,7 @@
           App.showTestCase(false, App.isLocalShow)
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
+          vRandom.value = StringUtil.get(item.random)
           App.onChange(false)
 
           if (isRemote) {
@@ -2682,6 +2711,8 @@
           var url = this.getUrl()
           var header = this.getHeader(vHeader.value)
 
+          ORDER_MAP = {}  //重置
+
           for (var i = 0; i < list.length; i ++) {
             const item = list[i]
             const random = item == null ? null : item.Random
@@ -2697,7 +2728,7 @@
             allCount += (itemAllCount - 1)
 
             App.testRandomSingle(show, random, url
-              , App.getRandomJSON(JSON.parse(JSON.stringify(json)), random.config)
+              , App.getRandomJSON(JSON.parse(JSON.stringify(json)), random.config, random.id)
               , header, function (url, res, err) {
 
               doneCount ++
@@ -2737,7 +2768,7 @@
       testRandomWithText: function (show, callback) {
         var json;
         try {
-          json = this.getRandomJSON(this.getRequest(vInput.value), vRandom.value)
+          json = this.getRandomJSON(this.getRequest(vInput.value), vRandom.value, 0)
         }
         catch (e) {
           log(e)
@@ -2762,7 +2793,7 @@
        * @param show
        * @param callback
        */
-      getRandomJSON: function (json, config) {
+      getRandomJSON: function (json, config, randomId) {
           var lines = config == null ? null : config.trim().split('\n')
           if (lines == null || lines.length <= 0) {
            return null
@@ -2840,14 +2871,43 @@
               if (fun == RANDOM_INT) {
                 value = 'randomInt' + value.substring(start);
               }
-              if (fun == RANDOM_NUM) {
+              else if (fun == RANDOM_NUM) {
                 value = 'randomNum' + value.substring(start);
               }
-              if (fun == RANDOM_STR) {
+              else if (fun == RANDOM_STR) {
                 value = 'randomStr' + value.substring(start);
               }
-              if (fun == RANDOM_IN) {
+              else if (fun == RANDOM_IN) {
                 value = 'randomIn' + value.substring(start);
+              }
+              else if (fun == ORDER_IN) {
+                var argCount = StringUtil.split(value.substring(start + 1, end)).length;
+                if (argCount <= 0) {
+                  throw new Error('ORDER_IN 至少要一个参数！');
+                }
+
+                if (randomId == null) {
+                  randomId = 0;
+                }
+                if (ORDER_MAP == null) {
+                  ORDER_MAP = {};
+                }
+                if (ORDER_MAP[randomId] == null) {
+                  ORDER_MAP[randomId] = {};
+                }
+                if (ORDER_MAP[randomId].orderIn == null) {
+                  ORDER_MAP[randomId].orderIn = {};
+                }
+
+                var orderIndex = ORDER_MAP[randomId].orderIn[p_k];
+                if (orderIndex == null) {
+                  orderIndex = 0;
+                }
+
+                value = 'orderIn(' + orderIndex + ',' + value.substring(start + 1);
+
+                orderIndex ++
+                ORDER_MAP[randomId].orderIn[p_k] = orderIndex%argCount;
               }
             }
 

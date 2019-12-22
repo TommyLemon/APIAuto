@@ -177,9 +177,9 @@
 
           <div style="width: 100%; height: auto; position: absolute;bottom: 0px; z-index: 100; background: white;" >
 
-        <div v-show="isRandomShow" style="width: 100%; height: 270px; position: relative;" >
+        <div v-show="isRandomShow" style="width: 100%; height: 300px; position: relative;" >
             <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >随机测试 Random Test
+            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ isRandomListShow || StringUtil.isEmpty(randomTestTitle) ? '随机测试 Random Test' : randomTestTitle }}
                 <a style="padding-right: 10px;padding-top: 2px">
                     {{ testRandomProcess }}
                 </a>
@@ -187,7 +187,8 @@
                     查看列表
                 </a>
             </a>
-                <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;" href="javascript:void(0)" @click="if(isRandomListShow) { isRandomListShow = false } else { showExport(true, true, true) }"> + </a>
+                <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;"
+                   href="javascript:void(0)" @click="if(isRandomListShow) { randomTestTitle = null; isRandomListShow = false;  } else { showExport(true, true, true) }"> + </a>
                 <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="共享"  @click="showExport(true, true)">
                     <svg class="icon">
                         <use xlink:href="svg/icon.svg#share"></use>
@@ -226,17 +227,19 @@ RANDOM_INT(0,100000)  //随机整数
 RANDOM_NUM(0.00,99.99)  //随机小数
 RANDOM_STR(1,10,'a-zA-Z0-9')  //随机字符串
 RANDOM_IN(1,'2',false,'str',[],{})  //随机取值
+ORDER_IN(1,'2',false,'str',[],{})  //顺序取值
 模板：
 User/id : RANDOM_REAL  //从数据库随机取值
 User/id id> : RANDOM_INT(0,100000)  //用 id> 替换 id
 User/id : Math.round(100000*Math.random())  //完全自定义
 ">
-User/id : RANDOM_IN(82001,82002,82003,70793,93793) //从这几个值随机取数
-User/sex : RANDOM_INT(0,2) //从 0-2 随机取整数
-[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{}) //从这几个值随机取数
+User/id : RANDOM_IN(82001,82002,82003,70793,93793)  //从这几个值随机取数
+[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{})  //从这几个值随机取值
 []/page : Math.round(10*Math.random())  //通过代码来自定义
-// []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
-          </textarea>
+@explain : ORDER_IN(true,false)  //从这几个值顺序取值
+//  []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
+
+//清空文本内容可查看规则</textarea>
         </div>
 
 
