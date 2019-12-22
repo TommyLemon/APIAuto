@@ -535,8 +535,8 @@
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      server: 'http://apijson.org:9090',  //apijson.org:8000
-      // server: 'http://47.74.39.68:9090',  // apijson.org
+      // server: 'http://apijson.org:9090',  //apijson.org:8000
+      server: 'http://47.74.39.68:9090',  // apijson.org
       language: 'Java',
       header: {}
     },
@@ -769,7 +769,7 @@
                 + '\n错误位置: 第 ' + (i + 1) + ' 行'
                 + '\n错误文本: ' + item)
             }
-            header[item2.substring(0, index)] = item2.substring(index + 1, item2.length)
+            header[StringUtil.trim(item2.substring(0, index))] = item2.substring(index + 1, item2.length)
           }
         }
 
@@ -3358,7 +3358,7 @@
       setRequestHint(index, item, isRandom) {
         var d = item == null ? null : (isRandom ? item.Random : item.Document);
         var r = d == null ? null : (isRandom ? d.config : d.request);
-        this.$refs[isRandom ? 'randomTexts' : 'testCaseTexts'][index].setAttribute('data-hint', r == null ? '' : JSON.stringify(isRandom ? r : this.getRequest(r), null, ' '));
+        this.$refs[isRandom ? 'randomTexts' : 'testCaseTexts'][index].setAttribute('data-hint', r == null ? '' : (isRandom ? r : JSON.stringify(this.getRequest(r), null, ' ')));
       },
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
       setTestHint(index, item, isRandom) {
