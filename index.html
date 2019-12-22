@@ -177,7 +177,7 @@
 
           <div style="width: 100%; height: auto; position: absolute;bottom: 0px; z-index: 100; background: white;" >
 
-        <div v-show="isRandomShow" style="width: 100%; height: 300px; position: relative;" >
+        <div v-show="isRandomShow" style="width: 100%; height: 330px; position: relative;" >
             <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
             <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ isRandomListShow || StringUtil.isEmpty(randomTestTitle) ? '随机测试 Random Test' : randomTestTitle }}
                 <a style="padding-right: 10px;padding-top: 2px">
@@ -223,20 +223,22 @@
                     placeholder="常用：
 RANDOM_REAL  // @ 从数据库随机取值
 RANDOM_REAL_IN  // {}@ 从数据库随机取值
-RANDOM_INT(0,100000)  //随机整数
-RANDOM_NUM(0.00,99.99)  //随机小数
-RANDOM_STR(1,10,'a-zA-Z0-9')  //随机字符串
-RANDOM_IN(1,'2',false,'str',[],{})  //随机取值
-ORDER_IN(1,'2',false,'str',[],{})  //顺序取值
+RANDOM_INT(min:Integer, max:Integer)  //从范围内随机取整数
+RANDOM_NUM(min:Number, max:Number)  //从范围内随机取小数
+RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  //从长度范围内随机取字符串
+RANDOM_IN(val0:Any, val1:Any ...)  //从选项内随机取值
+ORDER_REAL  // @ 从数据库顺序取值
+ORDER_INT(min:Integer, max:Integer)  //从范围内顺序取整数
+ORDER_IN(val0:Any, val1:Any ...)  //从选项内顺序取值
 模板：
 User/id : RANDOM_REAL  //从数据库随机取值
 User/id id> : RANDOM_INT(0,100000)  //用 id> 替换 id
 User/id : Math.round(100000*Math.random())  //完全自定义
 ">
-User/id : RANDOM_IN(82001,82002,82003,70793,93793)  //从这几个值随机取数
-[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{})  //从这几个值随机取值
-[]/page : Math.round(10*Math.random())  //通过代码来自定义
-@explain : ORDER_IN(true,false)  //从这几个值顺序取值
+User/id : RANDOM_INT(82001,82020)  //随机整数
+[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{})  //随机取值
+[]/page : Math.round(5*Math.random())  //通过代码来自定义
+@explain : ORDER_IN(true,false)  //顺序取值
 //  []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
 
 //清空文本内容可查看规则</textarea>

@@ -351,6 +351,7 @@
   var RANDOM_IN = 'RANDOM_IN'
 
   var ORDER_REAL = 'ORDER_REAL'
+  var ORDER_INT = 'ORDER_INT'
   var ORDER_IN = 'ORDER_IN'
 
   var ORDER_MAP = {}
@@ -367,13 +368,21 @@
     }
     return json
   }
-  function randomInt(start, end) {
-    return Math.round(randomNum(start, end));
+  function randomInt(min, max) {
+    return Math.round(randomNum(min, max));
   }
-  function randomNum(start, end) {
-    start = start || 0
-    end = end || Math.MAX_SAFE_INTEGER
-    return (end - start)*Math.random() + start;
+  function randomNum(min, max) {
+    // 0 居然也会转成  Number.MIN_SAFE_INTEGER ！！！
+    // start = start || Number.MIN_SAFE_INTEGER
+    // end = end || Number.MAX_SAFE_INTEGER
+
+    if (min == null) {
+      min = Number.MIN_SAFE_INTEGER
+    }
+    if (max == null) {
+      max = Number.MAX_SAFE_INTEGER
+    }
+    return (max - min)*Math.random() + min;
   }
   function randomStr(minLength, maxLength, availableChars) {
     return 'Ab_Cd' + randomNum();
@@ -395,10 +404,50 @@
     }
     return json
   }
+  function orderInt(index, min, max) {
+    if (min == null) {
+      min = Number.MIN_SAFE_INTEGER
+    }
+    if (max == null) {
+      max = Number.MAX_SAFE_INTEGER
+    }
+    return min + index%(max - min + 1)
+  }
   function orderIn(index, ...args) {
-    return args == null || args.length <= 0 ? null : args[index];
+    // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
+    index = index || 0;
+    return args == null || args.length <= index ? null : args[index];
   }
 
+  function getOrderIndex(randomId, lineKey, argCount) {
+    // alert('randomId = ' + randomId + '; lineKey = ' + lineKey + '; argCount = ' + argCount);
+    // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
+
+    if (randomId == null) {
+      randomId = 0;
+    }
+    if (ORDER_MAP == null) {
+      ORDER_MAP = {};
+    }
+    if (ORDER_MAP[randomId] == null) {
+      ORDER_MAP[randomId] = {};
+    }
+
+    var orderIndex = ORDER_MAP[randomId][lineKey];
+    // alert('orderIndex = ' + orderIndex)
+
+    if (orderIndex == null || orderIndex < -1) {
+      orderIndex = -1;
+    }
+
+    orderIndex ++
+    orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
+    ORDER_MAP[randomId][lineKey] = orderIndex;
+
+    // alert('orderIndex = ' + orderIndex)
+    // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
+    return orderIndex;
+  }
   //这些全局变量不能放在data中，否则会报undefined错误
 
   var baseUrl
@@ -2860,6 +2909,17 @@
                 key += '{}@';
               }
             }
+            else if (value == ORDER_REAL) {
+              value = 'orderReal(' +
+                getOrderIndex(
+                  randomId
+                  , line.substring(0, line.lastIndexOf(' : '))
+                  , 0
+                ) + ', JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '")';
+              if (customizeKey != true) {
+                key += '@';
+              }
+            }
             else {
               var start = value.indexOf('(');
               var end = value.lastIndexOf(')');
@@ -2880,34 +2940,12 @@
               else if (fun == RANDOM_IN) {
                 value = 'randomIn' + value.substring(start);
               }
-              else if (fun == ORDER_IN) {
-                var argCount = StringUtil.split(value.substring(start + 1, end)).length;
-                if (argCount <= 0) {
-                  throw new Error('ORDER_IN 至少要一个参数！');
-                }
-
-                if (randomId == null) {
-                  randomId = 0;
-                }
-                if (ORDER_MAP == null) {
-                  ORDER_MAP = {};
-                }
-                if (ORDER_MAP[randomId] == null) {
-                  ORDER_MAP[randomId] = {};
-                }
-                if (ORDER_MAP[randomId].orderIn == null) {
-                  ORDER_MAP[randomId].orderIn = {};
-                }
-
-                var orderIndex = ORDER_MAP[randomId].orderIn[p_k];
-                if (orderIndex == null) {
-                  orderIndex = 0;
-                }
-
-                value = 'orderIn(' + orderIndex + ',' + value.substring(start + 1);
-
-                orderIndex ++
-                ORDER_MAP[randomId].orderIn[p_k] = orderIndex%argCount;
+              else if (fun == ORDER_INT || fun == ORDER_IN) {
+                value = (fun == ORDER_INT ? 'orderInt' : 'orderIn') + '(' + getOrderIndex(
+                    randomId
+                    , line.substring(0, line.lastIndexOf(' : '))
+                    , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
+                ) + ',' + value.substring(start + 1);
               }
             }
 
