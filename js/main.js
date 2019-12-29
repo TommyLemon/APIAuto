@@ -530,6 +530,7 @@
       isExportRemote: false,
       isRegister: false,
       isMLEnabled: false,
+      isDelegateEnabled: false,
       isLocalShow: false,
       exTxt: {
         name: 'APIJSON测试',
@@ -926,6 +927,10 @@
               App.isRandomShow = show
               App.saveCache('', 'isRandomShow', show)
               break
+            case 9:
+              App.isDelegateEnabled = show
+              App.saveCache('', 'isDelegateEnabled', show)
+              break
           }
         }
         else if (index == 3) {
@@ -943,6 +948,10 @@
         else if (index == 5) {
           App.isRandomShow = show
           App.saveCache('', 'isRandomShow', show)
+        }
+        else if (index == 9) {
+          App.isDelegateEnabled = show
+          App.saveCache('', 'isDelegateEnabled', show)
         }
       },
 
@@ -2255,7 +2264,7 @@
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: StringUtil.noBlank(url),
+          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
           params: (type == REQUEST_TYPE_JSON ? null : req),
           data: (type == REQUEST_TYPE_JSON ? req : null),
           headers: header,
@@ -2868,11 +2877,11 @@
       },
 
       enableML: function (enable) {
-        App.isMLEnabled = enable
-        App.testProcess = enable ? '机器学习:已开启' : '机器学习:已关闭'
-        App.saveCache(App.server, 'isMLEnabled', enable)
-        App.remotes = null
-        App.showTestCase(true, false)
+        this.isMLEnabled = enable
+        this.testProcess = enable ? '机器学习:已开启' : '机器学习:已关闭'
+        this.saveCache(App.server, 'isMLEnabled', enable)
+        this.remotes = null
+        this.showTestCase(true, false)
       },
 
       /**随机测试，动态替换键值对
@@ -3569,8 +3578,9 @@
 
         this.locals = this.getCache('', 'locals') || []
 
-        this.isHeaderShow = (this.getCache('', 'isHeaderShow')) || false
-        this.isRandomShow = (this.getCache('', 'isRandomShow')) || false
+        this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled') || this.isDelegateEnabled
+        this.isHeaderShow = this.getCache('', 'isHeaderShow') || this.isHeaderShow
+        this.isRandomShow = this.getCache('', 'isRandomShow') || this.isRandomShow
       } catch (e) {
         console.log('created  try { ' +
           '\nvar url = this.getCache(, url) ...' +
@@ -3590,7 +3600,7 @@
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User') || {}
-        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled')
+        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled') || this.isMLEnabled
         this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
       } catch (e) {
         console.log('created  try { ' +

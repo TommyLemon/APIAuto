@@ -93,15 +93,16 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型Database: {{ database || '点击设置' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式Schema: {{ schema || '点击设置' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析): {{ language || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">{{ isDelegateEnabled ? '关闭' : '开启' }}托管服务器代理: {{ isDelegateEnabled ? '代理中' : '直接访问' }}</a>
+                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : types.join() }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)随机测试 Random Test' : '显示(编辑)随机测试 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
-                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : types.join() }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址URL: {{ server || '点击设置' }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 8)">导入Swagger文档: {{ swagger || '点击设置' }}</a>
-                  <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
-                    <div style="margin-top: 5px;margin-bottom: 0px">微信扫码<br />请作者喝咖啡~</div>
+                  <li v-show="User.id != null && User.id > 0" style="padding: 0px;margin: 0px; border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
                     <img style="padding: 0px;margin: 0px" src="img/wechat_collect.jpg" />
+                    <div style="padding: 0px;margin: 0px">微信扫码，请作者喝咖啡~</div>
                   </li>
                 </ul>
       </span>
