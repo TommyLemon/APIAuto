@@ -535,8 +535,9 @@
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
-      // server: 'http://apijson.org:9090',  //apijson.org:8000
-      server: 'http://47.74.39.68:9090',  // apijson.org
+      server: 'http://apijson.org:9090',  //apijson.org:8000
+      // server: 'http://47.74.39.68:9090',  // apijson.org
+      swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
       language: 'Java',
       header: {}
     },
@@ -872,13 +873,15 @@
       showConfig: function (show, index) {
         App.isConfigShow = false
         if (show) {
+          App.exTxt.button = index == 7 ? '上传' : '切换'
           App.exTxt.index = index
           switch (index) {
             case 0:
             case 1:
             case 2:
             case 6:
-              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : App.server))
+            case 7:
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : (index == 6 ? App.server : App.swagger)))
               App.isConfigShow = true
 
               if (index == 0) {
@@ -1268,48 +1271,145 @@
 
       // 保存配置
       saveConfig: function () {
-        App.isConfigShow = false
+        App.isConfigShow = App.exTxt.index == 7
 
-        if (App.exTxt.index <= 2) {
-          switch (App.exTxt.index) {
-            case 0:
-              App.database = App.exTxt.name
-              App.saveCache('', 'database', App.database)
+        switch (App.exTxt.index) {
+          case 0:
+            App.database = App.exTxt.name
+            App.saveCache('', 'database', App.database)
 
-              doc = null
-              var item = App.accounts[App.currentAccountIndex]
-              item.isLoggedIn = false
-              App.onClickAccount(App.currentAccountIndex, item)
-              break;
-            case 1:
-              App.schema = App.exTxt.name
-              App.saveCache('', 'schema', App.schema)
+            doc = null
+            var item = App.accounts[App.currentAccountIndex]
+            item.isLoggedIn = false
+            App.onClickAccount(App.currentAccountIndex, item)
+            break
+          case 1:
+            App.schema = App.exTxt.name
+            App.saveCache('', 'schema', App.schema)
 
-              doc = null
-              var item = App.accounts[App.currentAccountIndex]
-              item.isLoggedIn = false
-              App.onClickAccount(App.currentAccountIndex, item)
-              break;
-            case 2:
-              App.language = App.exTxt.name
-              App.saveCache('', 'language', App.language)
+            doc = null
+            var item = App.accounts[App.currentAccountIndex]
+            item.isLoggedIn = false
+            App.onClickAccount(App.currentAccountIndex, item)
+            break
+          case 2:
+            App.language = App.exTxt.name
+            App.saveCache('', 'language', App.language)
 
-              doc = null
-              App.onChange(false)
-              break;
-          }
-        }
-        else {
-          App.server = App.exTxt.name
-          App.saveCache('', 'server', App.server)
+            doc = null
+            App.onChange(false)
+            break
+          case 6:
+            App.server = App.exTxt.name
+            App.saveCache('', 'server', App.server)
+            App.logout(true)
+            break
+          case 7:
+            App.swagger = App.exTxt.name
+            App.saveCache('', 'swagger', App.swagger)
 
-          // App.remotes = []
-          // App.Privacy = {}
-          // App.showTestCase(false, false) //App.showTestCase(true)
-          App.logout(true)
+            App.request(true, App.swagger, {}, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+
+              var rpObj = (res.data || {}).Swagger
+
+              var apis = (rpObj || {}).paths
+              if (apis == null) { // || apis.length <= 0) {
+                alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
+                return
+              }
+
+              App.uploadTotal = 0
+              App.uploadDoneCount = 0
+              App.uploadFailCount = 0
+
+              var item
+              for (var url in apis) {
+                item = apis[url]
+                App.uploadSwaggerApi(url, item, 'get')
+                App.uploadSwaggerApi(url, item, 'post')
+                App.uploadSwaggerApi(url, item, 'put')
+                App.uploadSwaggerApi(url, item, 'delete')
+              }
+
+            })
+
+            break
         }
       },
 
+      /**上传 Swagger API
+       * @param url
+       * @param docItem
+       * @param method
+       * @param callback
+       */
+      uploadSwaggerApi: function(url, docItem, method, callback) {
+        App.uploadTotal ++
+        if (docItem == null) {
+          log('postApi', 'docItem == null  >> return')
+          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+          return
+        }
+        App.uploadFailCount ++
+
+        method = method || 'get'
+        var api = docItem[method]
+
+        var req = '{'
+        var parameters = api.parameters
+        var paraItem
+        for (var k = 0; k < parameters.length; k++) {
+          paraItem = parameters[k] || {}
+          var val = paraItem.default
+          if (typeof val == 'string') {
+            val = '"' + val + '"'
+          }
+          else if (val instanceof Object) {
+            val = JSON.stringify(val, null, '    ')
+          }
+
+          req += '\n    "' + paraItem.name + '": ' + val + (k < parameters.length - 1 ? ',' : '')
+            + (StringUtil.isEmpty(paraItem.description) ? '' : '  //' + paraItem.description)
+        }
+        req += '\n}'
+
+        var currentAccount = App.accounts[App.currentAccountIndex]
+        App.request(true, App.server + '/post', {
+          format: false,
+          'Document': {
+            'userId': App.User.id,
+            'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
+            'name': StringUtil.get(api.summary),
+            'url': url,
+            'request': req,
+            'header': api.headers
+          },
+          'TestRecord': {
+            'documentId@': '/Document/id',
+            'randomId': 0,
+            'userId': App.User.id,
+            'response': ''
+          },
+          'tag': 'Document'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          if (res.data != null && res.data.code == CODE_SUCCESS) {
+            App.uploadDoneCount ++
+          } else {
+            App.uploadFailCount ++
+          }
+
+          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+          if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
+            alert('导入完成')
+            App.showTestCase(false, false)
+            App.remotes = []
+            App.showTestCase(true, false)
+          }
+
+        })
+      },
 
       // 切换主题
       switchTheme: function (index) {
@@ -3407,6 +3507,10 @@
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
           this.server = server
+        }
+        var swagger = this.getCache('', 'swagger')
+        if (StringUtil.isEmpty(swagger, true) == false) {
+          this.swagger = swagger
         }
 
         this.locals = this.getCache('', 'locals') || []
