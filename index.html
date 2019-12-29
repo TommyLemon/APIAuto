@@ -96,8 +96,9 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)随机测试 Random Test' : '显示(编辑)随机测试 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
+                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : types.join() }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址URL: {{ server || '点击设置' }}</a>
-                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">导入Swagger文档: {{ swagger || '点击设置' }}</a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 8)">导入Swagger文档: {{ swagger || '点击设置' }}</a>
                   <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
                     <div style="margin-top: 5px;margin-bottom: 0px">微信扫码<br />请作者喝咖啡~</div>
                     <img style="padding: 0px;margin: 0px" src="img/wechat_collect.jpg" />
@@ -117,6 +118,7 @@
   <div class="side-left">
     <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
+      <button v-show="types != null && types.length > 1" class="transfer" id="vType" @click="changeType()">{{ getTypeName(type) }}</button>
       <div style="height: 100%;display: flex;flex-grow: 1">
         <input class="url" id="vUrlComment" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
         <input class="url" id="vUrl" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
@@ -143,6 +145,8 @@
     <div class="left-panel">
       <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
         <li v-for="(item, index) in testCases" >
+            <div style="display: inline-table">
+          <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;position: relative" id="vDocType" @click="restoreRemoteAndTest(item)">{{ getTypeName(item.Document.type) }}</button>
           <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
           <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
             <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
@@ -155,6 +159,7 @@
           <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
           </svg>
+            </div>
         </li>
       </ul>
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
@@ -631,6 +636,7 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
   var vUrl = document.getElementById("vUrl");
   var vUrlComment = document.getElementById("vUrlComment");
   var vTransfer = document.getElementById("vTransfer");
+  var vType = document.getElementById("vType");
   var vSend = document.getElementById("vSend");
 
   var vInput = document.getElementById("vInput");

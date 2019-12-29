@@ -343,6 +343,10 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  var REQUEST_TYPE_PARAM = 'PARAM'
+  var REQUEST_TYPE_FORM = 'FORM'
+  var REQUEST_TYPE_JSON = 'JSON'
+
   var RANDOM_REAL = 'RANDOM_REAL'
   var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
   var RANDOM_INT = 'RANDOM_INT'
@@ -484,8 +488,20 @@
       accounts: [
         {
           'isLoggedIn': false,
-          'name': '测试账号',
+          'name': '测试账号1',
           'phone': '13000082001',
+          'password': '123456'
+        },
+        {
+          'isLoggedIn': false,
+          'name': '测试账号2',
+          'phone': '13000082002',
+          'password': '123456'
+        },
+        {
+          'isLoggedIn': false,
+          'name': '测试账号3',
+          'phone': '13000082003',
           'password': '123456'
         }
       ],
@@ -532,6 +548,8 @@
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      type: REQUEST_TYPE_JSON,
+      types: [ REQUEST_TYPE_JSON ],
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
@@ -873,7 +891,7 @@
       showConfig: function (show, index) {
         App.isConfigShow = false
         if (show) {
-          App.exTxt.button = index == 7 ? '上传' : '切换'
+          App.exTxt.button = index == 8 ? '上传' : '切换'
           App.exTxt.index = index
           switch (index) {
             case 0:
@@ -881,7 +899,9 @@
             case 2:
             case 6:
             case 7:
-              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2 ? App.language : (index == 6 ? App.server : App.swagger)))
+            case 8:
+              App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2
+                ? App.language : (index == 6 ? App.server : (index == 8 ? App.swagger : (App.types || []).join()))))
               App.isConfigShow = true
 
               if (index == 0) {
@@ -889,6 +909,9 @@
               }
               else if (index == 2) {
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
+              }
+              else if (index == 7) {
+                alert('多个类型用 , 隔开，可填类型:\nPARAM(对应GET),FORM(对应POST),JSON(对应POST)')
               }
               break
             case 3:
@@ -975,7 +998,7 @@
           },
           'tag': 'Document'
         }
-        this.request(true, url, req, {}, function (url, res, err) {
+        this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data || {}
@@ -1002,6 +1025,7 @@
         }
         var val = {
           name: App.history.name,
+          type: App.type,
           url: '/' + this.getMethod(),
           request: inputted,
           header: vHeader.value,
@@ -1047,13 +1071,17 @@
         this.randomTestTitle = random.name
         vRandom.value = StringUtil.get(random.config)
       },
-      // 根据测试用例恢复数据
-      restoreRemote: function (item) {
+      // 根据测试用例/历史记录恢复数据
+      restoreRemoteAndTest: function (item) {
+        this.restoreRemote(item, true)
+      },
+      // 根据测试用例/历史记录恢复数据
+      restoreRemote: function (item, test) {
         this.currentRemoteItem = item
-        this.restore((item || {}).Document, true)
+        this.restore((item || {}).Document, true, test)
       },
       // 根据历史恢复数据
-      restore: function (item, isRemote) {
+      restore: function (item, isRemote, test) {
         item = item || {}
         localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
@@ -1061,6 +1089,7 @@
             branch = '/' + branch
           }
 
+          App.type = item.type;
           App.urlComment = item.name;
           App.requestVersion = item.version;
           App.showUrl(false, branch)
@@ -1074,6 +1103,9 @@
           if (isRemote) {
             App.randoms = []
             App.showRandomList(App.isRandomListShow, item)
+          }
+          if (test) {
+            App.send()
           }
         })
       },
@@ -1235,6 +1267,7 @@
               'userId': App.User.id,
               'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
               'name': App.exTxt.name,
+              'type': App.type,
               'url': '/' + App.getMethod(),
               'request': App.toDoubleJSON(inputted),
               'header': vHeader.value
@@ -1248,7 +1281,7 @@
             'tag': 'Document'
           }
 
-          App.request(true, url, req, {}, function (url, res, err) {
+          App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data || {}
@@ -1271,7 +1304,7 @@
 
       // 保存配置
       saveConfig: function () {
-        App.isConfigShow = App.exTxt.index == 7
+        App.isConfigShow = App.exTxt.index == 8
 
         switch (App.exTxt.index) {
           case 0:
@@ -1305,15 +1338,17 @@
             App.logout(true)
             break
           case 7:
+            App.types = StringUtil.split(App.exTxt.name)
+            App.saveCache('', 'types', App.types)
+            break
+          case 8:
             App.swagger = App.exTxt.name
             App.saveCache('', 'swagger', App.swagger)
 
-            App.request(true, App.swagger, {}, {}, function (url, res, err) {
+            App.request(false, REQUEST_TYPE_PARAM, App.swagger, {}, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
-              var rpObj = (res.data || {}).Swagger
-
-              var apis = (rpObj || {}).paths
+              var apis = (res.data || {}).paths
               if (apis == null) { // || apis.length <= 0) {
                 alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
                 return
@@ -1333,7 +1368,6 @@
               }
 
             })
-
             break
         }
       },
@@ -1375,11 +1409,12 @@
         req += '\n}'
 
         var currentAccount = App.accounts[App.currentAccountIndex]
-        App.request(true, App.server + '/post', {
+        App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
             'userId': App.User.id,
             'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
+            'type': App.type,
             'name': StringUtil.get(api.summary),
             'url': url,
             'request': req,
@@ -1572,7 +1607,7 @@
           }
 
           App.onChange(false)
-          App.request(true, url, req, {}, function (url, res, err) {
+          App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1617,7 +1652,7 @@
           }
 
           App.onChange(false)
-          App.request(true, url, req, {}, function (url, res, err) {
+          App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -1724,7 +1759,7 @@
         }
 
         if (isAdminOperation) {
-          App.request(isAdminOperation, App.server + '/login', req, {}, function (url, res, err) {
+          App.request(isAdminOperation, REQUEST_TYPE_JSON, App.server + '/login', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -1747,21 +1782,6 @@
 
               //保存User到缓存
               App.saveCache(App.server, 'User', user)
-
-              //查询余额
-              App.request(true, App.server + '/gets', {
-                format: false,
-                'Privacy': {
-                  'id': user.id
-                },
-                'tag': 'Privacy'
-              }, {}, function (url, res, err) {
-                var data = res.data || {}
-                if (data.code == 200 && data.Privacy != null) {
-                  App.Privacy = data.Privacy
-                }
-              })
-
 
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
@@ -1896,7 +1916,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, App.server + '/logout', req, {}, function (url, res, err) {
+          this.request(isAdminOperation, REQUEST_TYPE_JSON, App.server + '/logout', req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -2122,6 +2142,29 @@
         this.onChange(false);
       },
 
+      /**获取显示的请求类型名称
+       */
+      getTypeName: function (type) {
+        var ts = this.types
+        var t = type || REQUEST_TYPE_JSON
+        if (ts == null || ts.indexOf(REQUEST_TYPE_FORM) < 0 || ts.indexOf(REQUEST_TYPE_JSON) < 0) {
+          return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
+        }
+        return t
+      },
+      /**请求类型切换
+       */
+      changeType: function () {
+        var count = this.types == null ? 0 : this.types.length
+        if (count > 1) {
+          var index = this.types.indexOf(this.type)
+          index++;
+          this.type = this.types[index % count]
+        }
+
+        this.onChange(false);
+      },
+
       /**
        * 删除注释
        */
@@ -2185,7 +2228,7 @@
 
 
         this.setBaseUrl()
-        this.request(isAdminOperation, url, req, isAdminOperation ? {} : header, callback)
+        this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback)
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
@@ -2196,6 +2239,7 @@
           'Document': {
             'userId': App.User.id,
             'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
+            'type': App.type,
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
             'header': vHeader.value
@@ -2205,17 +2249,23 @@
       },
 
       //请求
-      request: function (isAdminOperation, url, req, header, callback) {
+      request: function (isAdminOperation, type, url, req, header, callback) {
+        type = type || REQUEST_TYPE_JSON
+
         // axios.defaults.withcredentials = true
         axios({
-          method: 'post',
+          method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
           url: StringUtil.noBlank(url),
-          data: req,
+          params: (type == REQUEST_TYPE_JSON ? null : req),
+          data: (type == REQUEST_TYPE_JSON ? req : null),
           headers: header,
-          withCredentials: true
+          withCredentials: type == REQUEST_TYPE_JSON
         })
           .then(function (res) {
             res = res || {}
+            // if ((res.config || {}).method == 'options') {
+            //   return
+            // }
             log('send >> success:\n' + JSON.stringify(res, null, '    '))
 
             //未登录，清空缓存
@@ -2391,7 +2441,7 @@
        */
       getDoc: function (callback) {
 
-        App.request(false, this.getBaseUrl() + '/get', {
+        App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
           '@database': App.database,
           'sql@': {
@@ -2678,7 +2728,10 @@
       },
 
       toDoubleJSON: function (json) {
-        if (json != null && json.indexOf("'") >= 0) {
+        if (StringUtil.isEmpty(json)) {
+          json = '{}'
+        }
+        else if (json.indexOf("'") >= 0) {
           json = json.replace(/'/g, '"');
         }
         return json;
@@ -2876,7 +2929,7 @@
             const itemAllCount = random.count || 1
             allCount += (itemAllCount - 1)
 
-            App.testRandomSingle(show, random, url
+            App.testRandomSingle(show, random, App.type, url
               , App.getRandomJSON(JSON.parse(JSON.stringify(json)), random.config, random.id)
               , header, function (url, res, err) {
 
@@ -2898,7 +2951,7 @@
        * @param show
        * @param callback
        */
-      testRandomSingle: function (show, random, url, json, header, callback) {
+      testRandomSingle: function (show, random, type, url, json, header, callback) {
         var count = (random || {}).count || 1
         for (var i = 0; i < count; i ++) {
           if (show == true) {
@@ -2906,7 +2959,7 @@
             this.send(false, callback);
           }
           else {
-            this.request(false, url, json, header, callback)
+            this.request(false, type, url, json, header, callback)
           }
         }
       },
@@ -2936,7 +2989,7 @@
 
         // alert('> json = ' + JSON.stringify(json, null, '    '))
 
-        this.testRandomSingle(show, null, this.getUrl(), json, this.getHeader(vHeader.value), callback)
+        this.testRandomSingle(show, null, this.type, this.getUrl(), json, this.getHeader(vHeader.value), callback)
       },
       /**随机测试，动态替换键值对
        * @param show
@@ -3137,9 +3190,6 @@
           }
           App.log('test  document = ' + JSON.stringify(document, null, '  '))
 
-          // App.restore(item)
-          // App.onChange(false)
-
           const index = i
 
           var header = null
@@ -3149,7 +3199,7 @@
             App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
           }
 
-          App.request(false, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
+          App.request(false, document.type, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -3348,7 +3398,7 @@
               tag: 'TestRecord'
             }
 
-            App.request(true, url, req, {}, function (url, res, err) {
+            App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -3391,7 +3441,7 @@
             //   }
             // }
 
-            App.request(true, url, req, {}, function (url, res, err) {
+            App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -3432,7 +3482,7 @@
         item = item || {}
         var doc = (isRandom ? item.Random : item.Document) || {}
 
-        App.request(true, App.server + '/get', {
+        App.request(true, REQUEST_TYPE_JSON, App.server + '/get', {
           TestRecord: {
             documentId: isRandom ? doc.documentId : doc.id,
             randomId: isRandom ? doc.id : null,
@@ -3503,6 +3553,10 @@
         var language = this.getCache('', 'language')
         if (StringUtil.isEmpty(language, true) == false) {
           this.language = language
+        }
+        var types = this.getCache('', 'types')
+        if (types != null && types.length > 0) {
+          this.types = types
         }
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
