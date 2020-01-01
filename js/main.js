@@ -507,6 +507,7 @@
       ],
       currentAccountIndex: 0,
       tests: [],
+      crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
       randomTestTitle: null,
       testRandomProcess: '',
@@ -529,6 +530,7 @@
       loginType: 'login',
       isExportRemote: false,
       isRegister: false,
+      isCrossEnabled: false,
       isMLEnabled: false,
       isDelegateEnabled: false,
       isLocalShow: false,
@@ -1505,7 +1507,12 @@
 
 
 
-      onClickAccount: function (index, item) {
+      onClickAccount: function (index, item, callback) {
+        if (index < 0 || item == null) {
+          callback(false)
+          return
+        }
+
         if (this.currentAccountIndex == index) {
           this.setRememberLogin(item.remember)
           vAccount.value = item.phone
@@ -1519,6 +1526,10 @@
               item.isLoggedIn = false
               App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
               App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+
+              if (callback != null) {
+                callback(false)
+              }
             });
           }
           else {
@@ -1536,6 +1547,10 @@
 
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+
+                if (callback != null) {
+                  callback(true)
+                }
               }
             });
           }
@@ -1555,7 +1570,7 @@
 
         //目前还没做到同一标签页下测试账号切换后，session也跟着切换，所以干脆每次切换tab就重新登录
         item.isLoggedIn = false
-        this.onClickAccount(index, item)
+        this.onClickAccount(index, item, callback)
       },
 
       removeAccountTab: function () {
@@ -2876,6 +2891,12 @@
         return doc
       },
 
+      enableCross: function (enable) {
+        this.isCrossEnabled = enable
+        this.crossProcess = enable ? '交叉账号:已开启' : '交叉账号:已关闭'
+        this.saveCache(App.server, 'isCrossEnabled', enable)
+      },
+
       enableML: function (enable) {
         this.isMLEnabled = enable
         this.testProcess = enable ? '机器学习:已开启' : '机器学习:已关闭'
@@ -3159,7 +3180,22 @@
        3-对象缺少字段/整数变小数，黄色；
        4-code/值类型 改变，红色；
        */
-      test: function (isRandom) {
+      test: function (isRandom, accountIndex) {
+        var accounts = this.accounts || []
+        alert('test  accountIndex = ' + accountIndex)
+        var isCrossEnabled = this.isCrossEnabled
+        if (accountIndex == null) {
+          accountIndex = -1 //isCrossEnabled ? -1 : 0
+        }
+        if (isCrossEnabled) {
+          var isCrossDone = accountIndex >= accounts.length
+          this.crossProcess = isCrossDone ? (isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭') : ('交叉账号: ' + accountIndex + '/' + accounts.length)
+          if (isCrossDone) {
+            alert('test  isCrossDone')
+            return
+          }
+        }
+
         var baseUrl = StringUtil.trim(App.getBaseUrl())
         if (baseUrl == '') {
           alert('请先输入有效的URL！')
@@ -3183,46 +3219,59 @@
           alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
           return
         }
-        App.testProcess = '正在测试: ' + 0 + '/' + allCount
 
-        for (var i = 0; i < allCount; i ++) {
-          const item = list[i]
-          const document = item == null ? null : item.Document
-          if (document == null || document.name == null) {
-            doneCount ++
-            continue
-          }
-          if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-            App.log('test  document.url == "/login" || document.url == "/logout" >> continue')
-            doneCount ++
-            continue
-          }
-          App.log('test  document = ' + JSON.stringify(document, null, '  '))
 
-          const index = i
+        if (accountIndex < 0 && isCrossEnabled) {  //退出登录已登录的账号
+          accounts[this.currentAccountIndex].isLoggedIn = true
+        }
 
-          var header = null
-          try {
-            header = App.getHeader(document.header)
-          } catch (e) {
-            App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
-          }
+        var index = accountIndex < 0 && isCrossEnabled ? this.currentAccountIndex : accountIndex
+        this.onClickAccount(index, accounts[index], function(isLoggedIn) {
+          App.showTestCase(true, false)
 
-          App.request(false, document.type, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
+          App.testProcess = '正在测试: ' + 0 + '/' + allCount
 
+          for (var i = 0; i < allCount; i++) {
+            const item = list[i]
+            const document = item == null ? null : item.Document
+            if (document == null || document.name == null) {
+              doneCount++
+              continue
+            }
+            if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+              App.log('test  document.url == "/login" || document.url == "/logout" >> continue')
+              doneCount++
+              continue
+            }
+            App.log('test  document = ' + JSON.stringify(document, null, '  '))
+
+            const index = i
+
+            var header = null
             try {
-              App.onResponse(url, res, err)
-              App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+              header = App.getHeader(document.header)
             } catch (e) {
-              App.log('test  App.request >> } catch (e) {\n' + e.message)
+              App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
             }
 
-            App.compareResponse(allCount, index, item, res.data, isRandom)
-          })
-        }
+            App.request(false, document.type, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
+
+              try {
+                App.onResponse(url, res, err)
+                App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+              } catch (e) {
+                App.log('test  App.request >> } catch (e) {\n' + e.message)
+              }
+
+              App.compareResponse(allCount, index, item, res.data, isRandom, accountIndex)
+            })
+          }
+
+        })
+
       },
 
-      compareResponse: function (allCount, index, item, response, isRandom) {
+      compareResponse: function (allCount, index, item, response, isRandom, accountIndex) {
         var it = item || {} //请求异步
         var d = (isRandom ? App.currentRemoteItem.Document : it.Document) || {} //请求异步
         var r = isRandom ? it.Random : null//请求异步
@@ -3233,10 +3282,10 @@
           var standardKey = App.isMLEnabled != true ? 'response' : 'standard'
           var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
           tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
-          App.onTestResponse(allCount, index, it, d, r, tr, response, tr.compare || {}, isRandom);
+          App.onTestResponse(allCount, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex);
       },
 
-      onTestResponse: function(allCount, index, it, d, r, tr, response, cmp, isRandom) {
+      onTestResponse: function(allCount, index, it, d, r, tr, response, cmp, isRandom, accountIndex) {
 
         doneCount ++
         App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
@@ -3295,6 +3344,10 @@
         console.log('tests = ' + JSON.stringify(tests, null, '    '))
         // App.showTestCase(true)
 
+        if (doneCount >= allCount && App.isCrossEnabled) {
+          alert('onTestResponse  accountIndex = ' + accountIndex)
+          App.test(false, accountIndex + 1)
+        }
       },
 
       /**移除调试字段
@@ -3600,7 +3653,9 @@
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User') || {}
+        this.isCrossEnabled = this.getCache(this.server, 'isCrossEnabled') || this.isCrossEnabled
         this.isMLEnabled = this.getCache(this.server, 'isMLEnabled') || this.isMLEnabled
+        this.crossProcess = this.isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭'
         this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
       } catch (e) {
         console.log('created  try { ' +
