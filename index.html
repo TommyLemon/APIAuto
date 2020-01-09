@@ -93,13 +93,16 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型Database: {{ database || '点击设置' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式Schema: {{ schema || '点击设置' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析): {{ language || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">服务器代理: {{ isDelegateEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
+                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : types.join() }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)随机测试 Random Test' : '显示(编辑)随机测试 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址URL: {{ server || '点击设置' }}</a>
-                  <li v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
-                    <div style="margin-top: 5px;margin-bottom: 0px">微信扫码<br />请作者喝咖啡~</div>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 8)">导入Swagger文档: {{ swagger || '点击设置' }}</a>
+                  <li v-show="User.id != null && User.id > 0" style="padding: 0px;margin: 0px; border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
                     <img style="padding: 0px;margin: 0px" src="img/wechat_collect.jpg" />
+                    <div style="padding: 0px;margin: 0px">微信扫码，请作者喝咖啡~</div>
                   </li>
                 </ul>
       </span>
@@ -116,6 +119,7 @@
   <div class="side-left">
     <div v-show="! isTestCaseShow" class="left-bar" >
       <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
+      <button v-show="types != null && types.length > 1" class="transfer" id="vType" @click="changeType()">{{ getTypeName(type) }}</button>
       <div style="height: 100%;display: flex;flex-grow: 1">
         <input class="url" id="vUrlComment" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
         <input class="url" id="vUrl" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
@@ -129,6 +133,7 @@
 
       <a style="display: flex;flex-grow: 1;font-size: medium;color: black" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="showTestCase(true, ! isLocalShow)">测试用例:{{ (isLocalShow ? '本地历史(' : '远程共享(') + (testCases == null ? 0 : testCases.length) + ')' }}</a>
 
+      <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableCross(! isCrossEnabled)">{{ crossProcess }}</a>
       <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
       <a v-show="! isLocalShow" class="hint--top @cli-tool" data-hint="回归测试" href="javascript:void(0)" @click="test()">
         <img class="icon" src="img/refresh.png"/>
@@ -142,6 +147,8 @@
     <div class="left-panel">
       <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
         <li v-for="(item, index) in testCases" >
+            <div style="display: inline-table">
+          <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;padding: 0px;position: relative" id="vDocType" @click="restoreRemoteAndTest(item)">{{ getTypeName(item.Document.type) }}</button>
           <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
           <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
             <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
@@ -154,6 +161,7 @@
           <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
             <use xlink:href="svg/icon.svg#trash"></use>
           </svg>
+            </div>
         </li>
       </ul>
       <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
@@ -177,9 +185,9 @@
 
           <div style="width: 100%; height: auto; position: absolute;bottom: 0px; z-index: 100; background: white;" >
 
-        <div v-show="isRandomShow" style="width: 100%; height: 270px; position: relative;" >
+        <div v-show="isRandomShow" style="width: 100%; height: 330px; position: relative;" >
             <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >随机测试 Random Test
+            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ isRandomListShow || StringUtil.isEmpty(randomTestTitle) ? '随机测试 Random Test' : randomTestTitle }}
                 <a style="padding-right: 10px;padding-top: 2px">
                     {{ testRandomProcess }}
                 </a>
@@ -187,7 +195,8 @@
                     查看列表
                 </a>
             </a>
-                <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;" href="javascript:void(0)" @click="if(isRandomListShow) { isRandomListShow = false } else { showExport(true, true, true) }"> + </a>
+                <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;"
+                   href="javascript:void(0)" @click="if(isRandomListShow) { randomTestTitle = null; isRandomListShow = false;  } else { showExport(true, true, true) }"> + </a>
                 <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="共享"  @click="showExport(true, true)">
                     <svg class="icon">
                         <use xlink:href="svg/icon.svg#share"></use>
@@ -222,27 +231,31 @@
                     placeholder="常用：
 RANDOM_REAL  // @ 从数据库随机取值
 RANDOM_REAL_IN  // {}@ 从数据库随机取值
-RANDOM_INT(0,100000)  //随机整数
-RANDOM_NUM(0.00,99.99)  //随机小数
-RANDOM_STR(1,10,'a-zA-Z0-9')  //随机字符串
-RANDOM_IN(1,'2',false,'str',[],{})  //随机取值
+RANDOM_INT(min:Integer, max:Integer)  //从范围内随机取整数
+RANDOM_NUM(min:Number, max:Number)  //从范围内随机取小数
+RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  //从长度范围内随机取字符串
+RANDOM_IN(val0:Any, val1:Any ...)  //从选项内随机取值
+ORDER_REAL  // @ 从数据库顺序取值
+ORDER_INT(min:Integer, max:Integer)  //从范围内顺序取整数
+ORDER_IN(val0:Any, val1:Any ...)  //从选项内顺序取值
 模板：
 User/id : RANDOM_REAL  //从数据库随机取值
 User/id id> : RANDOM_INT(0,100000)  //用 id> 替换 id
 User/id : Math.round(100000*Math.random())  //完全自定义
 ">
-User/id : RANDOM_IN(82001,82002,82003,70793,93793) //从这几个值随机取数
-User/sex : RANDOM_INT(0,2) //从 0-2 随机取整数
-[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{}) //从这几个值随机取数
-[]/page : Math.round(10*Math.random())  //通过代码来自定义
-// []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
-          </textarea>
+User/id : RANDOM_INT(82001,82020)  //随机整数
+[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{})  //随机取值
+[]/page : Math.round(5*Math.random())  //通过代码来自定义
+@explain : ORDER_IN(true,false)  //顺序取值
+//  []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
+
+//清空文本内容可查看规则</textarea>
         </div>
 
 
               <div v-show="isHeaderShow" style="width: 100%; height: 150px; position: relative;" >
                   <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-                      <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key: value 格式)</a></a>
+                      <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >请求头 Request Header<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key : value 格式)</a></a>
                       <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
                           <svg class="icon close-icon"  >
                               <use xlink:href="svg/icon.svg#close"></use>
@@ -417,7 +430,7 @@ User/sex : RANDOM_INT(0,2) //从 0-2 随机取整数
     </svg>
 
     <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
-    <button @click="saveConfig()">切换</button>
+    <button @click="saveConfig()">{{ exTxt.button || '切换' }}</button>
   </div>
 
   <!--弹出删除文本框-->
@@ -625,6 +638,7 @@ User/sex : RANDOM_INT(0,2) //从 0-2 随机取整数
   var vUrl = document.getElementById("vUrl");
   var vUrlComment = document.getElementById("vUrlComment");
   var vTransfer = document.getElementById("vTransfer");
+  var vType = document.getElementById("vType");
   var vSend = document.getElementById("vSend");
 
   var vInput = document.getElementById("vInput");
