@@ -896,8 +896,10 @@
       // 显示配置弹窗
       showConfig: function (show, index) {
         App.isConfigShow = false
-        if (index == 3 || index == 4 || index == 5 || index == 10) {
-          App.showTestCase(false, false)
+        if (App.isTestCaseShow) {
+          if (index == 3 || index == 4 || index == 5 || index == 10) {
+            App.showTestCase(false, false)
+          }
         }
 
         if (show) {
