@@ -506,7 +506,7 @@
         }
       ],
       currentAccountIndex: 0,
-      tests: [],
+      tests: { '-1':{}, '0':{}, '1':{}, '2': {} },
       crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
       randomTestTitle: null,
@@ -518,7 +518,7 @@
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isRandomShow: false,
+      isRandomShow: true,
       isRandomListShow: false,
       isLoginShow: false,
       isConfigShow: false,
@@ -759,8 +759,11 @@
         return req == null ? null : req.tag
       },
 
-      getRequest: function (json) {
-        var s = App.toDoubleJSON(json);
+      getRequest: function (json, defaultValue) {
+        var s = App.toDoubleJSON(json, defaultValue);
+        if (StringUtil.isEmpty(s, true)) {
+          return defaultValue
+        }
         try {
           return jsonlint.parse(s);
         }
@@ -893,6 +896,10 @@
       // 显示配置弹窗
       showConfig: function (show, index) {
         App.isConfigShow = false
+        if (index == 3 || index == 4 || index == 5 || index == 10) {
+          App.showTestCase(false, false)
+        }
+
         if (show) {
           App.exTxt.button = index == 8 ? '上传' : '切换'
           App.exTxt.index = index
@@ -1357,6 +1364,11 @@
             App.saveCache('', 'swagger', App.swagger)
 
             App.request(false, REQUEST_TYPE_PARAM, App.swagger, {}, {}, function (url, res, err) {
+              if (App.isSyncing) {
+                alert('正在同步，请等待完成')
+                return
+              }
+              App.isSyncing = true
               App.onResponse(url, res, err)
 
               var apis = (res.data || {}).paths
@@ -1365,18 +1377,24 @@
                 return
               }
 
-              App.uploadTotal = 0
+              App.uploadTotal = 0 // apis.length || 0
               App.uploadDoneCount = 0
               App.uploadFailCount = 0
 
               var item
+              // var i = 0
               for (var url in apis) {
                 item = apis[url]
-                App.uploadSwaggerApi(url, item, 'get')
-                App.uploadSwaggerApi(url, item, 'post')
-                App.uploadSwaggerApi(url, item, 'put')
-                App.uploadSwaggerApi(url, item, 'delete')
+                //导致 url 全都是一样的  setTimeout(function () {
+                  if (App.uploadSwaggerApi(url, item, 'get')
+                    || App.uploadSwaggerApi(url, item, 'post')
+                    || App.uploadSwaggerApi(url, item, 'put')
+                    || App.uploadSwaggerApi(url, item, 'delete')
+                  ) {}
+                // }, 100*i)
+                // i ++
               }
+
 
             })
             break
@@ -1390,24 +1408,46 @@
        * @param callback
        */
       uploadSwaggerApi: function(url, docItem, method, callback) {
-        App.uploadTotal ++
-        if (docItem == null) {
-          log('postApi', 'docItem == null  >> return')
-          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
-          return
-        }
-        App.uploadFailCount ++
-
         method = method || 'get'
-        var api = docItem[method]
+        var api = docItem == null ? null : docItem[method]
+        if (api == null) {
+          log('postApi', 'api == null  >> return')
+          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+          return false
+        }
+
+        App.uploadTotal ++
 
         var req = '{'
-        var parameters = api.parameters
+        var parameters = api.parameters || []
         var paraItem
         for (var k = 0; k < parameters.length; k++) {
           paraItem = parameters[k] || {}
+          if (paraItem.name == 'mock') {
+            continue
+          }
           var val = paraItem.default
-          if (typeof val == 'string') {
+          if (val == undefined) {
+            if (paraItem.type == 'boolean') {
+              val = true
+            }
+            if (paraItem.type == 'integer') {
+              val = 1
+            }
+            else if (paraItem.type == 'string') {
+              val = ""
+            }
+            else if (paraItem.type == 'object') {
+              val = {}
+            }
+            else if (paraItem.type == 'array') {
+              val = []
+            }
+            else {
+              val = null
+            }
+          }
+          else if (typeof val == 'string') {
             val = '"' + val + '"'
           }
           else if (val instanceof Object) {
@@ -1425,7 +1465,7 @@
           'Document': {
             'userId': App.User.id,
             'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
-            'type': App.type,
+            'type': method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON,
             'name': StringUtil.get(api.summary),
             'url': url,
             'request': req,
@@ -1439,7 +1479,7 @@
           },
           'tag': 'Document'
         }, {}, function (url, res, err) {
-          App.onResponse(url, res, err)
+          //太卡 App.onResponse(url, res, err)
           if (res.data != null && res.data.code == CODE_SUCCESS) {
             App.uploadDoneCount ++
           } else {
@@ -1455,6 +1495,8 @@
           }
 
         })
+
+        return true
       },
 
       // 切换主题
@@ -1508,51 +1550,49 @@
 
 
       onClickAccount: function (index, item, callback) {
-        if (index < 0 || item == null) {
-          callback(false)
-          return
-        }
-
         if (this.currentAccountIndex == index) {
-          this.setRememberLogin(item.remember)
-          vAccount.value = item.phone
-          vPassword.value = item.password
+          if (item != null) {
+            this.setRememberLogin(item.remember)
+            vAccount.value = item.phone
+            vPassword.value = item.password
 
-          if (item.isLoggedIn) {
-            //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
-            this.logout(false, function (url, res, err) {
-              App.onResponse(url, res, err)
+            if (item.isLoggedIn) {
+              //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
+              this.logout(false, function (url, res, err) {
+                App.onResponse(url, res, err)
 
-              item.isLoggedIn = false
-              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
-
-              if (callback != null) {
-                callback(false)
-              }
-            });
-          }
-          else {
-            //login
-            this.login(false, function (url, res, err) {
-              App.onResponse(url, res, err)
-
-              item.isLoggedIn = true
-
-              var data = res.data || {}
-              var user = data.code == 200 ? data.user : null
-              if (user != null) {
-                item.name = user.name
-                item.remember = data.remember
-
+                item.isLoggedIn = false
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
 
                 if (callback != null) {
-                  callback(true)
+                  callback(false)
                 }
-              }
-            });
+              });
+            }
+            else {
+              //login
+              this.login(false, function (url, res, err) {
+                App.onResponse(url, res, err)
+
+                item.isLoggedIn = true
+
+                var data = res.data || {}
+                var user = data.code == 200 ? data.user : null
+                if (user != null) {
+                  item.name = user.name
+                  item.remember = data.remember
+
+                  App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+                  App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+
+                  if (callback != null) {
+                    callback(true)
+                  }
+                }
+              });
+            }
+
           }
 
           return;
@@ -1569,8 +1609,10 @@
         this.currentAccountIndex = index
 
         //目前还没做到同一标签页下测试账号切换后，session也跟着切换，所以干脆每次切换tab就重新登录
-        item.isLoggedIn = false
-        this.onClickAccount(index, item, callback)
+        if (item != null) {
+          item.isLoggedIn = false
+          this.onClickAccount(index, item, callback)
+        }
       },
 
       removeAccountTab: function () {
@@ -1606,7 +1648,27 @@
         }
         App.testCases = App.remotes || []
 
-        if (show && App.testCases.length <= 0) {
+        if (show) {
+          var testCases = App.testCases
+          var allCount = testCases == null ? 0 : testCases.length
+          if (allCount > 0) {
+            var accountIndex = (App.accounts[App.currentAccountIndex] || {}).isLoggedIn ? App.currentAccountIndex : -1
+            App.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
+
+            var tests = App.tests[String(accountIndex)] || {}
+            if (tests != null && $.isEmptyObject(tests) != true) {
+              for (var i = 0; i < allCount; i++) {
+                var item = testCases[i]
+                if (item == null) {
+                  continue
+                }
+                var d = item.Document || {}
+                App.compareResponse(allCount, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
+              }
+            }
+            return;
+          }
+
           App.isTestCaseShow = false
 
           var url = App.server + '/get'
@@ -1666,7 +1728,8 @@
             '[]': {
               'count': 0,
               'Random': {
-                'documentId': item.id
+                'documentId': item.id,
+                '@order': "date-"
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
@@ -2153,15 +2216,14 @@
 
         this.isTestCaseShow = false
 
-        // 删除注释 <<<<<<<<<<<<<<<<<<<<<
-
-        var input = this.removeComment(vInput.value);
-        if (vInput.value != input) {
-          vInput.value = input
-        }
-
-        // 删除注释 >>>>>>>>>>>>>>>>>>>>>
-
+        // // 删除注释 <<<<<<<<<<<<<<<<<<<<<
+        //
+        // var input = this.removeComment(vInput.value);
+        // if (vInput.value != input) {
+        //   vInput.value = input
+        // }
+        //
+        // // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
         this.onChange(false);
       },
@@ -2184,6 +2246,40 @@
           var index = this.types.indexOf(this.type)
           index++;
           this.type = this.types[index % count]
+        }
+
+        var url = StringUtil.get(vUrl.value)
+        var index = url.indexOf('?')
+        if (index >= 0) {
+          var params = StringUtil.split(url.substring(index + 1), '&')
+
+          var paramObj = {}
+          var p
+          var v
+          var ind
+          if (params != null) {
+            for (var i = 0; i < params.length; i++) {
+              p = params[i]
+              ind = p == null ? -1 : p.indexOf('=')
+              if (ind < 0) {
+                continue
+              }
+
+              v = p.substring(ind + 1)
+              try {
+                v = JSON.parse(v)
+              }
+              catch (e) {}
+
+              paramObj[p.substring(0, ind)] = v
+            }
+          }
+
+          vUrl.value = url.substring(0, index)
+          if ($.isEmptyObject(paramObj) == false) {
+            vInput.value = '//TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n//FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
+          }
+          clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
         this.onChange(false);
@@ -2303,7 +2399,9 @@
               else {
                 // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
 
-                App.accounts[App.currentAccountIndex].isLoggedIn = false
+                if (App.accounts[App.currentAccountIndex] != null) {
+                  App.accounts[App.currentAccountIndex].isLoggedIn = false
+                }
               }
             }
 
@@ -2423,6 +2521,7 @@
         s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+          + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
           + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
           + '\nAPIJSON -Java版: https://github.com/TommyLemon/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
@@ -2751,9 +2850,9 @@
 
       },
 
-      toDoubleJSON: function (json) {
+      toDoubleJSON: function (json, defaultValue) {
         if (StringUtil.isEmpty(json)) {
-          json = '{}'
+          return defaultValue == null ? '{}' : JSON.stringify(defaultValue)
         }
         else if (json.indexOf("'") >= 0) {
           json = json.replace(/'/g, '"');
@@ -2972,7 +3071,7 @@
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              App.compareResponse(allCount, index, item, res.data, true)
+              App.compareResponse(allCount, index, item, res.data, true, App.currentAccountIndex, false, err)
             })
           }
         }
@@ -3142,9 +3241,9 @@
               if (current == null) {
                 current = parent[pathKeys[j]] = {}
               }
-              if (parent instanceof Array || parent instanceof Object == false) {
+              if (parent instanceof Object == false) {
                 throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
-                  ' pathKeys[' + j + '] 在实际请求 JSON 内对应的值不是对象 {} !');
+                  ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} !');
               }
               parent = current;
             }
@@ -3182,16 +3281,16 @@
        */
       test: function (isRandom, accountIndex) {
         var accounts = this.accounts || []
-        alert('test  accountIndex = ' + accountIndex)
+        // alert('test  accountIndex = ' + accountIndex)
         var isCrossEnabled = this.isCrossEnabled
         if (accountIndex == null) {
           accountIndex = -1 //isCrossEnabled ? -1 : 0
         }
         if (isCrossEnabled) {
           var isCrossDone = accountIndex >= accounts.length
-          this.crossProcess = isCrossDone ? (isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭') : ('交叉账号: ' + accountIndex + '/' + accounts.length)
+          this.crossProcess = isCrossDone ? (isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭') : ('交叉账号: ' + (accountIndex + 1) + '/' + accounts.length)
           if (isCrossDone) {
-            alert('test  isCrossDone')
+            alert('已完成账号交叉测试: 退出登录状态 和 每个账号登录状态')
             return
           }
         }
@@ -3220,83 +3319,94 @@
           return
         }
 
-
-        if (accountIndex < 0 && isCrossEnabled) {  //退出登录已登录的账号
-          accounts[this.currentAccountIndex].isLoggedIn = true
+        if (isCrossEnabled) {
+          if (accountIndex < 0 && accounts[this.currentAccountIndex] != null) {  //退出登录已登录的账号
+            accounts[this.currentAccountIndex].isLoggedIn = true
+          }
+          var index = accountIndex < 0 ? this.currentAccountIndex : accountIndex
+          this.onClickAccount(index, accounts[index], function (isLoggedIn) {
+            App.showTestCase(true, false)
+            App.startTest(list, allCount, isRandom, accountIndex)
+          })
         }
+        else {
+          App.startTest(list, allCount, isRandom, accountIndex)
+        }
+      },
 
-        var index = accountIndex < 0 && isCrossEnabled ? this.currentAccountIndex : accountIndex
-        this.onClickAccount(index, accounts[index], function(isLoggedIn) {
-          App.showTestCase(true, false)
+      startTest: function (list, allCount, isRandom, accountIndex) {
+        this.testProcess = '正在测试: ' + 0 + '/' + allCount
 
-          App.testProcess = '正在测试: ' + 0 + '/' + allCount
+        for (var i = 0; i < allCount; i++) {
+          const item = list[i]
+          const document = item == null ? null : item.Document
+          if (document == null || document.name == null) {
+            doneCount++
+            continue
+          }
+          if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+            App.log('test  document.url == "/login" || document.url == "/logout" >> continue')
+            doneCount++
+            continue
+          }
+          App.log('test  document = ' + JSON.stringify(document, null, '  '))
 
-          for (var i = 0; i < allCount; i++) {
-            const item = list[i]
-            const document = item == null ? null : item.Document
-            if (document == null || document.name == null) {
-              doneCount++
-              continue
-            }
-            if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-              App.log('test  document.url == "/login" || document.url == "/logout" >> continue')
-              doneCount++
-              continue
-            }
-            App.log('test  document = ' + JSON.stringify(document, null, '  '))
+          const index = i
 
-            const index = i
-
-            var header = null
-            try {
-              header = App.getHeader(document.header)
-            } catch (e) {
-              App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
-            }
-
-            App.request(false, document.type, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
-
-              try {
-                App.onResponse(url, res, err)
-                App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
-              } catch (e) {
-                App.log('test  App.request >> } catch (e) {\n' + e.message)
-              }
-
-              App.compareResponse(allCount, index, item, res.data, isRandom, accountIndex)
-            })
+          var header = null
+          try {
+            header = App.getHeader(document.header)
+          } catch (e) {
+            App.log('test  for ' + i + ' >> try { header = App.getHeader(document.header) } catch (e) { \n' + e.message)
           }
 
-        })
+          App.request(false, document.type, baseUrl + document.url, App.getRequest(document.request), header, function (url, res, err) {
+
+            try {
+              App.onResponse(url, res, err)
+              App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            } catch (e) {
+              App.log('test  App.request >> } catch (e) {\n' + e.message)
+            }
+
+            App.compareResponse(allCount, index, item, res.data, isRandom, accountIndex, false, err)
+          })
+        }
 
       },
 
-      compareResponse: function (allCount, index, item, response, isRandom, accountIndex) {
+      compareResponse: function (allCount, index, item, response, isRandom, accountIndex, justRecoverTest, err) {
         var it = item || {} //请求异步
         var d = (isRandom ? App.currentRemoteItem.Document : it.Document) || {} //请求异步
-        var r = isRandom ? it.Random : null//请求异步
+        var r = isRandom ? it.Random : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
-        var releaseResponse = App.removeDebugInfo(response)
-
+        if (err != null) {
+          tr.compare = {
+            code: JSONResponse.COMPARE_ERROR, //请求出错
+            msg: '请求出错！',
+            path: err.message + '\n\n'
+          }
+        }
+        else {
           var standardKey = App.isMLEnabled != true ? 'response' : 'standard'
-          var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey]);
-          tr.compare = JSONResponse.compareResponse(standard, releaseResponse, '', App.isMLEnabled) || {}
-          App.onTestResponse(allCount, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex);
+          var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey])
+          tr.compare = JSONResponse.compareResponse(standard, App.removeDebugInfo(response), '', App.isMLEnabled) || {}
+        }
+
+        App.onTestResponse(allCount, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest);
       },
 
-      onTestResponse: function(allCount, index, it, d, r, tr, response, cmp, isRandom, accountIndex) {
-
-        doneCount ++
-        App.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
-
-        App.log('doneCount = ' + doneCount + '; d.name = ' + (isRandom ? r.name : d.name) + '; tr.compareType = ' + tr.compareType)
-
+      onTestResponse: function(allCount, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest) {
         tr.compare = cmp;
 
         it.compareType = tr.compare.code;
         it.hintMessage = tr.compare.path + '  ' + tr.compare.msg;
         switch (it.compareType) {
+          case JSONResponse.COMPARE_ERROR:
+            it.compareColor = 'red'
+            it.compareMessage = '请求出错！'
+            break;
           case JSONResponse.COMPARE_NO_STANDARD:
             it.compareColor = 'white'
             it.compareMessage = '确认正确后点击[对的，纠正]'
@@ -3332,21 +3442,37 @@
 
         Vue.set(isRandom ? App.randoms : App.remotes, index, it)
 
+        if (justRecoverTest) {
+          return
+        }
+
+        doneCount ++
+        this.testProcess = doneCount >= allCount ? (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
+
+        this.log('doneCount = ' + doneCount + '; d.name = ' + (isRandom ? r.name : d.name) + '; tr.compareType = ' + tr.compareType)
+
         var documentId = isRandom ? r.documentId : d.id
-        var tests = App.tests || {}
+        if (this.tests == null) {
+          this.tests = {}
+        }
+        if (this.tests[String(accountIndex)] == null) {
+          this.tests[String(accountIndex)] = {}
+        }
+
+        var tests = this.tests[String(accountIndex)] || {}
         var t = tests[documentId]
         if (t == null) {
           t = tests[documentId] = {}
         }
         t[isRandom ? r.id : 0] = response
 
-        App.tests = tests
-        console.log('tests = ' + JSON.stringify(tests, null, '    '))
-        // App.showTestCase(true)
+        this.tests[String(accountIndex)] = tests
+        this.log('tests = ' + JSON.stringify(tests, null, '    '))
+        // this.showTestCase(true)
 
-        if (doneCount >= allCount && App.isCrossEnabled) {
-          alert('onTestResponse  accountIndex = ' + accountIndex)
-          App.test(false, accountIndex + 1)
+        if (doneCount >= allCount && App.isCrossEnabled && isRandom != true) {
+          // alert('onTestResponse  accountIndex = ' + accountIndex)
+          this.test(false, accountIndex + 1)
         }
       },
 
@@ -3392,7 +3518,7 @@
          * 导致必须先删除第一个文件内的后面与第二个文件重复的一段，再重新对比。
          */
         setTimeout(function () {
-          var tests = App.tests || {}
+          var tests = App.tests[String(App.currentAccountIndex)] || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
@@ -3433,7 +3559,7 @@
         var random = item.Random = item.Random || {}
         var testRecord = item.TestRecord = item.TestRecord || {}
 
-        var tests = App.tests || {}
+        var tests = App.tests[String(App.currentAccountIndex)] || {}
         var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[isRandom ? random.id : 0] || {}
 
         var isBefore = item.showType == 'before'
