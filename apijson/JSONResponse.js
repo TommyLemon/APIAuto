@@ -263,6 +263,7 @@ var JSONResponse = {
   },
 
 
+  COMPARE_ERROR: -2,
   COMPARE_NO_STANDARD: -1,
   COMPARE_EQUAL: 0,
   COMPARE_KEY_MORE: 1,
@@ -288,10 +289,10 @@ var JSONResponse = {
         path: folder == null ? '' : folder
       };
     }
-    if (target.code != real.code) {
+    if (real == null || target.code != real.code) {
       return {
         code: JSONResponse.COMPARE_CODE_CHANGE,
-        msg: '状态码改变！',
+        msg: '状态码 code 改变！',
         path: folder == null ? '' : folder
       };
     }
