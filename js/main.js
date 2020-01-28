@@ -518,7 +518,7 @@
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isRandomShow: true,
+      isRandomShow: true,  //默认展示
       isRandomListShow: false,
       isLoginShow: false,
       isConfigShow: false,
@@ -552,7 +552,7 @@
         balance: null //点击更新提示需要判空 0.00
       },
       type: REQUEST_TYPE_JSON,
-      types: [ REQUEST_TYPE_JSON ],
+      types: [ REQUEST_TYPE_JSON, REQUEST_TYPE_PARAM ],  //默认展示
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
@@ -1929,7 +1929,7 @@
             var data = res.data || {}
             if (data.code == 200) {
               var user = data.user || {}
-              App.accounts.push( {
+              App.accounts.push({
                 isLoggedIn: true,
                 id: user.id,
                 name: user.name,
@@ -1937,6 +1937,12 @@
                 password: req.password,
                 remember: data.remember
               })
+
+              var lastItem = App.accounts[App.currentAccountIndex]
+              if (lastItem != null) {
+                lastItem.isLoggedIn = false
+              }
+
               App.currentAccountIndex = App.accounts.length - 1
 
               App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
