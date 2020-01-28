@@ -3708,7 +3708,7 @@
           }
 
           item.TestRecord = data.TestRecord
-          App.compareResponse(allCount, index, item, response, isRandom);
+          App.compareResponse(allCount, index, item, response, isRandom, App.currentAccountIndex, true, null);
         })
       },
 
