@@ -1887,6 +1887,9 @@
               //保存User到缓存
               App.saveCache(App.server, 'User', user)
 
+              if (App.currentAccountIndex == null || App.currentAccountIndex < 0) {
+                App.currentAccountIndex = 0
+              }
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
               App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
