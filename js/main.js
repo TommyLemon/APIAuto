@@ -2395,7 +2395,7 @@
           url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
           params: (type == REQUEST_TYPE_JSON ? null : req),
           data: (type == REQUEST_TYPE_JSON ? req : null),
-          headers: header,
+          headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: type == REQUEST_TYPE_JSON
         })
           .then(function (res) {
