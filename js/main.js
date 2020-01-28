@@ -1431,22 +1431,22 @@
           var val = paraItem.default
           if (val == undefined) {
             if (paraItem.type == 'boolean') {
-              val = true
+              val = 'true'
             }
             if (paraItem.type == 'integer') {
-              val = 1
+              val = '1'
             }
             else if (paraItem.type == 'string') {
-              val = ""
+              val = ''
             }
             else if (paraItem.type == 'object') {
-              val = {}
+              val = '{}'
             }
             else if (paraItem.type == 'array') {
-              val = []
+              val = '[]'
             }
             else {
-              val = null
+              val = 'null'
             }
           }
           else if (typeof val == 'string') {
@@ -1553,7 +1553,12 @@
 
       onClickAccount: function (index, item, callback) {
         if (this.currentAccountIndex == index) {
-          if (item != null) {
+          if (item == null) {
+            if (callback != null) {
+              callback(false)
+            }
+          }
+          else {
             this.setRememberLogin(item.remember)
             vAccount.value = item.phone
             vPassword.value = item.password
@@ -1581,7 +1586,12 @@
 
                 var data = res.data || {}
                 var user = data.code == 200 ? data.user : null
-                if (user != null) {
+                if (user == null) {
+                  if (callback != null) {
+                    callback(false)
+                  }
+                }
+                else {
                   item.name = user.name
                   item.remember = data.remember
 
@@ -1614,6 +1624,11 @@
         if (item != null) {
           item.isLoggedIn = false
           this.onClickAccount(index, item, callback)
+        }
+        else {
+          if (callback != null) {
+            callback(false)
+          }
         }
       },
 
@@ -1772,10 +1787,10 @@
       saveCache: function (url, key, value) {
         var cache = this.getCache(url);
         cache[key] = value
-        localStorage.setItem(url, JSON.stringify(cache))
+        localStorage.setItem('APIAuto:' + url, JSON.stringify(cache))
       },
       getCache: function (url, key) {
-        var cache = localStorage.getItem(url)
+        var cache = localStorage.getItem('APIAuto:' + url)
         try {
           cache = JSON.parse(cache)
         } catch(e) {
@@ -2541,7 +2556,7 @@
        * @param d
        **/
       setDoc: function (d) {
-        if (d == null || d == '') {
+        if (d == null) { //解决死循环 || d == '') {
           return false;
         }
         doc = d;
