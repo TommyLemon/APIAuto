@@ -518,7 +518,7 @@
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isRandomShow: true,
+      isRandomShow: true,  //默认展示
       isRandomListShow: false,
       isLoginShow: false,
       isConfigShow: false,
@@ -552,7 +552,7 @@
         balance: null //点击更新提示需要判空 0.00
       },
       type: REQUEST_TYPE_JSON,
-      types: [ REQUEST_TYPE_JSON ],
+      types: [ REQUEST_TYPE_JSON, REQUEST_TYPE_PARAM ],  //默认展示
       host: '',
       database: 'MYSQL',// 'POSTGRESQL',
       schema: 'sys',
@@ -1431,22 +1431,22 @@
           var val = paraItem.default
           if (val == undefined) {
             if (paraItem.type == 'boolean') {
-              val = true
+              val = 'true'
             }
             if (paraItem.type == 'integer') {
-              val = 1
+              val = '1'
             }
             else if (paraItem.type == 'string') {
-              val = ""
+              val = ''
             }
             else if (paraItem.type == 'object') {
-              val = {}
+              val = '{}'
             }
             else if (paraItem.type == 'array') {
-              val = []
+              val = '[]'
             }
             else {
-              val = null
+              val = 'null'
             }
           }
           else if (typeof val == 'string') {
@@ -1553,7 +1553,12 @@
 
       onClickAccount: function (index, item, callback) {
         if (this.currentAccountIndex == index) {
-          if (item != null) {
+          if (item == null) {
+            if (callback != null) {
+              callback(false)
+            }
+          }
+          else {
             this.setRememberLogin(item.remember)
             vAccount.value = item.phone
             vPassword.value = item.password
@@ -1581,7 +1586,12 @@
 
                 var data = res.data || {}
                 var user = data.code == 200 ? data.user : null
-                if (user != null) {
+                if (user == null) {
+                  if (callback != null) {
+                    callback(false)
+                  }
+                }
+                else {
                   item.name = user.name
                   item.remember = data.remember
 
@@ -1614,6 +1624,11 @@
         if (item != null) {
           item.isLoggedIn = false
           this.onClickAccount(index, item, callback)
+        }
+        else {
+          if (callback != null) {
+            callback(false)
+          }
         }
       },
 
@@ -1772,10 +1787,10 @@
       saveCache: function (url, key, value) {
         var cache = this.getCache(url);
         cache[key] = value
-        localStorage.setItem(url, JSON.stringify(cache))
+        localStorage.setItem('APIAuto:' + url, JSON.stringify(cache))
       },
       getCache: function (url, key) {
-        var cache = localStorage.getItem(url)
+        var cache = localStorage.getItem('APIAuto:' + url)
         try {
           cache = JSON.parse(cache)
         } catch(e) {
@@ -1872,6 +1887,9 @@
               //保存User到缓存
               App.saveCache(App.server, 'User', user)
 
+              if (App.currentAccountIndex == null || App.currentAccountIndex < 0) {
+                App.currentAccountIndex = 0
+              }
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
               App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
@@ -1911,7 +1929,7 @@
             var data = res.data || {}
             if (data.code == 200) {
               var user = data.user || {}
-              App.accounts.push( {
+              App.accounts.push({
                 isLoggedIn: true,
                 id: user.id,
                 name: user.name,
@@ -1919,6 +1937,12 @@
                 password: req.password,
                 remember: data.remember
               })
+
+              var lastItem = App.accounts[App.currentAccountIndex]
+              if (lastItem != null) {
+                lastItem.isLoggedIn = false
+              }
+
               App.currentAccountIndex = App.accounts.length - 1
 
               App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
@@ -2380,7 +2404,7 @@
           url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
           params: (type == REQUEST_TYPE_JSON ? null : req),
           data: (type == REQUEST_TYPE_JSON ? req : null),
-          headers: header,
+          headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: type == REQUEST_TYPE_JSON
         })
           .then(function (res) {
@@ -2541,7 +2565,7 @@
        * @param d
        **/
       setDoc: function (d) {
-        if (d == null || d == '') {
+        if (d == null) { //解决死循环 || d == '') {
           return false;
         }
         doc = d;
@@ -3690,7 +3714,7 @@
           }
 
           item.TestRecord = data.TestRecord
-          App.compareResponse(allCount, index, item, response, isRandom);
+          App.compareResponse(allCount, index, item, response, isRandom, App.currentAccountIndex, true, null);
         })
       },
 
