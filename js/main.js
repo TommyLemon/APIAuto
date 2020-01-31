@@ -3279,7 +3279,7 @@
             }
             // alert('< current = ' + JSON.stringify(current, null, '    '))
 
-            if (current.hasOwnProperty(key) == false) {
+            if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
               delete current[lastKeyInPath];
             }
             current[key] = eval(value);
@@ -3498,6 +3498,8 @@
 
         if (doneCount >= allCount && App.isCrossEnabled && isRandom != true) {
           // alert('onTestResponse  accountIndex = ' + accountIndex)
+          //TODO 自动给非 红色 报错的接口跑随机测试
+
           this.test(false, accountIndex + 1)
         }
       },
