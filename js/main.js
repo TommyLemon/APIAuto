@@ -1368,14 +1368,16 @@
           if (value.length <= 0) {
             val = ''
           }
-          else if (value.length <= 1) {
-            val = ', ' + JSON.stringify(value)
-          }
-          else if (value.length <= 2) {
-            val = ', [' + value[0] + '], [' + value[1] + '], ' + JSON.stringify(value)
-          }
           else {
-            val = ', [' + value[0] + '], [' + value[value.length - 1] + '], [' + value[Math.floor(value.length/2)] + '], ' + JSON.stringify(value)
+            if (value.length <= 1) {
+              val = ', ' + JSON.stringify(value)
+            }
+            else if (value.length <= 2) {
+              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[1]]) + ', ' + JSON.stringify(value)
+            }
+            else {
+              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[value.length - 1]]) + ', ' + JSON.stringify([value[Math.floor(value.length / 2)]]) + ', ' + JSON.stringify(value)
+            }
           }
           config += prefix + 'ORDER_IN(undefined, null, []' + val + ')'
         }
@@ -1424,7 +1426,7 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.6*value) + ', ' + (6*value) + ')'
+                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9*value) + ', ' + Math.round(1.1*value) + ')'
               }
               else {
                 config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10*value) + ')'
