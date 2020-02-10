@@ -373,9 +373,9 @@
     return json
   }
   function randomInt(min, max) {
-    return Math.round(randomNum(min, max));
+    return randomNum(min, max, 0);
   }
-  function randomNum(min, max) {
+  function randomNum(min, max, precision) {
     // 0 居然也会转成  Number.MIN_SAFE_INTEGER ！！！
     // start = start || Number.MIN_SAFE_INTEGER
     // end = end || Number.MAX_SAFE_INTEGER
@@ -386,7 +386,11 @@
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
     }
-    return (max - min)*Math.random() + min;
+    if (precision == null) {
+      precision = 2
+    }
+
+    return + ((max - min)*Math.random() + min).toFixed(precision);
   }
   function randomStr(minLength, maxLength, availableChars) {
     return 'Ab_Cd' + randomNum();
@@ -1433,11 +1437,25 @@
               }
             }
             else {
+              var valStr = String(value)
+              var dotIndex = valStr.indexOf('.')
+              var hasDot = dotIndex >= 0
+              var keep = dotIndex < 0 ? 2 : valStr.length - dotIndex - 1
+
               if (value < 0) {
-                config += prefix + 'RANDOM_INT(' + (100*value) + ', 0)'
+                config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100*value) + (hasDot ? ', 0, ' + keep + ')' : ', 0)')
+              }
+              else if (value > 0 && value < 1) {  // 0-1 比例
+                config += prefix + 'RANDOM_NUM(0, 1, ' + keep + ')'
+              }
+              else if (value >= 0 && value <= 100) {  // 10% 百分比
+                config += prefix + (hasDot ? 'RANDOM_NUM(0, 100, ' + keep + ')' : 'RANDOM_INT(0, 100)')
               }
               else {
-                config += prefix + (value < 10 ? 'ORDER_IN(0, 9)' : 'RANDOM_INT(0, ' + 100*value + ')')
+                config += prefix + (dotIndex < 0 && value < 10
+                    ? 'ORDER_INT(0, 9)'
+                    : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100*value + (hasDot ? ', ' + keep + ')' : ')'))
+                  )
               }
             }
           }
