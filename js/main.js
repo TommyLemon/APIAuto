@@ -1448,12 +1448,12 @@
               else if (value > 0 && value < 1) {  // 0-1 比例
                 config += prefix + 'RANDOM_NUM(0, 1, ' + keep + ')'
               }
-              else if (value >= 0 && value <= 100) {  // 10% 百分比
+              else if ((hasDot && value > 0 && value <= 100) || (hasDot != true && value > 5 && value <= 100)) {  // 10% 百分比
                 config += prefix + (hasDot ? 'RANDOM_NUM(0, 100, ' + keep + ')' : 'RANDOM_INT(0, 100)')
               }
               else {
-                config += prefix + (dotIndex < 0 && value < 10
-                    ? 'ORDER_INT(0, 9)'
+                config += prefix + (dotIndex < 0 && value <= 10
+                    ? 'ORDER_INT(0, 10)'
                     : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100*value + (hasDot ? ', ' + keep + ')' : ')'))
                   )
               }
