@@ -86,8 +86,6 @@ QQ技术交流群：734652054（群2） 607020115（群1）
 
 [apijson-node](https://github.com/kevinaskin/apijson-node) Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo，支持 MySQL, PostgreSQL, SQL Server, Oracle
 
-[apijson](https://github.com/TEsTsLA/apijson) Node.ts 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite, MariaDB, WebSQL
-
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
 
 [APIJSON](https://github.com/crazytaxi824/APIJSON) Go 版 APIJSON，功能开发中...
