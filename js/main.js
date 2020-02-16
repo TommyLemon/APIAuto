@@ -373,9 +373,9 @@
     return json
   }
   function randomInt(min, max) {
-    return Math.round(randomNum(min, max));
+    return randomNum(min, max, 0);
   }
-  function randomNum(min, max) {
+  function randomNum(min, max, precision) {
     // 0 居然也会转成  Number.MIN_SAFE_INTEGER ！！！
     // start = start || Number.MIN_SAFE_INTEGER
     // end = end || Number.MAX_SAFE_INTEGER
@@ -386,7 +386,11 @@
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
     }
-    return (max - min)*Math.random() + min;
+    if (precision == null) {
+      precision = 2
+    }
+
+    return + ((max - min)*Math.random() + min).toFixed(precision);
   }
   function randomStr(minLength, maxLength, availableChars) {
     return 'Ab_Cd' + randomNum();
@@ -1316,11 +1320,163 @@
               if (rpObj.Document != null && rpObj.Document.code == 200) {
                 App.remotes = []
                 App.showTestCase(true, false)
+
+
+                //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
+                var req = App.getRequest(vInput.value, {})
+                var config = StringUtil.trim(App.newRandomConfig(null, '', req))
+                if (config == '') {
+                  return;
+                }
+
+                App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
+                  format: false,
+                  'Random': {
+                    documentId: rpObj.Document.id,
+                    count: App.requestCount,
+                    name: '默认配置(上传测试用例时自动生成)',
+                    config: config
+                  },
+                  'tag': 'Random'
+                }, {}, function (url, res, err) {
+                  if (res.data != null && res.data.Random != null && res.data.Random.code == CODE_SUCCESS) {
+                    alert('已自动生成并上传随机配置:\n' + config)
+                    App.isRandomListShow = true
+                  }
+                  else {
+                    alert('已自动生成，但上传以下随机配置失败:\n' + config)
+                    vRandom.value = config
+                  }
+                  App.onResponse(url, res, err)
+                })
               }
             }
           })
         }
       },
+
+      newRandomConfig: function (path, key, value) {
+        if (key == null) {
+          return ''
+        }
+        if (path == '' && (key == 'tag' || key == 'version' || key == 'format')) {
+          return ''
+        }
+
+        var config = ''
+        var childPath = path == null || path == '' ? key : path + '/' + key
+        var prefix = '\n' + childPath + ' : '
+
+        if (value instanceof Array) {
+          var val
+          if (value.length <= 0) {
+            val = ''
+          }
+          else {
+            if (value.length <= 1) {
+              val = ', ' + JSON.stringify(value)
+            }
+            else if (value.length <= 2) {
+              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[1]]) + ', ' + JSON.stringify(value)
+            }
+            else {
+              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[value.length - 1]]) + ', ' + JSON.stringify([value[Math.floor(value.length / 2)]]) + ', ' + JSON.stringify(value)
+            }
+          }
+          config += prefix + 'ORDER_IN(undefined, null, []' + val + ')'
+        }
+        else if (value instanceof Object) {
+          for(var k in value) {
+            var v = value[k]
+
+            var isAPIJSONArray = v instanceof Object && v instanceof Array == false
+              && k.startsWith('@') == false && (k.endsWith('[]') || k.endsWith('@'))
+            if (isAPIJSONArray) {
+              if (k.endsWith('@')) {
+                delete v.from
+                delete v.range
+              }
+
+              prefix = '\n' + (childPath == null || childPath == '' ? '' : childPath + '/') + k + '/'
+              if (v.hasOwnProperty('page')) {
+                config += prefix + 'page : ' + 'ORDER_INT(0, 10)'
+                delete v.page
+              }
+              if (v.hasOwnProperty('count')) {
+                config += prefix + 'count : ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
+                  + ([0, 1, 5, 10, 20].indexOf(v.count) >= 0 ? ')' : ', ' + v.count + ')')
+                delete v.count
+              }
+              if (v.hasOwnProperty('query')) {
+                config += prefix + 'query : ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
+                delete v.query
+              }
+            }
+
+            config += App.newRandomConfig(childPath, k, v)
+          }
+        }
+        else {
+          //自定义关键词
+          if (key.startsWith('@')) {
+            return config
+          }
+
+          if (typeof value == 'boolean') {
+            config += prefix + 'ORDER_IN(undefined, null, false, true)'
+          }
+          else if (typeof value == 'number') {
+            var isId = key == 'id' || key.endsWith('Id') || key.endsWith('_id') || key.endsWith('_ID')
+            if (isId) {
+              config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
+              if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
+                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9*value) + ', ' + Math.round(1.1*value) + ')'
+              }
+              else {
+                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10*value) + ')'
+              }
+            }
+            else {
+              var valStr = String(value)
+              var dotIndex = valStr.indexOf('.')
+              var hasDot = dotIndex >= 0
+              var keep = dotIndex < 0 ? 2 : valStr.length - dotIndex - 1
+
+              if (value < 0) {
+                config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100*value) + (hasDot ? ', 0, ' + keep + ')' : ', 0)')
+              }
+              else if (value > 0 && value < 1) {  // 0-1 比例
+                config += prefix + 'RANDOM_NUM(0, 1, ' + keep + ')'
+              }
+              else if ((hasDot && value > 0 && value <= 100) || (hasDot != true && value > 5 && value <= 100)) {  // 10% 百分比
+                config += prefix + (hasDot ? 'RANDOM_NUM(0, 100, ' + keep + ')' : 'RANDOM_INT(0, 100)')
+              }
+              else {
+                config += prefix + (dotIndex < 0 && value <= 10
+                    ? 'ORDER_INT(0, 10)'
+                    : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100*value + (hasDot ? ', ' + keep + ')' : ')'))
+                  )
+              }
+            }
+          }
+          else if (typeof value == 'string') {
+            //引用赋值 || 远程函数 || 匹配条件范围
+            if (key.endsWith('@') || key.endsWith('()') || key.endsWith('{}')) {
+              return config
+            }
+
+            config += prefix + 'ORDER_IN(undefined, null, ""' + (value == '' ? ')' : ', "' + value + '")')
+          }
+          else {
+            config += prefix + 'ORDER_IN(undefined, null' + (value == null ? ')' : ', ' + JSON.stringify(value) + ')')
+          }
+
+        }
+
+        return config
+      },
+
+
 
       // 保存配置
       saveConfig: function () {
@@ -3279,7 +3435,7 @@
             }
             // alert('< current = ' + JSON.stringify(current, null, '    '))
 
-            if (current.hasOwnProperty(key) == false) {
+            if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
               delete current[lastKeyInPath];
             }
             current[key] = eval(value);
@@ -3498,6 +3654,8 @@
 
         if (doneCount >= allCount && App.isCrossEnabled && isRandom != true) {
           // alert('onTestResponse  accountIndex = ' + accountIndex)
+          //TODO 自动给非 红色 报错的接口跑随机测试
+
           this.test(false, accountIndex + 1)
         }
       },
