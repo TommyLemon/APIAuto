@@ -100,6 +100,8 @@ QQ技术交流群：734652054（群2） 607020115（群1）
 
 [SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
 
+[UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习自动化单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
+
 感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
 
 ### 持续更新
