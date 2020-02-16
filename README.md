@@ -86,8 +86,6 @@ QQ技术交流群：734652054（群2） 607020115（群1）
 
 [apijson-node](https://github.com/kevinaskin/apijson-node) Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo，支持 MySQL, PostgreSQL, SQL Server, Oracle
 
-[apijson](https://github.com/TEsTsLA/apijson) Node.ts 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite, MariaDB, WebSQL
-
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
 
 [APIJSON](https://github.com/crazytaxi824/APIJSON) Go 版 APIJSON，功能开发中...
@@ -99,6 +97,8 @@ QQ技术交流群：734652054（群2） 607020115（群1）
 [ApiJsonByJFinal](https://gitee.com/zhiyuexin/ApiJsonByJFinal) 整合 APIJSON 和 JFinal 的 Demo
 
 [SpringServer1.2-APIJSON](https://github.com/Airforce-1/SpringServer1.2-APIJSON) 智慧党建服务器端，提供 上传 和 下载 文件的接口
+
+[UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习自动化单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
 
 感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
 
