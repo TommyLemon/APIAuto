@@ -66,14 +66,14 @@
 
     <!--只用60%避免拦截左右两侧View的触摸事件-->
     <div style="width: 40%;height: 100%;left: 30%;display: inline-block;text-align: center;position: fixed;padding-top: 10px">
-      <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="https://github.com/TommyLemon/APIJSON/blob/master/Document.md" target="_blank" >文档</a>
+      <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="https://github.com/APIJSON/APIJSON/blob/master/Document.md" target="_blank" >文档</a>
       <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="http://i.youku.com/apijson" target="_blank" >视频</a>
       <a style="font-size: large;margin-left: 10px;margin-right: 10px;color: silver" href="https://github.com/search?o=desc&q=apijson&s=stars&type=Repositories" target="_blank" >生态</a>
     </div>
 
     <div class="top-right">
 
-      <a v-show="User.id == null || User.id <= 0" href="https://gitee.com/TommyLemon/APIJSON" target="_blank">
+      <a v-show="User.id == null || User.id <= 0" href="https://gitee.com/APIJSON/APIJSON" target="_blank">
         <img class="ui inline black image" height="24" src="https://gitee.com/logo-black.svg?20171024" width="60">
       </a>
 
@@ -144,6 +144,14 @@
         </svg>
       </a>
     </div>
+      <div v-show="isTestCaseShow" style="bottom: 10px; right: 13px;position: absolute; background-color: white; z-index: 100">
+          <button @click="pageDown(true)">上一页</button>
+          <input id="vTestCasePage" :value="testCasePage" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true, true)" />
+          <button @click="pageUp(true)">下一页</button>
+          <a >每页</a>
+          <input id="vTestCaseCount" :value="testCaseCount" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true, true)" />
+          <a >条</a>
+      </div>
     <div class="left-panel">
       <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
         <li v-for="(item, index) in testCases" >
@@ -262,7 +270,7 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
                           </svg>
                       </a>
                   </div>
-                  <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4=  //示例，支持单行注释"></textarea>
+                  <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization : Basic YWRtaW46YWRtaW4=  //示例，支持单行注释"></textarea>
               </div>
 
           </div>
@@ -379,6 +387,14 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
         <textarea id="vOutput" v-show="view == 'output'"></textarea>
 
         <div class="right-main" id="vMarkdown" v-show="view == 'markdown'"></div>
+        <div style="bottom: 0px; right: 10px;position: absolute; background-color: white;">
+            <button @click="pageDown()">上一页</button>
+            <input id="vPage" :value="page" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true)" />
+            <button @click="pageUp()">下一页</button>
+            <a >每页</a>
+            <input id="vCount" :value="count" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true)" />
+            <a >条</a>
+        </div>
       </div>
 
 
@@ -655,6 +671,10 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
   vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 
   var vMarkdown = document.getElementById('vMarkdown');
+  var vPage = document.getElementById('vPage');
+  var vCount = document.getElementById('vCount');
+  var vTestCasePage = document.getElementById('vTestCasePage');
+  var vTestCaseCount = document.getElementById('vTestCaseCount');
 
 
   function onScrollChanged() {
