@@ -344,9 +344,10 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  var REQUEST_TYPE_PARAM = 'PARAM'
-  var REQUEST_TYPE_FORM = 'FORM'
-  var REQUEST_TYPE_JSON = 'JSON'
+  var REQUEST_TYPE_PARAM = 'PARAM'  // GET parameter
+  var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
+  var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
+  var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
 
   var RANDOM_REAL = 'RANDOM_REAL'
   var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
@@ -935,7 +936,7 @@
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
               }
               else if (index == 7) {
-                alert('多个类型用 , 隔开，可填类型:\nPARAM(对应GET),FORM(对应POST),JSON(对应POST)')
+                alert('多个类型用 , 隔开，可填类型:\nPARAM(GET parameter),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
               }
               break
             case 3:
@@ -2432,7 +2433,7 @@
       getTypeName: function (type) {
         var ts = this.types
         var t = type || REQUEST_TYPE_JSON
-        if (ts == null || ts.indexOf(REQUEST_TYPE_FORM) < 0 || ts.indexOf(REQUEST_TYPE_JSON) < 0) {
+        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0)) {
           return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
         }
         return t
@@ -2575,8 +2576,8 @@
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
           url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
-          params: (type == REQUEST_TYPE_JSON ? null : req),
-          data: (type == REQUEST_TYPE_JSON ? req : null),
+          params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
+          data: (type == REQUEST_TYPE_JSON ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: true //Cookie 必须要  type == REQUEST_TYPE_JSON
         })

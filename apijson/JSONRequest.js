@@ -150,6 +150,31 @@ function encode(json) {
   return json;
 }
 
+/**编码JSON，转义所有String
+ * @param data 任意类型
+ */
+function toFormData(data) {
+  if (data == null) {
+    return null
+  }
+  if (data instanceof Object == false || data instanceof Array) {
+    alert('toFormData  data instanceof Object == false || data instanceof Array ! >> return')
+    return
+  }
+
+  var first = true
+  var ret = ''
+  for (var key in data) {
+    var val = data[key]
+    if (typeof val != 'string') {
+      val = JSON.stringify(val)
+    }
+    ret += (first ? '' : '&') + encodeURIComponent(key) + '=' + encodeURIComponent(val)
+    first = false
+  }
+  return ret;
+}
+
 
 /**格式化JSON串
  * @param json
