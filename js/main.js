@@ -327,6 +327,7 @@
   })
 
 
+  var DEBUG = false
 
   var initJson = {}
 
@@ -343,9 +344,10 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  var REQUEST_TYPE_PARAM = 'PARAM'
-  var REQUEST_TYPE_FORM = 'FORM'
-  var REQUEST_TYPE_JSON = 'JSON'
+  var REQUEST_TYPE_PARAM = 'PARAM'  // GET parameter
+  var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
+  var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
+  var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
 
   var RANDOM_REAL = 'RANDOM_REAL'
   var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
@@ -538,6 +540,9 @@
       isMLEnabled: false,
       isDelegateEnabled: false,
       isLocalShow: false,
+      uploadTotal: 0,
+      uploadDoneCount: 0,
+      uploadFailCount: 0,
       exTxt: {
         name: 'APIJSON测试',
         button: '保存',
@@ -564,7 +569,11 @@
       // server: 'http://47.74.39.68:9090',  // apijson.org
       swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
       language: 'Java',
-      header: {}
+      header: {},
+      page: 0,
+      count: 100,
+      testCasePage: 0,
+      testCaseCount: 50,
     },
     methods: {
 
@@ -927,7 +936,7 @@
                 alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
               }
               else if (index == 7) {
-                alert('多个类型用 , 隔开，可填类型:\nPARAM(对应GET),FORM(对应POST),JSON(对应POST)')
+                alert('多个类型用 , 隔开，可填类型:\nPARAM(GET parameter),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
               }
               break
             case 3:
@@ -1129,7 +1138,7 @@
             App.showRandomList(App.isRandomListShow, item)
           }
           if (test) {
-            App.send()
+            App.send(false)
           }
         })
       },
@@ -1155,7 +1164,7 @@
         if (App.isExportRemote == false) { //下载到本地
 
           if (App.isTestCaseShow) { //文档
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
               + '\n\nBASE_URL: ' + this.getBaseUrl()
               + '\n\n\n## 测试用例(Markdown格式，可用工具预览) \n\n' + App.getDoc4TestCase()
               + '\n\n\n\n\n\n\n\n## 文档(Markdown格式，可用工具预览) \n\n' + doc
@@ -1249,7 +1258,7 @@
                 break;
             }
 
-            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/TommyLemon/APIJSON'
+            saveTextAs('# ' + App.exTxt.name + '\n主页: https://github.com/APIJSON/APIJSON'
               + '\n\n\nURL: ' + StringUtil.get(vUrl.value)
               + '\n\n\nHeader:\n' + StringUtil.get(vHeader.value)
               + '\n\n\nRequest:\n' + StringUtil.get(vInput.value)
@@ -1273,9 +1282,10 @@
 
           App.isTestCaseShow = false
 
-          var currentAccount = App.accounts[App.currentAccountIndex];
+          var currentAccountId = App.getCurrentAccountId()
 
           var url = App.server + '/post'
+          var currentResponse = StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon))
           var req = isExportRandom ? {
             format: false,
             'Random': {
@@ -1289,7 +1299,7 @@
             format: false,
             'Document': {
               'userId': App.User.id,
-              'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
+              'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
               'url': '/' + App.getMethod(),
@@ -1300,7 +1310,10 @@
               'documentId@': '/Document/id',
               'randomId': 0,
               'userId': App.User.id,
-              'response': JSON.stringify(StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon)))
+              'host': App.getBaseUrl(),
+              'testAccountId': currentAccountId,
+              'response': JSON.stringify(currentResponse),
+              'standard': App.isMLEnabled ? JSON.stringify(JSONResponse.updateStandard({}, currentResponse)) : null
             },
             'tag': 'Document'
           }
@@ -1430,10 +1443,10 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9*value) + ', ' + Math.round(1.1*value) + ')'
+                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10*value) + ')'
+                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -1443,7 +1456,7 @@
               var keep = dotIndex < 0 ? 2 : valStr.length - dotIndex - 1
 
               if (value < 0) {
-                config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100*value) + (hasDot ? ', 0, ' + keep + ')' : ', 0)')
+                config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + (hasDot ? ', 0, ' + keep + ')' : ', 0)')
               }
               else if (value > 0 && value < 1) {  // 0-1 比例
                 config += prefix + 'RANDOM_NUM(0, 1, ' + keep + ')'
@@ -1453,9 +1466,22 @@
               }
               else {
                 config += prefix + (dotIndex < 0 && value <= 10
-                    ? 'ORDER_INT(0, 10)'
-                    : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100*value + (hasDot ? ', ' + keep + ')' : ')'))
+                      ? 'ORDER_INT(0, 10)'
+                      : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + (hasDot ? ', ' + keep + ')' : ')'))
                   )
+                var hasDot = String(value).indexOf('.') >= 0
+                if (value < 0) {
+                  config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                }
+                else if (value > 0 && value < 1) {  // 0-1 比例
+                  config += prefix + 'RANDOM_NUM(0, 1)'
+                }
+                else if (value >= 0 && value <= 100) {  // 10% 百分比
+                  config += prefix + 'RANDOM_INT(0, 100)'
+                }
+                else {
+                  config += prefix + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                }
               }
             }
           }
@@ -1534,6 +1560,7 @@
                 alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
                 return
               }
+              App.exTxt.button = '...'
 
               App.uploadTotal = 0 // apis.length || 0
               App.uploadDoneCount = 0
@@ -1581,7 +1608,8 @@
         var paraItem
         for (var k = 0; k < parameters.length; k++) {
           paraItem = parameters[k] || {}
-          if (paraItem.name == 'mock') {
+          var name = paraItem.name || ''
+          if (name == 'mock') {
             continue
           }
           var val = paraItem.default
@@ -1590,10 +1618,10 @@
               val = 'true'
             }
             if (paraItem.type == 'integer') {
-              val = '1'
+              val = name == 'pageSize' ? '10' : '1'
             }
             else if (paraItem.type == 'string') {
-              val = ''
+              val = '""'
             }
             else if (paraItem.type == 'object') {
               val = '{}'
@@ -1602,7 +1630,12 @@
               val = '[]'
             }
             else {
-              val = 'null'
+              var suffix = name.length >= 3 ? name.substring(name.length - 3).toLowerCase() : null
+              if (suffix == 'dto') {
+                val = '{}'
+              } else {
+                val = 'null'
+              }
             }
           }
           else if (typeof val == 'string') {
@@ -1617,12 +1650,12 @@
         }
         req += '\n}'
 
-        var currentAccount = App.accounts[App.currentAccountIndex]
+        var currentAccountId = App.getCurrentAccountId()
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
             'userId': App.User.id,
-            'testAccountId': currentAccount.isLoggedIn ? currentAccount.id : null,
+            'testAccountId': currentAccountId,
             'type': method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON,
             'name': StringUtil.get(api.summary),
             'url': url,
@@ -1633,6 +1666,8 @@
             'documentId@': '/Document/id',
             'randomId': 0,
             'userId': App.User.id,
+            'host': App.getBaseUrl(),
+            'testAccountId': currentAccountId,
             'response': ''
           },
           'tag': 'Document'
@@ -1711,7 +1746,7 @@
         if (this.currentAccountIndex == index) {
           if (item == null) {
             if (callback != null) {
-              callback(false)
+              callback(false, index)
             }
           }
           else {
@@ -1729,7 +1764,7 @@
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
 
                 if (callback != null) {
-                  callback(false)
+                  callback(false, index, err)
                 }
               });
             }
@@ -1738,24 +1773,23 @@
               this.login(false, function (url, res, err) {
                 App.onResponse(url, res, err)
 
-                item.isLoggedIn = true
-
                 var data = res.data || {}
                 var user = data.code == 200 ? data.user : null
                 if (user == null) {
                   if (callback != null) {
-                    callback(false)
+                    callback(false, index, err)
                   }
                 }
                 else {
                   item.name = user.name
                   item.remember = data.remember
+                  item.isLoggedIn = true
 
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                   App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
 
                   if (callback != null) {
-                    callback(true)
+                      callback(true, index, err)
                   }
                 }
               });
@@ -1783,7 +1817,7 @@
         }
         else {
           if (callback != null) {
-            callback(false)
+              callback(false, index)
           }
         }
       },
@@ -1848,18 +1882,20 @@
           var req = {
             format: false,
             '[]': {
-              'count': 0,
+              'count': App.testCaseCount || 50, //200 条测试直接卡死 0,
+              'page': App.testCasePage,
               'Document': {
                 '@order': 'version-,date-',
                 'userId': App.User.id
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
+                'testAccountId': App.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
                 '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
                 'userId': App.User.id,
-                '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
+                '@having': App.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
             '@role': 'LOGIN'
@@ -1902,10 +1938,12 @@
               'count': 0,
               'Random': {
                 'documentId': item.id,
-                '@order': "date-"
+                '@order': 'date-'
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
+                'testAccountId': App.getCurrentAccountId(),
+                'host': App.getBaseUrl(),
                 '@order': 'date-'
               }
             }
@@ -2000,6 +2038,14 @@
         vRemember.checked = remember || false
       },
 
+      getCurrentAccount: function() {
+        return App.accounts == null ? null : App.accounts[App.currentAccountIndex]
+      },
+      getCurrentAccountId: function() {
+        var a = App.getCurrentAccount()
+        return a != null && a.isLoggedIn ? a.id : null
+      },
+
       /**登录
        */
       login: function (isAdminOperation, callback) {
@@ -2071,6 +2117,7 @@
           App.showUrl(isAdminOperation, '/login')
 
           vInput.value = JSON.stringify(req, null, '    ')
+          App.type = REQUEST_TYPE_JSON
           App.showTestCase(false, App.isLocalShow)
           App.onChange(false)
           App.send(isAdminOperation, function (url, res, err) {
@@ -2083,7 +2130,7 @@
 
             //由login按钮触发，不能通过callback回调来实现以下功能
             var data = res.data || {}
-            if (data.code == 200) {
+            if (data.code == CODE_SUCCESS) {
               var user = data.user || {}
               App.accounts.push({
                 isLoggedIn: true,
@@ -2201,6 +2248,7 @@
         else {
           App.showUrl(isAdminOperation, '/logout')
           vInput.value = JSON.stringify(req, null, '    ')
+          this.type = REQUEST_TYPE_JSON
           this.showTestCase(false, App.isLocalShow)
           this.onChange(false)
           this.send(isAdminOperation, callback)
@@ -2228,36 +2276,6 @@
           var verify = obj == null ? null : obj.verify
           if (verify != null) { //FIXME isEmpty校验时居然在verify=null! StringUtil.isEmpty(verify, true) == false) {
             vVerify.value = verify
-          }
-        })
-      },
-
-      /**获取当前用户
-       */
-      getCurrentUser: function (isAdminOperation, callback) {
-        App.showUrl(isAdminOperation, '/gets')
-        vInput.value = JSON.stringify(
-          {
-            Privacy: {
-              id: App.User.id
-            },
-            tag: 'Privacy'
-          },
-          null, '    ')
-        App.showTestCase(false, App.isLocalShow)
-        App.onChange(false)
-        App.send(isAdminOperation, function (url, res, err) {
-          if (callback) {
-            callback(url, res, err)
-            return
-          }
-
-          App.onResponse(url, res, err)
-          if (isAdminOperation) {
-            var data = res.data || {}
-            if (data.code == 200 && data.Privacy != null) {
-              App.Privacy = data.Privacy
-            }
           }
         })
       },
@@ -2415,7 +2433,7 @@
       getTypeName: function (type) {
         var ts = this.types
         var t = type || REQUEST_TYPE_JSON
-        if (ts == null || ts.indexOf(REQUEST_TYPE_FORM) < 0 || ts.indexOf(REQUEST_TYPE_JSON) < 0) {
+        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0)) {
           return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
         }
         return t
@@ -2558,13 +2576,14 @@
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
           url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?$_delegate_url=') : '' ) + StringUtil.noBlank(url),
-          params: (type == REQUEST_TYPE_JSON ? null : req),
-          data: (type == REQUEST_TYPE_JSON ? req : null),
+          params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
+          data: (type == REQUEST_TYPE_JSON ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
-          withCredentials: type == REQUEST_TYPE_JSON
+          withCredentials: true //Cookie 必须要  type == REQUEST_TYPE_JSON
         })
           .then(function (res) {
             res = res || {}
+	    //any one of then callback throw error will cause it calls then(null)
             // if ((res.config || {}).method == 'options') {
             //   return
             // }
@@ -2629,18 +2648,85 @@
       /**处理按键事件
        * @param event
        */
-      doOnKeyUp: function (event) {
+      doOnKeyUp: function (event, isPage, isTestCase) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
         if (keyCode == 13) { // enter
+          if (isPage) {
+            if (isTestCase) {
+              this.testCasePage = vTestCasePage.value
+              this.testCaseCount = vTestCaseCount.value
+            }
+            else {
+              this.page = vPage.value
+              this.count = vCount.value
+            }
+
+            this.onPageChange(isTestCase)
+            return
+          }
           this.send(false);
         }
         else {
+          if (isPage) {
+            return
+          }
           App.urlComment = '';
           App.requestVersion = '';
           this.onChange(true);
         }
       },
 
+      pageDown: function(isTestCase) {
+        var page = isTestCase ? this.testCasePage : this.page
+        if (page == null) {
+          page = 0
+        }
+        if (page > 0) {
+          page --
+          if (isTestCase) {
+            this.testCasePage = page
+          }
+          else {
+            this.page = page
+          }
+          this.onPageChange(isTestCase)
+        }
+      },
+      pageUp: function(isTestCase) {
+        if (isTestCase) {
+          this.testCasePage ++
+        }
+        else {
+          this.page ++
+        }
+        this.onPageChange(isTestCase)
+      },
+      onPageChange: function(isTestCase) {
+        if (isTestCase) {
+          this.saveCache(this.server, 'testCasePage', this.testCasePage)
+          this.saveCache(this.server, 'testCaseCount', this.testCaseCount)
+
+          this.remotes = null
+          this.showTestCase(true, false)
+        }
+        else {
+          docObj = null
+          doc = null
+          this.saveCache(this.server, 'page', this.page)
+          this.saveCache(this.server, 'count', this.count)
+          this.saveCache(this.server, 'docObj', null)
+          this.saveCache(this.server, 'doc', null)
+
+          this.onChange(false)
+
+          //虽然性能更好，但长时间没反应，用户会觉得未生效
+          // this.getDoc(function (d) {
+          //   // vOutput.value = 'resolving...';
+          //   App.setDoc(d)
+          //   App.onChange(false)
+          // });
+        }
+      },
 
       /**转为请求代码
        * @param rq
@@ -2705,7 +2791,7 @@
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
           + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
           + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
-          + '\nAPIJSON -Java版: https://github.com/TommyLemon/APIJSON '
+          + '\nAPIJSON -Java版: https://github.com/APIJSON/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
           + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
@@ -2726,7 +2812,7 @@
         }
         doc = d;
         vOutput.value += (
-          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/TommyLemon/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
+          '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/APIJSON/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">简介</h3>'
           + '<p align="center">本站为 APIAuto-自动化接口管理平台'
           + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
@@ -2765,7 +2851,8 @@
             }
           },
           '[]': {
-            'count': 0,
+            'count': App.count || 50,  //超过就太卡了
+            'page': App.page || 0,
             'Table': App.database == 'SQLSERVER' ? null : {
               'table_schema': App.schema,
               'table_type': 'BASE TABLE',
@@ -2837,17 +2924,19 @@
           'Request[]': {
             'count': 0,
             'Request': {
-              '@order': 'version-,method-'
+              '@order': 'version-,method-',
+              '@json': 'structure'
             }
           }
         }, {}, function (url, res, err) {
           if (err != null || res == null || res.data == null) {
             log('getDoc  err != null || res == null || res.data == null >> return;');
+            callback('')
             return;
           }
 
 //      log('getDoc  docRq.responseText = \n' + docRq.responseText);
-          docObj = res.data;
+          docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
 
           //转为文档格式
           var doc = '';
@@ -2856,7 +2945,9 @@
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docObj == null ? null : docObj['[]'];
           if (list != null) {
-            log('getDoc  [] = \n' + format(JSON.stringify(list)));
+            if (DEBUG) {
+              log('getDoc  [] = \n' + format(JSON.stringify(list)));
+            }
 
             var table;
             var columnList;
@@ -2869,7 +2960,9 @@
               if (table == null) {
                 continue;
               }
-              log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+              if (DEBUG) {
+                log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+              }
 
               var table_comment = App.database == 'POSTGRESQL'
                 ? (item.PgClass || {}).table_comment
@@ -2892,7 +2985,9 @@
               if (columnList == null) {
                 continue;
               }
-              log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+              if (DEBUG) {
+                log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+              }
 
               var name;
               var type;
@@ -2908,7 +3003,9 @@
                 type = CodeUtil.getJavaType(column.column_type, false);
                 length = CodeUtil.getMaxLength(column.column_type);
 
-                log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+                if (DEBUG) {
+                  log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+                }
 
                 var o = App.database == 'POSTGRESQL'
                   ? (columnList[j] || {}).PgAttribute
@@ -2936,7 +3033,9 @@
           //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Access[]'];
           if (list != null) {
-            log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
+            if (DEBUG) {
+              log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
+            }
 
             doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
               + ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
@@ -2947,8 +3046,9 @@
               if (item == null) {
                 continue;
               }
-              log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
-
+              if (DEBUG) {
+                log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              }
 
               doc += '\n' + (item.name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get), 2)
@@ -2972,7 +3072,9 @@
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Function[]'];
           if (list != null) {
-            log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
+            if (DEBUG) {
+              log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
+            }
 
             doc += '\n\n\n\n\n\n\n\n\n### 远程函数\n自动查 Function 表写入的数据来生成\n'
               + ' \n 说明  |  示例'
@@ -2983,8 +3085,9 @@
               if (item == null) {
                 continue;
               }
-              log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
-
+              if (DEBUG) {
+                log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              }
 
               doc += '\n' + item.detail + '  |  ' + JSON.stringify(item.demo);
             }
@@ -2998,7 +3101,9 @@
           //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Request[]'];
           if (list != null) {
-            log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
+            if (DEBUG) {
+              log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
+            }
 
             doc += '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
               + ' \n 版本  |  方法  |  数据和结构'
@@ -3009,8 +3114,9 @@
               if (item == null) {
                 continue;
               }
-              log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
-
+              if (DEBUG) {
+                log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+              }
 
               doc += '\n' + item.version + '  |  ' + item.method
                 + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
@@ -3506,7 +3612,12 @@
             accounts[this.currentAccountIndex].isLoggedIn = true
           }
           var index = accountIndex < 0 ? this.currentAccountIndex : accountIndex
-          this.onClickAccount(index, accounts[index], function (isLoggedIn) {
+          this.onClickAccount(index, accounts[index], function (isLoggedIn, index, err) {
+            // if (index >= 0 && isLoggedIn == false) {
+            //   alert('第 ' + index + ' 个账号登录失败！' + (err == null ? '' : err.message))
+            //   App.test(isRandom, accountIndex + 1)
+            //   return
+            // }
             App.showTestCase(true, false)
             App.startTest(list, allCount, isRandom, accountIndex)
           })
@@ -3689,7 +3800,7 @@
         var testRecord = item.TestRecord = item.TestRecord || {}
 
         saveTextAs(
-          '# APIJSON自动化回归测试-前\n主页: https://github.com/TommyLemon/APIJSON'
+          '# APIJSON自动化回归测试-前\n主页: https://github.com/APIJSON/APIJSON'
           + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
           + '\n返回结果: \n' + JSON.stringify(JSON.parse(testRecord.response || '{}'), null, '    ')
           , '测试：' + document.name + '-前.txt'
@@ -3704,7 +3815,7 @@
         setTimeout(function () {
           var tests = App.tests[String(App.currentAccountIndex)] || {}
           saveTextAs(
-            '# APIJSON自动化回归测试-后\n主页: https://github.com/TommyLemon/APIJSON'
+            '# APIJSON自动化回归测试-后\n主页: https://github.com/APIJSON/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
             + '\n返回结果: \n' + JSON.stringify(tests[document.id][isRandom ? random.id : 0] || {}, null, '    ')
             , '测试：' + document.name + '-后.txt'
@@ -3714,7 +3825,7 @@
           if (StringUtil.isEmpty(testRecord.standard, true) == false) {
             setTimeout(function () {
               saveTextAs(
-                '# APIJSON自动化回归测试-标准\n主页: https://github.com/TommyLemon/APIJSON'
+                '# APIJSON自动化回归测试-标准\n主页: https://github.com/APIJSON/APIJSON'
                 + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
                 + '\n测试结果: \n' + JSON.stringify(testRecord.compare || '{}', null, '    ')
                 + '\n测试标准: \n' + JSON.stringify(JSON.parse(testRecord.standard || '{}'), null, '    ')
@@ -3779,7 +3890,7 @@
                 return
               }
 
-              App.updateTestRecord(0, index, item, currentResponse, isRandom)
+              App.updateTestRecord(0, index, item, currentResponse, isRandom, App.currentAccountIndex, true)
             })
           }
           else { //上传新的校验标准
@@ -3792,26 +3903,21 @@
           stddObj.code = code;
           currentResponse.code = code;
 
-            // if (isML != true) {
+
               url = App.server + '/post'
               req = {
                 TestRecord: {
                   userId: App.User.id, //TODO 权限问题？ item.userId,
                   documentId: isRandom ? random.documentId : document.id,
                   randomId: isRandom ? random.id : null,
+                  host: App.getBaseUrl(),
                   compare: JSON.stringify(testRecord.compare || {}),
                   response: JSON.stringify(currentResponse || {}),
                   standard: isML ? JSON.stringify(stddObj) : null
                 },
                 tag: 'TestRecord'
               }
-            // }
-            // else {
-            //   url = App.server + '/post/testrecord/ml'
-            //   req = {
-            //     documentId: document.id
-            //   }
-            // }
+ 
 
             App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
@@ -3858,9 +3964,11 @@
           TestRecord: {
             documentId: isRandom ? doc.documentId : doc.id,
             randomId: isRandom ? doc.id : null,
+            testAccountId: App.getCurrentAccountId(),
+            'host': App.getBaseUrl(),
             '@order': 'date-',
             '@column': 'id,userId,documentId,randomId,response' + (App.isMLEnabled ? ',standard' : ''),
-            '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
+            '@having': App.isMLEnabled ? 'length(standard)>2' : null  // '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
@@ -3967,6 +4075,12 @@
         this.isMLEnabled = this.getCache(this.server, 'isMLEnabled') || this.isMLEnabled
         this.crossProcess = this.isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭'
         this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
+        // this.host = this.getBaseUrl()
+        this.page = this.getCache(this.server, 'page') || this.page
+        this.count = this.getCache(this.server, 'count') || this.count
+        this.testCasePage = this.getCache(this.server, 'testCasePage') || this.testCasePage
+        this.testCaseCount = this.getCache(this.server, 'testCaseCount') || this.testCaseCount
+
       } catch (e) {
         console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +
