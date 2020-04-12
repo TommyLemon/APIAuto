@@ -16,6 +16,16 @@
   <link href="css/loading.css" rel="stylesheet">
   <link href="css/main.css" rel="stylesheet">
   <link rel="stylesheet" href="md/css/editormd.preview.css" />
+    <style >
+        input[type=number] {
+            -moz-appearance:textfield;
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
 </head>
 
 <body>
@@ -144,35 +154,38 @@
         </svg>
       </a>
     </div>
-      <div v-show="isTestCaseShow" style="bottom: 10px; right: 13px;position: absolute; background-color: white; z-index: 100">
-          <button @click="pageDown(true)">上一页</button>
-          <input id="vTestCasePage" :value="testCasePage" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true, true)" />
-          <button @click="pageUp(true)">下一页</button>
+      <div v-show="isTestCaseShow" style="bottom: 4px; padding: 4px 13px 0px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+          <a >搜索</a>
+          <input id="vTestCaseSearch" v-model="testCaseSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" />
+          <button @click="pageDown('testCase')">上一页</button>
+          <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
+          <button @click="pageUp('testCase')">下一页</button>
           <a >每页</a>
-          <input id="vTestCaseCount" :value="testCaseCount" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true, true)" />
+          <input id="vTestCaseCount" v-model="testCaseCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
           <a >条</a>
       </div>
     <div class="left-panel">
-      <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-        <li v-for="(item, index) in testCases" >
-            <div style="display: inline-table">
-          <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;padding: 0px;position: relative" id="vDocType" @click="restoreRemoteAndTest(item)">{{ getTypeName(item.Document.type) }}</button>
-          <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
-          <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
-            <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
-            <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
-              <use xlink:href="svg/icon.svg#export-txt"></use>
-            </svg>
-            <button v-show="(item.compareType != -2 && item.compareType != 0) || (item.showType == 'before' && item.TestRecord != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
-            <button v-show="(item.compareType == -2 || item.compareType == 0) && item.showType != 'before'" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
-          </div>
-          <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
-            <use xlink:href="svg/icon.svg#trash"></use>
-          </svg>
-            </div>
-        </li>
-      </ul>
-      <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
+        <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+            <li v-for="(item, index) in testCases" >
+                <div style="display: inline-table">
+                    <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;padding: 0px;position: relative" id="vDocType" @click="restoreRemoteAndTest(item)">{{ getTypeName(item.Document.type) }}</button>
+                    <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(item)" > {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
+                    <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
+                        <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                        <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
+                            <use xlink:href="svg/icon.svg#export-txt"></use>
+                        </svg>
+                        <button v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
+                        <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
+                        <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
+                    </div>
+                    <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
+                        <use xlink:href="svg/icon.svg#trash"></use>
+                    </svg>
+                </div>
+            </li>
+        </ul>
+        <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
         <div style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
           <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
@@ -195,22 +208,24 @@
 
         <div v-show="isRandomShow" style="width: 100%; height: 330px; position: relative;" >
             <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ isRandomListShow || StringUtil.isEmpty(randomTestTitle) ? '随机测试 Random Test' : randomTestTitle }}
+                <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
+                <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
+            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '随机测试 Random Test' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
                 <a style="padding-right: 10px;padding-top: 2px">
                     {{ testRandomProcess }}
                 </a>
                 <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 10px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
-                    查看列表
+                    查看父项列表
                 </a>
             </a>
                 <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;"
-                   href="javascript:void(0)" @click="if(isRandomListShow) { randomTestTitle = null; isRandomListShow = false;  } else { showExport(true, true, true) }"> + </a>
+                   href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
                 <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="共享"  @click="showExport(true, true)">
                     <svg class="icon">
                         <use xlink:href="svg/icon.svg#share"></use>
                     </svg>
                 </a>
-              <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="testRandom(true)">
+              <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="onClickTestRandom()">
                   <img class="icon" src="img/refresh.png"/>
               </a>
               <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 5)">
@@ -219,22 +234,82 @@
               </svg>
               </a>
           </div>
-            <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                <li style="width: 100%" v-for="(item, index) in randoms" >
-                    <a class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" > {{ (item.Random.count || 1) + '次 - ' + item.Random.name }}</a>
-                    <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
-                        <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
+
+            <!-- 临时生成的配置子项 -->
+            <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll; padding-bottom: 100px">
+                <li style="width: 100%" v-for="(item, index) in randomSubs" >
+                    <a v-show="! isRandomEditable" class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" >{{ (item.Random || {}).name }}</a>
+                    <input v-show="isRandomEditable" style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
+
+                    <div :style="{ background: item.compareColor }" v-show="! isRandomEditable && item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
+                        <button class="hint--left" ref="testRandomSubResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
                         <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
                             <use xlink:href="svg/icon.svg#export-txt"></use>
                         </svg>
-                        <button v-show="item.compareType != 0 || (item.showType == 'before' && item.TestRecord != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
-                        <button v-show="item.compareType == 0 && item.showType != 'before'" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
+                        <button v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before'&& (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
+                        <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
+                        <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
                     </div>
-                    <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px" @click="remove(item, index, true, true)">
+                    <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px; top: 12px;" @click="remove(item, index, true, true)">
                         <use xlink:href="svg/icon.svg#trash"></use>
                     </svg>
                 </li>
             </ul>
+
+            <div v-show="isRandomSubListShow" style="bottom: 0px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+                <a >搜索</a>
+                <input id="vRandomSubSearch" v-model="randomSubSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'randomSub', true)" />
+                <button @click="pageDown('randomSub')">上一页</button>
+                <input id="vRandomSubPage" v-model="randomSubPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'randomSub', true)" />
+                <button @click="pageUp('randomSub')">下一页</button>
+                <a >每页</a>
+                <input id="vRandomSubCount" v-model="randomSubCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'randomSub', true)" />
+                <a >条</a>
+            </div>
+
+            <!-- 持久化存储的配置项 -->
+            <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 100px">
+                <li style="width: 100%; display: inline-table" v-for="(item, index) in randoms" >
+                    <input v-model="(item.Random || {}).count" style="min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" @keyup="doOnKeyUp(event, 'random', false, item)" />
+                    <a style="margin-left: 4px; ">次</a>
+                    <a v-show="! isRandomEditable" style="top: 13px; left: 68px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(item)" >{{ (item.Random || {}).name }}</a>
+                    <input v-show="isRandomEditable" style="top: 10px; left: 68px; position: absolute; display: inline-flex; width: 64%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random'. false, item)" />
+
+                    <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute;top: 10px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
+                    <div v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, true)">
+                        <!-- 只能写成一行来消除间隙，不能换行、空格 -->
+                        <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item || {}).redCount || 0 }}</a>
+                    </div>
+
+                    <div v-show="! isRandomEditable && ((item.Random || {}).count || 1) <= 1" style="position: absolute;top: 10px;right: 36px;display: inline-block;">
+                        <div :style="{ background: item.compareColor }" v-show="item.compareType != null" >
+                            <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ item.compareMessage + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                            <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
+                                <use xlink:href="svg/icon.svg#export-txt"></use>
+                            </svg>
+                            <button v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button>
+                            <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
+                            <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
+                        </div>
+                    </div>
+
+                    <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px; top: 14px;" @click="remove(item, index, true, true)">
+                        <use xlink:href="svg/icon.svg#trash"></use>
+                    </svg>
+                </li>
+            </ul>
+
+            <div v-show="isRandomListShow" style="bottom: 0px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+                <a >搜索</a>
+                <input id="vRandomSearch" v-model="randomSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'random', true)" />
+                <button @click="pageDown('random')">上一页</button>
+                <input id="vRandomPage" v-model="randomPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
+                <button @click="pageUp('random')">下一页</button>
+                <a >每页</a>
+                <input id="vRandomCount" v-model="randomCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
+                <a >条</a>
+            </div>
+
           <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
                     placeholder="常用：
 RANDOM_REAL  // @ 从数据库随机取值
@@ -387,12 +462,14 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
         <textarea id="vOutput" v-show="view == 'output'"></textarea>
 
         <div class="right-main" id="vMarkdown" v-show="view == 'markdown'"></div>
-        <div style="bottom: 0px; right: 10px;position: absolute; background-color: white;">
-            <button @click="pageDown()">上一页</button>
-            <input id="vPage" :value="page" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true)" />
-            <button @click="pageUp()">下一页</button>
+        <div v-show="view == 'markdown'" style="bottom: -6px; text-align: right; position: absolute; width: 100%; padding: 4px 20px 0px 4px; background-color: white;">
+            <a >搜索</a>
+            <input id="vSearch" v-model="search" style="width: 90px; text-align: center" @keyup="doOnKeyUp(event, 'document', true)" />
+            <button @click="pageDown('document')">上一页</button>
+            <input id="vPage"  v-model="page" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" />
+            <button @click="pageUp('document')">下一页</button>
             <a >每页</a>
-            <input id="vCount" :value="count" style="width: 30px;text-align: center" @keyup="doOnKeyUp(event, true)" />
+            <input id="vCount" v-model="count" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" />
             <a >条</a>
         </div>
       </div>
@@ -481,7 +558,7 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
                   <div class="form-group">
                     <label for="vAccount">账号</label>
 
-                    <input id="vAccount" type="text" class="form-control" name="account" value="13000082001" required autofocus />
+                    <input id="vAccount" type="text" class="form-control" name="account" v-model="account" required autofocus />
                   </div>
 
                   <div class="form-group">
@@ -490,7 +567,7 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
                         {{ loginType == "login" ? "忘记密码?" : "记得密码?" }}
                       </a>
                     </label>
-                    <input id="vPassword" type="password" class="form-control" name="password" value="123456" required data-eye />
+                    <input id="vPassword" type="password" class="form-control" name="password" v-model="password" required data-eye />
                   </div>
 
                   <div class="form-group" v-show="loginType != 'login'">
@@ -508,7 +585,7 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
                   </div>
 
                   <div class="form-group" style="margin-top: 30px">
-                    <button class="btn btn-primary btn-block" @click="confirm(isAdminOperation)">
+                    <button class="btn btn-primary btn-block" type="button" @click="confirm(isAdminOperation)">
                       确定
                     </button>
                   </div>
@@ -673,8 +750,16 @@ User/id : RANDOM_INT(82001,82020)  //随机整数
   var vMarkdown = document.getElementById('vMarkdown');
   var vPage = document.getElementById('vPage');
   var vCount = document.getElementById('vCount');
+  var vSearch = document.getElementById('vSearch');
   var vTestCasePage = document.getElementById('vTestCasePage');
   var vTestCaseCount = document.getElementById('vTestCaseCount');
+  var vTestCaseSearch = document.getElementById('vTestCaseSearch');
+  var vRandomPage = document.getElementById('vRandomPage');
+  var vRandomCount = document.getElementById('vRandomCount');
+  var vRandomSearch = document.getElementById('vRandomSearch');
+  var vRandomSubPage = document.getElementById('vRandomSubPage');
+  var vRandomSubCount = document.getElementById('vRandomSubCount');
+  var vRandomSubSearch = document.getElementById('vRandomSubSearch');
 
 
   function onScrollChanged() {
