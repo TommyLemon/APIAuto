@@ -3578,7 +3578,7 @@
               subs.push({
                 Random: {
                   id: -i - 1, //表示未上传
-                  toId: random.id,
+                  toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
                   userId: random.userId,
                   documentId: random.documentId,
                   count: 1,
@@ -4445,7 +4445,7 @@
         var d = isRandom ? item.Random : item.Document;
         // var r = d == null ? null : (isRandom ? d.config : d.request);
         // this.$refs[isRandom ? 'randomTexts' : 'testCaseTexts'][index].setAttribute('data-hint', r == null ? '' : (isRandom ? r : JSON.stringify(this.getRequest(r), null, ' ')));
-       
+
         if (isRandom) {
           var toId = (d == null ? null : d.toId) || 0
           this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'][index].setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
