@@ -1276,7 +1276,7 @@
                 s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
                 break;
               case 'C++':
-                s += '(C++):\n\n' + CodeUtil.parseCppResponse('', res, 0)
+                s += '(C++):\n\n' + CodeUtil.parseCppResponse('', res, 0, isSingle)
                 break;
               case 'JavaScript':
                 s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)

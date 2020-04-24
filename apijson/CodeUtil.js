@@ -543,7 +543,7 @@ var CodeUtil = {
 
       onParseChildArray: function (key, value, index) {
 
-        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var count = isSmart ? (value.count || 0) : 0;
         var page = isSmart ? (value.page || 0) : 0;
@@ -583,13 +583,13 @@ var CodeUtil = {
           s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.put("' + key + '", ' + name + ');';
         }
 
-        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
       onParseChildObject: function (key, value, index) {
-        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
 
@@ -629,7 +629,7 @@ var CodeUtil = {
 
         s += '\n\n' + nextPrefix + parentKey + '.put("' + key + '", ' + name + ');';
 
-        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -663,150 +663,150 @@ var CodeUtil = {
 
   // FIXME 未测试通过
   // /**解析出 生成 Unity3D-C# 封装请求 JSON 的代码
-  //  * @param name
-  //  * @param reqObj
-  //  * @param depth
-  //  * @return parseCode
-  //  * @return isSmart 是否智能
-  //  */
+  // * @param name
+  // * @param reqObj
+  // * @param depth
+  // * @return parseCode
+  // * @return isSmart 是否智能
+  // */
   // parseCSharp: function(name, reqObj, depth, isSmart) {
-  //   name = name || '';
-  //   if (depth == null || depth < 0) {
-  //     depth = 0;
-  //   }
+  //  name = name || '';
+  //  if (depth == null || depth < 0) {
+  //    depth = 0;
+  //  }
   //
-  //   const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+  //  const parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
   //
-  //   const prefix = CodeUtil.getBlank(depth);
-  //   const nextPrefix = CodeUtil.getBlank(depth + 1);
+  //  const prefix = CodeUtil.getBlank(depth);
+  //  const nextPrefix = CodeUtil.getBlank(depth + 1);
   //
-  //   return CodeUtil.parseCode(name, reqObj, {
+  //  return CodeUtil.parseCode(name, reqObj, {
   //
-  //     onParseParentStart: function () {
-  //       return '\n' + prefix + (isSmart ? 'JObject' : 'Dictionary<string, object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JObject' : 'Dictionary<string, object>') + '();';
-  //     },
+  //    onParseParentStart: function () {
+  //      return '\n' + prefix + (isSmart ? 'JObject' : 'Dictionary<string, object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JObject' : 'Dictionary<string, object>') + '();';
+  //    },
   //
-  //     onParseParentEnd: function () {
-  //       return '';
-  //     },
+  //    onParseParentEnd: function () {
+  //      return '';
+  //    },
   //
-  //     onParseChildArray: function (key, value, index) {
+  //    onParseChildArray: function (key, value, index) {
   //
-  //       var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+  //      var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
   //
-  //       const count = isSmart ? (value.count || 0) : 0;
-  //       const page = isSmart ? (value.page || 0) : 0;
-  //       const query = isSmart ? value.query : null;
-  //       const join = isSmart ? value.join : null;
+  //      const count = isSmart ? (value.count || 0) : 0;
+  //      const page = isSmart ? (value.page || 0) : 0;
+  //      const query = isSmart ? value.query : null;
+  //      const join = isSmart ? value.join : null;
   //
-  //       log(CodeUtil.TAG, 'parseCSharp  for  count = ' + count + '; page = ' + page);
+  //      log(CodeUtil.TAG, 'parseCSharp  for  count = ' + count + '; page = ' + page);
   //
-  //       if (isSmart) {
-  //         delete value.count;
-  //         delete value.page;
-  //         delete value.query;
-  //         delete value.join;
-  //       }
+  //      if (isSmart) {
+  //        delete value.count;
+  //        delete value.page;
+  //        delete value.query;
+  //        delete value.join;
+  //      }
   //
-  //       s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
+  //      s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
   //
-  //       log(CodeUtil.TAG, 'parseCSharp  for delete >> count = ' + count + '; page = ' + page);
+  //      log(CodeUtil.TAG, 'parseCSharp  for delete >> count = ' + count + '; page = ' + page);
   //
-  //       var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
+  //      var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
   //
-  //       if (isSmart) {
-  //         var alias = key.substring(0, key.length - 2);
+  //      if (isSmart) {
+  //        var alias = key.substring(0, key.length - 2);
   //
-  //         s += '\n\n';
-  //         if (query != null) {
-  //           s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
-  //         }
-  //         if (StringUtil.isEmpty(join, true) == false) {
-  //           s += nextPrefix + name + '.setJoin("' + join + '");\n';
-  //         }
+  //        s += '\n\n';
+  //        if (query != null) {
+  //          s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+  //        }
+  //        if (StringUtil.isEmpty(join, true) == false) {
+  //          s += nextPrefix + name + '.setJoin("' + join + '");\n';
+  //        }
   //
-  //         s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
-  //           + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
-  //       }
-  //       else {
-  //         s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.Add("' + key + '", ' + name + ');';
-  //       }
+  //        s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
+  //          + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
+  //      }
+  //      else {
+  //        s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.Add("' + key + '", ' + name + ');';
+  //      }
   //
-  //       s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+  //      s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
   //
-  //       return s;
-  //     },
+  //      return s;
+  //    },
   //
-  //     onParseChildObject: function (key, value, index) {
-  //       var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+  //    onParseChildObject: function (key, value, index) {
+  //      var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
   //
-  //       const isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
+  //      const isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
   //
-  //       const column = isTable ? value['@column'] : null;
-  //       const group = isTable ? value['@group'] : null;
-  //       const having = isTable ? value['@having'] : null;
-  //       const order = isTable ? value['@order'] : null;
-  //       const combine = isTable ? value['@combine'] : null;
-  //       const schema = isTable ? value['@schema'] : null;
-  //       const database = isTable ? value['@database'] : null;
-  //       const role = isTable ? value['@role'] : null;
+  //      const column = isTable ? value['@column'] : null;
+  //      const group = isTable ? value['@group'] : null;
+  //      const having = isTable ? value['@having'] : null;
+  //      const order = isTable ? value['@order'] : null;
+  //      const combine = isTable ? value['@combine'] : null;
+  //      const schema = isTable ? value['@schema'] : null;
+  //      const database = isTable ? value['@database'] : null;
+  //      const role = isTable ? value['@role'] : null;
   //
-  //       if (isTable) {
-  //         delete value['@column'];
-  //         delete value['@group'];
-  //         delete value['@having'];
-  //         delete value['@order'];
-  //         delete value['@combine'];
-  //         delete value['@schema'];
-  //         delete value['@database'];
-  //         delete value['@role'];
-  //       }
+  //      if (isTable) {
+  //        delete value['@column'];
+  //        delete value['@group'];
+  //        delete value['@having'];
+  //        delete value['@order'];
+  //        delete value['@combine'];
+  //        delete value['@schema'];
+  //        delete value['@database'];
+  //        delete value['@role'];
+  //      }
   //
-  //       s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
+  //      s += CodeUtil.parseCSharp(key, value, depth + 1, isSmart);
   //
-  //       const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
-  //       if (isTable) {
-  //         s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
-  //         s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
-  //         s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
-  //         s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
-  //         s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
-  //         s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
-  //         s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
-  //         s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
-  //       }
+  //      const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
+  //      if (isTable) {
+  //        s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
+  //        s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
+  //        s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+  //        s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
+  //        s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
+  //        s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
+  //        s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
+  //        s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+  //      }
   //
-  //       s += '\n\n' + nextPrefix + parentKey + '.Add("' + key + '", ' + name + ');';
+  //      s += '\n\n' + nextPrefix + parentKey + '.Add("' + key + '", ' + name + ');';
   //
-  //       s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+  //      s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
   //
-  //       return s;
-  //     },
+  //      return s;
+  //    },
   //
-  //     onParseChildOther: function (key, value, index) {
-  //       if (depth <= 0 && isSmart) {
-  //         if (key == 'tag') {
-  //           return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //         if (key == 'version') {
-  //           return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //         if (key == 'format') {
-  //           return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //         if (key == '@schema') {
-  //           return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //         if (key == '@database') {
-  //           return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //         if (key == '@role') {
-  //           return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //         }
-  //       }
-  //       return '\n' + prefix + parentKey + '.Add("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
-  //     }
-  //   })
+  //    onParseChildOther: function (key, value, index) {
+  //      if (depth <= 0 && isSmart) {
+  //        if (key == 'tag') {
+  //          return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //        if (key == 'version') {
+  //          return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //        if (key == 'format') {
+  //          return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //        if (key == '@schema') {
+  //          return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //        if (key == '@database') {
+  //          return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //        if (key == '@role') {
+  //          return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //        }
+  //      }
+  //      return '\n' + prefix + parentKey + '.Add("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //    }
+  //  })
   //
   // },
 
@@ -844,7 +844,7 @@ var CodeUtil = {
 
       onParseChildArray: function (key, value, index) {
 
-        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var count = isSmart ? (value.count || 0) : 0;
         var page = isSmart ? (value.page || 0) : 0;
@@ -884,13 +884,13 @@ var CodeUtil = {
           s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
         }
 
-        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
       onParseChildObject: function (key, value, index) {
-        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
 
@@ -930,7 +930,7 @@ var CodeUtil = {
 
         s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
 
-        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -938,7 +938,7 @@ var CodeUtil = {
       onParseChildOther: function (key, value, index) {
         if (value instanceof Array) {
 
-          var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+          var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
           var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
           s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
@@ -947,7 +947,7 @@ var CodeUtil = {
           }
 
           s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + varName + ', allocator);';
-          s += '\n' + prefix + '}   ' + '//' + varName + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+          s += '\n' + prefix + '}   ' + '// ' + varName + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
           return s;
         }
@@ -1048,11 +1048,11 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + 'let ' + k + ': NSArray = ' + name + '["' + key + '"] as! NSArray';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
@@ -1069,7 +1069,7 @@ var CodeUtil = {
         s += innerPadding + '    continue';
         s += innerPadding + '}';
         s += innerPadding + 'print("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1079,7 +1079,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1088,13 +1088,13 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
 
         s += CodeUtil.parseSwiftResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1170,11 +1170,11 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + 'let ' + k + ': NSArray = ' + name + '["' + key + '"] as! NSArray';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         s += padding + 'let ' + itemName + ': ' + type;
 
@@ -1186,7 +1186,7 @@ var CodeUtil = {
         s += innerPadding + '    continue';
         s += innerPadding + '}';
         s += innerPadding + 'print("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1196,7 +1196,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1205,13 +1205,13 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
 
         s += CodeUtil.parseSwiftResponse(k, value, depth);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1290,11 +1290,11 @@ var CodeUtil = {
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || []';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         s += padding + varKey + ' ' + itemName;
 
@@ -1306,7 +1306,7 @@ var CodeUtil = {
         s += innerPadding + '    continue';
         s += innerPadding + '}';
         s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1316,7 +1316,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1325,13 +1325,13 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + varKey + ' ' + k + ' = ' + name + (isSmart && StringUtil.isName(key) ? '.' + key : '[' + quote + key + quote + ']') + ' || {} \n'
 
         s += CodeUtil.parseJavaScriptResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1408,14 +1408,14 @@ var CodeUtil = {
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + '$' + k + ' = $' + name + '[' + quote + key + quote + ']' + ';';
         s += padding + 'if ($' + k + ' === null) {';
         s += padding + blank + '$' + k + ' = ' + (isSmart ? '[];' : 'array();');
         s += padding + '}\n';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         if (isSmart) {
@@ -1430,7 +1430,7 @@ var CodeUtil = {
         s += innerPadding + '    continue;';
         s += innerPadding + '}';
         s += innerPadding + 'echo (' + quote + '\\n' + (isSmart ? '' : '\\') + '$' + itemName + ' = ' + (isSmart ? '' : '\\') + '$' + k + '[' + quote + ' . ' + '$' + indexName + ' . ' + quote + '] = \\n' + quote + ' . $' + itemName + ' . ' + quote + '\\n\\n' + quote + ');';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1440,7 +1440,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1449,7 +1449,7 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + '$' + k + ' = $' + name + '[' + quote + key + quote + '];'
         s += padding + 'if ($' + k + ' === null) {';
@@ -1458,7 +1458,7 @@ var CodeUtil = {
 
         s += CodeUtil.parsePHPResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1539,14 +1539,14 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'interface{}' : CodeUtil.getGoTypeFromJS(key, value[0]);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + k + ' := ' + name + '[' + quote + key + quote + '].([]interface{})'
         s += padding + 'if ' + k + ' == nil {';
         s += padding + '    ' + k + ' = []interface{} {}';
         s += padding + '}\n';
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         s += padding + 'for ' + indexName + ' := range ' + k + ' {'; // let i in arr; let item of arr
@@ -1556,7 +1556,7 @@ var CodeUtil = {
         s += innerPadding + '    continue';
         s += innerPadding + '}';
         s += innerPadding + 'log.Println("\\n' + itemName + ' = ' + k + '[" + string(' + indexName + ') + "] = \\n" + string(' + itemName + ') + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1566,7 +1566,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1575,7 +1575,7 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + k + ' := ' + name + '[' + quote + key + quote + '].(map[string]interface{})'
         s += padding + 'if ' + k + ' == nil {';
@@ -1584,7 +1584,132 @@ var CodeUtil = {
 
         s += CodeUtil.parseGoResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
+
+  /**生成 Web-C++ 解析 Response JSON 的代码
+   * @param name_
+   * @param resObj
+   * @param depth
+   * @param isSmart
+   * @return parseCode
+   */
+  parseCppResponse: function(name_, resObj, depth, isSmart) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    var name = name_; //解决生成多余的解析最外层的初始化代码
+    if (StringUtil.isEmpty(name, true)) {
+      name = 'response';
+    }
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        var s = depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'Object ' + name + ' = document.Parse(resultJson);\n';
+        return (depth > 0 ? '' : 'Document document;\n') + s;
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseCppResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseCppResponse  for typeof value === "array" >>  ' );
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = CodeUtil.getCppTypeFromJS(key, value);
+        var getter = CodeUtil.getCppGetterFromJS(key, value);
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var varName = JSONResponse.getVariableName(key);
+
+        return padding + type + ' ' + varName + ' = ' + name + '["' + key + '"].' + getter + '();'
+          + padding + 'std:cout << "' + name + '.' + varName + ' = " + ' + varName + ' << std::endl;';
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        value = value || []
+
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var innerPadding = padding + CodeUtil.getBlank(1);
+
+        var k = JSONResponse.getVariableName(key);
+        var itemName = 'item' + (depth <= 0 ? '' : depth);
+
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'Array ' + k + ' = ' + name + '["' + key + '"].GetArray();';
+
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+
+
+        var indexName = 'i' + (depth <= 0 ? '' : depth);
+        if (isSmart) {
+          s += padding + 'int ' + indexName + ' = -1;';
+          s += padding + 'for (Value& ' + itemName + ' : ' + k + ') {';
+          s += innerPadding + indexName + ' ++;';
+        }
+        else {
+          s += padding + 'Value& ' + itemName + ';';
+          s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.Size(); ' + indexName + '++) {';
+          s += innerPadding + itemName + ' = ' + k + '[' + indexName + '];';
+        }
+
+        s += innerPadding + 'if (' + itemName + ' == null) {';
+        s += innerPadding + '    continue;';
+        s += innerPadding + '}';
+        s += innerPadding + 'std:cout << "\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ' << std::endl;';
+        s += innerPadding + '// TODO 你的代码\n';
+
+        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseCppResponse(itemName, value[0], depth + 1, isSmart);
+        }
+        // }
+
+        s += padding + '}';
+
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var padding = '\n' + CodeUtil.getBlank(depth);
+        var k = JSONResponse.getVariableName(key);
+
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        s += padding + 'Object ' + k + ' = ' + name + '["' + key + '"].GetObject();\n'
+
+        s += CodeUtil.parseCppResponse(k, value, depth, isSmart);
+
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1663,7 +1788,7 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value[0]);
 
-        var s = '\n' + padding + '#' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '# ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         //不支持 varname: list[int] 这种语法   s += padding + k + (isSmart ? '' : ': list[' + type + ']') + ' = ' + name + '[' + quote + key + quote + ']'
         s += padding + k + (isSmart ? '' : ': list') + ' = ' + name + '[' + quote + key + quote + ']'
@@ -1689,7 +1814,7 @@ var CodeUtil = {
         }
         // }
 
-        s += padding + '#' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '# ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1698,7 +1823,7 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '#' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '# ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + k + (isSmart ? '' : ': dict') + ' = ' + name + '[' + quote + key + quote + ']'
         s += padding + 'if ' + k + ' == None:';
@@ -1706,7 +1831,7 @@ var CodeUtil = {
 
         s += CodeUtil.parsePythonResponse(k, value, depth, isSmart);
 
-        s += padding + '#' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '# ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1785,11 +1910,11 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'any' : (typeof (value[0]));
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + varKey + ' ' + k + ': ' + type + '[] = ' + name + '[' + quote + key + quote + ']' + ' || []; \n'
 
-        s += '\n' + padding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         s += padding + varKey + ' ' + itemName + ': ' + type + ';';
 
@@ -1801,7 +1926,7 @@ var CodeUtil = {
         s += innerPadding + '    continue;';
         s += innerPadding + '}';
         s += innerPadding + 'console.log("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1811,7 +1936,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1820,13 +1945,13 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + varKey + ' ' + k + ': object = ' + name + '[' + quote + key + quote + ']' + ' || {}; \n'
 
         s += CodeUtil.parseTypeScriptResponse(k, value, depth, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -1856,7 +1981,7 @@ var CodeUtil = {
 
       onParseParentStart: function () {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
-        //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
+        //  return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
         return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'var ' + name + ': JSONObject = JSON.parseObject(resultJson)\n';
       },
@@ -1919,7 +2044,7 @@ var CodeUtil = {
           type = 'Any';
         }
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = JSONResponse.getTableName(key);
         if (t.endsWith('[]')) {
@@ -1952,7 +2077,7 @@ var CodeUtil = {
         s += innerPadding + blank + 'continue';
         s += innerPadding + '}';
         s += innerPadding + 'println("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '//TODO 你的代码\n';
+        s += innerPadding + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -1962,7 +2087,7 @@ var CodeUtil = {
 
         s += padding + '}';
 
-        s += '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -1971,7 +2096,7 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = JSONResponse.getTableName(key);
         var isTableKey = JSONObject.isTableKey(t);
@@ -1991,7 +2116,7 @@ var CodeUtil = {
 
         s += CodeUtil.parseKotlinResponse(k, value, depth, isTableKey, isSmart);
 
-        s += padding + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -2023,7 +2148,7 @@ var CodeUtil = {
 
       onParseParentStart: function () {
         // if (isSmart) { //导致里面的 [] 等字符全都转成 List 等，里面每用一个 key 取值都得 formatArrayKey 或所有对象类型用 JSONReseponse 等，不通用
-        //   return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
+        //  return depth > 0 ? '' : CodeUtil.getBlank(depth) + 'JSONResponse ' + name + ' = new JSONResponse(resultJson);\n';
         // }
         return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'JSONObject ' + name + ' = JSON.parseObject(resultJson);\n';
       },
@@ -2081,7 +2206,7 @@ var CodeUtil = {
 
         var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '{   // ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = JSONResponse.getTableName(key);
         if (t.endsWith('[]')) {
@@ -2113,7 +2238,7 @@ var CodeUtil = {
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
         s += innerPadding2 + 'System.out.println("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
-        s += innerPadding2 + '//TODO 你的代码\n';
+        s += innerPadding2 + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -2123,7 +2248,7 @@ var CodeUtil = {
 
         s += innerPadding + '}';
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}   //' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -2133,7 +2258,7 @@ var CodeUtil = {
         var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '{   // ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var t = JSONResponse.getTableName(key);
         var isTableKey = JSONObject.isTableKey(t);
@@ -2152,7 +2277,7 @@ var CodeUtil = {
 
         s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTableKey, isSmart);
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}   //' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -2231,14 +2356,14 @@ var CodeUtil = {
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getCSharpTypeFromJS('item', value[0]);
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '{   // ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += innerPadding + 'JArray ' + k + ' = ' + name + '["' + key + '"].ToObject<JArray>();';
         s += innerPadding + 'if (' + k + ' == null) {';
         s += innerPadding + blank + k + ' = new JArray();';
         s += innerPadding + '}\n';
 
-        s += '\n' + innerPadding + '//TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+        s += '\n' + innerPadding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         s += innerPadding + 'foreach (' + type + ' ' + itemName + ' in ' + k + ') {';
 
@@ -2246,7 +2371,7 @@ var CodeUtil = {
         s += innerPadding2 + blank + 'continue;';
         s += innerPadding2 + '}';
         s += innerPadding2 + 'Console.WriteLine("\\n' + itemName + ' in ' + k + ' = \\n" + ' + itemName + ' + "\\n\\n"' + ');';
-        s += innerPadding2 + '//TODO 你的代码\n';
+        s += innerPadding2 + '// TODO 你的代码\n';
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
@@ -2256,7 +2381,7 @@ var CodeUtil = {
 
         s += innerPadding + '}';
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}   //' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -2266,7 +2391,7 @@ var CodeUtil = {
         var innerPadding = '\n' + CodeUtil.getBlank(depth + 1);
         var k = JSONResponse.getVariableName(key);
 
-        var s = '\n' + padding + '{  //' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n' + padding + '{   // ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += innerPadding + 'JObject ' + k + ' = ' + name + '["' + key + '"].ToObject<JObject>();'
         s += innerPadding + 'if (' + k + ' == null) {';
@@ -2275,7 +2400,7 @@ var CodeUtil = {
 
         s += CodeUtil.parseCSharpResponse(k, value, depth + 1);
 
-        s += padding + '}  //' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}   //' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -3514,7 +3639,7 @@ var CodeUtil = {
       prefix = '';
     }
     if (multiple == false) {
-      return prefix + '//' + comment.replace(/\n/g, '  ');
+      return prefix + '// ' + comment.replace(/\n/g, '  ');
     }
 
 
@@ -3632,6 +3757,53 @@ var CodeUtil = {
     }
 
     return 'NSObject';
+  },
+
+
+  getCppTypeFromJS: function (key, value) {
+    if (typeof value == 'boolean') {
+      return 'bool';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return 'double';
+      }
+      return 'int';
+    }
+    if (typeof value == 'string') {
+      return 'string';
+    }
+    if (value instanceof Array) {
+      return 'Array';
+    }
+    if (value instanceof Object) {
+      return 'Object';
+    }
+
+    return 'auto';
+  },
+
+  getCppGetterFromJS: function (key, value) {
+    if (typeof value == 'boolean') {
+      return 'GetBool';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return 'GetDouble';
+      }
+      return value > Number.MAX_SAFE_INTEGER ? 'GetInt64' : 'GetInt';
+    }
+    if (typeof value == 'string') {
+      return 'GetString';
+    }
+    if (value instanceof Array) {
+      return 'GetArray';
+    }
+    if (value instanceof Object) {
+      return 'GetObject';
+    }
+
+    return 'Get';
   },
 
   getPythonTypeFromJS: function (key, value) {
@@ -4075,7 +4247,7 @@ var CodeUtil = {
     for (var i = 0; i < arr.length; i ++) {
       t = typeof arr[i];
       if (t == 'object' || t == 'array') {
-        //TODO 不止为什么parseJavaResponse会调用这个函数，先放过  throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
+        // TODO 不止为什么parseJavaResponse会调用这个函数，先放过  throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
       }
       v = (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
       s += (i > 0 ? ', ' : '') + v;
@@ -4150,7 +4322,7 @@ var CodeUtil = {
       return '';
     }
     // if (value == null) {
-    //   return ' ! key:value 中 key 或 value 任何一个为 null 时，该 key:value 都无效！'
+    //  return ' ! key:value 中 key 或 value 任何一个为 null 时，该 key:value 都无效！'
     // }
 
     if (value == null || value instanceof Object) {
