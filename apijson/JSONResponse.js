@@ -154,7 +154,7 @@ var JSONResponse = {
     if (JSONObject.isArrayKey(fullName)) {
       fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
-    return JSONResponse.formatKey(fullName, true, true, true, true);
+    return JSONResponse.formatKey(fullName, true, true, true, true, true, true);
   },
 
   /**格式化数组的名称 key[] => keyList; key:alias[] => aliasList; Table-column[] => tableColumnList
@@ -197,19 +197,19 @@ var JSONResponse = {
   /**格式化名称
    * @param fullName name 或 name:alias
    * @param formatAt 去除前缀 @ ， @a => a
-   * @param formatColon 去除分隔符 : ， A:b => b
+   * @param formatAlias 去除别名分隔符 : ， A:b => AAsB
    * @param formatHyphen 去除分隔符 - ， A-b-cd-Efg => aBCdEfg
    * @param firstCase 第一个单词首字母小写，后面的首字母大写， Ab => ab ; A-b-Cd => aBCd
    * @return name => name; name:alias => alias
    */
-  formatKey(fullName, formatColon, formatAt, formatHyphen, firstCase, formatUnderline) {
+  formatKey(fullName, formatAlias, formatAt, formatHyphen, firstCase, formatUnderline, formatFunChar) {
     if (fullName == null) {
       log(TAG, "formatKey  fullName == null >> return null;");
       return null;
     }
 
-    if (formatColon) {
-      fullName = JSONResponse.formatColon(fullName);
+    if (formatAlias) {
+      fullName = JSONResponse.formatAlias(fullName);
     }
     if (formatAt) { //关键词只去掉前缀，不格式化单词，例如 @a-b 返回 a-b ，最后不会调用 setter
       fullName = JSONResponse.formatAt(fullName);
@@ -220,8 +220,11 @@ var JSONResponse = {
     if (formatUnderline) {
       fullName = JSONResponse.formatUnderline(fullName, true);
     }
+    if (formatFunChar) {
+      fullName = JSONResponse.formatFunChar(fullName, true);
+    }
 
-    return firstCase ? StringUtil.firstCase(fullName, firstCase) : fullName; //不格式化普通 key:value (value 不为 [], {}) 的 key
+    return firstCase ? StringUtil.firstCase(fullName) : fullName; //不格式化普通 key:value (value 不为 [], {}) 的 key
   },
 
   /**"@key" => "key"
@@ -230,15 +233,15 @@ var JSONResponse = {
    */
   formatAt(key) {
     var k = key.startsWith("@") ? key.substring(1) : key;
-    return k.endsWith("@") ? k.substring(0, k.length - 1) : k;
+    return k; //由 formatFunChar 实现去掉末尾的 @ k.endsWith("@") ? k.substring(0, k.length - 1) : k;
   },
-  /**key:alias => alias
+  /**key:alias => keyAsAlias
    * @param key
    * @return
    */
-  formatColon(key) {
+  formatAlias(key) {
     var index = key.indexOf(":");
-    return index < 0 ? key : key.substring(index + 1);
+    return index < 0 ? key : key.substring(0, index) + 'As' + StringUtil.firstCase(key.substring(index + 1), true);
   },
 
   /**A-b-cd-Efg => ABCdEfg
@@ -286,6 +289,31 @@ var JSONResponse = {
     }
     while (index >= 0);
 
+    return name;
+  },
+
+  /**id{} => idIn; userId@ => userIdAt; ...
+   * @param key
+   * @return
+   */
+  formatFunChar(key) {
+    var name = key.replace(/@/g, 'At');
+    name = name.replace(/{}/g, 'In')
+    name = name.replace(/}{/g, 'Exists')
+    name = name.replace(/\(\)/g, 'Function')
+    name = name.replace(/\[\]/g, 'List')
+    name = name.replace(/\$/g, 'Search')
+    name = name.replace(/~/g, 'Regexp')
+    name = name.replace(/:/g, 'As')
+    name = name.replace(/\+/g, 'Add')
+    name = name.replace(/-/g, 'Remove')
+    name = name.replace(/>=/g, 'Gte')
+    name = name.replace(/<=/g, 'Lte')
+    name = name.replace(/>/g, 'Gt')
+    name = name.replace(/</g, 'Lt')
+    name = name.replace(/&/g, 'And')
+    name = name.replace(/\|/g, 'Or')
+    name = name.replace(/!/g, 'Not')
     return name;
   },
 

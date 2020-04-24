@@ -812,6 +812,174 @@ var CodeUtil = {
 
 
 
+  /**解析出 生成Android-Java请求JSON 的代码
+   * @param name
+   * @param reqObj
+   * @param depth
+   * @return parseCode
+   * @return isSmart 是否智能
+   */
+  parseCpp: function(name, reqObj, depth, isSmart) {
+    name = name || '';
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    var parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+
+    var prefix = CodeUtil.getBlank(depth);
+    var nextPrefix = CodeUtil.getBlank(depth + 1);
+
+    return (depth > 0 ? "" : "rapidjson::Document doc;"
+        + "\nrapidjson::Document::AllocatorType& allocator = doc.GetAllocator();\n"
+      ) + CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return '\n' + prefix + 'rapidjson::Value ' + parentKey + '(rapidjson::kObjectType);';
+      },
+
+      onParseParentEnd: function () {
+        return '';
+      },
+
+      onParseChildArray: function (key, value, index) {
+
+        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        var count = isSmart ? (value.count || 0) : 0;
+        var page = isSmart ? (value.page || 0) : 0;
+        var query = isSmart ? value.query : null;
+        var join = isSmart ? value.join : null;
+
+        log(CodeUtil.TAG, 'parseCpp  for  count = ' + count + '; page = ' + page);
+
+        if (isSmart) {
+          delete value.count;
+          delete value.page;
+          delete value.query;
+          delete value.join;
+        }
+
+        s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+
+        log(CodeUtil.TAG, 'parseCpp  for delete >> count = ' + count + '; page = ' + page);
+
+        var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
+
+        if (isSmart) {
+          var alias = key.substring(0, key.length - 2);
+
+          s += '\n\n';
+          if (query != null) {
+            s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+          }
+          if (StringUtil.isEmpty(join, true) == false) {
+            s += nextPrefix + name + '.setJoin("' + join + '");\n';
+          }
+
+          s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
+            + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
+        }
+        else {
+          s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
+        }
+
+        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseChildObject: function (key, value, index) {
+        var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
+
+        var column = isTable ? value['@column'] : null;
+        var group = isTable ? value['@group'] : null;
+        var having = isTable ? value['@having'] : null;
+        var order = isTable ? value['@order'] : null;
+        var combine = isTable ? value['@combine'] : null;
+        var schema = isTable ? value['@schema'] : null;
+        var database = isTable ? value['@database'] : null;
+        var role = isTable ? value['@role'] : null;
+
+        if (isTable) {
+          delete value['@column'];
+          delete value['@group'];
+          delete value['@having'];
+          delete value['@order'];
+          delete value['@combine'];
+          delete value['@schema'];
+          delete value['@database'];
+          delete value['@role'];
+        }
+
+        s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+
+        const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
+        if (isTable) {
+          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
+          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
+          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
+          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
+          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
+          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
+          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
+          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+        }
+
+        s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
+
+        s += '\n' + prefix + '}   ' + '//' + key + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index) {
+        if (value instanceof Array) {
+
+          var s = '\n\n' + prefix + '{   ' + '//' + key + '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+          var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
+          s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
+          for (var i = 0; i < value.length; i ++) {
+            s += '\n' + nextPrefix + varName + '.PushBack(' + i + ', allocator);';
+          }
+
+          s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + varName + ', allocator);';
+          s += '\n' + prefix + '}   ' + '//' + varName + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+          return s;
+        }
+
+        if (depth <= 0 && isSmart) {
+          if (key == 'tag') {
+            return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == 'version') {
+            return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == 'format') {
+            return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == '@schema') {
+            return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == '@database') {
+            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+          if (key == '@role') {
+            return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+          }
+        }
+        return '\n' + prefix + parentKey + '.AddMember("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ', allocator);';
+      }
+    })
+
+  },
+
+
+
   /**生成 iOS-Swift 解析 Response JSON 的代码
    * @param name_
    * @param resObj
@@ -2310,12 +2478,10 @@ var CodeUtil = {
     return doc;
   },
 
-
-
   /**用数据字典转为JavaBean
    * @param docObj
    */
-  parseObjectiveCEntityH: function(docObj, clazz, database) {
+  parseCppStruct: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
@@ -2327,7 +2493,7 @@ var CodeUtil = {
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+      console.log('parseCppStruct  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -2343,38 +2509,33 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parseCppStruct [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIAuto'
-          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+          + '\n *APIAuto 自动生成 C++ Struct\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *使用方法：\n *1.修改包名 namespace \n *2.#include 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
-          + '\npackage apijson.demo.server.model;\n\n\n'
+          + '\n\n#include <string>'
+          + '\n#include <time.h>'
+          + '\n\n\nusing namespace rapidjson;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n@MethodAccess'
-          + '\npublic class ' + model + ' implements Serializable {'
-          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
+          + '\nstruct ' + model + ' {';
 
         //Column[]
         columnList = item['[]'];
         if (columnList != null) {
 
-          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+          console.log('parseCppStruct [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
 
-          doc += '\n'
-            + '\n' + blank + 'public ' + model + '() {'
-            + '\n' + blank2 + 'super();'
-            + '\n' + blank + '}'
-            + '\n' + blank + 'public ' + model + '(long id) {'
-            + '\n' + blank2 + 'this();'
-            + '\n' + blank2 + 'setId(id);'
-            + '\n' + blank + '}'
-            + '\n\n'
+          var constructor = '\n\n' + blank + model + '()';
+          var constructorWithArgs = '\n\n' + blank + model + '(';
+          var fields = '\n\n';
 
           var name;
           var type;
 
+          var first = true;
           for (var j = 0; j < columnList.length; j++) {
             column = (columnList[j] || {}).Column;
 
@@ -2384,42 +2545,42 @@ var CodeUtil = {
             }
 
             column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getType4Language('Objective-C', column.column_type, false);
+            type = CodeUtil.isId(name, column.column_type) ? 'long' : CodeUtil.getCppType(column.column_type, false);
 
+            console.log('parseCppStruct [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            constructorWithArgs += (first ? '' : ', ') + type + ' ' + name;
+            first = false;
+          }
+
+          constructorWithArgs += ')';
+
+          var first2 = true;
+          for (var j = 0; j < columnList.length; j++) {
+            column = (columnList[j] || {}).Column;
+
+            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+            if (name == '') {
+              continue;
+            }
+
+            column.column_type = CodeUtil.getColumnType(column, database);
+            type = CodeUtil.isId(name, column.column_type) ? 'long' : CodeUtil.getCppType(column.column_type, false);
+
+            console.log('parseCppStruct [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+            fields += '\n' + blank + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
 
+            constructor += (first2 ? ' : ' : ', ') + name + '()';
+            constructorWithArgs += (first2 ? '\n' + blank2 + ': ' : ', ') + name + '(' + name + ')';
+            first2 = false;
           }
 
-          doc += '\n\n'
+          constructor += ' {}';
+          constructorWithArgs += ' {}';
 
-          for (var j = 0; j < columnList.length; j++) {
-            column = (columnList[j] || {}).Column;
-
-            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
-            if (name == '') {
-              continue;
-            }
-            column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-            //getter
-            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n' + blank2 + 'return ' + name + ';'
-              + '\n' + blank + '}';
-
-            //setter
-            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
-              + '\n' + blank2 + 'return this;'
-              + '\n' + blank + '}\n';
-
-          }
+          doc += constructor + constructorWithArgs + fields;
         }
 
         doc += '\n\n}';
@@ -2432,11 +2593,10 @@ var CodeUtil = {
   },
 
 
-
   /**用数据字典转为JavaBean
    * @param docObj
    */
-  parseObjectiveCEntityM: function(docObj, clazz, database) {
+  parseObjectiveCEntity: function(docObj, clazz, database) {
 
     //转为Java代码格式
     var doc = '';
@@ -2771,7 +2931,7 @@ var CodeUtil = {
     //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     var list = docObj == null ? null : docObj['[]'];
     if (list != null) {
-      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+      console.log('parseCSharpEntity  [] = \n' + format(JSON.stringify(list)));
 
       var table;
       var model;
@@ -2787,7 +2947,7 @@ var CodeUtil = {
           continue;
         }
 
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+        console.log('parseCSharpEntity [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
 
         doc += '/**'
@@ -3002,7 +3162,7 @@ var CodeUtil = {
             type = CodeUtil.getType4Language('Python', column.column_type, false);
 
 
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+            console.log('parseCSharpEntity [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
 
             var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
             doc += '\n' + blank + name + ': ' + type + ' = None ' + CodeUtil.getComment((o || {}).column_comment, false);
@@ -3561,6 +3721,13 @@ var CodeUtil = {
   getJavaType: function(type, saveLength) {
     return CodeUtil.getType4Language('Java', type, saveLength);
   },
+  /**根据数据库类型获取Java类型
+   * @param t
+   * @param saveLength
+   */
+  getCppType: function(type, saveLength) {
+    return CodeUtil.getType4Language('C++', type, saveLength);
+  },
   getType4Language: function(language, type, saveLength) {
     log(CodeUtil.TAG, 'getJavaType  type = ' + type + '; saveLength = ' + saveLength);
     type = StringUtil.noBlank(type);
@@ -3603,7 +3770,7 @@ var CodeUtil = {
         return CodeUtil.getType4Decimal(language, length);
       case 'json':
       case 'jsonb':
-        return CodeUtil.getType4Array(language, length);
+        return CodeUtil.getType4Array(language);
       default:
         return StringUtil.firstCase(t, true) + length;
     }
@@ -3611,6 +3778,7 @@ var CodeUtil = {
   },
 
   getType4Any: function (language, length) {
+    length = length || '';
     switch (language) {
       case 'Java':
         return 'Object' + length;
@@ -3626,22 +3794,19 @@ var CodeUtil = {
         return 'object' + length;
       case 'Go':
         return 'map[string]interface{}' + length;
-        break;
       //以下都不需要解析，直接用左侧的 JSON
       case 'JavaScript':
         return 'object' + length;
-        break;
       case 'TypeScript':
         return 'object' + length;
-        break;
       case 'Python':
         return 'any' + length;
-        break;
       default:
         return 'Object' + length;
     }
   },
   getType4Boolean: function (language, length) {
+    length = length || '';
     switch (language) {
       case 'Java':
         return 'Boolean' + length;
@@ -3657,6 +3822,8 @@ var CodeUtil = {
         return 'boolean' + length;
       case 'Go':
         return 'bool' + length;
+      case 'C++':
+        return 'bool' + length;
       case 'JavaScript':
         return 'boolean' + length;
       case 'TypeScript':
@@ -3668,6 +3835,7 @@ var CodeUtil = {
     }
   },
   getType4Integer: function (language, length) {
+    length = length || '';
     switch (language) {
       case 'Java':
         return 'Integer' + length;
@@ -3683,6 +3851,8 @@ var CodeUtil = {
         return 'int' + length;
       case 'Go':
         return 'int' + length;
+      case 'C++':
+        return 'int';
       case 'JavaScript':
         return 'number' + length;
       case 'TypeScript':
@@ -3694,6 +3864,7 @@ var CodeUtil = {
     }
   },
   getType4Long: function (language, length) {
+    length = length || ''
     switch (language) {
       case 'Java':
         return 'Long' + length;
@@ -3708,7 +3879,9 @@ var CodeUtil = {
       case 'PHP':
         return 'int' + length;
       case 'Go':
-        return 'int' + length;
+        return 'int64' + length;
+      case 'C++':
+        return 'long' + length;
       case 'JavaScript':
         return 'number' + length;
       case 'TypeScript':
@@ -3720,12 +3893,17 @@ var CodeUtil = {
     }
   },
   getType4Decimal: function (language, length) {
+    length = length || ''
     if (language == 'Go') {
-      return 'float64'
+      return 'float64' + length;
     }
-    return 'BigDecimal' + length;
+    if (language == 'Java') {
+      return 'BigDecimal' + length;
+    }
+    return 'double' + length;
   },
   getType4String: function (language, length) {
+    length = length || ''
     switch (language) {
       case 'Java':
         return 'String' + length;
@@ -3741,75 +3919,78 @@ var CodeUtil = {
         return 'string' + length;
       case 'Go':
         return 'string' + length;
-        break;
+      case 'C++':
+        return 'string' + length;
       //以下都不需要解析，直接用左侧的 JSON
       case 'JavaScript':
         return 'string' + length;
-        break;
       case 'TypeScript':
         return 'string' + length;
-        break;
       case 'Python':
         return 'str' + length;
-        break;
       default:
         return 'String' + length;
     }
   },
   getType4Date: function (language, length) {
+    length = length || ''
     if (language == 'Go') {
-      return 'time.Time'
+      return 'time.Time' + length;
+    }
+    if (language == 'C++') {
+      return 'tm' + length;
     }
     return 'Date' + length;
   },
   getType4Timestamp: function (language, length) {
+    length = length || ''
     switch (language) {
       case 'Java':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'Swift':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'Kotlin':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'Objective-C':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'C#':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'PHP':
-        return 'Timestamp';
+        return 'Timestamp' + length;
       case 'Go':
-        return 'time.Time';
-        break;
+        return 'time.Time' + length;
+      case 'C++':
+        return 'time_t' + length;
       case 'JavaScript':
-        return 'Timestamp';
-        break;
+        return 'Timestamp' + length;
       case 'TypeScript':
-        return 'Timestamp';
-        break;
+        return 'Timestamp' + length;
       case 'Python':
-        return 'Timestamp';
-        break;
+        return 'Timestamp' + length;
       default:
-        return 'Timestamp';
+        return 'Timestamp' + length;
     }
     return 'Timestamp' + length;
   },
-  getType4Object: function (language, length) {
+  getType4Object: function (language) {
     switch (language) {
       case 'Java':
-        return 'Object';
+        return 'JSONObject';
       case 'Swift':
         return 'NSDictionary';
       case 'Kotlin':
-        return 'Object';
+        return 'JSONObject';
       case 'Objective-C':
-        return 'Object';
+        return 'NSDictionary';
       case 'C#':
-        return 'Object';
+        return 'JObject';
       case 'PHP':
         return 'object';
       case 'Go':
         return 'map[string]interface{}';
         break;
+      case 'C++':
+        return 'map<string, int>';
       case 'JavaScript':
         return 'object';
         break;
@@ -3817,39 +3998,41 @@ var CodeUtil = {
         return 'object';
         break;
       case 'Python':
-        return 'dict[str,any]';
+        return 'dict[str, any]';
         break;
       default:
         return 'Object';
     }
   },
-  getType4ByteArray: function (language, length) {
-    return 'byte[]' + length;
+  getType4ByteArray: function (language) {
+    return 'byte[]';
   },
-  getType4Array: function (language, length) {
+  getType4Array: function (language) {
     switch (language) {
       case 'Java':
-        return 'List<String>' + length;
+        return 'List<String>';
       case 'Swift':
-        return 'NSArray' + length;
+        return 'NSArray';
       case 'Kotlin':
-        return 'List<String>' + length;
+        return 'List<String>';
       case 'Objective-C':
-        return 'List' + length;
+        return 'List';
       case 'C#':
-        return 'List<String>' + length;
+        return 'List<String>';
       case 'PHP':
-        return 'string[]' + length;
+        return 'string[]';
       case 'Go':
-        return '[]string' + length;
+        return '[]string';
+      case 'C++':
+        return 'string[]';
       case 'JavaScript':
-        return 'string[]' + length;
+        return 'string[]';
       case 'TypeScript':
-        return 'string[]' + length;
+        return 'string[]';
       case 'Python':
-        return 'list[str]' + length;
+        return 'list[str]';
       default:
-        return 'List<String>' + length;
+        return 'List<String>';
     }
   },
 

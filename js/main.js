@@ -574,7 +574,7 @@
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
-      language: 'Java',
+      language: 'Kotlin',
       header: {},
       page: 0,
       count: 100,
@@ -891,6 +891,12 @@
                 case 'Go':
                   suffix = '.go';
                   break;
+                case 'C++':
+                  suffix = '.cpp';
+                  break;
+                case 'C++':
+                  suffix = '.cpp';
+                  break;
                 //以下都不需要解析，直接用左侧的 JSON
                 case 'JavaScript':
                   suffix = '.js';
@@ -908,8 +914,8 @@
 
               App.exTxt.name = 'User' + suffix
               alert('自动生成模型代码，可填类名后缀:\n'
-                + 'Java.java, Kotlin.kt, Swift.swift, Objective-C.h, Objective-C.m,'
-                + '\nTypeScript.ts, JavaScript.js, C#.cs, PHP.php, Python.py, Go.go');
+                + 'Kotlin.kt, Java.java, Swift.swift, Objective-C.m, C#.cs, Go.go,'
+                + '\nTypeScript.ts, JavaScript.js, PHP.php, Python.py, C++.cpp');
             }
             else {
               App.exTxt.name = 'APIJSON测试 ' + App.getMethod() + ' ' + App.formatDateTime()
@@ -947,7 +953,7 @@
                 alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE')
               }
               else if (index == 2) {
-                alert('自动生成代码，可填语言:\nJava,Kotlin,Swift,Objective-C,\nTypeScript,JavaScript,C#,PHP,Python,Go')
+                alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
               }
               else if (index == 7) {
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
@@ -1208,11 +1214,8 @@
             else if (clazz.endsWith('.kt')) {
               txt += CodeUtil.parseKotlinDataClass(docObj, clazz.substring(0, clazz.length - 3), App.database)
             }
-            else if  (clazz.endsWith('.h')) {
-              txt += CodeUtil.parseObjectiveCEntityH(docObj, clazz.substring(0, clazz.length - 2), App.database)
-            }
             else if  (clazz.endsWith('.m')) {
-              txt += CodeUtil.parseObjectiveCEntityM(docObj, clazz.substring(0, clazz.length - 2), App.database)
+              txt += CodeUtil.parseObjectiveCEntity(docObj, clazz.substring(0, clazz.length - 2), App.database)
             }
             else if  (clazz.endsWith('.cs')) {
               txt += CodeUtil.parseCSharpEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
@@ -1222,6 +1225,9 @@
             }
             else if  (clazz.endsWith('.go')) {
               txt += CodeUtil.parseGoEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
+            }
+            else if  (clazz.endsWith('.cpp')) {
+              txt += CodeUtil.parseCppStruct(docObj, clazz.substring(0, clazz.length - 4), App.database)
             }
             else if  (clazz.endsWith('.js')) {
               txt += CodeUtil.parseJavaScriptEntity(docObj, clazz.substring(0, clazz.length - 3), App.database)
@@ -1268,6 +1274,9 @@
                 break;
               case 'Go':
                 s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
+                break;
+              case 'C++':
+                s += '(C++):\n\n' + CodeUtil.parseCppResponse('', res, 0)
                 break;
               case 'JavaScript':
                 s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
@@ -2438,7 +2447,9 @@
             }
           }
 
-          vInput.value = before;
+          vInput.value = before
+            + '\n                                                                                           '
+            + '                                                                                               \n';  //解决遮挡
           vSend.disabled = false;
           vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
@@ -2448,6 +2459,9 @@
           try {
             var m = App.getMethod();
             var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
+              + '\n                                                                                           '
+              + '                                                                                               \n';  //解决遮挡
+            //TODO 统计行数，补全到一致 vInput.value.lineNumbers
 
             if (isSingle != true && afterObj.tag == null) {
               m = m == null ? 'GET' : m.toUpperCase()
@@ -2950,6 +2964,12 @@
               + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
+            break;
+          case 'C++':
+            s += '\n#### <= Web-C++: 使用 RapidJSON'
+              + ' \n ```cpp \n'
+              + StringUtil.trim(CodeUtil.parseCpp(null, JSON.parse(rq), 0, isSingle))
+              + '\n ``` \n注：std::string 类型值需要判断 RAPIDJSON_HAS_STDSTRING\n';
             break;
           //以下都不需要解析，直接用左侧的 JSON
           case 'JavaScript':
