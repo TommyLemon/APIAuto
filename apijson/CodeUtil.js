@@ -4546,11 +4546,13 @@ var CodeUtil = {
       log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
 
       if (StringUtil.isEmpty(columnName)) {
-        return database == 'POSTGRESQL'
-          ? (item.PgClass || {}).table_comment
-          : (database == 'SQLSERVER'
-              ? (item.ExtendedProperty || {}).table_comment
-              : table.table_comment
+        return /*没必要，常识，太占地方，而且自动生成代码就有  CodeUtil.getType4Object(language) + ', ' + */ (
+            database == 'POSTGRESQL'
+              ? (item.PgClass || {}).table_comment
+              : (database == 'SQLSERVER'
+                ? (item.ExtendedProperty || {}).table_comment
+                : table.table_comment
+            )
           );
       }
 
