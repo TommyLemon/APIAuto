@@ -22,9 +22,12 @@ var CodeUtil = {
   /**生成JSON的注释
    * @param reqStr //已格式化的JSON String
    * @param tableList
+   * @param method
+   * @param database
+   * @param language
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList, method, database) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method, database, language) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
@@ -61,14 +64,14 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database);
+        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database, language);
       }
       else {
         if (line.endsWith('}')) {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database);
+            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database, language);
           }
           else {
             depth --;
@@ -82,7 +85,7 @@ var CodeUtil = {
           var isArray = line.endsWith('['); // []  不影响
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
-            , isArray ? '' : line.substring(index + 2).trim(), method, isInSubquery, database);
+            , isArray ? '' : line.substring(index + 2).trim(), method, isInSubquery, database, language);
         }
       }
 
@@ -3963,7 +3966,7 @@ var CodeUtil = {
       case 'C#':
         return 'any' + length;
       case 'PHP':
-        return 'object' + length;
+        return 'any' + length;
       case 'Go':
         return 'map[string]interface{}' + length;
       //以下都不需要解析，直接用左侧的 JSON
@@ -3973,9 +3976,8 @@ var CodeUtil = {
         return 'object' + length;
       case 'Python':
         return 'any' + length;
-      default:
-        return 'Object' + length;
     }
+    return 'Object' + length;
   },
   getType4Boolean: function (language, length) {
     length = length || '';
@@ -3991,7 +3993,7 @@ var CodeUtil = {
       case 'C#':
         return 'Bool' + length;
       case 'PHP':
-        return 'boolean' + length;
+        return 'bool' + length;
       case 'Go':
         return 'bool' + length;
       case 'C++':
@@ -4002,9 +4004,8 @@ var CodeUtil = {
         return 'boolean' + length;
       case 'Python':
         return 'bool' + length;
-      default:
-        return 'Boolean' + length;
     }
+    return 'boolean' + length;
   },
   getType4Integer: function (language, length) {
     length = length || '';
@@ -4031,9 +4032,8 @@ var CodeUtil = {
         return 'number' + length;
       case 'Python':
         return 'int' + length;
-      default:
-        return 'Integer' + length;
     }
+    return 'int' + length;
   },
   getType4Long: function (language, length) {
     length = length || ''
@@ -4060,19 +4060,37 @@ var CodeUtil = {
         return 'number' + length;
       case 'Python':
         return 'int' + length;
-      default:
-        return 'Long' + length;
     }
+    return CodeUtil.getType4Integer(language, length);
   },
   getType4Decimal: function (language, length) {
     length = length || ''
-    if (language == 'Go') {
-      return 'float64' + length;
+    switch (language) {
+      case 'Java':
+        return 'BigDecimal' + length;
+      case 'Swift':
+        return 'NSDecimalNumber' + length;
+      case 'Kotlin':
+        return 'BigDecimal';
+      case 'Objective-C':
+        return 'NSDecimalNumber' + length;
+      case 'C#':
+        return 'decimal' + length;
+      case 'PHP':
+        return 'float' + length;
+      case 'Go':
+        return 'float64' + length;
+      case 'C++':
+        return 'float64' + length;
+      //以下都不需要解析，直接用左侧的 JSON
+      case 'JavaScript':
+        return 'number' + length;
+      case 'TypeScript':
+        return 'number' + length;
+      case 'Python':
+        return 'float' + length;
     }
-    if (language == 'Java') {
-      return 'BigDecimal' + length;
-    }
-    return 'double' + length;
+    return 'float' + length;
   },
   getType4String: function (language, length) {
     length = length || ''
@@ -4084,7 +4102,7 @@ var CodeUtil = {
       case 'Kotlin':
         return 'String';
       case 'Objective-C':
-        return 'String' + length;
+        return 'NSString' + length;
       case 'C#':
         return 'String' + length;
       case 'PHP':
@@ -4100,19 +4118,37 @@ var CodeUtil = {
         return 'string' + length;
       case 'Python':
         return 'str' + length;
-      default:
-        return 'String' + length;
     }
+    return 'String' + length;
   },
   getType4Date: function (language, length) {
     length = length || ''
-    if (language == 'Go') {
-      return 'time.Time' + length;
+    switch (language) {
+      case 'Java':
+        return 'Date' + length;
+      case 'Swift':
+        return 'Date' + length;
+      case 'Kotlin':
+        return 'Date';
+      case 'Objective-C':
+        return 'NSDate' + length;
+      case 'C#':
+        return 'DateTime' + length;
+      case 'PHP':
+        break; // return 'date' + length;
+      case 'Go':
+        return 'time.Time' + length;
+      case 'C++':
+        return 'tm' + length;
+      //以下都不需要解析，直接用左侧的 JSON
+      case 'JavaScript':
+        return 'Date' + length;
+      case 'TypeScript':
+        return 'Date' + length;
+      case 'Python':
+        return 'datetime' + length;
     }
-    if (language == 'C++') {
-      return 'tm' + length;
-    }
-    return 'Date' + length;
+    return CodeUtil.getType4String(language, length);
   },
   getType4Timestamp: function (language, length) {
     length = length || ''
@@ -4120,29 +4156,27 @@ var CodeUtil = {
       case 'Java':
         return 'Timestamp' + length;
       case 'Swift':
-        return 'Timestamp' + length;
+        break; //return 'Timestamp' + length;
       case 'Kotlin':
         return 'Timestamp' + length;
       case 'Objective-C':
-        return 'Timestamp' + length;
+        break; //return 'Timestamp' + length;
       case 'C#':
-        return 'Timestamp' + length;
+        return 'DateTime' + length;
       case 'PHP':
-        return 'Timestamp' + length;
+        break; //return 'Timestamp' + length;
       case 'Go':
         return 'time.Time' + length;
       case 'C++':
         return 'time_t' + length;
       case 'JavaScript':
-        return 'Timestamp' + length;
+        break; //return 'Timestamp' + length;
       case 'TypeScript':
-        return 'Timestamp' + length;
+        break; //return 'Timestamp' + length;
       case 'Python':
-        return 'Timestamp' + length;
-      default:
-        return 'Timestamp' + length;
+        return 'datetime' + length;
     }
-    return 'Timestamp' + length;
+    return CodeUtil.getType4Integer(language, length);
   },
   getType4Object: function (language) {
     switch (language) {
@@ -4160,26 +4194,22 @@ var CodeUtil = {
         return 'object';
       case 'Go':
         return 'map[string]interface{}';
-        break;
       case 'C++':
         return 'map<string, int>';
       case 'JavaScript':
         return 'object';
-        break;
       case 'TypeScript':
         return 'object';
-        break;
       case 'Python':
         return 'dict[str, any]';
-        break;
-      default:
-        return 'Object';
     }
+    return 'Object';
   },
   getType4ByteArray: function (language) {
     return 'byte[]';
   },
-  getType4Array: function (language) {
+  getType4Array: function (language, length) {
+    length = length || ''
     switch (language) {
       case 'Java':
         return 'List<String>';
@@ -4196,16 +4226,15 @@ var CodeUtil = {
       case 'Go':
         return '[]string';
       case 'C++':
-        return 'string[]';
+        return 'array<string, ' + (length || 10) + '>';
       case 'JavaScript':
         return 'string[]';
       case 'TypeScript':
         return 'string[]';
       case 'Python':
         return 'list[str]';
-      default:
-        return 'List<String>';
     }
+    return 'String[]';
   },
 
 
@@ -4315,7 +4344,7 @@ var CodeUtil = {
    * @param isInSubquery
    * @param database
    */
-  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database) {
+  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database, language) {
     // alert('name = ' + name + '; key = ' + key + '; value = ' + value + '; method = ' + method);
 
     if (key == null) {
@@ -4335,7 +4364,7 @@ var CodeUtil = {
         var aliaIndex = name == null ? -1 : name.indexOf(':');
         var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
         if (JSONObject.isTableKey(objName)) {
-          return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database), false, '  ');
+          return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database, language), false, '  ');
         }
         return CodeUtil.getComment('子查询 ' + StringUtil.get(name) + "，需要被下面的表字段相关 key 引用赋值", false, '  ');
       }
@@ -4361,7 +4390,7 @@ var CodeUtil = {
       var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
       if (JSONObject.isTableKey(objName)) {
-        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database);
+        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language);
         return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(
           (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length) + ' < ' + objName + ': ') + c, false, '  ');
       }
@@ -4439,7 +4468,7 @@ var CodeUtil = {
       if (key.startsWith('@')) {
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database);
+      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database, language);
       return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 
@@ -4488,11 +4517,14 @@ var CodeUtil = {
    * @param columnName
    * @param method
    * @param database
+   * @param language
    * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database, onlyTableAndColumn) {
-    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName + '; method = ' + method + '; database = ' + database + '; tableList = \n' + JSON.stringify(tableList));
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn) {
+    log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName
+      + '; method = ' + method + '; database = ' + database + '; language = ' + language
+      + '; onlyTableAndColumn = ' + onlyTableAndColumn + '; tableList = \n' + JSON.stringify(tableList));
 
     if (tableList == null || tableList.length <= 0) {
       return '...';
@@ -4669,7 +4701,7 @@ var CodeUtil = {
           );
 
         column.column_type = CodeUtil.getColumnType(column, database);
-        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getJavaType(column.column_type, true) + ', ' + (o || {}).column_comment;
+        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getType4Language(language, column.column_type, true) + ', ' + (o || {}).column_comment;
       }
 
       break;

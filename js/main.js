@@ -286,11 +286,11 @@
                   firstIndex = objName.indexOf('-');
                   column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true); // this.getResponseHint({}, table, $event
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, null, App.getMethod(), App.database, true);
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, null, App.getMethod(), App.database, App.language, true);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -312,7 +312,7 @@
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, true);
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true);
 
           s += (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? (StringUtil.isEmpty(table) ? key : table) : column) + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
@@ -2458,7 +2458,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database)
+            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language)
               + '\n                                                                                           '
               + '                                                                                               \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -3200,7 +3200,7 @@
                 }
 
                 column.column_type = CodeUtil.getColumnType(column, App.database);
-                type = CodeUtil.getJavaType(column.column_type, false);
+                type = CodeUtil.getType4Language(App.language, column.column_type, false);
                 length = CodeUtil.getMaxLength(column.column_type);
 
                 if (DEBUG) {
