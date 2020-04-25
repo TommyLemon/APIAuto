@@ -4028,7 +4028,7 @@ var CodeUtil = {
       case 'Python':
         return 'any' + length;
     }
-    return 'Object' + length;
+    return 'Object' + length;  //以 JSON 类型为准
   },
   getType4Boolean: function (language, length) {
     length = length || '';
@@ -4056,7 +4056,7 @@ var CodeUtil = {
       case 'Python':
         return 'bool' + length;
     }
-    return 'boolean' + length;
+    return 'Boolean' + length;  //以 JSON 类型为准
   },
   getType4Integer: function (language, length) {
     length = length || '';
@@ -4084,7 +4084,7 @@ var CodeUtil = {
       case 'Python':
         return 'int' + length;
     }
-    return 'int' + length;
+    return 'Integer' + length;  //以 JSON 类型为准
   },
   getType4Long: function (language, length) {
     length = length || ''
@@ -4141,7 +4141,7 @@ var CodeUtil = {
       case 'Python':
         return 'float' + length;
     }
-    return 'float' + length;
+    return 'Number' + length;  //以 JSON 类型为准
   },
   getType4String: function (language, length) {
     length = length || ''
@@ -4170,7 +4170,7 @@ var CodeUtil = {
       case 'Python':
         return 'str' + length;
     }
-    return 'String' + length;
+    return 'String' + length;  //以 JSON 类型为准
   },
   getType4Date: function (language, length) {
     length = length || ''
@@ -4254,12 +4254,12 @@ var CodeUtil = {
       case 'Python':
         return 'dict[str, any]';
     }
-    return 'Object';
+    return 'Object';  //以 JSON 类型为准
   },
   getType4ByteArray: function (language) {
     return 'byte[]';
   },
-  getType4Array: function (language, length) {
+  getType4Array: function (language) {
     length = length || ''
     switch (language) {
       case 'Java':
@@ -4277,7 +4277,7 @@ var CodeUtil = {
       case 'Go':
         return '[]string';
       case 'C++':
-        return 'array<string, ' + (length || 10) + '>';
+        return 'vector';
       case 'JavaScript':
         return 'string[]';
       case 'TypeScript':
@@ -4285,7 +4285,7 @@ var CodeUtil = {
       case 'Python':
         return 'list[str]';
     }
-    return 'String[]';
+    return 'Array';  //以 JSON 类型为准
   },
 
 
