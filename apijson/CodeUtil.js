@@ -478,7 +478,7 @@ var CodeUtil = {
    * @return parseCode
    */
   parseObjectiveC: function(name, reqObj, depth) {
-   return CodeUtil.parseSwift(name, reqObj, depth);
+    return CodeUtil.parseSwift(name, reqObj, depth);
   },
 
 
@@ -568,13 +568,15 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseJava: function(name, reqObj, depth, isSmart) {
-    name = name || '';
+  parseJava: function(name, reqObj, depth, isSmart, isArrayItem) {
+    name = name || 'request'
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    var parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+    var parentKey = JSONObject.isArrayKey(name)
+      ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
+      : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
     var prefix = CodeUtil.getBlank(depth);
     var nextPrefix = CodeUtil.getBlank(depth + 1);
@@ -682,7 +684,48 @@ var CodeUtil = {
         return s;
       },
 
-      onParseChildOther: function (key, value, index) {
+      onParseArray: function (key, value, index, isOuter) {
+        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+
+        var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
+        var itemName = JSONResponse.getVariableName(CodeUtil.getItemKey(JSONObject.isArrayKey(key) ? key : key + '[]')) + (depth <= 0 ? '' : depth + 1);
+
+        if (isArrayItem != true) {
+          s += '\n' + nextPrefix + (isSmart ? 'JSONArray ' : 'List<Object> ') + varName + ' = new ' + (isSmart ? 'JSONArray' : 'ArrayList<>') + '();';
+        }
+
+        if (value.length > 0) {
+          var innerPrefix = CodeUtil.getBlank(depth + 2);
+          var inner = '';
+          for (var i = 0; i < value.length; i++) {
+            if (value[i] instanceof Object == false) {
+              inner += '\n' + nextPrefix + varName + '.add(' + CodeUtil.getCode4Value(key, null, value[i]) + ');';
+            }
+            else {
+              inner += '\n\n' + nextPrefix + '{   ' + '// ' + key + '[' + i + '] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+              if (isArrayItem && value[i] instanceof Array) {
+                inner += '\n' + innerPrefix + (isSmart ? 'JSONArray ' : 'List<Object> ') + varName + ' = new ' + (isSmart ? 'JSONArray' : 'ArrayList<>') + '();';
+              }
+              inner += CodeUtil.getCode4Value(key, itemName, value[i], depth + 1, isSmart, true, CodeUtil.parseJava);
+              inner += '\n' + innerPrefix + varName + '.add(' + itemName + ');';
+              inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+            }
+          }
+          s += inner;
+        }
+
+        if (isArrayItem != true && reqObj instanceof Array == false) {
+          s += '\n\n' + nextPrefix + parentKey + '.put("' + key + '", ' + varName + ');';
+        }
+        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index, isOuter) {
+        if (value instanceof Array) {
+          return this.onParseArray(key, value, index, isOuter);
+        }
+
         if (depth <= 0 && isSmart) {
           if (key == 'tag') {
             return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
@@ -703,6 +746,7 @@ var CodeUtil = {
             return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
         }
+
         return '\n' + prefix + parentKey + '.put("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ');';
       }
     })
@@ -868,16 +912,14 @@ var CodeUtil = {
    * @return isSmart 是否智能
    */
   parseCpp: function(name, reqObj, depth, isSmart, isArrayItem) {
-    if (reqObj == null) {
-      return 'null';
-    }
-
-    name = name || '';
+    name = name || 'request'
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    var parentKey = JSONObject.isArrayKey(name) ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth) : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
+    var parentKey = JSONObject.isArrayKey(name)
+      ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
+      : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
     var prefix = CodeUtil.getBlank(depth);
     var nextPrefix = CodeUtil.getBlank(depth + 1);
@@ -926,25 +968,27 @@ var CodeUtil = {
             s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
           }
 
-          var innerPrefix = CodeUtil.getBlank(depth + 2);
-          var inner = '';
-          for (var i = 0; i < value.length; i ++) {
-            if (value[i] instanceof Object == false) {
-              inner += '\n' + nextPrefix + varName + '.PushBack(' + i + ', ' + CodeUtil.getCode4Value(key, null, value[i]) + ', allocator);';
-            }
-            else {
-              inner += '\n\n' + nextPrefix + '{   ' + '// ' + key + '[' + i + '] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-              if (isArrayItem && value[i] instanceof Array) {
-                inner += '\n' + innerPrefix + 'rapidjson::Value ' + itemName + '(rapidjson::kArrayType);';
+          if (value.length > 0) {
+            var innerPrefix = CodeUtil.getBlank(depth + 2);
+            var inner = '';
+            for (var i = 0; i < value.length; i++) {
+              if (value[i] instanceof Object == false) {
+                inner += '\n' + nextPrefix + varName + '.PushBack(' + i + ', ' + CodeUtil.getCode4Value(key, null, value[i]) + ', allocator);';
               }
-              inner += CodeUtil.getCode4Value(key, itemName, value[i], depth + 1, isSmart, true, CodeUtil.parseCpp);
-              inner += '\n' + innerPrefix + varName + '.PushBack(' + i + ', ' + itemName + ', allocator);';
-              inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+              else {
+                inner += '\n\n' + nextPrefix + '{   ' + '// ' + key + '[' + i + '] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+                if (isArrayItem && value[i] instanceof Array) {
+                  inner += '\n' + innerPrefix + 'rapidjson::Value ' + itemName + '(rapidjson::kArrayType);';
+                }
+                inner += CodeUtil.getCode4Value(key, itemName, value[i], depth + 1, isSmart, true, CodeUtil.parseCpp);
+                inner += '\n' + innerPrefix + varName + '.PushBack(' + i + ', ' + itemName + ', allocator);';
+                inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+              }
             }
+            s += inner;
           }
-          s += inner;
 
-          if (isArrayItem != true) {
+          if (isArrayItem != true && reqObj instanceof Array == false) {
             s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + varName + ', allocator);';
           }
           s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';

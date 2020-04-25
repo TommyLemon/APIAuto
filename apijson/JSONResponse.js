@@ -204,7 +204,7 @@ var JSONResponse = {
    */
   formatKey(fullName, formatAlias, formatAt, formatHyphen, firstCase, formatUnderline, formatFunChar) {
     if (fullName == null) {
-      log(TAG, "formatKey  fullName == null >> return null;");
+      log(JSONResponse.TAG, "formatKey  fullName == null >> return null;");
       return null;
     }
 
