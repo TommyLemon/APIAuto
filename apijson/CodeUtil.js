@@ -860,108 +860,108 @@ var CodeUtil = {
     var nextPrefix = CodeUtil.getBlank(depth + 1);
 
     return (depth > 0 ? "" : "rapidjson::Document document;"
-        + "\nrapidjson::Document::AllocatorType& allocator = document.GetAllocator();\n"
+          + "\nrapidjson::Document::AllocatorType& allocator = document.GetAllocator();\n"
       ) + CodeUtil.parseCode(name, reqObj, {
 
-      onParseParentStart: function () {
-        return '\n' + prefix + 'rapidjson::Value ' + parentKey + '(rapidjson::kObjectType);';
-      },
+        onParseParentStart: function () {
+          return '\n' + prefix + 'rapidjson::Value ' + parentKey + '(rapidjson::kObjectType);';
+        },
 
-      onParseParentEnd: function () {
-        return '';
-      },
+        onParseParentEnd: function () {
+          return '';
+        },
 
-      onParseChildArray: function (key, value, index) {
+        onParseChildArray: function (key, value, index) {
 
-        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+          var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        var count = isSmart ? (value.count || 0) : 0;
-        var page = isSmart ? (value.page || 0) : 0;
-        var query = isSmart ? value.query : null;
-        var join = isSmart ? value.join : null;
+          var count = isSmart ? (value.count || 0) : 0;
+          var page = isSmart ? (value.page || 0) : 0;
+          var query = isSmart ? value.query : null;
+          var join = isSmart ? value.join : null;
 
-        log(CodeUtil.TAG, 'parseCpp  for  count = ' + count + '; page = ' + page);
+          log(CodeUtil.TAG, 'parseCpp  for  count = ' + count + '; page = ' + page);
 
-        if (isSmart) {
-          delete value.count;
-          delete value.page;
-          delete value.query;
-          delete value.join;
-        }
-
-        s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
-
-        log(CodeUtil.TAG, 'parseCpp  for delete >> count = ' + count + '; page = ' + page);
-
-        var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
-
-        if (isSmart) {
-          var alias = key.substring(0, key.length - 2);
-
-          s += '\n\n';
-          if (query != null) {
-            s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
-          }
-          if (StringUtil.isEmpty(join, true) == false) {
-            s += nextPrefix + name + '.setJoin("' + join + '");\n';
+          if (isSmart) {
+            delete value.count;
+            delete value.page;
+            delete value.query;
+            delete value.join;
           }
 
-          s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
-            + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
-        }
-        else {
-          s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
-        }
+          s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
 
-        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+          log(CodeUtil.TAG, 'parseCpp  for delete >> count = ' + count + '; page = ' + page);
 
-        return s;
-      },
+          var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
 
-      onParseChildObject: function (key, value, index) {
-        var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+          if (isSmart) {
+            var alias = key.substring(0, key.length - 2);
 
-        var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
+            s += '\n\n';
+            if (query != null) {
+              s += nextPrefix + name + '.setQuery(' + (CodeUtil.QUERY_TYPE_CONSTS[query] || CodeUtil.QUERY_TYPE_CONSTS[0]) + ');\n';
+            }
+            if (StringUtil.isEmpty(join, true) == false) {
+              s += nextPrefix + name + '.setJoin("' + join + '");\n';
+            }
 
-        var column = isTable ? value['@column'] : null;
-        var group = isTable ? value['@group'] : null;
-        var having = isTable ? value['@having'] : null;
-        var order = isTable ? value['@order'] : null;
-        var combine = isTable ? value['@combine'] : null;
-        var schema = isTable ? value['@schema'] : null;
-        var database = isTable ? value['@database'] : null;
-        var role = isTable ? value['@role'] : null;
+            s += nextPrefix + parentKey + '.putAll(' + name + '.toArray('
+              + count  + ', ' + page + (alias.length <= 0 ? '' : ', "' + alias + '"') + '));';
+          }
+          else {
+            s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
+          }
 
-        if (isTable) {
-          delete value['@column'];
-          delete value['@group'];
-          delete value['@having'];
-          delete value['@order'];
-          delete value['@combine'];
-          delete value['@schema'];
-          delete value['@database'];
-          delete value['@role'];
-        }
+          s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
-        s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+          return s;
+        },
 
-        const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
-        if (isTable) {
-          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getCode4Value(name, key, column) + ');';
-          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getCode4Value(name, key, group) + ');';
-          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getCode4Value(name, key, having) + ');';
-          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getCode4Value(name, key, order) + ');';
-          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(name, key, combine) + ');';
-          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(name, key, schema) + ');';
-          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(name, key, database) + ');';
-          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(name, key, role) + ');';
-        }
+        onParseChildObject: function (key, value, index) {
+          var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
-        s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+          var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
 
-        return s;
-      },
+          var column = isTable ? value['@column'] : null;
+          var group = isTable ? value['@group'] : null;
+          var having = isTable ? value['@having'] : null;
+          var order = isTable ? value['@order'] : null;
+          var combine = isTable ? value['@combine'] : null;
+          var schema = isTable ? value['@schema'] : null;
+          var database = isTable ? value['@database'] : null;
+          var role = isTable ? value['@role'] : null;
+
+          if (isTable) {
+            delete value['@column'];
+            delete value['@group'];
+            delete value['@having'];
+            delete value['@order'];
+            delete value['@combine'];
+            delete value['@schema'];
+            delete value['@database'];
+            delete value['@role'];
+          }
+
+          s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+
+          const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
+          if (isTable) {
+            s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getCode4Value(name, key, column) + ');';
+            s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getCode4Value(name, key, group) + ');';
+            s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getCode4Value(name, key, having) + ');';
+            s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getCode4Value(name, key, order) + ');';
+            s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(name, key, combine) + ');';
+            s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(name, key, schema) + ');';
+            s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(name, key, database) + ');';
+            s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(name, key, role) + ');';
+          }
+
+          s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
+          s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+          return s;
+        },
 
         onParseArray: function (key, value, index, isOuter) {
           var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
@@ -998,34 +998,34 @@ var CodeUtil = {
           return s;
         },
 
-      onParseChildOther: function (key, value, index, isOuter) {
-        if (value instanceof Array) {
-          return this.onParseArray(key, value, index, isOuter);
-        }
+        onParseChildOther: function (key, value, index, isOuter) {
+          if (value instanceof Array) {
+            return this.onParseArray(key, value, index, isOuter);
+          }
 
-        if (depth <= 0 && isSmart) {
-          if (key == 'tag') {
-            return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
+          if (depth <= 0 && isSmart) {
+            if (key == 'tag') {
+              return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
+            if (key == 'version') {
+              return '\n' + parentKey + '.setVersion(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
+            if (key == 'format') {
+              return '\n' + parentKey + '.setFormat(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
+            if (key == '@schema') {
+              return '\n' + parentKey + '.setSchema(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
+            if (key == '@database') {
+              return '\n' + parentKey + '.setDatabase(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
+            if (key == '@role') {
+              return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
+            }
           }
-          if (key == 'version') {
-            return '\n' + parentKey + '.setVersion(' + CodeUtil.getCode4Value(name, key, value) + ');';
-          }
-          if (key == 'format') {
-            return '\n' + parentKey + '.setFormat(' + CodeUtil.getCode4Value(name, key, value) + ');';
-          }
-          if (key == '@schema') {
-            return '\n' + parentKey + '.setSchema(' + CodeUtil.getCode4Value(name, key, value) + ');';
-          }
-          if (key == '@database') {
-            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getCode4Value(name, key, value) + ');';
-          }
-          if (key == '@role') {
-            return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
-          }
+          return '\n' + prefix + parentKey + '.AddMember("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ', allocator);';
         }
-        return '\n' + prefix + parentKey + '.AddMember("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ', allocator);';
-      }
-    })
+      })
 
   },
 
@@ -4622,13 +4622,13 @@ var CodeUtil = {
 
       if (StringUtil.isEmpty(columnName)) {
         return /*没必要，常识，太占地方，而且自动生成代码就有  CodeUtil.getType4Object(language) + ', ' + */ (
-            database == 'POSTGRESQL'
-              ? (item.PgClass || {}).table_comment
-              : (database == 'SQLSERVER'
-                ? (item.ExtendedProperty || {}).table_comment
-                : table.table_comment
-            )
-          );
+          database == 'POSTGRESQL'
+            ? (item.PgClass || {}).table_comment
+            : (database == 'SQLSERVER'
+              ? (item.ExtendedProperty || {}).table_comment
+              : table.table_comment
+          )
+        );
       }
 
       var at = '';
