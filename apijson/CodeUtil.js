@@ -497,12 +497,19 @@ var CodeUtil = {
    * @return isSmart 是否智能
    */
   parseKotlin: function(name, reqObj, depth) {
-    name = name || '';
     if (depth == null || depth < 0) {
       depth = 0;
     }
-    var hasContent = false;
-    var isEmpty = Object.keys(reqObj).length <= 0;
+    var isEmpty = true;
+    if (reqObj instanceof Array) {
+      isEmpty = reqObj.length <= 0;
+    }
+    else if (reqObj instanceof Object) {
+      isEmpty = Object.keys(reqObj).length <= 0;
+    }
+
+    var padding = CodeUtil.getBlank(depth);
+    var nextPadding = CodeUtil.getBlank(depth + 1);
 
     return CodeUtil.parseCode(name, reqObj, {
 
@@ -511,38 +518,50 @@ var CodeUtil = {
       },
 
       onParseParentEnd: function () {
-        return isEmpty ? ')' : '\n' + CodeUtil.getBlank(depth) + ')';
+        return isEmpty ? ')' : '\n' + padding + ')';
       },
 
       onParseChildArray: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
       },
 
-      onParseChildOther: function (key, value, index) {
-        hasContent = true;
+      onParseArray: function (key, value, index, isOuter) {
+        var isEmpty = value.length <= 0;
+        var s = isEmpty ? 'ArrayList<Any>(' : 'listOf(\n';
 
+        if (isEmpty != true) {
+          var inner = '';
+          var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
+          for (var i = 0; i < value.length; i ++) {
+            inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlin(null, value[i], depth + (isOuter ? 1 : 2));
+          }
+          s += inner;
+        }
+
+        s += isEmpty ? ')' : '\n' + (isOuter ? padding : nextPadding) + ')';
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index, isOuter) {
         var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseKotlin  for typeof value === "string" >>  ' );
-
-          v = '"' + value + '"';
+        if (value == null) {
+          v = 'null';
         }
         else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseKotlin  for typeof value === "array" >>  ' );
-
-          v = value.length <= 0 ? 'ArrayList<Any>()' : 'listOf(' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ')';
+          v = this.onParseArray(key, value, index, isOuter);
+        }
+        else if (typeof value == 'string') {
+          v = '"' + value + '"';
         }
         else {
           v = value
         }
 
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '" to ' + v;
+        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + '"' + key + '" to ') + v;
       }
     })
 
