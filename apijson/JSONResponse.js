@@ -154,7 +154,7 @@ var JSONResponse = {
     if (JSONObject.isArrayKey(fullName)) {
       fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
-    return JSONResponse.formatKey(fullName, true, true, true, true);
+    return JSONResponse.formatKey(fullName, true, true, true, true, true, true);
   },
 
   /**格式化数组的名称 key[] => keyList; key:alias[] => aliasList; Table-column[] => tableColumnList
@@ -197,25 +197,31 @@ var JSONResponse = {
   /**格式化名称
    * @param fullName name 或 name:alias
    * @param formatAt 去除前缀 @ ， @a => a
-   * @param formatColon 去除分隔符 : ， A:b => b
+   * @param formatAlias 去除别名分隔符 : ， A:b => AAsB
    * @param formatHyphen 去除分隔符 - ， A-b-cd-Efg => aBCdEfg
    * @param firstCase 第一个单词首字母小写，后面的首字母大写， Ab => ab ; A-b-Cd => aBCd
    * @return name => name; name:alias => alias
    */
-  formatKey(fullName, formatColon, formatAt, formatHyphen, firstCase) {
+  formatKey(fullName, formatAlias, formatAt, formatHyphen, firstCase, formatUnderline, formatFunChar) {
     if (fullName == null) {
       log(TAG, "formatKey  fullName == null >> return null;");
       return null;
     }
 
-    if (formatColon) {
-      fullName = JSONResponse.formatColon(fullName);
+    if (formatAlias) {
+      fullName = JSONResponse.formatAlias(fullName);
     }
     if (formatAt) { //关键词只去掉前缀，不格式化单词，例如 @a-b 返回 a-b ，最后不会调用 setter
       fullName = JSONResponse.formatAt(fullName);
     }
     if (formatHyphen) {
       fullName = JSONResponse.formatHyphen(fullName, firstCase);
+    }
+    if (formatUnderline) {
+      fullName = JSONResponse.formatUnderline(fullName, true);
+    }
+    if (formatFunChar) {
+      fullName = JSONResponse.formatFunChar(fullName, true);
     }
 
     return firstCase ? StringUtil.firstCase(fullName) : fullName; //不格式化普通 key:value (value 不为 [], {}) 的 key
@@ -227,15 +233,15 @@ var JSONResponse = {
    */
   formatAt(key) {
     var k = key.startsWith("@") ? key.substring(1) : key;
-    return k.endsWith("@") ? k.substring(0, k.length - 1) : k;
+    return k; //由 formatFunChar 实现去掉末尾的 @ k.endsWith("@") ? k.substring(0, k.length - 1) : k;
   },
-  /**key:alias => alias
+  /**key:alias => keyAsAlias
    * @param key
    * @return
    */
-  formatColon(key) {
+  formatAlias(key) {
     var index = key.indexOf(":");
-    return index < 0 ? key : key.substring(index + 1);
+    return index < 0 ? key : key.substring(0, index) + 'As' + StringUtil.firstCase(key.substring(index + 1), true);
   },
 
   /**A-b-cd-Efg => ABCdEfg
@@ -262,6 +268,55 @@ var JSONResponse = {
     return name;
   },
 
+  /**A_b_cd_Efg => ABCdEfg
+   * @param key
+   * @return
+   */
+  formatUnderline(key, firstCase) {
+    var first = true;
+    var index;
+
+    var name = "";
+    var part;
+    do {
+      index = key.indexOf("_");
+      part = index < 0 ? key : key.substring(0, index);
+
+      name += firstCase && first == false ? StringUtil.firstCase(part, true) : part;
+      key = key.substring(index + 1);
+
+      first = false;
+    }
+    while (index >= 0);
+
+    return name;
+  },
+
+  /**id{} => idIn; userId@ => userIdAt; ...
+   * @param key
+   * @return
+   */
+  formatFunChar(key) {
+    var name = key.replace(/@/g, 'At');
+    name = name.replace(/{}/g, 'In')
+    name = name.replace(/}{/g, 'Exists')
+    name = name.replace(/\(\)/g, 'Function')
+    name = name.replace(/\[\]/g, 'List')
+    name = name.replace(/\$/g, 'Search')
+    name = name.replace(/~/g, 'Regexp')
+    name = name.replace(/:/g, 'As')
+    name = name.replace(/\+/g, 'Add')
+    name = name.replace(/-/g, 'Remove')
+    name = name.replace(/>=/g, 'Gte')
+    name = name.replace(/<=/g, 'Lte')
+    name = name.replace(/>/g, 'Gt')
+    name = name.replace(/</g, 'Lt')
+    name = name.replace(/&/g, 'And')
+    name = name.replace(/\|/g, 'Or')
+    name = name.replace(/!/g, 'Not')
+    return name;
+  },
+
 
   COMPARE_ERROR: -2,
   COMPARE_NO_STANDARD: -1,
@@ -273,6 +328,7 @@ var JSONResponse = {
   COMPARE_TYPE_CHANGE: 4,
   COMPARE_NUMBER_TYPE_CHANGE: 3,
   COMPARE_CODE_CHANGE: 4,
+  COMPARE_THROW_CHANGE: 4,
 
   /**测试compare: 对比 新的请求与上次请求的结果
    0-相同，无颜色；
@@ -281,27 +337,51 @@ var JSONResponse = {
    3-对象缺少字段/整数变小数，黄色；
    4-code/值类型 改变，红色；
    */
-  compareResponse: function(target, real, folder, isMachineLearning) {
-    if (target == null || target.code == null) {
+  compareResponse: function(target, real, folder, isMachineLearning, codeName,) {
+    codeName = StringUtil.isEmpty(codeName, true) ? 'code' : codeName;
+    var tCode = (target || {})[codeName];
+    var rCode = (real || {})[codeName];
+
+    //解决了弹窗提示机器学习更新标准异常，但导致所有项测试结果都变成状态码 code 改变
+    // if (real == null) {
+    //   return {
+    //     code: JSONResponse.COMPARE_ERROR, //未上传对比标准
+    //     msg: 'response 为 null！',
+    //     path: folder == null ? '' : folder
+    //   };
+    // }
+    if (tCode == null) {
       return {
         code: JSONResponse.COMPARE_NO_STANDARD, //未上传对比标准
         msg: '没有校验标准！',
         path: folder == null ? '' : folder
       };
     }
-    if (real == null || target.code != real.code) {
+    if (rCode != tCode) {
       return {
         code: JSONResponse.COMPARE_CODE_CHANGE,
-        msg: '状态码 code 改变！',
+        msg: '状态码 ' + codeName + ' 改变！',
         path: folder == null ? '' : folder
       };
     }
 
-    var tCode = target.code;
-    var rCode = real.code;
 
-    delete target.code;
-    delete real.code;
+    var tThrw = target.throw;
+    var rThrw = real.throw;
+
+    if (tThrw != rThrw) {
+      return {
+        code: JSONResponse.COMPARE_THROW_CHANGE,
+        msg: '异常 throw 改变！',
+        path: folder == null ? '' : folder
+      };
+    }
+
+    delete target[codeName];
+    delete real[codeName];
+
+    delete target.throw;
+    delete real.throw;
 
     //可能提示语变化，也要提示
     // delete target.msg;
@@ -311,8 +391,11 @@ var JSONResponse = {
       ? JSONResponse.compareWithStandard(target, real, folder)
       : JSONResponse.compareWithBefore(target, real, folder);
 
-    target.code = tCode;
-    real.code = rCode;
+    target[codeName] = tCode;
+    real[codeName] = rCode;
+
+    target.throw = tThrw;
+    real.throw = rThrw;
 
     return result;
   },
@@ -409,7 +492,7 @@ var JSONResponse = {
 
       if (max.code < JSONResponse.COMPARE_KEY_MORE) { //多出key
         for (var k in real) {
-          if (k != null && tks.indexOf(k) < 0) {
+          if (k != null && real[k] != null && target[k] == null) { //解决 null 值总是提示是新增的，且无法纠错 tks.indexOf(k) < 0) {
             max.code = JSONResponse.COMPARE_KEY_MORE;
             max.msg = '是新增的';
             max.path = JSONResponse.getAbstractPath(folder,  k);
@@ -492,9 +575,9 @@ var JSONResponse = {
 
     if (target == null) {
       return {
-        code: JSONResponse.COMPARE_NO_STANDARD,
-        msg: '没有校验标准！',
-        path: folder,
+        code: real == null ? JSONResponse.COMPARE_EQUAL : JSONResponse.COMPARE_KEY_MORE,
+        msg: real == null ? '结果正确' : '是新增的',
+        path: real == null ? '' : folder,
         value: real
       };
     }
@@ -610,13 +693,14 @@ var JSONResponse = {
       }
 
 
+      //不能注释，前面在 JSONResponse.compareWithStandard(values[0][tk], real[tk]  居然没有判断出来 COMPARE_KEY_MORE
       if (max.code < JSONResponse.COMPARE_KEY_MORE) { //多出key
         log('compareWithStandard  max < COMPARE_KEY_MORE >> ');
 
         for (var k in real) {
           log('compareWithStandard  for k = ' + k + ' >> ');
 
-          if (k != null && tks.indexOf(k) < 0) {
+          if (k != null && real[k] != null && (values == null || values[0] == null || values[0][k] == null)) { //解决 null 值总是提示是新增的，且无法纠错 tks.indexOf(k) < 0) {
             log('compareWithStandard  k != null && tks.indexOf(k) < 0 >> max = COMPARE_KEY_MORE;');
 
             max.code = JSONResponse.COMPARE_KEY_MORE;

@@ -85,6 +85,7 @@ var StringUtil = {
   },
 
   /**首字母大写或小写
+   * TODO upper == null 时不处理，false 小写，true 大写
    * @param key
    * @param upper
    * @return
