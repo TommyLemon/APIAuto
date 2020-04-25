@@ -309,27 +309,33 @@ var CodeUtil = {
     if (depth == null || depth < 0) {
       depth = 0;
     }
-    var hasContent = false;
+
+    var isEmpty = true;
+    if (reqObj instanceof Array) {
+      isEmpty = reqObj.length <= 0;
+    }
+    else if (reqObj instanceof Object) {
+      isEmpty = Object.keys(reqObj).length <= 0;
+    }
+
     var padding = CodeUtil.getBlank(depth);
     var nextPadding = CodeUtil.getBlank(depth + 1);
 
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return '[\n';
+        return isEmpty ? '[' : '[\n';
       },
 
       onParseParentEnd: function () {
-        return (hasContent ? '\n' : nextPadding + ':\n') + CodeUtil.getBlank(depth) + ']';
+        return isEmpty ? ':]' : ('\n' + CodeUtil.getBlank(depth) + ']');
       },
 
       onParseChildArray: function (key, value, index) {
-        hasContent = true;
         return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        hasContent = true;
         return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
       },
 
@@ -349,8 +355,6 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index, isOuter) {
-        hasContent = true;
-
         var v; //避免改变原来的value
         if (value == null) {
           v = 'nil';
@@ -379,12 +383,20 @@ var CodeUtil = {
    * @return parseCode
    */
   parseGo: function(name, reqObj, depth) {
-    name = name || '';
     if (depth == null || depth < 0) {
       depth = 0;
     }
-    var hasContent = false;
-    var isEmpty = Object.keys(reqObj).length <= 0;
+
+    var isEmpty = true;
+    if (reqObj instanceof Array) {
+      isEmpty = reqObj.length <= 0;
+    }
+    else if (reqObj instanceof Object) {
+      isEmpty = Object.keys(reqObj).length <= 0;
+    }
+
+    var padding = CodeUtil.getBlank(depth);
+    var nextPadding = CodeUtil.getBlank(depth + 1);
 
     return CodeUtil.parseCode(name, reqObj, {
 
@@ -393,44 +405,54 @@ var CodeUtil = {
       },
 
       onParseParentEnd: function () {
-        return isEmpty ? '}' : ',\n' + CodeUtil.getBlank(depth) + '}';
+        return isEmpty ? '}' : ',\n' + padding + '}';
       },
 
       onParseChildArray: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
       },
 
-      onParseChildOther: function (key, value, index) {
-        hasContent = true;
+      onParseArray: function (key, value, index, isOuter) {
+        var isEmpty = value.length <= 0;
+        var s = '[]interface{} {' + (isEmpty ? '' : '\n');
 
+        var inner = '';
+        var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
+        for (var i = 0; i < value.length; i ++) {
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseGo(null, value[i], depth + (isOuter ? 1 : 2));
+        }
+        s += inner;
+
+        s += isEmpty ? '}' : '\n' + (isOuter ? padding : nextPadding) + '}';
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index, isOuter) {
         var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseGo  for typeof value === "string" >>  ' );
-
-          v = '"' + value + '"';
+        if (value == null) {
+          v = 'nil';
         }
         else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseGo  for typeof value === "array" >>  ' );
-
-          v = '[]interface{} {' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+          v = this.onParseArray(key, value, index, isOuter);
+        }
+        else if (typeof value == 'string') {
+          v = '"' + value + '"';
         }
         else {
           v = value
         }
 
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
+        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + '"' + key + '": ') + v;
       }
     })
 
   },
 
-  /**解析出 生成iOS-Swift请求JSON 的代码
+  /**解析出 生成iOS-Objective-C请求JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
    * @param name
    * @param reqObj
@@ -438,54 +460,7 @@ var CodeUtil = {
    * @return parseCode
    */
   parseObjectiveC: function(name, reqObj, depth) {
-    name = name || '';
-    if (depth == null || depth < 0) {
-      depth = 0;
-    }
-    var hasContent = false;
-
-    return CodeUtil.parseCode(name, reqObj, {
-
-      onParseParentStart: function () {
-        return '[\n';
-      },
-
-      onParseParentEnd: function () {
-        return (hasContent ? '\n' : CodeUtil.getBlank(depth + 1) + ':\n') + CodeUtil.getBlank(depth) + ']';
-      },
-
-      onParseChildArray: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
-      },
-
-      onParseChildObject: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
-      },
-
-      onParseChildOther: function (key, value, index) {
-        hasContent = true;
-
-        var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
-
-          v = '"' + value + '"';
-        }
-        else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
-
-          v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
-        }
-        else {
-          v = value
-        }
-
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + '"' + key + '": ' + v;
-      }
-    })
-
+   return CodeUtil.parseSwift(name, reqObj, depth);
   },
 
 
