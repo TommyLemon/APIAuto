@@ -141,7 +141,7 @@ var CodeUtil = {
         else if (value instanceof Array) {
           log(CodeUtil.TAG, 'parseSwift  for typeof value === "array" >>  ' );
 
-          v = '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+          v = '[' + CodeUtil.getArrayString(value, key, depth, false, CodeUtil.parseSwift) + ']';
         }
         else {
           v = value
@@ -221,14 +221,24 @@ var CodeUtil = {
    * @return parseCode
    */
   parsePHP: function(name, reqObj, depth, isSmart) {
-    name = name || '';
+    if (reqObj == null) {
+      return 'null';
+    }
+
     if (depth == null || depth < 0) {
       depth = 0;
     }
-    var hasContent = false;
-    var isEmpty = Object.keys(reqObj).length <= 0;
+    var isEmpty = true;
+    if (reqObj instanceof Array) {
+      isEmpty = reqObj.length <= 0;
+    }
+    else if (reqObj instanceof Object) {
+      isEmpty = Object.keys(reqObj).length <= 0;
+    }
 
-    var quote = isSmart ? "'" : '"'
+    var padding = CodeUtil.getBlank(depth);
+    var nextPadding = CodeUtil.getBlank(depth + 1);
+    var quote = isSmart ? "'" : '"';
 
     return CodeUtil.parseCode(name, reqObj, {
 
@@ -241,40 +251,52 @@ var CodeUtil = {
 
       onParseParentEnd: function () {
         if (isSmart) {
-          return isEmpty ? ']' : '\n' + CodeUtil.getBlank(depth) + ']';
+          return isEmpty ? ']' : '\n' + padding + ']';
         }
-        return isEmpty ? ')' : '\n' + CodeUtil.getBlank(depth) + ')';
+        return isEmpty ? ')' : '\n' + padding + ')';
       },
 
       onParseChildArray: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + quote + key + quote + ' => ' + CodeUtil.parsePHP(key, value, depth + 1, isSmart);
+        return this.onParseChildObject(key, value, index);
       },
 
       onParseChildObject: function (key, value, index) {
-        hasContent = true;
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + quote + key + quote + ' => ' + CodeUtil.parsePHP(key, value, depth + 1, isSmart);
+        return this.onParseChildOther(key, value, index);
       },
 
-      onParseChildOther: function (key, value, index) {
-        hasContent = true;
+      onParseArray: function (key, value, index, isOuter) {
+        var s = (isSmart ? '[' : 'array(') + (isEmpty ? '' : '\n');
 
+        var inner = '';
+        var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
+        for (var i = 0; i < value.length; i ++) {
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parsePHP(null, value[i], depth + (isOuter ? 1 : 2), isSmart);
+        }
+        s += inner;
+
+        s += isEmpty ? (isSmart ? ']' : ')') : '\n' + (isOuter ? padding : nextPadding) + (isSmart ? ']' : ')');
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index, isOuter) {
         var v; //避免改变原来的value
-        if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parsePHP  for typeof value === "string" >>  ' );
-
-          v = quote + value + quote;
+        if (value == null) {
+          v = 'null';
         }
         else if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parsePHP  for typeof value === "array" >>  ' );
-
-          v = (isSmart ? '[' : 'array(') + CodeUtil.getArrayString(value, '...' + name + '/' + key) + (isSmart ? ']' : ')');
+          v = this.onParseArray(key, value, index, isOuter);
+        }
+        else if (value instanceof Object) {
+          v = CodeUtil.parsePHP(key, value, depth + 1, isSmart);
+        }
+        else if (typeof value == 'string') {
+          log(CodeUtil.TAG, 'parsePHP  for typeof value === "string" >>  ' );
+          v = quote + value + quote;
         }
         else {
           v = value
         }
-
-        return (index > 0 ? ',\n' : '') + CodeUtil.getBlank(depth + 1) + quote + key + quote + ' => ' + v;
+        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + quote + key + quote + ' => ') + v;
       }
     })
 
@@ -620,14 +642,14 @@ var CodeUtil = {
 
         const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {
-          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
-          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
-          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
-          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
-          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
-          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
-          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
-          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getCode4Value(name, key, column, depth, isSmart, CodeUtil.parseJava) + ');';
+          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getCode4Value(name, key, group) + ');';
+          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getCode4Value(name, key, having) + ');';
+          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getCode4Value(name, key, order) + ');';
+          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(name, key, combine) + ');';
+          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(name, key, schema) + ');';
+          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(name, key, database) + ');';
+          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(name, key, role) + ');';
         }
 
         s += '\n\n' + nextPrefix + parentKey + '.put("' + key + '", ' + name + ');';
@@ -640,25 +662,25 @@ var CodeUtil = {
       onParseChildOther: function (key, value, index) {
         if (depth <= 0 && isSmart) {
           if (key == 'tag') {
-            return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == 'version') {
-            return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setVersion(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == 'format') {
-            return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setFormat(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@schema') {
-            return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setSchema(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@database') {
-            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@role') {
-            return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
         }
-        return '\n' + prefix + parentKey + '.put("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
+        return '\n' + prefix + parentKey + '.put("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ');';
       }
     })
 
@@ -769,14 +791,14 @@ var CodeUtil = {
   //
   //      const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
   //      if (isTable) {
-  //        s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
-  //        s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
-  //        s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
-  //        s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
-  //        s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
-  //        s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
-  //        s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
-  //        s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+  //        s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getCode4Value(name, key, column) + ');';
+  //        s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getCode4Value(name, key, group) + ');';
+  //        s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getCode4Value(name, key, having) + ');';
+  //        s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getCode4Value(name, key, order) + ');';
+  //        s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(name, key, combine) + ');';
+  //        s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(name, key, schema) + ');';
+  //        s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(name, key, database) + ');';
+  //        s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(name, key, role) + ');';
   //      }
   //
   //      s += '\n\n' + nextPrefix + parentKey + '.Add("' + key + '", ' + name + ');';
@@ -789,25 +811,25 @@ var CodeUtil = {
   //    onParseChildOther: function (key, value, index) {
   //      if (depth <= 0 && isSmart) {
   //        if (key == 'tag') {
-  //          return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //        if (key == 'version') {
-  //          return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setVersion(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //        if (key == 'format') {
-  //          return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setFormat(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //        if (key == '@schema') {
-  //          return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setSchema(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //        if (key == '@database') {
-  //          return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setDatabase(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //        if (key == '@role') {
-  //          return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //          return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
   //        }
   //      }
-  //      return '\n' + prefix + parentKey + '.Add("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ');';
+  //      return '\n' + prefix + parentKey + '.Add("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ');';
   //    }
   //  })
   //
@@ -822,7 +844,11 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseCpp: function(name, reqObj, depth, isSmart) {
+  parseCpp: function(name, reqObj, depth, isSmart, isArrayItem) {
+    if (reqObj == null) {
+      return 'null';
+    }
+
     name = name || '';
     if (depth == null || depth < 0) {
       depth = 0;
@@ -833,8 +859,8 @@ var CodeUtil = {
     var prefix = CodeUtil.getBlank(depth);
     var nextPrefix = CodeUtil.getBlank(depth + 1);
 
-    return (depth > 0 ? "" : "rapidjson::Document doc;"
-        + "\nrapidjson::Document::AllocatorType& allocator = doc.GetAllocator();\n"
+    return (depth > 0 ? "" : "rapidjson::Document document;"
+        + "\nrapidjson::Document::AllocatorType& allocator = document.GetAllocator();\n"
       ) + CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
@@ -921,61 +947,83 @@ var CodeUtil = {
 
         const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {
-          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getJavaValue(name, key, column) + ');';
-          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getJavaValue(name, key, group) + ');';
-          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getJavaValue(name, key, having) + ');';
-          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getJavaValue(name, key, order) + ');';
-          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getJavaValue(name, key, combine) + ');';
-          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getJavaValue(name, key, schema) + ');';
-          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getJavaValue(name, key, database) + ');';
-          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getJavaValue(name, key, role) + ');';
+          s = column == null ? s : s + '\n' + nextPrefix + name + '.setColumn(' + CodeUtil.getCode4Value(name, key, column) + ');';
+          s = group == null ? s : s + '\n' + nextPrefix + name + '.setGroup(' + CodeUtil.getCode4Value(name, key, group) + ');';
+          s = having == null ? s : s + '\n' + nextPrefix + name + '.setHaving(' + CodeUtil.getCode4Value(name, key, having) + ');';
+          s = order == null ? s : s + '\n' + nextPrefix + name + '.setOrder(' + CodeUtil.getCode4Value(name, key, order) + ');';
+          s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(name, key, combine) + ');';
+          s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(name, key, schema) + ');';
+          s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(name, key, database) + ');';
+          s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(name, key, role) + ');';
         }
 
         s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
-
         s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
-      onParseChildOther: function (key, value, index) {
-        if (value instanceof Array) {
-
+        onParseArray: function (key, value, index, isOuter) {
           var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
           var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
-          s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
-          for (var i = 0; i < value.length; i ++) {
-            s += '\n' + nextPrefix + varName + '.PushBack(' + i + ', allocator);';
+          var itemName = JSONResponse.getVariableName(CodeUtil.getItemKey(JSONObject.isArrayKey(key) ? key : key + '[]')) + (depth <= 0 ? '' : depth + 1);
+
+          if (isArrayItem != true) {
+            s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
           }
 
-          s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + varName + ', allocator);';
-          s += '\n' + prefix + '}   ' + '// ' + varName + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+          var innerPrefix = CodeUtil.getBlank(depth + 2);
+          var inner = '';
+          for (var i = 0; i < value.length; i ++) {
+            if (value[i] instanceof Object == false) {
+              inner += '\n' + nextPrefix + varName + '.PushBack(' + i + ', ' + CodeUtil.getCode4Value(key, null, value[i]) + ', allocator);';
+            }
+            else {
+              inner += '\n\n' + nextPrefix + '{   ' + '// ' + key + '[' + i + '] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+              if (isArrayItem && value[i] instanceof Array) {
+                inner += '\n' + innerPrefix + 'rapidjson::Value ' + itemName + '(rapidjson::kArrayType);';
+              }
+              inner += CodeUtil.getCode4Value(key, itemName, value[i], depth + 1, isSmart, true, CodeUtil.parseCpp);
+              inner += '\n' + innerPrefix + varName + '.PushBack(' + i + ', ' + itemName + ', allocator);';
+              inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+            }
+          }
+          s += inner;
 
+          if (isArrayItem != true) {
+            s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + varName + ', allocator);';
+          }
+          s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
           return s;
+        },
+
+      onParseChildOther: function (key, value, index, isOuter) {
+        if (value instanceof Array) {
+          return this.onParseArray(key, value, index, isOuter);
         }
 
         if (depth <= 0 && isSmart) {
           if (key == 'tag') {
-            return '\n' + parentKey + '.setTag(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setTag(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == 'version') {
-            return '\n' + parentKey + '.setVersion(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setVersion(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == 'format') {
-            return '\n' + parentKey + '.setFormat(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setFormat(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@schema') {
-            return '\n' + parentKey + '.setSchema(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setSchema(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@database') {
-            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setDatabase(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
           if (key == '@role') {
-            return '\n' + parentKey + '.setRole(' + CodeUtil.getJavaValue(name, key, value) + ');';
+            return '\n' + parentKey + '.setRole(' + CodeUtil.getCode4Value(name, key, value) + ');';
           }
         }
-        return '\n' + prefix + parentKey + '.AddMember("' + key + '", ' + CodeUtil.getJavaValue(name, key, value) + ', allocator);';
+        return '\n' + prefix + parentKey + '.AddMember("' + key + '", ' + CodeUtil.getCode4Value(name, key, value) + ', allocator);';
       }
     })
 
@@ -2426,13 +2474,14 @@ var CodeUtil = {
    * @return
    */
   parseCode: function(name, reqObj, callback) {
-    if (reqObj == null || reqObj == '') {
-      log(CodeUtil.TAG, 'parseCode  reqObj == null || reqObj.isEmpty() >> return null;');
-      return null;
-    }
-    if (typeof reqObj != 'object') {
+    // if (reqObj == null || reqObj == '') {
+    //   log(CodeUtil.TAG, 'parseCode  reqObj == null || reqObj.isEmpty() >> return null;');
+    //   return null;
+    // }
+    if (reqObj instanceof Object == false || reqObj instanceof Array) { // Array 居然也被判断成 object ！  typeof reqObj != 'object') {
       log(CodeUtil.TAG, 'parseCode  typeof reqObj != object >> return null;');
-      return null;
+      // return null;
+      return callback.onParseChildOther(name, reqObj, 0, true);
     }
     log(CodeUtil.TAG, '\n\n\n parseCode  name = ' + name + '; reqObj = \n' + format(JSON.stringify(reqObj)));
 
@@ -2444,13 +2493,15 @@ var CodeUtil = {
       log(CodeUtil.TAG, 'parseCode  for  key = ' + key);
       //key == null || value == null 的键值对被视为无效
       value = key == null ? null : reqObj[key];
-      if (value == null) {
-        continue;
-      }
-
+      // if (value == null) {
+      //   continue;
+      // }
       log(CodeUtil.TAG, 'parseCode  for  index = ' + index);
 
-      if (value instanceof Object && (value instanceof Array) == false) {//APIJSON Array转为常规JSONArray
+      if (value instanceof Object == false || value instanceof Array) { //typeof value != 'object') {//APIJSON Array转为常规JSONArray
+        response += callback.onParseChildOther(key, value, index);
+      }
+      else { // 其它Object，直接填充
         log(CodeUtil.TAG, 'parseCode  for typeof value === "object" >>  ' );
 
         if (JSONObject.isArrayKey(key)) { // APIJSON Array转为常规JSONArray
@@ -2464,14 +2515,9 @@ var CodeUtil = {
           response += callback.onParseChildObject(key, value, index);
         }
       }
-      else { // 其它Object，直接填充
-
-        response += callback.onParseChildOther(key, value, index);
-      }
 
       index ++;
     }
-
 
     response += callback.onParseParentEnd();
 
@@ -3669,22 +3715,51 @@ var CodeUtil = {
    * @param value
    * @return {*}
    */
-  getJavaValue: function (name, key, value) {
-    var v; //避免改变原来的value
+  getCode4Value: function (name, key, value, depth, isSmart, isArrayItem, callback) {
+    if (value == null || typeof value == 'boolean' || typeof value == 'number') {
+      log(CodeUtil.TAG, 'getCode4Value  value == null || typeof value == "boolean" || typeof value == "number"  >>  return value;');
+      return value;
+    }
     if (typeof value == 'string') {
-      log(CodeUtil.TAG, 'parseJava  for typeof value === "string" >>  ' );
+      log(CodeUtil.TAG, 'getCode4Value  typeof value === "string"  >>  return " + value + ";' );
+      return '"' + value + '"';
+    }
 
-      v = '"' + value + '"';
-    }
-    else if (value instanceof Array) {
-      log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+    // else if (value instanceof Array) {
+    //   log(CodeUtil.TAG, 'parseJava  for typeof value === "array" >>  ' );
+    //
+    //   language = language || ''
+    //   switch (language) {
+    //     case 'Java':
+    //       return 'new Object[]{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+    //     case 'Swift':
+    //       return '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+    //     case 'Kotlin':
+    //       return '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+    //     case 'Objective-C':
+    //       return 'Object' + length;
+    //     case 'C#':
+    //       return 'new []{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+    //     case 'PHP':
+    //       return '[' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + ']';
+    //     case 'Go':
+    //       return '[]interface{}' + length;
+    //     //以下都不需要解析，直接用左侧的 JSON
+    //     case 'JavaScript':
+    //       return 'object' + length;
+    //     case 'TypeScript':
+    //       return 'object' + length;
+    //     case 'Python':
+    //       return 'any' + length;
+    //   }
+    // }
 
-      v = 'new Object[]{' + CodeUtil.getArrayString(value, '...' + name + '/' + key) + '}';
+    if (callback == null) {
+      return value;
     }
-    else {
-      v = value
-    }
-    return v;
+
+    depth = (depth || 0)
+    return '\n' + CodeUtil.getBlank(depth + 1) + callback(key, value, depth + 1, isSmart, isArrayItem);// + '\n' + CodeUtil.getBlank(depth);
   },
 
   getJavaTypeFromJS: function (key, value, baseFirst) {
@@ -4265,7 +4340,7 @@ var CodeUtil = {
    * @param arr
    * @param path
    */
-  getArrayString: function(arr, path) {
+  getArrayString: function(arr, key, depth, isSmart, callback) {
     if (arr == null || arr.length <= 0) {
       return arr;
     }
@@ -4278,7 +4353,7 @@ var CodeUtil = {
       if (t == 'object' || t == 'array') {
         // TODO 不止为什么parseJavaResponse会调用这个函数，先放过  throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
       }
-      v = (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
+      v = CodeUtil.getCode4Value(key, i, arr[i], depth, isSmart, callback) // (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
       s += (i > 0 ? ', ' : '') + v;
     }
     return s;
