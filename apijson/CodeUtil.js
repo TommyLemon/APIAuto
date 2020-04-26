@@ -658,10 +658,10 @@ var CodeUtil = {
         }
 
         if (value.length > 0) {
+          var itemName = StringUtil.addSuffix(varName, 'Item') + (depth <= 0 ? '' : depth + 1);
+
           var innerPrefix = CodeUtil.getBlank(depth + 2);
           var inner = '';
-
-          var itemName = JSONResponse.getVariableName(CodeUtil.getItemKey(JSONObject.isArrayKey(key) ? key : key + '[]')) + (depth <= 0 ? '' : depth + 1);
 
           for (var i = 0; i < value.length; i++) {
             if (value[i] instanceof Object == false) {
@@ -803,13 +803,14 @@ var CodeUtil = {
           var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
           var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
-          var itemName = JSONResponse.getVariableName(CodeUtil.getItemKey(JSONObject.isArrayKey(key) ? key : key + '[]')) + (depth <= 0 ? '' : depth + 1);
 
           if (isArrayItem != true) {
             s += '\n' + nextPrefix + 'rapidjson::Value ' + varName + '(rapidjson::kArrayType);';
           }
 
           if (value.length > 0) {
+            var itemName = StringUtil.addSuffix(varName, 'Item') + (depth <= 0 ? '' : depth + 1);
+
             var innerPrefix = CodeUtil.getBlank(depth + 2);
             var inner = '';
 
@@ -929,7 +930,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
@@ -1051,7 +1052,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
@@ -1172,7 +1173,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
@@ -1290,7 +1291,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
@@ -1420,7 +1421,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'interface{}' : CodeUtil.getGoTypeFromJS(key, value[0]);
@@ -1538,7 +1539,8 @@ var CodeUtil = {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
 
-        return padding + type + ' ' + varName + ' = ' + name + '["' + key + '"].' + getter + '();'
+        return padding + 'rapidjson::Value& ' + varName + 'Value = ' + name + '["' + key + '"];'
+          + padding + type + ' ' + varName + ' = ' + varName + 'Value.IsNull() ? NULL : ' + varName + 'Value.' + getter + '();'
           + padding + 'std::cout << "' + name + '.' + varName
           + ' = " << ' + varName + (value instanceof Object ? '.GetString()' : '') + ' << std::endl;';
       },
@@ -1547,31 +1549,39 @@ var CodeUtil = {
         value = value || []
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
         var s = '\n' + padding + '{' + blockBlank + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += nextPadding + 'rapidjson::Value::Array ' + k + ' = ' + name + '["' + key + '"].GetArray();';
+        s += nextPadding + 'rapidjson::Value& ' + k + 'Value = ' + name + '["' + key + '"];';
+        s += nextPadding + 'if (' + k + 'Value.IsNull()) {';
+        s += nextNextPadding + k + 'Value.SetArray();';
+        s += nextPadding + '}';
+        s += nextPadding + 'rapidjson::Value::Array ' + k + ' = ' + k + 'Value.GetArray();';
 
         s += '\n' + nextPadding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
 
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         if (isSmart) {
           s += nextPadding + 'int ' + indexName + ' = -1;';
-          s += nextPadding + 'for (rapidjson::Value& ' + itemName + ' : ' + k + ') {';
+          s += nextPadding + 'for (rapidjson::Value& ' + itemName + 'Value : ' + k + ') {';
           s += nextNextPadding + indexName + ' ++;';
         }
         else {
-          s += nextPadding + 'rapidjson::Value& ' + itemName + ' = Value().Move();';
           s += nextPadding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.Size(); ' + indexName + '++) {';
-          s += nextNextPadding + itemName + ' = ' + k + '[' + indexName + '];';
+          s += nextNextPadding + 'rapidjson::Value& ' + itemName + 'Value = ' + k + '[' + indexName + '];';
         }
 
-        s += nextNextPadding + 'if (' + itemName + '.IsNull()) {';
+        s += nextNextPadding + 'if (' + itemName + 'Value.IsNull()) {';
         s += nextNextPadding + tab + 'continue;';
         s += nextNextPadding + '}';
+
+        var itemType = CodeUtil.getCppTypeFromJS(key, value[0], true);
+        var itemGetter = CodeUtil.getCppGetterFromJS(key, value[0], true);
+        s += nextNextPadding + itemType + ' ' + itemName + ' = ' + itemName + 'Value.' + itemGetter + '();';
+
         s += nextNextPadding + '// std::cout << "\\n' + itemName + ' = ' + k + '[" << ' + indexName + ' << "] = \\n" << '
           + itemName + (value instanceof Object ? '.GetString()' : '') + ' << "\\n\\n"' + ' << std::endl;';
         s += nextNextPadding + '// TODO 你的代码\n';
@@ -1593,7 +1603,11 @@ var CodeUtil = {
 
         var s = '\n' + padding + '{' + blockBlank + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
-        s += nextPadding + 'rapidjson::Value::Object ' + k + ' = ' + name + '["' + key + '"].GetObject();\n'
+        s += nextPadding + 'rapidjson::Value& ' + k + 'Value = ' + name + '["' + key + '"];'
+        s += nextPadding + 'if (' + k + 'Value.IsNull()) {';
+        s += nextNextPadding + k + 'Value.SetObject();';
+        s += nextPadding + '}';
+        s += nextPadding + 'rapidjson::Value::Object ' + k + ' = ' + k + 'Value.GetObject();\n';
 
         s += CodeUtil.parseCppResponse(k, value, depth + 1, isSmart);
 
@@ -1671,7 +1685,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key, 'array');
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value[0]);
@@ -1793,7 +1807,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = value[0] == null ? 'any' : (typeof (value[0]));
@@ -1904,7 +1918,7 @@ var CodeUtil = {
           return this.onParseJSONObject(key, value, index);
         }
 
-        var type = CodeUtil.getJavaTypeFromJS(key, value, true);
+        var type = CodeUtil.getJavaTypeFromJS(key, value, false, true);
         if (type == 'Object') {
           type = 'Any';
         }
@@ -1925,10 +1939,10 @@ var CodeUtil = {
 
         var vn = JSONResponse.getVariableName(key);
         var k = vn + (depth <= 0 ? '' : depth);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
-        var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
+        var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], true, false);
         if (type == 'Object') {
           type = 'Any';
         }
@@ -2070,7 +2084,7 @@ var CodeUtil = {
           return this.onParseJSONObject(key, value, index);
         }
 
-        var type = CodeUtil.getJavaTypeFromJS(key, value, true);
+        var type = CodeUtil.getJavaTypeFromJS(key, value, false, true);
         var varName = JSONResponse.getVariableName(key);
 
         if (isSmart && isTable) { // JSONObject.isTableKey(name)) {
@@ -2088,10 +2102,8 @@ var CodeUtil = {
 
         var vn = JSONResponse.getVariableName(key);
         var k = vn + (depth <= 0 ? '' : depth);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
-
-        var type = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
 
         var s = '\n' + padding + '{' + blockBlank + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
@@ -2101,8 +2113,10 @@ var CodeUtil = {
         }
 
         var isTableKey = JSONObject.isTableKey(t);
+
+        var itemType = CodeUtil.getJavaTypeFromJS(itemName, value[0], false);
         if (isTable && isSmart) {
-          s += nextPadding + 'List<' + (isTableKey ? t : type) + '> ' + k + ' = ' + name + '.get' + StringUtil.firstCase(vn, true) + '();'
+          s += nextPadding + 'List<' + (isTableKey ? t : itemType) + '> ' + k + ' = ' + name + '.get' + StringUtil.firstCase(vn, true) + '();'
         }
         else if (isTableKey && isSmart) {
           s += nextPadding + 'List<' + t + '> ' + k + ' = JSON.parseArray(' + name + '.getString("' + key + '"), ' + t + '.class);';
@@ -2114,12 +2128,11 @@ var CodeUtil = {
         s += nextNextPadding + k + ' = new ' + ((isTable || isTableKey) && isSmart ? 'ArrayList<>' : 'JSONArray') + '();';
         s += nextPadding + '}\n';
 
-        s += nextPadding + (isTableKey && isSmart ? t : type) + ' ' + itemName + ';';
-
         var indexName = 'i' + (depth <= 0 ? '' : depth);
         s += nextPadding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + ' ++) {';
 
-        s += nextNextPadding + itemName + ' = ' + k + '.get' + (((isTable || isTableKey) && isSmart) || type == 'Object' ? '' : type) + '(' + indexName + ');';
+        s += nextNextPadding + (isTableKey && isSmart ? t : itemType) + ' ' + itemName
+          + ' = ' + k + '.get' + (((isTable || isTableKey) && isSmart) || itemType == 'Object' ? '' : itemType) + '(' + indexName + ');';
         s += nextNextPadding + 'if (' + itemName + ' == null) {';
         s += nextNextPadding + tab + 'continue;';
         s += nextNextPadding + '}';
@@ -2235,7 +2248,7 @@ var CodeUtil = {
         var innerPadding2 = '\n' + CodeUtil.getBlank(depth + 2);
 
         var k = JSONResponse.getVariableName(key) + (depth <= 0 ? '' : depth);
-        var itemName = 'item' + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
 
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
         var type = CodeUtil.getCSharpTypeFromJS('item', value[0]);
@@ -2522,8 +2535,11 @@ var CodeUtil = {
         doc += '/**'
           + '\n *APIAuto 自动生成 C++ Struct\n *主页: https://github.com/TommyLemon/APIAuto'
           + '\n *使用方法：\n *1.修改包名 namespace \n *2.#include 需要引入的类，可使用快捷键 Ctrl+Shift+O '
-          + '\n */'
-          + '\n\n#include <string>'
+          + '\n */\n'
+          + '\n#include <string>'
+          + '\n#include <map>'
+          + '\n#include <array>'
+          + '\n#include <vector>'
           + '\n#include <time.h>'
           + '\n\n\nusing namespace rapidjson;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
@@ -2590,7 +2606,7 @@ var CodeUtil = {
           doc += constructor + constructorWithArgs + fields;
         }
 
-        doc += '\n\n}';
+        doc += '\n\n};';
 
       }
     }
@@ -3649,7 +3665,7 @@ var CodeUtil = {
     return '\n' + CodeUtil.getBlank(depth + 1) + callback(key, value, depth + 1, isSmart, isArrayItem);// + '\n' + CodeUtil.getBlank(depth);
   },
 
-  getJavaTypeFromJS: function (key, value, baseFirst) {
+  getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst) {
     if (typeof value == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
@@ -3657,7 +3673,7 @@ var CodeUtil = {
       if (String(value).indexOf(".") >= 0) {
         return baseFirst ? 'double' : 'Double';
       }
-      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint')) {
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
         return baseFirst ? 'long' : 'Long';
       }
       return baseFirst ? 'int' : 'Integer';
@@ -3725,13 +3741,16 @@ var CodeUtil = {
   },
 
 
-  getCppTypeFromJS: function (key, value) {
+  getCppTypeFromJS: function (key, value, isArrayItem) {
     if (typeof value == 'boolean') {
       return 'bool';
     }
     if (typeof value == 'number') {
       if (String(value).indexOf(".") >= 0) {
         return 'double';
+      }
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
+        return 'long'
       }
       return 'int';
     }
@@ -3748,7 +3767,7 @@ var CodeUtil = {
     return 'rapidjson::Value&';
   },
 
-  getCppGetterFromJS: function (key, value) {
+  getCppGetterFromJS: function (key, value, isArrayItem) {
     if (typeof value == 'boolean') {
       return 'GetBool';
     }
@@ -3756,7 +3775,7 @@ var CodeUtil = {
       if (String(value).indexOf(".") >= 0) {
         return 'GetDouble';
       }
-      return value > Number.MAX_SAFE_INTEGER ? 'GetInt64' : 'GetInt';
+      return Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem) ? 'GetInt64' : 'GetInt';
     }
     if (typeof value == 'string') {
       return 'GetString';
@@ -4255,13 +4274,74 @@ var CodeUtil = {
    * @param column
    * @return {boolean}
    */
-  isId: function (column, type) {
+  isId: function (column, type, isArrayItem) {
     if (column == null || type == null || type.indexOf('int') < 0) {
       return false;
     }
+
+    if (isArrayItem) {
+      // if (column.endsWith('[]')) {
+      //   column = column.substring(0, column.length - '[]'.length);
+      // }
+      //
+      // if (column.endsWith('Item')) {
+      //   column = column.substring(0, column.length - 'Item'.length);
+      // }
+      // else if (column.endsWith('Element')) {
+      //   column = column.substring(0, column.length - 'Element'.length);
+      // }
+      //
+      // if (column.endsWith('List')) {
+      //   column = column.substring(0, column.length - 'List'.length);
+      // }
+      // else if (column.endsWith('Array')) {
+      //   column = column.substring(0, column.length - 'Array'.length);
+      // }
+      // else if (column.endsWith('Vector')) {
+      //   column = column.substring(0, column.length - 'Vector'.length);
+      // }
+      // else if (column.endsWith('Set')) {
+      //   column = column.substring(0, column.length - 'Set'.length);
+      // }
+      // else if (column.endsWith('Collection')) {
+      //   column = column.substring(0, column.length - 'Collection'.length);
+      // }
+      // else if (column.endsWith('Arr')) {
+      //   column = column.substring(0, column.length - 'Arr'.length);
+      // }
+      // else if (column.endsWith('s')) {
+      //   column = column.substring(0, column.length - 's'.length);
+      // }
+
+      while (true) {
+        var index = column == null || column.length < 2 ? -1 : column.lastIndexOf('d');
+        if (index <= 0) {
+          break;
+        }
+
+        var prefix = column.substring(index <= 2 ? 0 : index - 2, index);
+
+        if (prefix.endsWith('I') || (prefix.endsWith('i') && /[A-Za-z]/.test(prefix.length < 2 ? '' : prefix.substring(0, 1)) == false)) {
+
+          var suffix = column.length <= index + 1 ? '' : column.substring(index + 1, index + 3);
+          var after = suffix.length < 1 ? '' : suffix.substring(0, 1);
+
+          // id%, %_id, %Id%, %ids%, %_ids%, %Ids%
+          if (/[a-z]/.test(after) == false || (after == 's' && /[a-z]/.test(suffix.length < 2 ? '' : suffix.substring(1, 2)) == false)) {
+            return true;
+          }
+        }
+
+        column = index < 2 ? null : column.substring(0, index - 2);
+      }
+
+      return false;
+    }
+
     if (column.endsWith('Id')) { // lowerCamelCase
       return true;
     }
+
     var index = column.lastIndexOf('_'); // snake_case
     var id = index < 0 ? column : column.substring(index + 1);
     return id.toLowerCase() == 'id';

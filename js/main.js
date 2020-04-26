@@ -574,7 +574,7 @@
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
-      language: CodeUtil.LANGUAGE_KOTLIN,
+      language: CodeUtil.LANGUAGE_C_PLUS_PLUS,
       header: {},
       page: 0,
       count: 100,
