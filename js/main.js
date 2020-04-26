@@ -574,7 +574,7 @@
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
-      language: 'Kotlin',
+      language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
       count: 100,
@@ -870,41 +870,41 @@
             else if (App.view == 'markdown' || App.view == 'output') {
               var suffix
               switch (App.language) {
-                case 'Java':
-                  suffix = '.java';
-                  break;
-                case 'Swift':
-                  suffix = '.swift';
-                  break;
-                case 'Kotlin':
+                case CodeUtil.LANGUAGE_KOTLIN:
                   suffix = '.kt';
                   break;
-                case 'Objective-C':
-                  suffix = '.h';
+                case CodeUtil.LANGUAGE_JAVA:
+                  suffix = '.java';
                   break;
-                case 'C#':
+                case CodeUtil.LANGUAGE_C_SHARP:
                   suffix = '.cs';
                   break;
-                case 'PHP':
-                  suffix = '.php';
+
+                case CodeUtil.LANGUAGE_SWIFT:
+                  suffix = '.swift';
                   break;
-                case 'Go':
+                case CodeUtil.LANGUAGE_OBJECTIVE_C:
+                  suffix = '.h';
+                  break;
+
+                case CodeUtil.LANGUAGE_GO:
                   suffix = '.go';
                   break;
-                case 'C++':
+                case CodeUtil.LANGUAGE_C_PLUS_PLUS:
                   suffix = '.cpp';
                   break;
-                case 'C++':
-                  suffix = '.cpp';
-                  break;
-                //以下都不需要解析，直接用左侧的 JSON
-                case 'JavaScript':
-                  suffix = '.js';
-                  break;
-                case 'TypeScript':
+
+                case CodeUtil.LANGUAGE_TYPE_SCRIPT:
                   suffix = '.ts';
                   break;
-                case 'Python':
+                case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+                  suffix = '.js';
+                  break;
+
+                case CodeUtil.LANGUAGE_PHP:
+                  suffix = '.php';
+                  break;
+                case CodeUtil.LANGUAGE_PYTHON:
                   suffix = '.py';
                   break;
                 default:
@@ -1254,37 +1254,41 @@
 
             var s = ''
             switch (App.language) {
-              case 'Java':
-                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
-                break;
-              case 'Swift':
-                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
-                break;
-              case 'Kotlin':
+              case CodeUtil.LANGUAGE_KOTLIN:
                 s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle)
                 break;
-              case 'Objective-C':
-                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+              case CodeUtil.LANGUAGE_JAVA:
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
                 break;
-              case 'C#':
+              case CodeUtil.LANGUAGE_C_SHARP:
                 s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', res, 0)
                 break;
-              case 'PHP':
-                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+
+              case CodeUtil.LANGUAGE_SWIFT:
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
-              case 'Go':
+              case CodeUtil.LANGUAGE_OBJECTIVE_C:
+                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+                break;
+
+              case CodeUtil.LANGUAGE_GO:
                 s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
                 break;
-              case 'C++':
+              case CodeUtil.LANGUAGE_C_PLUS_PLUS:
                 s += '(C++):\n\n' + CodeUtil.parseCppResponse('', res, 0, isSingle)
                 break;
-              case 'JavaScript':
-                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
-                break;
-              case 'TypeScript':
+
+              case CodeUtil.LANGUAGE_TYPE_SCRIPT:
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
                 break;
-              case 'Python':
+              case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
+                break;
+
+              case CodeUtil.LANGUAGE_PHP:
+                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+                break;
+              case CodeUtil.LANGUAGE_PYTHON:
                 s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0, isSingle)
                 break;
               default:
@@ -2924,57 +2928,61 @@
       getCode: function (rq) {
         var s = '\n\n\n### 请求代码(自动生成) \n';
         switch (App.language) {
-          case 'Java':
-            s += '\n#### <= Android-Java: 同名变量需要重命名'
-              + ' \n ```java \n'
-              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
-            break;
-          case 'Swift':
-            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
-              + '\n ```swift \n'
-              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
-            break;
-          case 'Kotlin':
+          case CodeUtil.LANGUAGE_KOTLIN:
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
               + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
-          case 'Objective-C':
-            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
-              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
-              + '\n ```  \n';
+          case CodeUtil.LANGUAGE_JAVA:
+            s += '\n#### <= Android-Java: 同名变量需要重命名'
+              + ' \n ```java \n'
+              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
+              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
             break;
-          case 'C#':
+          case CodeUtil.LANGUAGE_C_SHARP:
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
               '\n ```csharp \n'
               + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
-          case 'PHP':
-            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
-              + ' \n ```php \n'
-              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
-              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
+
+          case CodeUtil.LANGUAGE_SWIFT:
+            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
+              + '\n ```swift \n'
+              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
             break;
-          case 'Go':
+          case CodeUtil.LANGUAGE_OBJECTIVE_C:
+            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
+              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
+
+          case CodeUtil.LANGUAGE_GO:
             s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
               + CodeUtil.parseGo(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
-          case 'C++':
+          case CodeUtil.LANGUAGE_C_PLUS_PLUS:
             s += '\n#### <= Web-C++: 使用 RapidJSON'
               + ' \n ```cpp \n'
               + StringUtil.trim(CodeUtil.parseCpp(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：std::string 类型值需要判断 RAPIDJSON_HAS_STDSTRING\n';
             break;
+
+          case CodeUtil.LANGUAGE_PHP:
+            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
+              + ' \n ```php \n'
+              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
+              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
+            break;
+
           //以下都不需要解析，直接用左侧的 JSON
-          case 'JavaScript':
-          case 'TypeScript':
-          case 'Python':
+          case CodeUtil.LANGUAGE_TYPE_SCRIPT:
+          case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+          case CodeUtil.LANGUAGE_PYTHON:
             break;
           default:
             s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
