@@ -4215,7 +4215,7 @@ var CodeUtil = {
       case CodeUtil.LANGUAGE_GO:
         return '[]string';
       case CodeUtil.LANGUAGE_C_PLUS_PLUS:
-        return 'vector';
+        return 'vector<string>';
 
       case CodeUtil.LANGUAGE_JAVA_SCRIPT:
         return 'string[]';
