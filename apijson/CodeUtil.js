@@ -2541,7 +2541,7 @@ var CodeUtil = {
           + '\n#include <array>'
           + '\n#include <vector>'
           + '\n#include <time.h>'
-          + '\n\n\nusing namespace rapidjson;\n\n\n'
+          + '\n\n\nusing namespace std;\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\nstruct ' + model + ' {';
 
@@ -4183,7 +4183,7 @@ var CodeUtil = {
       case CodeUtil.LANGUAGE_GO:
         return 'map[string]interface{}';
       case CodeUtil.LANGUAGE_C_PLUS_PLUS:
-        return 'map<string, int>';
+        return 'map<string, string>';
 
       case CodeUtil.LANGUAGE_JAVA_SCRIPT:
       case CodeUtil.LANGUAGE_TYPE_SCRIPT:
