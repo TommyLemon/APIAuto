@@ -134,6 +134,10 @@ var StringUtil = {
     }
 
     return s.split(separator)
+  },
+
+  isNumber: function (s) {
+    return typeof s == 'string' && /^[0-9]+$/.test(s);
   }
 
 }

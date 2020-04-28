@@ -414,19 +414,23 @@
     }
     return json
   }
-  function orderInt(index, min, max) {
+  function orderInt(desc, index, min, max) {
     if (min == null) {
       min = Number.MIN_SAFE_INTEGER
     }
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
     }
+
+    if (desc) {
+      return max - index%(max - min + 1)
+    }
     return min + index%(max - min + 1)
   }
-  function orderIn(index, ...args) {
+  function orderIn(desc, index, ...args) {
     // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
     index = index || 0;
-    return args == null || args.length <= index ? null : args[index];
+    return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
   }
 
   function getOrderIndex(randomId, lineKey, argCount) {
@@ -3777,30 +3781,31 @@
           // value RANDOM_REAL
           value = line.substring(index + ' : '.length);
 
-          if (value == RANDOM_REAL) {
-            value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
-            if (customizeKey != true) {
-              key += '@';
-            }
-          }
-          else if (value == RANDOM_REAL_IN) {
-            value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", null)';
-            if (customizeKey != true) {
-              key += '{}@';
-            }
-          }
-          else if (value == ORDER_REAL) {
-            value = 'orderReal(' +
-              getOrderIndex(
-                randomId
-                , line.substring(0, line.indexOf(' : '))
-                , 0
-              ) + ', JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '")';
-            if (customizeKey != true) {
-              key += '@';
-            }
-          }
-          else {
+          //FIXME 调接口从数据库查！
+          // if (value == RANDOM_REAL) {
+          //   value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
+          //   if (customizeKey != true) {
+          //     key += '@';
+          //   }
+          // }
+          // else if (value == RANDOM_REAL_IN) {
+          //   value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", null)';
+          //   if (customizeKey != true) {
+          //     key += '{}@';
+          //   }
+          // }
+          // else if (value == ORDER_REAL) {
+          //   value = 'orderReal(' +
+          //     getOrderIndex(
+          //       randomId
+          //       , line.substring(0, line.indexOf(' : '))
+          //       , 0
+          //     ) + ', JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '")';
+          //   if (customizeKey != true) {
+          //     key += '@';
+          //   }
+          // }
+          // else {
             var start = value.indexOf('(');
             var end = value.lastIndexOf(')');
 
@@ -3810,27 +3815,58 @@
             // }
 
             if (start > 0 && end > start) {
-              var fun = value.substring(0, start);
-              if (fun == RANDOM_INT) {
-                value = 'randomInt' + value.substring(start);
+
+              var funWithOrder = value.substring(0, start);
+              var splitIndex = funWithOrder.indexOf('+');
+
+              var isDesc = false;
+              if (splitIndex < 0) {  // -(1+2) 这种是表达式，不能作为函数   splitIndex <= 0) {
+                splitIndex = funWithOrder.indexOf('-');
+                isDesc = splitIndex > 0;
               }
-              else if (fun == RANDOM_NUM) {
-                value = 'randomNum' + value.substring(start);
-              }
-              else if (fun == RANDOM_STR) {
-                value = 'randomStr' + value.substring(start);
-              }
-              else if (fun == RANDOM_IN) {
-                value = 'randomIn' + value.substring(start);
-              }
-              else if (fun == ORDER_INT || fun == ORDER_IN) {
-                value = (fun == ORDER_INT ? 'orderInt' : 'orderIn') + '(' + getOrderIndex(
+
+              var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
+
+              if ([ORDER_INT, ORDER_IN, ORDER_REAL].indexOf(fun) >= 0) {  //顺序函数
+                var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
+                var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
+
+                if (Number.isSafeInteger(step) != true || step <= 0
+                  || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
+                ) {
+                  throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                    + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
+                    + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
+                    + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
+                    + '\n  ODER_IN+step(start, end)\n  ODER_IN-step(start, end)'
+                    + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
+                    + '\n+，-，step 前后都不能有空格等其它字符！');
+                }
+
+                value = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : 'orderReal'))
+                  + '(' + isDesc + ', ' + step*getOrderIndex(
                     randomId
                     , line.substring(0, line.indexOf(' : '))
                     , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
                   ) + ',' + value.substring(start + 1);
               }
-            }
+              else {  //随机函数
+                fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
+
+                if (fun == RANDOM_INT) {
+                  value = 'randomInt' + value.substring(start);
+                }
+                else if (fun == RANDOM_NUM) {
+                  value = 'randomNum' + value.substring(start);
+                }
+                else if (fun == RANDOM_STR) {
+                  value = 'randomStr' + value.substring(start);
+                }
+                else if (fun == RANDOM_IN) {
+                  value = 'randomIn' + value.substring(start);
+                }
+              }
+            // }
 
           }
 
@@ -3883,7 +3919,7 @@
                 }
                 if (parent instanceof Object == false) {
                   throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
-                    ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} !');
+                    ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
                 }
                 parent = current;
               }
