@@ -349,16 +349,15 @@
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
 
-  var RANDOM_REAL = 'RANDOM_REAL'
-  var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
+  var RANDOM_DB = 'RANDOM_DB'
+  var RANDOM_IN = 'RANDOM_IN'
   var RANDOM_INT = 'RANDOM_INT'
   var RANDOM_NUM = 'RANDOM_NUM'
   var RANDOM_STR = 'RANDOM_STR'
-  var RANDOM_IN = 'RANDOM_IN'
 
-  var ORDER_REAL = 'ORDER_REAL'
-  var ORDER_INT = 'ORDER_INT'
+  var ORDER_DB = 'ORDER_DB'
   var ORDER_IN = 'ORDER_IN'
+  var ORDER_INT = 'ORDER_INT'
 
   var ORDER_MAP = {}
 
@@ -402,7 +401,7 @@
   }
 
   //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
-  function orderReal(index, table, key, order) {
+  function orderDb(index, table, key, order) {
     var json = {
       count: 1,
       page: index,
@@ -2942,7 +2941,7 @@
             s += '\n#### <= Android-Java: 同名变量需要重命名'
               + ' \n ```java \n'
               + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
+              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 的 JSONObject(true) 等有序JSON构造方法\n');
             break;
           case CodeUtil.LANGUAGE_C_SHARP:
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
@@ -3766,23 +3765,23 @@
 
           pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
-              '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  //注释\n的格式！其中 replaceKey 可省略。');
           }
 
           var lastKeyInPath = pathKeys[pathKeys.length - 1]
           customizeKey = bi > 0;
           key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || key.trim().length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + key + ' 不是合法的 JSON key!' +
-              '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  // 注释\n的格式！其中 replaceKey 可省略。');
           }
 
-          // value RANDOM_REAL
+          // value RANDOM_DB
           value = line.substring(index + ' : '.length);
 
           //FIXME 调接口从数据库查！
-          // if (value == RANDOM_REAL) {
+          // if (value == RANDOM_DB) {
           //   value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
           //   if (customizeKey != true) {
           //     key += '@';
@@ -3794,8 +3793,8 @@
           //     key += '{}@';
           //   }
           // }
-          // else if (value == ORDER_REAL) {
-          //   value = 'orderReal(' +
+          // else if (value == ORDER_DB) {
+          //   value = 'orderDb(' +
           //     getOrderIndex(
           //       randomId
           //       , line.substring(0, line.indexOf(' : '))
@@ -3827,7 +3826,7 @@
 
               var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
 
-              if ([ORDER_INT, ORDER_IN, ORDER_REAL].indexOf(fun) >= 0) {  //顺序函数
+              if ([ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
                 var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
                 var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
 
@@ -3843,7 +3842,7 @@
                     + '\n+，-，step 前后都不能有空格等其它字符！');
                 }
 
-                value = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : 'orderReal'))
+                value = (fun == ORDER_DB ? 'orderDb' : (fun == ORDER_IN ? 'orderIn' : 'orderInt'))
                   + '(' + isDesc + ', ' + step*getOrderIndex(
                     randomId
                     , line.substring(0, line.indexOf(' : '))

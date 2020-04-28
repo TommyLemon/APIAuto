@@ -312,27 +312,27 @@
 
                         <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
                                   placeholder="常用：
-RANDOM_REAL  // @ 从数据库随机取值
-RANDOM_REAL_IN  // {}@ 从数据库随机取值
-RANDOM_INT(min:Integer, max:Integer)  //从范围内随机取整数
-RANDOM_NUM(min:Number, max:Number, precision:Integer)  //从范围内随机取小数
-RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  //从长度范围内随机取字符串
-RANDOM_IN(val0:Any, val1:Any ...)  //从选项内随机取值
-ORDER_REAL  // @ 从数据库顺序取值
-ORDER_INT(min:Integer, max:Integer)  //从范围内顺序取整数
-ORDER_IN(val0:Any, val1:Any ...)  //从选项内顺序取值
+RANDOM_DB()  // 从数据库随机取值
+RANDOM_IN(val0:Any, val1:Any ...)  // 从选项内随机取值
+RANDOM_INT(min:Integer, max:Integer)  // 从范围内随机取整数
+RANDOM_NUM(min:Number, max:Number, precision:Integer)  // 从范围内随机取小数
+RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  // 从长度范围内随机取字符串
+ORDER_DB()  // 从数据库顺序取值
+ORDER_IN(val0:Any, val1:Any ...)  // 从选项内顺序取值
+ORDER_INT(min:Integer, max:Integer)  // 从范围内顺序取整数
+其中 RANDOM 开头的是随机函数；ORDER 开头的是顺序函数，可以使用 + - 升降序 和 step 跨步，例如 ORDER_IN-(1, 2, 3) 降序取值，ORDER_INT+3(0, 100) 间隔 step = 3 位来升序取整数。
 模板：
-User/id : RANDOM_REAL  //从数据库随机取值
-User/id id> : RANDOM_INT(0,100000)  //用 id> 替换 id
-User/id : Math.round(100000*Math.random())  //完全自定义
+format : ORDER_IN(true, false, null, undefined)  // 从选项中顺序取值
+User/id id> : RANDOM_DB()  // 用 id> 替换 User 内的 id，从数据库随机取值
+[]/page : Math.round(100*Math.random())  // 通过 JavaScript 代码来自定义 [] 内的 page
 ">
-User/id : RANDOM_INT(82001,82020)  //随机整数
-[]/count : RANDOM_IN(3,5,10,20,'1','s',false,[],{})  //随机取值
-[]/page : Math.round(5*Math.random())  //通过代码来自定义
-@explain : ORDER_IN(true,false)  //顺序取值
-//  []/Comment/toId : RANDOM_REAL  //从数据库随机取值，替换 User/id 键值对
+User/id : RANDOM_INT(82001, 82020)  // 随机整数
+[]/count : RANDOM_IN(5, 10, 's', false, [], {})  // 随机取值
+[]/page : Math.round(5*Math.random())  // 通过代码来自定义
+@explain : ORDER_IN(true, false)  // 顺序取值
+//  []/Comment/toId : RANDOM_DB()  // 从数据库随机取值
 
-//清空文本内容可查看规则</textarea>
+//  注释可省略；清空文本内容可查看规则。</textarea>
                     </div>
 
 
