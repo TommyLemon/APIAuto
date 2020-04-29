@@ -361,18 +361,6 @@
 
   var ORDER_MAP = {}
 
-  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
-  function randomReal(table, key, count) {
-    var json = {
-      count: count,
-      from: table
-    }
-    json[table] = {
-      '@column': key,
-      '@order': 'random()'
-    }
-    return json
-  }
   function randomInt(min, max) {
     return randomNum(min, max, 0);
   }
@@ -400,19 +388,6 @@
     return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)];
   }
 
-  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
-  function orderDb(index, table, key, order) {
-    var json = {
-      count: 1,
-      page: index,
-      from: table
-    }
-    json[table] = {
-      '@column': key,
-      '@order': order || (key + '+')
-    }
-    return json
-  }
   function orderInt(desc, index, min, max) {
     if (min == null) {
       min = Number.MIN_SAFE_INTEGER
@@ -3593,74 +3568,82 @@
         subs = existCount <= 0 ? subs : JSON.parse(JSON.stringify(subs))
 
         var count = random.count || 0
+        var respCount = 0;
 
         for (var i = 0; i < count; i ++) {
           // var constConfig = i < existCount ? ((subs[i] || {}).Random || {}).config : this.getRandomConstConfig(random.config, random.id) //第1遍，把 key : expression 改为 key : value
           // var constJson = this.getRandomJSON(JSON.parse(JSON.stringify(json)), constConfig, random.id) //第2遍，用新的 random config 来修改原 json
 
+          const which = i;
           var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Random || {}).config : random.config
-          var result = this.parseRandom(
+          this.parseRandom(
             JSON.parse(JSON.stringify(json)), rawConfig, random.id
             , ! testSubList, testSubList && i >= existCount, testSubList && i >= existCount
-          )
+            , function (randomName, constConfig, constJson) {
 
-          if (testSubList) {  //在原来已上传的基础上，生成新的
-            if (i >= existCount) {
-              subs.push({
-                Random: {
-                  id: -i - 1, //表示未上传
-                  toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
-                  userId: random.userId,
-                  documentId: random.documentId,
-                  count: 1,
-                  name: result.name || 'Temp ' + i,
-                  config: result.config
-                },
-                //不再需要，因为子项里前面一部分就是已上传的，而且这样更准确，交互更直观
-                // TestRecord: {  //解决子项始终没有对比标准
-                //   id: 0, //不允许子项撤回 tr.id, //表示未上传
-                //   userId: random.userId,
-                //   documentId: random.documentId,
-                //   testAccountId: tr.testAccountId,
-                //   randomId: -i - 1,
-                //   response: tr.response,
-                //   standard: tr.standard,
-                //   date: tr.date,
-                //   compare: tr.compare
-                // }
-              })
-            }
-          }
-          else {
-            var cb = function (url, res, err) {
-              if (callback != null) {
-                callback(url, res, err, random)
+              respCount ++;
+
+              if (testSubList) {  //在原来已上传的基础上，生成新的
+                if (which >= existCount) {
+                  subs.push({
+                    Random: {
+                      id: -i - 1, //表示未上传
+                      toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
+                      userId: random.userId,
+                      documentId: random.documentId,
+                      count: 1,
+                      name: randomName || 'Temp ' + i,
+                      config: constConfig
+                    },
+                    //不再需要，因为子项里前面一部分就是已上传的，而且这样更准确，交互更直观
+                    // TestRecord: {  //解决子项始终没有对比标准
+                    //   id: 0, //不允许子项撤回 tr.id, //表示未上传
+                    //   userId: random.userId,
+                    //   documentId: random.documentId,
+                    //   testAccountId: tr.testAccountId,
+                    //   randomId: -i - 1,
+                    //   response: tr.response,
+                    //   standard: tr.standard,
+                    //   date: tr.date,
+                    //   compare: tr.compare
+                    // }
+                  })
+                }
               }
               else {
-                App.onResponse(url, res, err)
+                var cb = function (url, res, err) {
+                  if (callback != null) {
+                    callback(url, res, err, random)
+                  }
+                  else {
+                    App.onResponse(url, res, err)
+                  }
+                };
+
+                if (show == true) {
+                  vInput.value = JSON.stringify(constJson, null, '    ');
+                  App.send(false, cb);
+                }
+                else {
+                  App.request(false, type, url, constJson, header, cb);
+                }
               }
-            };
 
-            var constJson = result.json
-            if (show == true) {
-              vInput.value = JSON.stringify(constJson, null, '    ');
-              this.send(false, cb);
-            }
-            else {
-              this.request(false, type, url, constJson, header, cb);
-            }
-          }
-        }
+              if (testSubList && which >= count - 1 && respCount >= count) {
+                App.randomSubs = subs
+                if (this.isRandomListShow == true) {
+                  App.resetCount(item)
+                  item.subs = subs
+                }
+                App.testRandom(false, false, true, count)
+              }
 
-        if (testSubList) {
-          this.randomSubs = subs
-          if (this.isRandomListShow == true) {
-            this.resetCount(item)
-            item.subs = subs
-          }
-          this.testRandom(false, false, true, count)
-        }
-      },
+            }
+          );
+
+        }  //for
+
+    },
 
       resetCount: function (randomItem) {
         if (randomItem == null) {
@@ -3721,233 +3704,299 @@
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName) {
+      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
-          return null;
+          // return null;
+          callback(null, null, null);
+          return
         }
+        json = json || {};
+
+        baseUrl = this.getBaseUrl();
+
+        var reqCount = lines.length; //有无效的行  lines.length;  //等待次数
+        var respCount = 0;
 
         randomId = randomId || 0;
         var randomName = ''
         var constConfig = '' //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
 
-        var json = json || {};
-
         // alert('< json = ' + JSON.stringify(json, null, '    '))
 
-        var line;
-
-        var path; // User/id
-        var key; // id
-        var value; // RANDOM_DATABASE
-
-        var index;
-        var pathKeys;
-        var customizeKey;
-
-        for (var i = 0; i < lines.length; i ++) {
-          line = lines[i] || '';
+        for (let i = 0; i < reqCount; i ++) {
+          const which = i;
+          const lineItem = lines[i] || '';
 
           // remove comment
-          index = line.indexOf('//');
-          if (index >= 0) {
-            line = line.substring(0, index).trim();
-          }
+          const commentIndex = lineItem.indexOf('//');
+          const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
+
           if (line.length <= 0) {
+            respCount ++;
+            if (i >= lines.length - 1 && respCount >= reqCount) {
+              callback(randomName, constConfig, json);
+            }
             continue;
           }
 
           // path User/id  key id@
-          index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
-          var p_k = line.substring(0, index);
-          var bi = p_k.indexOf(' ');
-          path = bi < 0 ? p_k : p_k.substring(0, bi);
+          const index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
+          const p_k = line.substring(0, index);
+          const bi = p_k.indexOf(' ');
+          const path = bi < 0 ? p_k : p_k.substring(0, bi); // User/id
 
-          pathKeys = path.split('/')
+          const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
             throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
               '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  //注释\n的格式！其中 replaceKey 可省略。');
           }
 
-          var lastKeyInPath = pathKeys[pathKeys.length - 1]
-          customizeKey = bi > 0;
-          key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
+          const lastKeyInPath = pathKeys[pathKeys.length - 1]
+          const customizeKey = bi > 0;
+          const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || key.trim().length <= 0) {
             throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
               '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  // 注释\n的格式！其中 replaceKey 可省略。');
           }
 
           // value RANDOM_DB
-          value = line.substring(index + ' : '.length);
+          const value = line.substring(index + ' : '.length);
 
-          //FIXME 调接口从数据库查！
-          // if (value == RANDOM_DB) {
-          //   value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
-          //   if (customizeKey != true) {
-          //     key += '@';
-          //   }
-          // }
-          // else if (value == RANDOM_REAL_IN) {
-          //   value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", null)';
-          //   if (customizeKey != true) {
-          //     key += '{}@';
-          //   }
-          // }
-          // else if (value == ORDER_DB) {
-          //   value = 'orderDb(' +
-          //     getOrderIndex(
-          //       randomId
-          //       , line.substring(0, line.indexOf(' : '))
-          //       , 0
-          //     ) + ', JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '")';
-          //   if (customizeKey != true) {
-          //     key += '@';
-          //   }
-          // }
-          // else {
-            var start = value.indexOf('(');
-            var end = value.lastIndexOf(')');
-
-            //支持 1, "a" 这种原始值
-            // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
-            //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
-            // }
-
-            if (start > 0 && end > start) {
-
-              var funWithOrder = value.substring(0, start);
-              var splitIndex = funWithOrder.indexOf('+');
-
-              var isDesc = false;
-              if (splitIndex < 0) {  // -(1+2) 这种是表达式，不能作为函数   splitIndex <= 0) {
-                splitIndex = funWithOrder.indexOf('-');
-                isDesc = splitIndex > 0;
+          var invoke = function (val, which, pathKeys, key, lastKeyInPath) {
+            try {
+              if (generateConfig) {
+                var configVal;
+                if (val instanceof Object) {
+                  configVal = JSON.stringify(val);
+                }
+                else if (typeof val == 'string') {
+                  configVal = '"' + val + '"';
+                }
+                else {
+                  configVal = val
+                }
+                constConfig += ((which <= 0 ? '' : ' \n') + p_k + ' : ' + configVal);
               }
 
-              var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
+              if (generateName) {
+                var valStr;
+                if (val instanceof Array) {
+                  valStr = '[' + val.length + ']';
+                }
+                else if (val instanceof Object) {
+                  valStr = '{...}';
+                }
+                else if (typeof val == 'boolean') {
+                  valStr = '' + val;
+                }
+                else {
+                  valStr = new String(val);
+                  if (valStr.length > 13) {
+                    valStr = valStr.substring(0, 5) + '...';
+                  }
+                }
+                randomName += ((which <= 0 ? '' : ', ') + valStr);
+              }
 
-              if ([ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
-                var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
-                var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
-
-                if (Number.isSafeInteger(step) != true || step <= 0
-                  || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
-                ) {
-                  throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
-                    + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
-                    + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
-                    + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
-                    + '\n  ODER_IN+step(start, end)\n  ODER_IN-step(start, end)'
-                    + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
-                    + '\n+，-，step 前后都不能有空格等其它字符！');
+              if (generateJSON) {
+                //先按照单行简单实现
+                //替换 JSON 里的键值对 key: value
+                var parent = json;
+                var current = null;
+                for (var j = 0; j < pathKeys.length - 1; j ++) {
+                  current = parent[pathKeys[j]]
+                  if (current == null) {
+                    current = parent[pathKeys[j]] = {}
+                  }
+                  if (parent instanceof Object == false) {
+                    throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
+                      ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
+                  }
+                  parent = current;
                 }
 
-                value = (fun == ORDER_DB ? 'orderDb' : (fun == ORDER_IN ? 'orderIn' : 'orderInt'))
-                  + '(' + isDesc + ', ' + step*getOrderIndex(
-                    randomId
-                    , line.substring(0, line.indexOf(' : '))
-                    , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
-                  ) + ',' + value.substring(start + 1);
-              }
-              else {  //随机函数
-                fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
-
-                if (fun == RANDOM_INT) {
-                  value = 'randomInt' + value.substring(start);
-                }
-                else if (fun == RANDOM_NUM) {
-                  value = 'randomNum' + value.substring(start);
-                }
-                else if (fun == RANDOM_STR) {
-                  value = 'randomStr' + value.substring(start);
-                }
-                else if (fun == RANDOM_IN) {
-                  value = 'randomIn' + value.substring(start);
-                }
-              }
-            // }
-
-          }
-
-          try {
-            var val = eval(value)
-
-            if (generateConfig) {
-              var configVal;
-              if (val instanceof Object) {
-                configVal = JSON.stringify(val);
-              }
-              else if (typeof val == 'string') {
-                configVal = '"' + val + '"';
-              }
-              else {
-                configVal = val
-              }
-              constConfig += ((i <= 0 ? '' : ' \n') + p_k + ' : ' + configVal);
-            }
-
-            if (generateName) {
-              var valStr;
-              if (val instanceof Array) {
-                valStr = '[' + val.length + ']';
-              }
-              else if (val instanceof Object) {
-                valStr = '{...}';
-              }
-              else if (typeof val == 'boolean') {
-                valStr = '' + val;
-              }
-              else {
-                valStr = new String(val);
-                if (valStr.length > 13) {
-                  valStr = valStr.substring(0, 5) + '...';
-                }
-              }
-              randomName += ((i <= 0 ? '' : ', ') + valStr);
-            }
-
-            if (generateJSON) {
-              //先按照单行简单实现
-              //替换 JSON 里的键值对 key: value
-              var parent = json;
-              var current = null;
-              for (var j = 0; j < pathKeys.length - 1; j ++) {
-                current = parent[pathKeys[j]]
                 if (current == null) {
-                  current = parent[pathKeys[j]] = {}
+                  current = json;
                 }
-                if (parent instanceof Object == false) {
-                  throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
-                    ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
+                // alert('< current = ' + JSON.stringify(current, null, '    '))
+
+                if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
+                  delete current[lastKeyInPath];
                 }
-                parent = current;
+
+                current[key] = val;
               }
 
-              if (current == null) {
-                current = json;
-              }
-              // alert('< current = ' + JSON.stringify(current, null, '    '))
-
-            if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
-              delete current[lastKeyInPath];
+            }
+            catch (e) {
+              throw new Error('第 ' + which + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
             }
 
-              current[key] = val;
+            respCount ++;
+            if (respCount >= reqCount) {
+              callback(randomName, constConfig, json);
+            }
+          };
+
+
+          const start = value.indexOf('(');
+          const end = value.lastIndexOf(')');
+
+          var request4Db = function(tableName, which, pathKeys, key, lastKeyInPath, isRandom, isDesc, step) {
+            // const tableName = JSONResponse.getTableName(pathKeys[pathKeys.length - 2]);
+            vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
+
+            const args = StringUtil.split(value.substring(start + 1, end)) || [];
+            const min = StringUtil.isEmpty(args[0], true) ? null : +args[0];
+            const max = StringUtil.isEmpty(args[1], true) ? null : +args[1]
+
+            const tableReq = {
+              '@column': key,
+              '@order': isRandom ? 'random()' : (key + (isDesc ? '-' : '+'))
+            };
+            tableReq[key + '>='] = min;
+            tableReq[key + '<='] = max;
+
+            const req = {};
+            const listName = isRandom ? null : tableName + '-' + key + '[]';
+            const orderIndex = isRandom ? null : getOrderIndex(randomId, p_k, null)
+
+            if (isRandom) {
+              req[tableName] = tableReq;
+            }
+            else {
+              // 从数据库获取时不考虑边界，不会在越界后自动循环
+              var listReq = {
+                count: 1, // count <= 100 ? count : 0,
+                page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，key 未必是 id
+              };
+              listReq[tableName] = tableReq;
+              req[listName] = listReq;
+            }
+
+            // reqCount ++;
+            App.request(true, REQUEST_TYPE_JSON, baseUrl + '/get', req, {}, function (url, res, err) {
+              // respCount ++;
+              try {
+                App.onResponse(url, res, err)
+              } catch (e) {}
+
+              var data = (res || {}).data || {}
+              if (data.code != CODE_SUCCESS) {
+                respCount = -reqCount;
+                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg;
+                alert(StringUtil.get(vOutput.value));
+                return
+                // throw new Error('随机测试 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
+              }
+
+              if (isRandom) {
+                invoke((data[tableName] || {})[key], which, pathKeys, key, lastKeyInPath);
+              }
+              else {
+                var val = (data[listName] || [])[0];
+                //越界，重新获取
+                if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][p_k] != null) {
+                  ORDER_MAP[randomId][p_k] = null;  //重置，避免还是在原来基础上叠加
+                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, false, isDesc, step);
+                }
+                else {
+                  invoke(val, which, pathKeys, key, lastKeyInPath);
+                }
+              }
+
+              // var list = data[listName] || [];
+              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[randomId][p_k].list = list;
+              //
+              // if (step == null) {
+              //   invoke('randomIn(' + list.join() + ')');
+              // }
+              // else {
+              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(randomId, p_k, list.length) + list.join() + ')');
+              // }
+
+            })
+          };
+
+
+
+          //支持 1, "a" 这种原始值
+          // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
+          //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+          // }
+
+          var toEval = value;
+          if (start > 0 && end > start) {
+
+            var funWithOrder = value.substring(0, start);
+            var splitIndex = funWithOrder.indexOf('+');
+
+            var isDesc = false;
+            if (splitIndex < 0) {  // -(1+2) 这种是表达式，不能作为函数   splitIndex <= 0) {
+              splitIndex = funWithOrder.indexOf('-');
+              isDesc = splitIndex > 0;
+            }
+
+            var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
+
+            if ([ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
+              var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
+              var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
+
+              if (Number.isSafeInteger(step) != true || step <= 0
+                || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
+              ) {
+                throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                  + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
+                  + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
+                  + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
+                  + '\n  ODER_IN+step(start, end)\n  ODER_IN-step(start, end)'
+                  + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
+                  + '\n+，-，step 前后都不能有空格等其它字符！');
+              }
+
+              if (fun == ORDER_DB) {
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, false, isDesc, step); //request4Db(key + (isDesc ? '-' : '+'), step);
+                continue;
+              }
+
+              toEval = (fun == ORDER_IN ? 'orderIn' : 'orderInt')
+                + '(' + isDesc + ', ' + step*getOrderIndex(
+                  randomId, p_k
+                  , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
+                ) + ', ' + value.substring(start + 1);
+            }
+            else {  //随机函数
+              fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
+
+              if (fun == RANDOM_DB) {
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, true); //'random()');
+                continue;
+              }
+
+              if (fun == RANDOM_IN) {
+                toEval = 'randomIn' + value.substring(start);
+              }
+              else if (fun == RANDOM_INT) {
+                toEval = 'randomInt' + value.substring(start);
+              }
+              else if (fun == RANDOM_NUM) {
+                toEval = 'randomNum' + value.substring(start);
+              }
+              else if (fun == RANDOM_STR) {
+                toEval = 'randomStr' + value.substring(start);
+              }
+
             }
 
           }
-          catch (e) {
-            throw new Error('第 ' + i + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
-          }
+
+          invoke(eval(toEval), which, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
 
-        return {
-          name: randomName,
-          config: constConfig,
-          json: json
-        }
       },
 
 

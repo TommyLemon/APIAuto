@@ -312,14 +312,14 @@
 
                         <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
                                   placeholder="常用：
-RANDOM_DB()  // 从数据库随机取值
 RANDOM_IN(val0:Any, val1:Any ...)  // 从选项内随机取值
 RANDOM_INT(min:Integer, max:Integer)  // 从范围内随机取整数
+RANDOM_DB(min:Integer, max:Integer)  // 从数据库随机取值
 RANDOM_NUM(min:Number, max:Number, precision:Integer)  // 从范围内随机取小数
 RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  // 从长度范围内随机取字符串
-ORDER_DB()  // 从数据库顺序取值
 ORDER_IN(val0:Any, val1:Any ...)  // 从选项内顺序取值
 ORDER_INT(min:Integer, max:Integer)  // 从范围内顺序取整数
+ORDER_DB(min:Integer, max:Integer)  // 从数据库顺序取值
 其中 RANDOM 开头的是随机函数；ORDER 开头的是顺序函数，可以使用 + - 升降序 和 step 跨步，例如 ORDER_IN-(1, 2, 3) 降序取值，ORDER_INT+3(0, 100) 间隔 step = 3 位来升序取整数。
 模板：
 format : ORDER_IN(true, false, null, undefined)  // 从选项中顺序取值
