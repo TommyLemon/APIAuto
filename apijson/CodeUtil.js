@@ -4350,6 +4350,7 @@ var CodeUtil = {
 
 
   QUERY_TYPES: ['数据', '数量', '全部'],
+  JOIN_TYPES: {"@": 'APP', "<": 'LEFT', ">": 'RIGHT', "*": 'CROSS', "&": 'INNER', "|": 'FULL', "!": 'OUTER', "^": 'SIDE', "(": 'ANTI', ")": 'FOREIGN'},
   CACHE_TYPES: ['全部', '磁盘', '内存'],
   SUBQUERY_RANGES: ['ANY', 'ALL'],
   QUERY_TYPE_KEYS: [0, 1, 2],
@@ -4441,7 +4442,46 @@ var CodeUtil = {
           var query = CodeUtil.QUERY_TYPES[value];
           return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：0-数据 1-总数 2-全部', false, '  ');
         case 'join':
-          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('多表连接：例如 &/User/id@,</Comment/momentId@,...', false, '  ');
+          if (CodeUtil.getType4Request(value) != 'string') {
+            return ' ! value必须是String类型！';
+          }
+
+          var s = '';
+          var items = value.length < 3 ? null : StringUtil.split(value.substring(1, value.length - 1));
+          if (items != null && items.length > 0) {
+
+            var chars = Object.keys(CodeUtil.JOIN_TYPES);
+
+            for (var i = 0; i < items.length; i++) {
+              var item = items[i] || '';
+
+              if (item.endsWith('@') != true) {
+                return ' ! ' + item + ' 不合法 ! 必须以 @ 结尾，例如 &/User/id@ ！';
+              }
+
+              var index = item.indexOf('/');
+              var lastIndex = item.lastIndexOf('/');
+
+              if (index < 0 || lastIndex <= index + 1) {
+                return ' ! ' + item + ' 不合法 ! 必须有两个不相邻的 /，例如 &/User/id@ ！';
+              }
+
+              var c = index <= 0 ? '|' : item.substring(0, index);
+              if (chars.indexOf(c) < 0) {
+                return ' ! JOIN 类型 ' + c + ' 不合法 ! 必须是 [' + chars.join(', ') + '] 中的一种！';
+              }
+
+              var t = item.substring(index + 1, lastIndex);
+              if (JSONObject.isTableKey(t) != true) {
+                return ' ! 表名 ' + t + ' 不合法 ! 必须是 Table 这种大驼峰格式，例如 User ！';
+              }
+
+              s += CodeUtil.JOIN_TYPES[c] + ' JOIN ' + t + ' ';
+            }
+          }
+
+          return CodeUtil.getComment('多表连接：' + (s || '例如 &/User/id@,</Comment/momentId@,... ' +
+            '对应关系为 @ APP, < LEFT, > RIGHT, * CROSS, & INNER, | FULL, ! OUTER, ^ SIDE, ( ANTI, ) FOREIGN'), false, '  ');
         default:
           if (isInSubquery) {
             switch (key) {
@@ -4506,10 +4546,10 @@ var CodeUtil = {
     if (StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
-          if (method == 'GET' || method == 'HEAD') {
-            return '';
-          }
-          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('请求密钥：例如 User Comment[] Privacy-CIRCLE ...', false, '  ');
+          // if (method == 'GET' || method == 'HEAD') {
+          //   return '';
+          // }
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('请求标识：' + (method == 'GET' || method == 'HEAD' ? 'GET, HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : '例如 User Comment[] Privacy-CIRCLE ...'), false, '  ');
         case 'version':
           if (method == 'GET' || method == 'HEAD') {
             return '';

@@ -2430,8 +2430,8 @@
           }
 
           vInput.value = before
-            + '\n                                                                                           '
-            + '                                                                                               \n';  //解决遮挡
+            + '\n                                                                                                       '
+            + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
           vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
@@ -2441,8 +2441,8 @@
           try {
             var m = App.getMethod();
             var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language)
-              + '\n                                                                                           '
-              + '                                                                                               \n';  //解决遮挡
+              + '\n                                                                                                       '
+              + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
 
             if (isSingle != true && afterObj.tag == null) {
@@ -3853,7 +3853,7 @@
 
             const tableReq = {
               '@column': key,
-              '@order': isRandom ? 'random()' : (key + (isDesc ? '-' : '+'))
+              '@order': isRandom ? 'rand()' : (key + (isDesc ? '-' : '+'))
             };
             tableReq[key + '>='] = min;
             tableReq[key + '<='] = max;
