@@ -558,7 +558,7 @@ User/id : RANDOM_INT(82001, 82020)  // 随机整数
                                     <div class="form-group">
                                         <label for="vAccount">账号</label>
 
-                                        <input id="vAccount" type="text" class="form-control" name="account" v-model="account" required autofocus />
+                                        <input id="vAccount" type="text" class="form-control" name="account" v-model="account" value="13000082001" required autofocus />
                                     </div>
 
                                     <div class="form-group">
@@ -567,7 +567,7 @@ User/id : RANDOM_INT(82001, 82020)  // 随机整数
                                                 {{ loginType == "login" ? "忘记密码?" : "记得密码?" }}
                                             </a>
                                         </label>
-                                        <input id="vPassword" type="password" class="form-control" name="password" v-model="password" required data-eye />
+                                        <input id="vPassword" type="password" class="form-control" name="password" v-model="password" value="123456" required data-eye />
                                     </div>
 
                                     <div class="form-group" v-show="loginType != 'login'">

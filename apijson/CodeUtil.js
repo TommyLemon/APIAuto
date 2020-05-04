@@ -101,7 +101,7 @@ var CodeUtil = {
           var isArray = line.endsWith('['); // []  不影响
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
-            , isArray ? '' : line.substring(index + 2).trim(), method, isInSubquery, database, language);
+            , isArray ? [] : line.substring(index + 2).trim(), method, isInSubquery, database, language);
         }
       }
 
@@ -4384,8 +4384,21 @@ var CodeUtil = {
     // if (value == null) {
     //  return ' ! key:value 中 key 或 value 任何一个为 null 时，该 key:value 都无效！'
     // }
+    if (value instanceof Array) {
+      if ((method == 'POST' || method == 'PUT') && JSONObject.isArrayKey(key)) {
+        var aliaIndex = key.indexOf(':');
+        var objName = key.substring(0, aliaIndex >= 0 ? aliaIndex : key.length - 2);
 
-    if (value == null || value instanceof Object) {
+        if (JSONObject.isTableKey(objName)) {
+          var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language);
+          return StringUtil.isEmpty(c) ? ' ! 表 ' + objName + ' 不存在！' : CodeUtil.getComment(
+            (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length - 2) + ' < ') + objName + ': ' + c, false, '  ');
+        }
+      }
+
+      return '';
+    }
+    else if (value == null || value instanceof Object) {
 
       if (key.endsWith('@')) {
         if (key == '@from@') {
@@ -4644,6 +4657,11 @@ var CodeUtil = {
 
 
         if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
+          // 没传 value 进来，不好解析，而且太长导致后面的字段属性被遮住
+          // var lastIndex = value.lastIndexOf('/');
+          // var refLastPath =
+          // at = '引用赋值: ' + tableName + '.' + columnName + '=' + ;
+
           at = '引用赋值';
           columnName = columnName.substring(0, columnName.length - 1);
         }
