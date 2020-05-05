@@ -407,8 +407,8 @@
     return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
   }
 
-  function getOrderIndex(randomId, lineKey, argCount) {
-    // alert('randomId = ' + randomId + '; lineKey = ' + lineKey + '; argCount = ' + argCount);
+  function getOrderIndex(randomId, line, argCount) {
+    // alert('randomId = ' + randomId + '; line = ' + line + '; argCount = ' + argCount);
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
 
     if (randomId == null) {
@@ -421,7 +421,7 @@
       ORDER_MAP[randomId] = {};
     }
 
-    var orderIndex = ORDER_MAP[randomId][lineKey];
+    var orderIndex = ORDER_MAP[randomId][line];
     // alert('orderIndex = ' + orderIndex)
 
     if (orderIndex == null || orderIndex < -1) {
@@ -430,7 +430,7 @@
 
     orderIndex ++
     orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
-    ORDER_MAP[randomId][lineKey] = orderIndex;
+    ORDER_MAP[randomId][line] = orderIndex;
 
     // alert('orderIndex = ' + orderIndex)
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
@@ -2969,12 +2969,12 @@
           case CodeUtil.LANGUAGE_TYPE_SCRIPT:
           case CodeUtil.LANGUAGE_JAVA_SCRIPT:
           case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
             break;
           default:
             s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
             break;
         }
-        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
@@ -3868,7 +3868,7 @@
 
             const req = {};
             const listName = isRandom ? null : tableName + '-' + key + '[]';
-            const orderIndex = isRandom ? null : getOrderIndex(randomId, p_k, null)
+            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
 
             if (isRandom) {
               req[tableName] = tableReq;
@@ -3905,8 +3905,8 @@
               else {
                 var val = (data[listName] || [])[0];
                 //越界，重新获取
-                if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][p_k] != null) {
-                  ORDER_MAP[randomId][p_k] = null;  //重置，避免还是在原来基础上叠加
+                if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
+                  ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
                   request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, false, isDesc, step);
                 }
                 else {
@@ -3915,13 +3915,13 @@
               }
 
               // var list = data[listName] || [];
-              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[randomId][p_k].list = list;
+              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[randomId][line].list = list;
               //
               // if (step == null) {
               //   invoke('randomIn(' + list.join() + ')');
               // }
               // else {
-              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(randomId, p_k, list.length) + list.join() + ')');
+              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(randomId, line, list.length) + list.join() + ')');
               // }
 
             })
@@ -3971,7 +3971,7 @@
 
               toEval = (fun == ORDER_IN ? 'orderIn' : 'orderInt')
                 + '(' + isDesc + ', ' + step*getOrderIndex(
-                  randomId, p_k
+                  randomId, line
                   , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
                 ) + ', ' + value.substring(start + 1);
             }
