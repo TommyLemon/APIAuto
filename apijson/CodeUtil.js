@@ -2103,7 +2103,7 @@ var CodeUtil = {
    * @param isSmart
    * @return parseCode
    */
-  parseJavaResponse: function(name_, resObj, depth, isTable, isSmart) {
+  parseJavaResponse: function(name_, resObj, depth, isTable, isSmart, onlyParseSimpleValue) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -2133,24 +2133,32 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
+        if (onlyParseSimpleValue) {
+          return this.onParseChildOther(key, value, index);
+        }
         return this.onParseChildObject(key, value, index);
       },
 
       onParseChildObject: function (key, value, index) {
+        if (onlyParseSimpleValue) {
+          return this.onParseChildOther(key, value, index);
+        }
         return this.onParseJSONObject(key, value, index);
       },
 
       onParseChildOther: function (key, value, index) {
 
-        if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+        if (onlyParseSimpleValue != true) {
+          if (value instanceof Array) {
+            log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
 
-          return this.onParseJSONArray(key, value, index);
-        }
-        if (value instanceof Object) {
-          log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
+            return this.onParseJSONArray(key, value, index);
+          }
+          if (value instanceof Object) {
+            log(CodeUtil.TAG, 'parseJavaResponse  for typeof value === "array" >>  ' );
 
-          return this.onParseJSONObject(key, value, index);
+            return this.onParseJSONObject(key, value, index);
+          }
         }
 
         var type = CodeUtil.getJavaTypeFromJS(key, value, false, true);
@@ -2167,6 +2175,10 @@ var CodeUtil = {
       },
 
       onParseJSONArray: function (key, value, index) {
+        if (onlyParseSimpleValue) {
+          return this.onParseChildOther(key, value, index);
+        }
+
         value = value || []
 
         var vn = JSONResponse.getVariableName(key);
@@ -2222,6 +2234,10 @@ var CodeUtil = {
       },
 
       onParseJSONObject: function (key, value, index) {
+        if (onlyParseSimpleValue) {
+          return this.onParseChildOther(key, value, index);
+        }
+
         var k = JSONResponse.getVariableName(key);
 
         var s = '\n' + padding + '{' + blockBlank + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
@@ -2485,8 +2501,30 @@ var CodeUtil = {
       '\n' +
       '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
       '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
-      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'RequestParam') + ') {\n';
+      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + (type == 'JSON' ? '@RequestBody String request' : CodeUtil.getJavaArgs(reqObj, true, 'RequestParam')) + ') {\n';
 
+    if (type == 'JSON') {
+      //TODO 是否必要转成 User 类？还要考虑 PageHelper 可能是从里面取出来对象
+      // var t = JSONResponse.getTableName(key);
+      // var isTableKey = JSONObject.isTableKey(t);
+      // if (isTable && isSmart) {
+      //   code += nextPadding + (isTableKey ? t : 'JSONObject') + ' ' + k + ' = ' + name + '.get' + StringUtil.firstCase(k, true) + '();'
+      // }
+      // else if (isTableKey && isSmart) {
+      //   code += nextPadding + t + ' ' + k + ' = ' + name + '.getObject("' + key + '", ' + t + '.class);'
+      // }
+      // else {
+      //   code += nextPadding + 'JSONObject ' + k + ' = ' + name + '.getJSONObject("' + key + '");'
+      // }
+      var nextPadding = CodeUtil.getBlank(2);
+      var nextNextPadding = CodeUtil.getBlank(3);
+
+      code += nextPadding + 'if (request == null) {' + '\n';
+      code += nextNextPadding + 'request = new JSONObject();' + '\n';
+      code += nextPadding + '}';
+
+      code += CodeUtil.parseJavaResponse('request', reqObj, 2, false, isSmart, true) + '\n';
+    }
 
     if (isSmart && isList) {
       delete reqObj.params;
