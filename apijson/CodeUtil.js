@@ -2445,7 +2445,7 @@ var CodeUtil = {
 
 
     code += '\n\n' +
-      '<select id="' + methodName + '">\n' +
+      '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
       '    SELECT * FROM ' + modelName + ' WHERE 1=1';
 
 
