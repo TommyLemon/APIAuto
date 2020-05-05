@@ -528,18 +528,74 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseJavaRequest: function(name, reqObj, depth, isSmart, isArrayItem) {
+  parseJavaRequest: function(name, reqObj, depth, isSmart, isArrayItem, useVar4Value, type, url, comment) {
     name = name || 'request'
     if (depth == null || depth < 0) {
       depth = 0;
     }
 
-    var parentKey = JSONObject.isArrayKey(name)
-      ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
-      : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
     var prefix = CodeUtil.getBlank(depth);
     var nextPrefix = CodeUtil.getBlank(depth + 1);
+
+    if (depth <= 0) {
+      //RESTful 等非 APIJSON 规范的 API <<<<<<<<<<<<<<<<<<<<<<<<<<
+      var requestMethod = StringUtil.isEmpty(type, true) || type == 'PARAM' ? 'GET' : 'POST';
+
+      url = url || '';
+
+      var lastIndex = url.lastIndexOf('/');
+      var methodUri = lastIndex < 0 ? url : url.substring(lastIndex);
+      var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+
+      url = url.substring(0, lastIndex);
+      lastIndex = url.lastIndexOf('/');
+      var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+      var modelName = StringUtil.firstCase(varName, true);
+
+      if (StringUtil.isEmpty(modelName, true) != true) {
+        var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
+        var isList = methodName.startsWith('list') || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
+        var dataType = isList ? 'List<' + modelName + '>' : modelName;
+
+        var str = '';
+        if (reqObj != null) {
+          for (var k in reqObj) {
+            var v = reqObj[k];
+
+            if (v instanceof Object) {
+              str += CodeUtil.parseJavaRequest(k, v, depth, isSmart);
+            }
+          }
+        }
+
+        var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
+          + '\n' + methodName + '(' + CodeUtil.getJavaArgValues(reqObj, true) + ');\n'
+          + '\n/**'
+          + '\n * ' + StringUtil.trim(comment)
+          + '\n */'
+          + '\npublic static ' + 'Call<' + dataType + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true) + ') {\n'
+          + (type == 'JSON' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
+          + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
+          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'request' : CodeUtil.getJavaArgs(reqObj, false)) + ');'
+          + '\n}';
+
+        s += '\n\n' +
+          'public interface ' + modelName + 'Service {\n' +
+          (type == 'FORM' ? nextPrefix + '@FormUrlEncoded' + '\n': (type == 'DATA' ? nextPrefix + '@Multipart' + '\n': ''))  +
+          nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
+          nextPrefix + 'public ' + 'Call<' + dataType + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body LinkedHashMap<String, Object> body' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field')) + ');\n' +
+          '}';
+
+        return s;
+      }
+      //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
+    }
+
+
+    var parentKey = JSONObject.isArrayKey(name)
+      ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
+      : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
     return CodeUtil.parseCode(name, reqObj, {
 
@@ -548,7 +604,9 @@ var CodeUtil = {
           isArrayItem = false;
           return '';
         }
-        return '\n' + prefix + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
+        var s = '\n' + prefix + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
+
+        return s;
       },
 
       onParseParentEnd: function () {
@@ -556,6 +614,9 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index);
+        }
 
         var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
@@ -603,6 +664,10 @@ var CodeUtil = {
       },
 
       onParseChildObject: function (key, value, index) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index);
+        }
+
         var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var isTable = isSmart && JSONObject.isTableKey(JSONResponse.getTableName(key));
@@ -649,6 +714,10 @@ var CodeUtil = {
       },
 
       onParseArray: function (key, value, index, isOuter) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index, isOuter);
+        }
+
         var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         var varName = JSONResponse.formatKey(key, true, false, false, true, true, true)
@@ -706,11 +775,11 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index, isOuter) {
-        if (value instanceof Array) {
+        if (useVar4Value != true && value instanceof Array) {
           return this.onParseArray(key, value, index, isOuter);
         }
 
-        var valStr = CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, value);
+        var valStr = useVar4Value ? JSONResponse.getVariableName(key) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, value);
 
         if (depth <= 0 && isSmart) {
           if (key == 'tag') {
@@ -2306,7 +2375,45 @@ var CodeUtil = {
   },
 
 
+  getJavaArgValues: function (reqObj, useVar4ComplexValue) {
+    var str = '';
+    if (reqObj != null) {
+      var first = true;
 
+      for (var k in reqObj) {
+        var v = reqObj[k];
+
+        if (useVar4ComplexValue && v instanceof Object) {
+          str += (first ? '' : ', ') + JSONResponse.getVariableName(k);
+        }
+        else {
+          str += (first ? '' : ', ') + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, v, k, 0);
+        }
+        first = false;
+      }
+    }
+
+    return str;
+  },
+  /**
+   * @param annotionType RequestParam, Param, null
+   */
+  getJavaArgs: function(reqObj, withType, annotationType) {
+    var str = '';
+    if (reqObj != null) {
+      var first = true;
+
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        var t = withType ? CodeUtil.getJavaTypeFromJS(k, v, false, false, true) : null;
+
+        str += (first ? '' : ', ') + (annotationType == null ? '' : '@' + annotationType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
+        first = false;
+      }
+    }
+
+    return str;
+  },
 
   /**生成 Server-Java API 相关代码
    * @param type
@@ -2335,7 +2442,7 @@ var CodeUtil = {
 
     var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
 
-    var isList = methodName.startsWith('list') || methodName.endsWith('List') || typeof reqObj.pageNum == 'number';
+    var isList = methodName.startsWith('list') || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
     var dataType = isList ? 'List<' + modelName + '>' : modelName;
 
     var params = isList ? (reqObj.params || {}) : null;
@@ -2343,23 +2450,6 @@ var CodeUtil = {
     var pageNum = isList ? (reqObj.pageNum || params.pageNum) : null;
 
     var orderBy = isList ? (reqObj.orderBy) : null;
-
-    /**
-     * @param annotionType RequestParam, Param, null
-     */
-    function getArgs(withType, annotationType) {
-      var str = '';
-      var first = true;
-      for (var k in reqObj) {
-        var v = reqObj[k];
-        var t = withType ? CodeUtil.getJavaTypeFromJS(k, v) : null;
-
-        str += (first ? '' : ', ') + (annotationType == null ? '' : '@' + annotationType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
-        first = false;
-      }
-
-      return str;
-    }
 
     /**
      * @param annotionType RequestParam, Param, null
@@ -2384,8 +2474,8 @@ var CodeUtil = {
      return null;
     }
 
-    var typeArgStr = getArgs(true, null);
-    var argStr = getArgs(false, null);
+    var typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
+    var argStr = CodeUtil.getJavaArgs(reqObj, false, null);
 
     var code = '@RestController("' + controllerUri + '")\n' +
       'public class ' + modelName + 'Controller {\n' +
@@ -2395,7 +2485,7 @@ var CodeUtil = {
       '\n' +
       '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
       '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
-      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + getArgs(true, 'RequestParam') + ') {\n';
+      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'RequestParam') + ') {\n';
 
 
     if (isSmart && isList) {
@@ -2405,8 +2495,8 @@ var CodeUtil = {
 
       delete reqObj.orderBy;
 
-      typeArgStr = getArgs(true, null);
-      argStr = getArgs(false, null);
+      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
+      argStr = CodeUtil.getJavaArgs(reqObj, false, null);
     }
 
     var orderStr = getOrderStr(orderBy);
@@ -2444,7 +2534,7 @@ var CodeUtil = {
       '\n' +
       '@Mapper\n' +
       'public interface ' + modelName + 'Mapper {\n' +
-      '    ' + dataType + ' ' + methodName + '(' + getArgs(true, 'Param') + ');\n' +
+      '    ' + dataType + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'Param') + ');\n' +
       '}';
 
 
@@ -2455,8 +2545,8 @@ var CodeUtil = {
 
       delete reqObj.orderBy;
 
-      typeArgStr = getArgs(true, null);
-      argStr = getArgs(false, null);
+      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
+      argStr = CodeUtil.getJavaArgs(reqObj, false, null);
     }
 
 
@@ -3906,7 +3996,7 @@ var CodeUtil = {
     return '\n' + CodeUtil.getBlank(depth + 1) + callback(key, value, depth + 1, isSmart, isArrayItem);// + '\n' + CodeUtil.getBlank(depth);
   },
 
-  getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst) {
+  getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType) {
     if (typeof value == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
@@ -3923,10 +4013,10 @@ var CodeUtil = {
       return 'String';
     }
     if (value instanceof Array) {
-      return 'JSONArray';
+      return rawType ? 'ArrayList<Object>' : 'JSONArray';
     }
     if (value instanceof Object) {
-      return 'JSONObject';
+      return rawType ? 'LinkedHashMap<String, Object>' : 'JSONObject';
     }
 
     return 'Object';
