@@ -2917,11 +2917,14 @@
               + ' \n ```java \n'
               + StringUtil.trim(CodeUtil.parseJavaRequest(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 的 JSONObject(true) 等有序JSON构造方法\n');
-              
-            s += '\n#### <= Server-Java: 使用 SpringBoot'
-              + ' \n ```java \n'
-              + CodeUtil.parseJavaServer(App.type, '/' + App.getMethod(), JSON.parse(rq), isSingle)
-              + '\n ``` \n' + (isSingle ? '注：分页和排序用了 Mybatis-PageHelper ，如不需要则在生成代码基础上修改\n' : '注：\n');
+
+            var serverCode = CodeUtil.parseJavaServer(App.type, '/' + App.getMethod(), JSON.parse(rq), isSingle);
+            if (StringUtil.isEmpty(serverCode, true) != true) {
+              s += '\n#### <= Server-Java: RESTful 等非 APIJSON 规范的 API'
+                + ' \n ```java \n'
+                + serverCode
+                + '\n ``` \n注：' + (isSingle ? '分页和排序用了 Mybatis-PageHelper，如不需要可在生成代码基础上修改\n' : '使用 SSM(Spring + SpringMVC + Mybatis) 框架 \n');
+            }
             break;
           case CodeUtil.LANGUAGE_C_SHARP:
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +

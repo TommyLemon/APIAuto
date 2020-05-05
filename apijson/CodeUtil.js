@@ -2329,28 +2329,32 @@ var CodeUtil = {
     var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
     var modelName = StringUtil.firstCase(varName, true);
 
+    if (StringUtil.isEmpty(modelName, true)) {
+      return '';
+    }
+
     var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
 
-    var isList = methodName.startsWith('list');
+    var isList = methodName.startsWith('list') || methodName.endsWith('List') || typeof reqObj.pageNum == 'number';
     var dataType = isList ? 'List<' + modelName + '>' : modelName;
 
-    var params = reqObj.params || {};
-    var pageSize = reqObj.pageSize || params.pageSize;
-    var pageNum = reqObj.pageNum || params.pageNum;
+    var params = isList ? (reqObj.params || {}) : null;
+    var pageSize = isList ? (reqObj.pageSize || params.pageSize) : null;
+    var pageNum = isList ? (reqObj.pageNum || params.pageNum) : null;
 
-    var orderBy = reqObj.orderBy;
+    var orderBy = isList ? (reqObj.orderBy) : null;
 
     /**
      * @param annotionType RequestParam, Param, null
      */
-    function getArgs(withType, annotionType) {
+    function getArgs(withType, annotationType) {
       var str = '';
       var first = true;
       for (var k in reqObj) {
         var v = reqObj[k];
         var t = withType ? CodeUtil.getJavaTypeFromJS(k, v) : null;
 
-        str += (first ? '' : ', ') + (annotionType == null ? '' : '@' + annotionType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
+        str += (first ? '' : ', ') + (annotationType == null ? '' : '@' + annotationType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
         first = false;
       }
 
@@ -2391,10 +2395,10 @@ var CodeUtil = {
       '\n' +
       '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
       '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
-      '    public ' + (isSmart ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + getArgs(true, 'RequestParam') + ') {';
+      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + getArgs(true, 'RequestParam') + ') {\n';
 
 
-    if (isSmart) {
+    if (isSmart && isList) {
       delete reqObj.params;
       delete reqObj.pageSize;
       delete reqObj.pageNum;
@@ -2408,7 +2412,7 @@ var CodeUtil = {
     var orderStr = getOrderStr(orderBy);
     var isOrderEmpty = StringUtil.isEmpty(orderStr, true);
 
-    if (isSmart) {
+    if (isSmart && isList) {
       if (pageSize != null) {
         code += '\n        PageHelper.startPage(pageNum, pageSize' + (isOrderEmpty ? '' : ', orderby') + ');';
       }
@@ -2418,7 +2422,7 @@ var CodeUtil = {
     }
 
     code += '\n' +
-      '        return ' + (isSmart ? 'new PageInfo(' : '') + varName + 'Service.' + methodName + '(' + argStr + ')' + (isSmart ? ')' : '') + ';\n' +
+      '        return ' + (isSmart && isList ? 'new PageInfo(' : '') + varName + 'Service.' + methodName + '(' + argStr + ')' + (isSmart && isList ? ')' : '') + ';\n' +
       '    }\n' +
       '}\n' +
       '\n' +
@@ -2442,6 +2446,18 @@ var CodeUtil = {
       'public interface ' + modelName + 'Mapper {\n' +
       '    ' + dataType + ' ' + methodName + '(' + getArgs(true, 'Param') + ');\n' +
       '}';
+
+
+    if (isList) {
+      delete reqObj.params;
+      delete reqObj.pageSize;
+      delete reqObj.pageNum;
+
+      delete reqObj.orderBy;
+
+      typeArgStr = getArgs(true, null);
+      argStr = getArgs(false, null);
+    }
 
 
     code += '\n\n' +
