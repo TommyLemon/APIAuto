@@ -120,7 +120,7 @@ var CodeUtil = {
    * @param depth
    * @return parseCode
    */
-  parseCSharp: function(name, reqObj, depth) {
+  parseCSharpRequest: function(name, reqObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -147,11 +147,11 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '{"' + key + '", ' + CodeUtil.parseCSharp(key, value, depth + 1) + '}';
+        return (index > 0 ? ',\n' : '') + nextPadding + '{"' + key + '", ' + CodeUtil.parseCSharpRequest(key, value, depth + 1) + '}';
       },
 
       onParseChildObject: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '{"' + key + '", ' + CodeUtil.parseCSharp(key, value, depth + 1) + '}';
+        return (index > 0 ? ',\n' : '') + nextPadding + '{"' + key + '", ' + CodeUtil.parseCSharpRequest(key, value, depth + 1) + '}';
       },
 
       onParseArray: function (key, value, index, isOuter) {
@@ -161,7 +161,7 @@ var CodeUtil = {
         var inner = '';
         var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
         for (var i = 0; i < value.length; i ++) {
-          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseCSharp(null, value[i], depth + (isOuter ? 1 : 2));
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseCSharpRequest(null, value[i], depth + (isOuter ? 1 : 2));
         }
         s += inner;
 
@@ -198,7 +198,7 @@ var CodeUtil = {
    * @param isSmart
    * @return parseCode
    */
-  parsePHP: function(name, reqObj, depth, isSmart) {
+  parsePHPRequest: function(name, reqObj, depth, isSmart) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -244,7 +244,7 @@ var CodeUtil = {
         var inner = '';
         var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
         for (var i = 0; i < value.length; i ++) {
-          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parsePHP(null, value[i], depth + (isOuter ? 1 : 2), isSmart);
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parsePHPRequest(null, value[i], depth + (isOuter ? 1 : 2), isSmart);
         }
         s += inner;
 
@@ -261,10 +261,10 @@ var CodeUtil = {
           v = this.onParseArray(key, value, index, isOuter);
         }
         else if (value instanceof Object) {
-          v = CodeUtil.parsePHP(key, value, depth + 1, isSmart);
+          v = CodeUtil.parsePHPRequest(key, value, depth + 1, isSmart);
         }
         else if (typeof value == 'string') {
-          log(CodeUtil.TAG, 'parsePHP  for typeof value === "string" >>  ' );
+          log(CodeUtil.TAG, 'parsePHPRequest  for typeof value === "string" >>  ' );
           v = quote + value + quote;
         }
         else {
@@ -283,7 +283,7 @@ var CodeUtil = {
    * @param depth
    * @return parseCode
    */
-  parseSwift: function(name, reqObj, depth) {
+  parseSwiftRequest: function(name, reqObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -310,11 +310,11 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwiftRequest(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwift(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseSwiftRequest(key, value, depth + 1);
       },
 
       onParseArray: function (key, value, index, isOuter) {
@@ -324,7 +324,7 @@ var CodeUtil = {
         var inner = '';
         var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
         for (var i = 0; i < value.length; i ++) {
-          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseSwift(null, value[i], depth + (isOuter ? 1 : 2));
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseSwiftRequest(null, value[i], depth + (isOuter ? 1 : 2));
         }
         s += inner;
 
@@ -360,7 +360,7 @@ var CodeUtil = {
    * @param depth
    * @return parseCode
    */
-  parseGo: function(name, reqObj, depth) {
+  parseGoRequest: function(name, reqObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -387,11 +387,11 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGoRequest(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGo(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '": ' + CodeUtil.parseGoRequest(key, value, depth + 1);
       },
 
       onParseArray: function (key, value, index, isOuter) {
@@ -401,7 +401,7 @@ var CodeUtil = {
         var inner = '';
         var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
         for (var i = 0; i < value.length; i ++) {
-          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseGo(null, value[i], depth + (isOuter ? 1 : 2));
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseGoRequest(null, value[i], depth + (isOuter ? 1 : 2));
         }
         s += inner;
 
@@ -437,8 +437,8 @@ var CodeUtil = {
    * @param depth
    * @return parseCode
    */
-  parseObjectiveC: function(name, reqObj, depth) {
-    return CodeUtil.parseSwift(name, reqObj, depth);
+  parseObjectiveCRequest: function(name, reqObj, depth) {
+    return CodeUtil.parseSwiftRequest(name, reqObj, depth);
   },
 
 
@@ -449,7 +449,7 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseKotlin: function(name, reqObj, depth) {
+  parseKotlinRequest: function(name, reqObj, depth) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -475,11 +475,11 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlin(key, value, depth + 1);
+        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
       },
 
       onParseArray: function (key, value, index, isOuter) {
@@ -490,7 +490,7 @@ var CodeUtil = {
           var inner = '';
           var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
           for (var i = 0; i < value.length; i ++) {
-            inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlin(null, value[i], depth + (isOuter ? 1 : 2));
+            inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlinRequest(null, value[i], depth + (isOuter ? 1 : 2));
           }
           s += inner;
         }
@@ -528,7 +528,7 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseJava: function(name, reqObj, depth, isSmart, isArrayItem) {
+  parseJavaRequest: function(name, reqObj, depth, isSmart, isArrayItem) {
     name = name || 'request'
     if (depth == null || depth < 0) {
       depth = 0;
@@ -564,7 +564,7 @@ var CodeUtil = {
         var query = isSmart ? value.query : null;
         var join = isSmart ? value.join : null;
 
-        log(CodeUtil.TAG, 'parseJava  for  count = ' + count + '; page = ' + page);
+        log(CodeUtil.TAG, 'parseJavaRequest  for  count = ' + count + '; page = ' + page);
 
         if (isSmart) {
           delete value.count;
@@ -573,9 +573,9 @@ var CodeUtil = {
           delete value.join;
         }
 
-        s += CodeUtil.parseJava(key, value, depth + 1, isSmart);
+        s += CodeUtil.parseJavaRequest(key, value, depth + 1, isSmart);
 
-        log(CodeUtil.TAG, 'parseJava  for delete >> count = ' + count + '; page = ' + page);
+        log(CodeUtil.TAG, 'parseJavaRequest  for delete >> count = ' + count + '; page = ' + page);
 
         var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
 
@@ -627,7 +627,7 @@ var CodeUtil = {
           delete value['@role'];
         }
 
-        s += CodeUtil.parseJava(key, value, depth + 1, isSmart);
+        s += CodeUtil.parseJavaRequest(key, value, depth + 1, isSmart);
 
         const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
         if (isTable) {
@@ -680,7 +680,7 @@ var CodeUtil = {
                 inner += '//FIXME 这里不可能出现 value[' + i + '] 类型为 ' + (typeof value[i]) + '！'; //不可能
               }
 
-              inner += CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, value[i], itemName, depth + 1, isSmart, true, CodeUtil.parseJava);
+              inner += CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, value[i], itemName, depth + 1, isSmart, true, CodeUtil.parseJavaRequest);
               inner += '\n' + innerPrefix + varName + '.add(' + itemName + ');';
               inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
             }
@@ -748,7 +748,7 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseCpp: function(name, reqObj, depth, isSmart, isArrayItem) {
+  parseCppRequest: function(name, reqObj, depth, isSmart, isArrayItem) {
     name = name || 'request'
     if (depth == null || depth < 0) {
       depth = 0;
@@ -781,7 +781,7 @@ var CodeUtil = {
           var name = JSONResponse.getVariableName(CodeUtil.getItemKey(key)) + (depth <= 0 ? '' : depth + 1);
 
           var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-          s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+          s += CodeUtil.parseCppRequest(key, value, depth + 1, isSmart);
           s += '\n\n' + CodeUtil.getBlank(depth + 1) + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
           s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -792,7 +792,7 @@ var CodeUtil = {
           const name = CodeUtil.getTableKey(JSONResponse.getVariableName(key));
 
           var s = '\n\n' + prefix + '{   ' + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-          s += CodeUtil.parseCpp(key, value, depth + 1, isSmart);
+          s += CodeUtil.parseCppRequest(key, value, depth + 1, isSmart);
           s += '\n\n' + nextPrefix + parentKey + '.AddMember("' + key + '", ' + name + ', allocator);';
           s += '\n' + prefix + '}   ' + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -830,7 +830,7 @@ var CodeUtil = {
                   inner += '//FIXME 这里不可能出现 value[' + i + '] 类型为 ' + (typeof value[i]) + '！'; //不可能
                 }
 
-                inner += CodeUtil.getCode4Value(CodeUtil.LANGUAGE_C_PLUS_PLUS, value[i], itemName, depth + 1, isSmart, true, CodeUtil.parseCpp);
+                inner += CodeUtil.getCode4Value(CodeUtil.LANGUAGE_C_PLUS_PLUS, value[i], itemName, depth + 1, isSmart, true, CodeUtil.parseCppRequest);
                 inner += '\n' + innerPrefix + varName + '.PushBack(' + itemName + ', allocator);';
                 inner += '\n' + nextPrefix + '}   ' + '// ' + key + '[' + i + '] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
               }
@@ -2304,6 +2304,231 @@ var CodeUtil = {
     })
 
   },
+
+
+
+
+  /**生成 Server-Java API 相关代码
+   * @param type
+   * @param url
+   * @param reqObj
+   * @param isSmart
+   * @return
+   */
+  parseJavaServer: function(type, url, reqObj, isSmart) {
+    var requestMethod = StringUtil.isEmpty(type, true) || type == 'PARAM' ? 'GET' : 'POST';
+
+    url = url || '';
+
+    var lastIndex = url.lastIndexOf('/');
+    var methodUri = lastIndex < 0 ? url : url.substring(lastIndex);
+    var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+
+    url = url.substring(0, lastIndex);
+    lastIndex = url.lastIndexOf('/');
+    var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+    var modelName = StringUtil.firstCase(varName, true);
+
+    var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
+
+    var isList = methodName.startsWith('list');
+    var dataType = isList ? 'List<' + modelName + '>' : modelName;
+
+    var params = reqObj.params || {};
+    var pageSize = reqObj.pageSize || params.pageSize;
+    var pageNum = reqObj.pageNum || params.pageNum;
+
+    var orderBy = reqObj.orderBy;
+
+    /**
+     * @param annotionType RequestParam, Param, null
+     */
+    function getArgs(withType, annotionType) {
+      var str = '';
+      var first = true;
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        var t = withType ? CodeUtil.getJavaTypeFromJS(k, v) : null;
+
+        str += (first ? '' : ', ') + (annotionType == null ? '' : '@' + annotionType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
+        first = false;
+      }
+
+      return str;
+    }
+
+    /**
+     * @param annotionType RequestParam, Param, null
+     */
+    function getOrderStr(orderBy) {
+     if (typeof orderBy == 'string') {
+       return orderBy;
+     }
+
+     if (orderBy instanceof Array == false && orderBy instanceof Object) {
+       var str = '';
+       var first = true;
+       for (var k in orderBy) {
+         var v = orderBy[k];
+         str += (first ? '' : ',') + k + ' ' + v;
+         first = false;
+       }
+
+       return str;
+     }
+
+     return null;
+    }
+
+    var typeArgStr = getArgs(true, null);
+    var argStr = getArgs(false, null);
+
+    var code = '@RestController("' + controllerUri + '")\n' +
+      'public class ' + modelName + 'Controller {\n' +
+      '\n' +
+      '    @Autowired\n' +
+      '    ' + modelName + 'Service ' + varName + 'Service;\n' +
+      '\n' +
+      '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
+      '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
+      '    public ' + (isSmart ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + getArgs(true, 'RequestParam') + ') {';
+
+
+    if (isSmart) {
+      delete reqObj.params;
+      delete reqObj.pageSize;
+      delete reqObj.pageNum;
+
+      delete reqObj.orderBy;
+
+      typeArgStr = getArgs(true, null);
+      argStr = getArgs(false, null);
+    }
+
+    var orderStr = getOrderStr(orderBy);
+    var isOrderEmpty = StringUtil.isEmpty(orderStr, true);
+
+    if (isSmart) {
+      if (pageSize != null) {
+        code += '\n        PageHelper.startPage(pageNum, pageSize' + (isOrderEmpty ? '' : ', orderby') + ');';
+      }
+      else if (isOrderEmpty != true) {
+        code += '\n        PageHelper.setOrderBy(' + orderStr + ');';
+      }
+    }
+
+    code += '\n' +
+      '        return ' + (isSmart ? 'new PageInfo(' : '') + varName + 'Service.' + methodName + '(' + argStr + ')' + (isSmart ? ')' : '') + ';\n' +
+      '    }\n' +
+      '}\n' +
+      '\n' +
+      '@Service\n' +
+      'public interface ' + modelName + 'Service {\n' +
+      '    ' + dataType + ' ' + methodName + '(' + typeArgStr + ');\n' +
+      '}\n' +
+      '\n' +
+      'public class ' + modelName + 'ServiceImpl implements ' + modelName + 'Service {\n' +
+      '\n' +
+      '    @Autowired\n' +
+      '    ' + modelName + 'Mapper ' + varName + 'Mapper;\n' +
+      '\n' +
+      '    @Override\n' +
+      '    public ' + dataType + ' ' + methodName + '(' + typeArgStr + ') {\n' +
+      '        return ' + varName + 'Mapper.' + methodName + '(' + argStr + ');\n' +
+      '    }\n' +
+      '}\n' +
+      '\n' +
+      '@Mapper\n' +
+      'public interface ' + modelName + 'Mapper {\n' +
+      '    ' + dataType + ' ' + methodName + '(' + getArgs(true, 'Param') + ');\n' +
+      '}';
+
+
+    code += '\n\n' +
+      '<select id="' + methodName + '">\n' +
+      '    SELECT * FROM ' + modelName + ' WHERE 1=1';
+
+
+    function getWhere(reqObj, parent) {
+      var str = '';
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        if (v == null) {
+          continue;
+        }
+
+        var vn = JSONResponse.getVariableName(k);
+        var vnWithPrefix = StringUtil.isEmpty(parent, true) ? vn : parent + '.' + vn;
+
+        if (v instanceof Array) {
+          str += '\n' +
+            '    ' + vn + 'IN\n' +
+            '    <foreach item="item" collection="params.' + vnWithPrefix + '" separator="," open="(" close=")" index="index">\n' +
+            '        #{ item, jdbcType=' + (typeof v[0] == 'number' ? 'NUMERIC' : 'VARCHAR' ) + '}\n' +
+            '    </foreach>';
+        }
+        else if (v instanceof Object) {
+          str += getWhere(v, vnWithPrefix);
+        }
+        else {
+          var isStr = typeof v == 'string';
+          str += '\n' +
+            '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
+            '        AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
+            '    </if>';
+        }
+      }
+
+      return str;
+    }
+
+    function getOrder(orderBy) {
+      var str = '';
+      // for (var k in orderBy) {
+      //   var v = reqObj[k];
+      //   var isStr = typeof v == 'string';
+      //   var vn = JSONResponse.getVariableName(k);
+      // }
+
+      // str += '\n' +
+      //   '    <foreach item="item" collection="params.' + vn + '" separator="," open="(" close=")" index="">\n' +
+      //   '        #{ item.column, jdbcType=VARCHAR } #{ item.order, jdbcType=VARCHAR }\n' +
+      //   '    </foreach>';
+
+      str += isOrderEmpty ? '' : '\n    ORDER BY ${ orderBy }'
+
+      return str;
+    }
+
+    function getLimit(pageSize, pageNum) {
+      var str = '';
+      if (pageSize != null) {
+        str += '\n\n' +
+          '    <if test="params.pageSize != null">\n' +
+          '        LIMIT \n' +
+          '        <if test="params.pageNum != null and params.pageNum > 1">\n' +
+          '            #{ params.pageSize*(params.pageNum - 1) },\n' +
+          '        </if>\n' +
+          '        #{ params.pageSize }\n' +
+          '    </if>';
+      }
+
+      return str;
+    }
+
+    code += getWhere(reqObj);
+
+    if (isSmart != true) {
+      code += getOrder(orderBy);
+      code += getLimit(pageSize, pageNum);
+    }
+
+    code += '\n' +
+      '</select>';
+
+    return code;
+  },
+
 
 
 

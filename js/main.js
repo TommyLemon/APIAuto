@@ -2909,51 +2909,56 @@
           case CodeUtil.LANGUAGE_KOTLIN:
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
-              + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
+              + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
           case CodeUtil.LANGUAGE_JAVA:
             s += '\n#### <= Android-Java: 同名变量需要重命名'
               + ' \n ```java \n'
-              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
+              + StringUtil.trim(CodeUtil.parseJavaRequest(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 的 JSONObject(true) 等有序JSON构造方法\n');
+              
+            s += '\n#### <= Server-Java: 使用 SpringBoot'
+              + ' \n ```java \n'
+              + CodeUtil.parseJavaServer(App.type, '/' + App.getMethod(), JSON.parse(rq), isSingle)
+              + '\n ``` \n' + (isSingle ? '注：分页和排序用了 Mybatis-PageHelper ，如不需要则在生成代码基础上修改\n' : '注：\n');
             break;
           case CodeUtil.LANGUAGE_C_SHARP:
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
               '\n ```csharp \n'
-              + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
+              + CodeUtil.parseCSharpRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
 
           case CodeUtil.LANGUAGE_SWIFT:
             s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
               + '\n ```swift \n'
-              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
+              + CodeUtil.parseSwiftRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
             break;
           case CodeUtil.LANGUAGE_OBJECTIVE_C:
             s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
-              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
+              + CodeUtil.parseObjectiveCRequest(null, JSON.parse(rq))
               + '\n ```  \n';
             break;
 
           case CodeUtil.LANGUAGE_GO:
             s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
-              + CodeUtil.parseGo(null, JSON.parse(rq), 0)
+              + CodeUtil.parseGoRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
           case CodeUtil.LANGUAGE_C_PLUS_PLUS:
             s += '\n#### <= Web-C++: 使用 RapidJSON'
               + ' \n ```cpp \n'
-              + StringUtil.trim(CodeUtil.parseCpp(null, JSON.parse(rq), 0, isSingle))
+              + StringUtil.trim(CodeUtil.parseCppRequest(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：std::string 类型值需要判断 RAPIDJSON_HAS_STDSTRING\n';
             break;
 
           case CodeUtil.LANGUAGE_PHP:
             s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
               + ' \n ```php \n'
-              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
+              + CodeUtil.parsePHPRequest(null, JSON.parse(rq), 0, isSingle)
               + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
             break;
 
