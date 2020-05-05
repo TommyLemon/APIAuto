@@ -2387,7 +2387,7 @@
             throw new Error(e2.message)
           }
 
-          before = App.toDoubleJSON(before);
+          before = App.toDoubleJSON(StringUtil.trim(before));
           log('onHandle  before = \n' + before);
 
           var afterObj;
@@ -2429,7 +2429,7 @@
             }
           }
 
-          vInput.value = before
+          vInput.value = StringUtil.trim(before)
             + '\n                                                                                                       '
             + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
@@ -2440,7 +2440,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language)
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
