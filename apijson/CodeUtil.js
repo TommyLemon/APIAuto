@@ -572,22 +572,23 @@ var CodeUtil = {
         }
 
         var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
-          + '\n' + methodName + '(' + CodeUtil.getJavaArgValues(reqObj, true) + ');\n'
+          + '\n' + methodName + '(' + CodeUtil.getCode4JavaArgValues(reqObj, true) + ');\n'
           + '\n/**'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
-          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
+          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getCode4JavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
           + (type == 'JSON' || type == 'DATA' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
           + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
-          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart))) + ');'
+          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getCode4JavaArgs(reqObj, false, null, ! isSmart, true, true))) + ');'
           + '\n}';
 
+        //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
         s += '\n\n' +
           'public interface ' + modelName + 'Service {\n' +
           (type == 'JSON' ? nextPrefix + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded\n': (type == 'DATA' ? nextPrefix + '@Multipart\n': '')))  +
           nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', null, ! isSmart))) + ');\n' +
+          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getCode4JavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + ');\n' +
           '}';
 
         if (! isSmart) {
@@ -2443,7 +2444,7 @@ var CodeUtil = {
   },
 
 
-  getJavaArgValues: function (reqObj, useVar4ComplexValue) {
+  getCode4JavaArgValues: function (reqObj, useVar4ComplexValue) {
     var str = '';
     if (reqObj != null) {
       var first = true;
@@ -2463,10 +2464,14 @@ var CodeUtil = {
 
     return str;
   },
-  /**
-   * @param annotionType RequestParam, Param, null
+  /**获取参数代码
+   * @param reqObj 对象
+   * @param withType 带上类型
+   * @param annotionType null, Server: RequestParam, Param; Android: Query, Field, Part, Query-QueryMap, Query-QueryMap(encode=true), Part-PartMap
+   * @param rawType true-使用 JDK 有的原始类型，其它-使用 JSONObject, JSONRequest 等第三方库封装类型
+   * @param complex2String 将复杂类型转为 String，值转为 toJSONString
    */
-  getJavaArgs: function(reqObj, withType, annotationType, rawType) {
+  getCode4JavaArgs: function(reqObj, withType, annotationType, rawType, complex2String) {
     var str = '';
     if (reqObj != null) {
       var first = true;
@@ -2475,7 +2480,26 @@ var CodeUtil = {
         var v = reqObj[k];
         var t = withType ? CodeUtil.getJavaTypeFromJS(k, v, false, false, rawType) : null;
 
-        str += (first ? '' : ', ') + (annotationType == null ? '' : '@' + annotationType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
+        var at = annotationType;
+        if (annotationType != null) { //简单数据注解类型-复杂数据注解类型
+          var index = annotationType.indexOf('-');
+          if (index >= 0) {
+            at = v instanceof Object ? annotationType.substring(index + 1, annotationType.length) : annotationType.substring(0, index);
+          }
+        }
+
+        var vk = JSONResponse.getVariableName(k);
+
+        if (complex2String && v instanceof Object) {
+          if (withType) {
+            t = 'String';
+          }
+          else {
+            vk = 'JSON.toJSONString(' + vk + ')';
+          }
+        }
+
+        str += (first ? '' : ', ') + (at == null ? '' : '@' + at + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + vk;
         first = false;
       }
     }
@@ -2542,8 +2566,8 @@ var CodeUtil = {
      return null;
     }
 
-    var typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart);
-    var argStr = CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart);
+    var typeArgStr = CodeUtil.getCode4JavaArgs(reqObj, true, null, ! isSmart);
+    var argStr = CodeUtil.getCode4JavaArgs(reqObj, false, null, ! isSmart);
 
     var code = '@RestController("' + controllerUri + '")\n' +
       'public class ' + modelName + 'Controller {\n' +
@@ -2553,7 +2577,7 @@ var CodeUtil = {
       '\n' +
       '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
       '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
-      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + (type == 'JSON' ? '@RequestBody String body' : CodeUtil.getJavaArgs(reqObj, true, 'RequestParam', ! isSmart)) + ') {\n';
+      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + (type == 'JSON' ? '@RequestBody String body' : CodeUtil.getCode4JavaArgs(reqObj, true, 'RequestParam', ! isSmart)) + ') {\n';
 
     if (type == 'JSON') {
       //TODO 是否必要转成 User 类？还要考虑 PageHelper 可能是从里面取出来对象
@@ -2586,8 +2610,8 @@ var CodeUtil = {
 
       delete reqObj.orderBy;
 
-      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart);
-      argStr = CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart);
+      typeArgStr = CodeUtil.getCode4JavaArgs(reqObj, true, null, ! isSmart);
+      argStr = CodeUtil.getCode4JavaArgs(reqObj, false, null, ! isSmart);
     }
 
     var orderStr = getOrderStr(orderBy);
@@ -2625,7 +2649,7 @@ var CodeUtil = {
       '\n' +
       '@Mapper\n' +
       'public interface ' + modelName + 'Mapper {\n' +
-      '    ' + dataType + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'Param', ! isSmart) + ');\n' +
+      '    ' + dataType + ' ' + methodName + '(' + CodeUtil.getCode4JavaArgs(reqObj, true, 'Param', ! isSmart) + ');\n' +
       '}';
 
 
