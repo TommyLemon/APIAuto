@@ -3749,8 +3749,8 @@
         var respCount = 0;
 
         randomId = randomId || 0;
-        var randomName = ''
-        var constConfig = '' //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
+        var randomNameKeys = []
+        var constConfigLines = [] //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
 
         // alert('< json = ' + JSON.stringify(json, null, '    '))
 
@@ -3765,7 +3765,7 @@
           if (line.length <= 0) {
             respCount ++;
             if (i >= lines.length - 1 && respCount >= reqCount) {
-              callback(randomName, constConfig, json);
+              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
             }
             continue;
           }
@@ -3793,7 +3793,7 @@
           // value RANDOM_DB
           const value = line.substring(index + ' : '.length);
 
-          var invoke = function (val, which, pathKeys, key, lastKeyInPath) {
+          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
             try {
               if (generateConfig) {
                 var configVal;
@@ -3806,7 +3806,7 @@
                 else {
                   configVal = val
                 }
-                constConfig += ((which <= 0 ? '' : ' \n') + p_k + ' : ' + configVal);
+                constConfigLines[which] = p_k + ' : ' + configVal;
               }
 
               if (generateName) {
@@ -3826,7 +3826,7 @@
                     valStr = valStr.substring(0, 5) + '...';
                   }
                 }
-                randomName += ((which <= 0 ? '' : ', ') + valStr);
+                randomNameKeys[which] = valStr;
               }
 
               if (generateJSON) {
@@ -3865,7 +3865,7 @@
 
             respCount ++;
             if (respCount >= reqCount) {
-              callback(randomName, constConfig, json);
+              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
             }
           };
 
@@ -3873,7 +3873,7 @@
           const start = value.indexOf('(');
           const end = value.lastIndexOf(')');
 
-          var request4Db = function(tableName, which, pathKeys, key, lastKeyInPath, isRandom, isDesc, step) {
+          var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step) {
             // const tableName = JSONResponse.getTableName(pathKeys[pathKeys.length - 2]);
             vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
 
@@ -3882,14 +3882,14 @@
             const max = StringUtil.isEmpty(args[1], true) ? null : +args[1]
 
             const tableReq = {
-              '@column': key,
-              '@order': isRandom ? 'rand()' : (key + (isDesc ? '-' : '+'))
+              '@column': lastKeyInPath,
+              '@order': isRandom ? 'rand()' : (lastKeyInPath + (isDesc ? '-' : '+'))
             };
-            tableReq[key + '>='] = min;
-            tableReq[key + '<='] = max;
+            tableReq[lastKeyInPath + '>='] = min;
+            tableReq[lastKeyInPath + '<='] = max;
 
             const req = {};
-            const listName = isRandom ? null : tableName + '-' + key + '[]';
+            const listName = isRandom ? null : tableName + '-' + lastKeyInPath + '[]';
             const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
 
             if (isRandom) {
@@ -3899,7 +3899,7 @@
               // 从数据库获取时不考虑边界，不会在越界后自动循环
               var listReq = {
                 count: 1, // count <= 100 ? count : 0,
-                page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，key 未必是 id
+                page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，lastKeyInPath 未必是 id
               };
               listReq[tableName] = tableReq;
               req[listName] = listReq;
@@ -3915,24 +3915,24 @@
               var data = (res || {}).data || {}
               if (data.code != CODE_SUCCESS) {
                 respCount = -reqCount;
-                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg;
+                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
                 alert(StringUtil.get(vOutput.value));
                 return
                 // throw new Error('随机测试 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
               }
 
               if (isRandom) {
-                invoke((data[tableName] || {})[key], which, pathKeys, key, lastKeyInPath);
+                invoke((data[tableName] || {})[lastKeyInPath], which, p_k, pathKeys, key, lastKeyInPath);
               }
               else {
                 var val = (data[listName] || [])[0];
                 //越界，重新获取
                 if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
                   ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
-                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, false, isDesc, step);
+                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step);
                 }
                 else {
-                  invoke(val, which, pathKeys, key, lastKeyInPath);
+                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath);
                 }
               }
 
@@ -3987,7 +3987,7 @@
               }
 
               if (fun == ORDER_DB) {
-                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, false, isDesc, step); //request4Db(key + (isDesc ? '-' : '+'), step);
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step); //request4Db(key + (isDesc ? '-' : '+'), step);
                 continue;
               }
 
@@ -4001,7 +4001,7 @@
               fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
 
               if (fun == RANDOM_DB) {
-                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, pathKeys, key, lastKeyInPath, true); //'random()');
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true); //'random()');
                 continue;
               }
 
@@ -4022,7 +4022,7 @@
 
           }
 
-          invoke(eval(toEval), which, pathKeys, key, lastKeyInPath);
+          invoke(eval(toEval), which, p_k, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
