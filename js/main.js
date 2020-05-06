@@ -1383,6 +1383,10 @@
                     name: '默认配置(上传测试用例时自动生成)',
                     config: config
                   },
+                  TestRecord: {
+                    host: App.getBaseUrl(),
+                    response: ''
+                  },
                   'tag': 'Random'
                 }, {}, function (url, res, err) {
                   if (res.data != null && res.data.Random != null && res.data.Random.code == CODE_SUCCESS) {
