@@ -2695,11 +2695,12 @@ var CodeUtil = {
 
       code += '\n\n' +
         '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
-        '    SELECT ' + (StringUtil.isEmpty(cs, true) ? '*' : cs) + '\n    FROM ' + tablePath + ' AS `' + modelName + '`';
+        '    SELECT ' + (cs.indexOf(',') < 0 ? '*' : cs) + '\n    FROM ' + tablePath + ' AS `' + modelName + '`';
     }
 
-    function getWhere(reqObj, parent, mustHasKeys) {
+    function getWhere(reqObj, parent, mustKeys) {
       var str = '';
+      // 失败的尝试：只有当搜索内容完全一样时，才可能是多个字段任意匹配 var strKeys = [];
       for (var k in reqObj) {
         var v = reqObj[k];
         // if (v == null) {
@@ -2711,17 +2712,28 @@ var CodeUtil = {
 
         if (v instanceof Array) {
           str += '\n' +
-            '    ' + vn + ' IN \n' +
+            '    AND ' + vn + ' IN \n' +
             '    <foreach item="item" collection="params.' + vnWithPrefix + '" separator="," open="(" close=")" index="index">\n' +
-            '        #{ item, jdbcType=' + (typeof v[0] == 'number' ? 'NUMERIC' : 'VARCHAR' ) + '}\n' +
+            '        #{ item, jdbcType = ' + (typeof v[0] == 'number' ? 'NUMERIC' : 'VARCHAR' ) + ' }\n' +
             '    </foreach>';
         }
         else if (v instanceof Object) {
           str += getWhere(v, vnWithPrefix);
         }
         else {
+          var isMust = mustKeys != null && mustKeys.indexOf(k) >= 0;
           var isStr = typeof v == 'string';
-          if (mustHasKeys != null && mustHasKeys.indexOf(k) >= 0) {
+
+          // 失败的尝试：只有当搜索内容完全一样时，才可能是多个字段任意匹配
+          // if (isMust != true && isStr && parent == null
+          //   && k.indexOf('date') <= 0 && k.indexOf('time') <= 0 && k.indexOf('status') <= 0 && k.indexOf('state') <= 0
+          //   && k.indexOf('Date') <= 0 && k.indexOf('Time') <= 0 && k.indexOf('Status') <= 0 && k.indexOf('State') <= 0
+          // ) {
+          //   strKeys.push(k);
+          //   continue;
+          // }
+
+          if (isMust) {
             str += '\n' + '    AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '');
           }
           else {
@@ -2733,7 +2745,30 @@ var CodeUtil = {
         }
       }
 
-      return StringUtil.isEmpty(str, true) ? '' : (parent != null ? '' : '\n\n    WHERE 1=1 ') + str;
+      // 失败的尝试：只有当搜索内容完全一样时，才可能是多个字段任意匹配
+      // var orStr = ''; // Maximum call stack size exceededgetWhere(strPairObj, '', null, 'OR');
+      // for (var i = 0; i < strKeys.length; i ++) {
+      //   var vn = JSONResponse.getVariableName(strKeys[i]);
+      //   var vnWithPrefix = StringUtil.isEmpty(parent, true) ? vn : parent + '.' + vn;
+      //
+      //   if (strKeys.length <= 1) {  //没必要 OR 连接
+      //     str += '\n' +
+      //       '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
+      //       '        AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
+      //       '    </if>';
+      //   }
+      //   else {
+      //     orStr += '\n' +
+      //       '        <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
+      //       '            OR ' + vn + ' ' + 'LIKE concat(\'%\', #{ params.' + vnWithPrefix + ' }' + ', \'%\') \n' +
+      //       '        </if>';
+      //   }
+      // }
+      // if (StringUtil.isEmpty(orStr, true) != true) {
+      //   orStr = '\n    AND ( 1=0 ' + orStr + '\n    )';
+      // }
+
+      return StringUtil.isEmpty(str, true) ? '' : (parent != null ? '' : '\n\n    WHERE 1=1 ') + str; // 失败的尝试 + orStr;
     }
 
     /**必须把所有复杂值处理成 string
