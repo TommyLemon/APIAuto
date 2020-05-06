@@ -3038,7 +3038,10 @@
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
-              'r0()': 'removeKey(alias)'
+              'r0()': 'removeKey(alias)',
+              'name$': search,
+              'alias$': search,
+              '@combine': search == null ? null : 'name$,alias$',
             }
           },
           '[]': {
@@ -3112,14 +3115,20 @@
               'demo()': 'getFunctionDemo()',
               'detail()': 'getFunctionDetail()',
               'r0()': 'removeKey(name)',
-              'r1()': 'removeKey(arguments)'
+              'r1()': 'removeKey(arguments)',
+              'name$': search,
+              'detail$': search,
+              '@combine': search == null ? null : 'name$,detail$',
             }
           },
           'Request[]': {
             'count': 0,
             'Request': {
               '@order': 'version-,method-',
-              '@json': 'structure'
+              '@json': 'structure',
+              'tag$': search,
+              'detail$': search,
+              '@combine': search == null ? null : 'tag$,detail$',
             }
           }
         }, {}, function (url, res, err) {
