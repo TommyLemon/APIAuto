@@ -2534,8 +2534,8 @@ var CodeUtil = {
 
     var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
 
-    var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0);
-    var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0);
+    var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0 || methodUri.indexOf('create') >= 0);
+    var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
     var isDelete = type != 'PARAM' && (methodUri.indexOf('delete') >= 0 || methodUri.indexOf('remove') >= 0 || methodUri.indexOf('del') >= 0);
     var isWrite = isPost || isPut || isDelete;
     var isGet = ! isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
@@ -2668,7 +2668,8 @@ var CodeUtil = {
     }
 
     // var columnStr = (StringUtil.isEmpty(colums, true) ? '' : StringUtil.trim(colums));
-    var tablePath = (StringUtil.isEmpty(schema, true) ? '' : '`' + schema + '`.') + '`' + modelName + '`';
+    var quote = database == 'MYSQL' ? '`' : '"';
+    var tablePath = (StringUtil.isEmpty(schema, true) ? '' : quote + schema + quote + '.') + quote + modelName + quote;
     if (isPost) {
       code += '\n\n' +
         '<insert id="' + methodName + '">\n' +
@@ -2689,30 +2690,45 @@ var CodeUtil = {
       var cs = '';
       if (colums != null && colums.length > 0) {
         for (var i = 0; i < colums.length; i++) {
-          cs += (i <= 0 ? '' : ', ') + JSONResponse.getVariableName(colums[i]);
+          cs += (i <= 0 ? '' : ', ') + quote + colums[i] + quote; //需要尽可能保留原字段 [] 肯定不是字段名 JSONResponse.getVariableName(colums[i]) + quote;
         }
       }
 
       code += '\n\n' +
         '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
-        '    SELECT ' + (cs.indexOf(',') < 0 ? '*' : cs) + '\n    FROM ' + tablePath + ' AS `' + modelName + '`';
+        '    SELECT ' + (cs.indexOf(',') < 0 ? '*' : cs) + '\n    FROM ' + tablePath + ' AS ' + quote + modelName + quote;
     }
 
     function getWhere(reqObj, parent, mustKeys) {
+      //性能优化：强制把 id 排在最前面（增删改就不做了，很大可能就是需要按原来顺序）
+      var id = reqObj.id;
+      var userId = reqObj.userId;
+      var user_id = reqObj.user_id;
+      var userid = reqObj.userid;
+      if (id != undefined || userId != undefined || user_id != undefined || userid != undefined) {
+        delete reqObj.id;
+        delete reqObj.userId;
+        delete reqObj.user_id;
+        delete reqObj.userid;
+
+        reqObj = Object.assign({ id: id, userId: userId, user_id: user_id, userid: userid }, reqObj);
+      }
+
       var str = '';
       // 失败的尝试：只有当搜索内容完全一样时，才可能是多个字段任意匹配 var strKeys = [];
       for (var k in reqObj) {
         var v = reqObj[k];
-        // if (v == null) {
-        //   continue;
-        // }
+        if (v === undefined) { //null) {
+          continue;
+        }
 
         var vn = JSONResponse.getVariableName(k);
         var vnWithPrefix = StringUtil.isEmpty(parent, true) ? vn : parent + '.' + vn;
+        var cn = quote + k + quote; //需要尽可能保留原字段 [] 肯定不是字段名 quote + vn + quote;
 
         if (v instanceof Array) {
           str += '\n' +
-            '    AND ' + vn + ' IN \n' +
+            '    AND ' + cn + ' IN \n' +
             '    <foreach item="item" collection="params.' + vnWithPrefix + '" separator="," open="(" close=")" index="index">\n' +
             '        #{ item, jdbcType = ' + (typeof v[0] == 'number' ? 'NUMERIC' : 'VARCHAR' ) + ' }\n' +
             '    </foreach>';
@@ -2734,12 +2750,12 @@ var CodeUtil = {
           // }
 
           if (isMust) {
-            str += '\n' + '    AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '');
+            str += '\n' + '    AND ' + cn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '');
           }
           else {
             str += '\n' +
               '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
-              '        AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
+              '        AND ' + cn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
               '    </if>';
           }
         }
@@ -2786,10 +2802,11 @@ var CodeUtil = {
         // }
 
         var vn = JSONResponse.getVariableName(k);
+        var cn = quote + k + quote; //需要尽可能保留原字段 [] 肯定不是字段名 quote + vn + quote;
 
         prefix += '\n' +
             '            <if test="params.' + vn + ' != null">\n' +
-            '                ' + vn + ', \n' +
+            '                ' + cn + ', \n' +
             '            </if>';
 
         suffix += '\n' +
@@ -2822,10 +2839,11 @@ var CodeUtil = {
         // }
 
         var vn = JSONResponse.getVariableName(k);
+        var cn = quote + k + quote; //需要尽可能保留原字段 [] 肯定不是字段名 quote + vn + quote;
 
         str += '\n' +
             '        <if test="params.' + vn + ' != null">\n' +
-            '            ' + vn + ' = #{ params.' + vn + ' }, \n' +
+            '            ' + cn + ' = #{ params.' + vn + ' }, \n' +
             '        </if>';
       }
       str += '\n    </trim>';
@@ -2875,7 +2893,10 @@ var CodeUtil = {
         var id = reqObj.id;
         delete reqObj.id;
         code += getSet(reqObj);
-        reqObj = { id: id };
+        reqObj = { id: id || null };
+      }
+      else if (isDelete && reqObj.id == undefined) {
+        reqObj.id = null;
       }
       code += getWhere(reqObj, null, isPut || isDelete ? ['id'] : null);
     }
