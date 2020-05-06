@@ -556,8 +556,15 @@ var CodeUtil = {
 
       if (StringUtil.isEmpty(modelName, true) != true) {
         // var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
-        var isList = methodName.indexOf('list') >= 0 || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
-        var dataType = isList ? 'List<' + modelName + '>' : modelName;
+        var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0 || methodUri.indexOf('create') >= 0);
+        var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
+        var isDelete = type != 'PARAM' && (methodUri.indexOf('delete') >= 0 || methodUri.indexOf('remove') >= 0 || methodUri.indexOf('del') >= 0);
+        var isWrite = isPost || isPut || isDelete;
+        var isGet = ! isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
+        var isList = isGet && (methodUri.indexOf('list') >= 0 || methodUri.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number');
+
+        var dataType = isWrite ? 'Integer' : (isList ? 'List<' + modelName + '>' : modelName);
+
         var responseName = modelName + (isList ? 'List' : '') + 'Response';
 
         var str = '';
