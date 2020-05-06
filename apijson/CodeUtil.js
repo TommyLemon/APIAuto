@@ -545,7 +545,7 @@ var CodeUtil = {
       url = url || '';
 
       var lastIndex = url.lastIndexOf('/');
-      var methodUri = lastIndex < 0 ? url : url.substring(lastIndex);
+      var methodUri = url; // lastIndex < 0 ? url : url.substring(lastIndex);
       var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
 
       url = url.substring(0, lastIndex);
@@ -564,7 +564,7 @@ var CodeUtil = {
             var v = reqObj[k];
 
             if (v instanceof Object) {
-              str += CodeUtil.parseJavaRequest(k, v, depth, isSmart);
+              str += '\n' + CodeUtil.parseJavaRequest(JSONResponse.getVariableName(k), v, depth, isSmart);
             }
           }
         }
