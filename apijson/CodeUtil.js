@@ -2853,26 +2853,15 @@ var CodeUtil = {
 
     function getOrder(orderBy, database) {
       var str = '';
-      // for (var k in orderBy) {
-      //   var v = reqObj[k];
-      //   var isStr = typeof v == 'string';
-      //   var vn = JSONResponse.getVariableName(k);
-      // }
-
-      // str += '\n' +
-      //   '    <foreach item="item" collection="params.' + vn + '" separator="," open="(" close=")" index="">\n' +
-      //   '        #{ item.column, jdbcType=VARCHAR } #{ item.order, jdbcType=VARCHAR }\n' +
-      //   '    </foreach>';
-
       str += '\n\n' +
       '    <if test="orderBy != null and orderBy != \'\'">\n' +
       '        ORDER BY ${ orderBy } \n' +
       '    </if>';
 
-      if (database != 'MYSQL' && database != 'POSTGERSQL' && database != 'SQLITE') {
+      if (database != 'MYSQL' && database != 'POSTGRESQL' && database != 'SQLITE') {
         str += '\n' +
           '    <if test="orderBy == null or orderBy == \'\'">\n' +
-          '        ORDER BY id \n' +
+          '        ORDER BY "id" \n' +
           '    </if>';
       }
 
@@ -2880,7 +2869,7 @@ var CodeUtil = {
     }
 
     function getLimit(pageSize, pageNum, isSingle, database) {
-      if (database == 'MYSQL' || database == 'POSTGERSQL' || database == 'SQLITE') {
+      if (database == 'MYSQL' || database == 'POSTGRESQL' || database == 'SQLITE') {
         if (isSingle) {
           return '\n\n' +
             '    LIMIT 1';
