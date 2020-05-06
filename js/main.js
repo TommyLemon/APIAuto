@@ -3431,21 +3431,28 @@
               delete obj[k];
             }
           }
+
+          if (tag != null && obj[tag] == null) { //补全省略的Table
+            var isArrayKey = tag.endsWith(":[]");  //JSONObject.isArrayKey(tag);
+            var key = isArrayKey ? tag.substring(0, tag.length - 3) : tag;
+
+            if (this.isTableKey(key)) {
+              if (isArrayKey) { //自动为 tag = Comment:[] 的 { ... } 新增键值对 "Comment[]":[] 为 { "Comment[]":[], ... }
+                obj[key + "[]"] = [];
+              }
+              else { //自动为 tag = Comment 的 { ... } 包一层为 { "Comment": { ... } }
+                var realObj = {};
+                realObj[tag] = obj;
+                obj = realObj;
+              }
+            }
+          }
+
         }
+
+        obj.tag = tag; //补全tag
 
         log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
-
-        if (tag != null) {
-          //补全省略的Table
-          if (this.isTableKey(tag) && obj[tag] == null) {
-            log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
-            var realObj = {};
-            realObj[tag] = obj;
-            obj = realObj;
-            log('getStructure  realObj = \n' + JSON.stringify(realObj));
-          }
-          obj.tag = tag; //补全tag
-        }
 
         return obj;
       },
