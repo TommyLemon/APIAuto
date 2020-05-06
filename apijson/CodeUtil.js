@@ -2514,7 +2514,7 @@ var CodeUtil = {
    * @param isSmart
    * @return
    */
-  parseJavaServer: function(type, url, reqObj, isSmart) {
+  parseJavaServer: function(type, url, database, schema, reqObj, isSmart) {
     var requestMethod = StringUtil.isEmpty(type, true) || type == 'PARAM' ? 'GET' : 'POST';
 
     url = url || '';
@@ -2534,13 +2534,12 @@ var CodeUtil = {
 
     var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
 
-    var isList = methodName.indexOf('list') >= 0 || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
-    var isGet = isList || methodName.indexOf('get') >= 0 || methodName.indexOf('fetch') >= 0 || methodName.indexOf('query') >= 0;
-    var isPost = isGet != true && (methodName.indexOf('post') >= 0 || methodName.indexOf('add') >= 0);
-    var isPut = isGet != true && (methodName.indexOf('put') >= 0|| methodName.indexOf('edit') >= 0);
-    var isDelete = isGet != true && (methodName.indexOf('delete') >= 0 || methodName.indexOf('remove') >= 0 || methodName.indexOf('del') >= 0);
+    var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0);
+    var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0);
+    var isDelete = type != 'PARAM' && (methodUri.indexOf('delete') >= 0 || methodUri.indexOf('remove') >= 0 || methodUri.indexOf('del') >= 0);
     var isWrite = isPost || isPut || isDelete;
-    isGet = ! isWrite;
+    var isGet = ! isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
+    var isList = isGet && (methodUri.indexOf('list') >= 0 || methodUri.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number');
 
     var dataType = isWrite ? 'Integer' : (isList ? 'List<' + modelName + '>' : modelName);
 
@@ -2669,27 +2668,34 @@ var CodeUtil = {
     }
 
     // var columnStr = (StringUtil.isEmpty(colums, true) ? '' : StringUtil.trim(colums));
+    var tablePath = (StringUtil.isEmpty(schema, true) ? '' : '`' + schema + '`.') + '`' + modelName + '`';
     if (isPost) {
       code += '\n\n' +
         '<insert id="' + methodName + '">\n' +
-        '    INSERT INTO ' + modelName;
+        '    INSERT INTO ' + tablePath;
     }
     else if (isPut) {
       code += '\n\n' +
         '<update id="' + methodName + '">\n' +
-        '    UPDATE ' + modelName;
+        '    UPDATE ' + tablePath;
     }
     else if (isDelete) {
       code += '\n\n' +
         '<delete id="' + methodName + '">\n' +
-        '    DELETE FROM ' + modelName;
+        '    DELETE FROM ' + tablePath;
     }
     else {
-      var colums = Object.keys(reqObj); //TODO
+      var colums = Object.keys(reqObj);
+      var cs = '';
+      if (colums != null && colums.length > 0) {
+        for (var i = 0; i < colums.length; i++) {
+          cs += (i <= 0 ? '' : ', ') + JSONResponse.getVariableName(colums[i]);
+        }
+      }
 
       code += '\n\n' +
         '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
-        '    SELECT ' + (colums == null || colums.length <= 0 ? '*' : colums.join(', ')) + ' FROM ' + modelName;
+        '    SELECT ' + (StringUtil.isEmpty(cs, true) ? '*' : cs) + '\n    FROM ' + tablePath + ' AS `' + modelName + '`';
     }
 
     function getWhere(reqObj, parent, mustHasKeys) {
@@ -2705,7 +2711,7 @@ var CodeUtil = {
 
         if (v instanceof Array) {
           str += '\n' +
-            '    ' + vn + 'IN\n' +
+            '    ' + vn + ' IN \n' +
             '    <foreach item="item" collection="params.' + vnWithPrefix + '" separator="," open="(" close=")" index="index">\n' +
             '        #{ item, jdbcType=' + (typeof v[0] == 'number' ? 'NUMERIC' : 'VARCHAR' ) + '}\n' +
             '    </foreach>';
@@ -2727,7 +2733,7 @@ var CodeUtil = {
         }
       }
 
-      return StringUtil.isEmpty(str, true) ? '' : '\n\n    WHERE 1=1 ' + str;
+      return StringUtil.isEmpty(str, true) ? '' : (parent != null ? '' : '\n\n    WHERE 1=1 ') + str;
     }
 
     /**必须把所有复杂值处理成 string
@@ -2737,7 +2743,7 @@ var CodeUtil = {
      */
     function getValues(reqObj) {
       var prefix = '';
-      var suffix = '';
+      var suffix = '\n        <trim suffixOverrides=",">';
       for (var k in reqObj) {
         var v = reqObj[k];
         // if (v == null) {
@@ -2747,17 +2753,22 @@ var CodeUtil = {
         var vn = JSONResponse.getVariableName(k);
 
         prefix += '\n' +
-            '    <if test="params.' + vn + ' != null">\n' +
-            '        , ' + vn + '\n' +
-            '    </if>';
+            '            <if test="params.' + vn + ' != null">\n' +
+            '                ' + vn + ', \n' +
+            '            </if>';
 
         suffix += '\n' +
-            '    <if test="params.' + vn + ' != null">\n' +
-            '        , ' + '#{ params.' + vn + ' }\n' +
-            '    </if>';
+            '            <if test="params.' + vn + ' != null">\n' +
+            '                ' + '#{ params.' + vn + ' }, \n' +
+            '            </if>';
+      }
+      suffix += '\n        </trim>';
+
+      if (StringUtil.isEmpty(prefix, true) != true) {
+         prefix = '(\n        <trim suffixOverrides=",">' + prefix + '\n        </trim>\n    ) ';
       }
 
-      return (StringUtil.isEmpty(prefix, true) ? '' : '(' + prefix + '\n    ) ') + '\n    VALUES(' + suffix + '\n)';
+      return prefix + '\n    VALUES(' + suffix + '\n    )';
     }
 
     /**必须把所有复杂值处理成 string
@@ -2766,7 +2777,9 @@ var CodeUtil = {
      * @return {string}
      */
     function getSet(reqObj) {
-      var str = '';
+      var str = '\n\n    SET ' +
+        '\n    <trim suffixOverrides=",">';
+
       for (var k in reqObj) {
         var v = reqObj[k];
         // if (v == null) {
@@ -2776,12 +2789,13 @@ var CodeUtil = {
         var vn = JSONResponse.getVariableName(k);
 
         str += '\n' +
-            '    <if test="params.' + vn + ' != null">\n' +
-            '        , ' + vn + ' = #{ params.' + vn + ' }\n' +
-            '    </if>';
+            '        <if test="params.' + vn + ' != null">\n' +
+            '            ' + vn + ' = #{ params.' + vn + ' }, \n' +
+            '        </if>';
       }
+      str += '\n    </trim>';
 
-      return StringUtil.isEmpty(str, true) ? '' : '\n\n    SET ' + str;
+      return str;
     }
 
     function getOrder(orderBy) {
