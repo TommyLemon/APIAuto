@@ -994,7 +994,7 @@ var JSONResponse = {
       }
       //String 类型在 长度超过一定值 或 不是 常量名 时，改成 无限模型
       //不用 type 判断类型，这样可以保证 lengthType 不会自动升级
-      if (typeof real == 'string' && (real.length > 20 || StringUtil.isName(real) != true)) {
+      if (typeof real == 'string' && (real.length > 20 || StringUtil.isConstName(real) != true)) {
         if (level != 2) { //自定义模型不受影响
           target[levelName] = 3;
         }

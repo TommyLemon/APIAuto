@@ -70,6 +70,10 @@ var StringUtil = {
     return s != null && /^[0-9a-zA-Z_]+$/.test(s);
   },
 
+  isConstName(s) {
+    return s != null && /^[0-9A-Z_]+$/.test(s);
+  },
+
 
   /**添加后缀
    * @param key

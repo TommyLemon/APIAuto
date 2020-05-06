@@ -2751,6 +2751,18 @@ var CodeUtil = {
         else {
           var isMust = mustKeys != null && mustKeys.indexOf(k) >= 0;
           var isStr = typeof v == 'string';
+          var isLike = isMust != true && isStr && (v.length > 10 || (StringUtil.isConstName(v) != true));
+
+          //没必要，前面长度+格式判断已经很精准了
+          if (isLike != true && isMust != true && isStr) {
+            var words = ['content', 'detail', 'descri', 'introduc', 'message', 'msg', 'err', 'comment', 'hint', 'alert', 'announce', 'statement', 'word', 'sentence', 'translat', 'explain']; // ['status', 'state', 'type', 'code', 'verify', 'sex', 'gender']; //, 'group', 'role', 'category', 'job', 'major', 'class', 'course']
+            for (var j = 0; j < words.length; j++) {
+              if (k.indexOf(words[j]) >= 0 || k.indexOf(StringUtil.firstCase(words[j], true)) >= 0) {
+                isLike = true;  //isLike = false;
+                break;
+              }
+            }
+          }
 
           // 失败的尝试：只有当搜索内容完全一样时，才可能是多个字段任意匹配
           // if (isMust != true && isStr && parent == null
@@ -2762,12 +2774,12 @@ var CodeUtil = {
           // }
 
           if (isMust) {
-            str += '\n' + '    AND ' + cn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '');
+            str += '\n' + '    AND ' + cn + ' ' + (isLike ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isLike ? ', \'%\')' : '');
           }
           else {
             str += '\n' +
-              '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
-              '        AND ' + cn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
+              '    <if test="params.' + vnWithPrefix + ' != null' + (isLike ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
+              '        AND ' + cn + ' ' + (isLike ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isLike ? ', \'%\')' : '') + '\n' +
               '    </if>';
           }
         }
