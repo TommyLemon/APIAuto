@@ -2851,7 +2851,7 @@ var CodeUtil = {
       return str;
     }
 
-    function getOrder(orderBy) {
+    function getOrder(orderBy, database) {
       var str = '';
       // for (var k in orderBy) {
       //   var v = reqObj[k];
@@ -2864,24 +2864,48 @@ var CodeUtil = {
       //   '        #{ item.column, jdbcType=VARCHAR } #{ item.order, jdbcType=VARCHAR }\n' +
       //   '    </foreach>';
 
-      str += isOrderEmpty ? '' : '\n\n    ORDER BY ${ orderBy }'
+      str += '\n\n' +
+      '    <if test="orderBy != null and orderBy != \'\'">\n' +
+      '        ORDER BY ${ orderBy } \n' +
+      '    </if>';
+
+      if (database != 'MYSQL' && database != 'POSTGERSQL' && database != 'SQLITE') {
+        str += '\n' +
+          '    <if test="orderBy == null or orderBy == \'\'">\n' +
+          '        ORDER BY id \n' +
+          '    </if>';
+      }
 
       return str;
     }
 
-    function getLimit(pageSize, pageNum, isSingle) {
+    function getLimit(pageSize, pageNum, isSingle, database) {
+      if (database == 'MYSQL' || database == 'POSTGERSQL' || database == 'SQLITE') {
+        if (isSingle) {
+          return '\n\n' +
+            '    LIMIT 1';
+        }
+
+        return '\n\n' +
+          '    <if test="params.pageSize != null">\n' +
+          '        LIMIT #{ params.pageSize }\n' +
+          '        <if test="params.pageNum != null and params.pageNum > 1">\n' +
+          '            OFFSET #{ params.pageSize*(params.pageNum - 1) } \n' +
+          '        </if>\n' +
+          '    </if>';
+      }
+
       if (isSingle) {
         return '\n\n' +
-          '    LIMIT 1';
+          '    FETCH FIRST 1 ROWS ONLY';
       }
 
       return '\n\n' +
         '    <if test="params.pageSize != null">\n' +
-        '        LIMIT \n' +
         '        <if test="params.pageNum != null and params.pageNum > 1">\n' +
-        '            #{ params.pageSize*(params.pageNum - 1) },\n' +
+        '            OFFSET #{ params.pageSize*(params.pageNum - 1) } ROWS \n' +
         '        </if>\n' +
-        '        #{ params.pageSize }\n' +
+        '        FETCH NEXT #{ params.pageSize } ROWS ONLY \n' +
         '    </if>';
     }
 
@@ -2902,8 +2926,8 @@ var CodeUtil = {
     }
 
     if (isSmart != true && isGet) {
-      code += getOrder(orderBy);
-      code += getLimit(pageSize, pageNum, isList != true && pageSize == null);
+      code += getOrder(orderBy, database);
+      code += getLimit(pageSize, pageNum, isList != true && pageSize == null, database);
     }
 
     if (isPost) {
@@ -4983,7 +5007,7 @@ var CodeUtil = {
     OWNER: '拥有者',
     ADMIN: '管理员'
   },
-  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE'],
+  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'SQLITE'],
 
   /**获取请求JSON的注释
    * @param tableList

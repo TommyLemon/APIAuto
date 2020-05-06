@@ -928,7 +928,7 @@
               App.isConfigShow = true
 
               if (index == 0) {
-                alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE')
+                alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE,DB2,SQLITE')
               }
               else if (index == 2) {
                 alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
