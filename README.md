@@ -34,7 +34,9 @@
 ### 部署方法
 
 可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
-也可以直接访问 http://apijson.org/auto ，把基地址改为你主机的地址(例如 http://localhost:8080 )即可。
+也可以直接访问线上环境 http://apijson.org/auto 或开发环境 http://apijson.org:8000/auto ，<br />
+右上角登录的默认管理员账号为 13000082001 密码为 123456，<br />
+把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )即可。<br />
 
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
 [https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server) 
