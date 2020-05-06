@@ -3609,7 +3609,8 @@
 
               if (testSubList) {  //在原来已上传的基础上，生成新的
                 if (which >= existCount) {
-                  subs.push({
+                  //异步导致顺序错乱 subs.push({
+                  subs[which] = {
                     Random: {
                       id: -i - 1, //表示未上传
                       toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
@@ -3631,7 +3632,8 @@
                     //   date: tr.date,
                     //   compare: tr.compare
                     // }
-                  })
+                  // })
+                  };
                 }
               }
               else {
@@ -3653,9 +3655,9 @@
                 }
               }
 
-              if (testSubList && which >= count - 1 && respCount >= count) {
+              if (testSubList && respCount >= count) { // && which >= count - 1) {
                 App.randomSubs = subs
-                if (this.isRandomListShow == true) {
+                if (App.isRandomListShow == true) {
                   App.resetCount(item)
                   item.subs = subs
                 }
