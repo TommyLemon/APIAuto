@@ -605,40 +605,45 @@ var CodeUtil = {
           }
 
           s += '\n\n' +
-            'public class ' + responseName + '<T> {\n' +
+            'public class ' + responseName + '<T> extends Response<T> {\n' +
+            nextPrefix + 'private ' + dataType + ' ' + varName + ';\n\n' +
+            nextPrefix + 'public '+ dataType + ' get' + modelName + '() {\n' +
+            nextNextPrefix + 'return ' + varName + ';\n' +
+            nextPrefix + '}\n' +
+            nextPrefix + 'public ' + responseName + '<T> set' + modelName + '(' + dataType + ' ' + varName + ') {\n' +
+            nextNextPrefix + 'this.' + varName + ' = ' + varName + ';\n' +
+            nextNextPrefix + 'return this;\n' +
+            nextPrefix + '}\n' +
+            '}';
+
+          s += '\n\n' +
+            'public class Response<T> {\n' +
             nextPrefix + 'private int code;\n' +
             nextPrefix + 'private String msg;\n' +
-            nextPrefix + 'private T data;\n' +
-            nextPrefix + 'private ' + dataType + ' ' + varName + ';\n\n' +
+            nextPrefix + 'private T data;\n\n' +
             nextPrefix + 'public int getCode() {\n' +
             nextNextPrefix + 'return code;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + responseName + '<T> setCode(int code) {\n' +
+            nextPrefix + 'public Response<T> setCode(int code) {\n' +
             nextNextPrefix + 'this.code = code;\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n\n' +
             nextPrefix + 'public String getMsg() {\n' +
             nextNextPrefix + 'return msg;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + responseName + '<T> setMsg(String msg) {\n' +
+            nextPrefix + 'public Response<T> setMsg(String msg) {\n' +
             nextNextPrefix + 'this.msg = msg;\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n\n' +
             nextPrefix + 'public T getData() {\n' +
             nextNextPrefix + 'return data;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + responseName + '<T> setData(T data) {\n' +
+            nextPrefix + 'public Response<T> setData(T data) {\n' +
             nextNextPrefix + 'this.data = data;\n' +
-            nextNextPrefix + 'return this;\n' +
-            nextPrefix + '}\n\n' +
-            nextPrefix + 'public '+ dataType + ' get' + modelName + '() {\n' +
-            nextNextPrefix + 'return ' + varName + ';\n' +
-            nextPrefix + '}\n' +
-            nextPrefix + 'public ' + responseName + ' set' + modelName + '(' + dataType + ' ' + varName + ') {\n' +
-            nextNextPrefix + 'this.' + varName + ' = ' + varName + ';\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n' +
             '}';
+
         }
 
         return s;
