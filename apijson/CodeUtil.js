@@ -555,9 +555,10 @@ var CodeUtil = {
       var modelName = StringUtil.firstCase(varName, true);
 
       if (StringUtil.isEmpty(modelName, true) != true) {
-        var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
-        var isList = methodName.startsWith('list') || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
+        // var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
+        var isList = methodName.indexOf('list') >= 0 || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
         var dataType = isList ? 'List<' + modelName + '>' : modelName;
+        var responseName = modelName + (isList ? 'List' : '') + 'Response';
 
         var str = '';
         if (reqObj != null) {
@@ -575,52 +576,57 @@ var CodeUtil = {
           + '\n/**'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
-          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : modelName + 'Response<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
-          + (type == 'JSON' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
-          + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody body = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
+          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
+          + (type == 'JSON' || type == 'DATA' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
+          + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
-          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'body' : CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart)) + ');'
+          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart))) + ');'
           + '\n}';
 
         s += '\n\n' +
           'public interface ' + modelName + 'Service {\n' +
-          (type == 'JSON' ? '@Headers({"Content-type:application/json;charset=UTF-8"})' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded' + '\n': (type == 'DATA' ? nextPrefix + '@Multipart' + '\n': '')))  +
+          (type == 'JSON' ? nextPrefix + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded\n': (type == 'DATA' ? nextPrefix + '@Multipart\n': '')))  +
           nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : modelName + 'Response<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody body' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', null, ! isSmart)) + ');\n' +
+          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', null, ! isSmart))) + ');\n' +
           '}';
 
         if (! isSmart) {
+          if (isList) {
+            modelName += 'List';
+            varName += 'List';
+          }
+
           s += '\n\n' +
-            'public class ' + modelName + 'Response<T> {\n' +
+            'public class ' + responseName + '<T> {\n' +
             nextPrefix + 'private int code;\n' +
             nextPrefix + 'private String msg;\n' +
             nextPrefix + 'private T data;\n' +
-            nextPrefix + 'private ' + modelName + ' ' + varName + ';\n\n' +
+            nextPrefix + 'private ' + dataType + ' ' + varName + ';\n\n' +
             nextPrefix + 'public int getCode() {\n' +
             nextNextPrefix + 'return code;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + modelName + 'Response<T> setCode(int code) {\n' +
+            nextPrefix + 'public ' + responseName + '<T> setCode(int code) {\n' +
             nextNextPrefix + 'this.code = code;\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n\n' +
             nextPrefix + 'public String getMsg() {\n' +
             nextNextPrefix + 'return msg;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + modelName + 'Response<T> setMsg(String msg) {\n' +
+            nextPrefix + 'public ' + responseName + '<T> setMsg(String msg) {\n' +
             nextNextPrefix + 'this.msg = msg;\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n\n' +
             nextPrefix + 'public T getData() {\n' +
             nextNextPrefix + 'return data;\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + modelName + 'Response<T> setData(T data) {\n' +
+            nextPrefix + 'public ' + responseName + '<T> setData(T data) {\n' +
             nextNextPrefix + 'this.data = data;\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n\n' +
-            nextPrefix + 'public String get' + modelName + '() {\n' +
+            nextPrefix + 'public '+ dataType + ' get' + modelName + '() {\n' +
             nextNextPrefix + 'return ' + varName + ';\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + modelName + 'Response set' + modelName + '(' + modelName + ' ' + varName + ') {\n' +
+            nextPrefix + 'public ' + responseName + ' set' + modelName + '(' + dataType + ' ' + varName + ') {\n' +
             nextNextPrefix + 'this.' + varName + ' = ' + varName + ';\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n' +
@@ -644,7 +650,7 @@ var CodeUtil = {
           isArrayItem = false;
           return '';
         }
-        var s = '\n' + prefix + (isSmart ? 'JSONRequest' : 'Map<String, Object>') + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
+        var s = '\n' + prefix + (useVar4Value && type == 'DATA' ? 'Map<String, RequestBody>' : (isSmart ? 'JSONRequest' : 'Map<String, Object>')) + ' ' + parentKey + ' = new ' + (isSmart ? 'JSONRequest' : 'LinkedHashMap<>') + '();';
 
         return s;
       },
@@ -820,6 +826,12 @@ var CodeUtil = {
         }
 
         var valStr = useVar4Value ? JSONResponse.getVariableName(key) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, value);
+        if (useVar4Value && type == 'DATA') {
+          if (value instanceof Object) {
+            valStr = 'JSON.toJSONString(' + valStr + ')';
+          }
+          valStr = 'RequestBody.create(MediaType.parse("multipart/form-data", ' + valStr + ')';
+        }
 
         if (depth <= 0 && isSmart) {
           if (key == 'tag') {
