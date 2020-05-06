@@ -537,6 +537,7 @@ var CodeUtil = {
 
     var prefix = CodeUtil.getBlank(depth);
     var nextPrefix = CodeUtil.getBlank(depth + 1);
+    var nextNextPrefix = CodeUtil.getBlank(depth + 2);
 
     if (depth <= 0) {
       //RESTful 等非 APIJSON 规范的 API <<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -574,18 +575,57 @@ var CodeUtil = {
           + '\n/**'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
-          + '\npublic static ' + 'Call<' + dataType + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true) + ') {\n'
+          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : modelName + 'Response<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
           + (type == 'JSON' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
+          + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody body = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
-          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'request' : CodeUtil.getJavaArgs(reqObj, false)) + ');'
+          + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'body' : CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart)) + ');'
           + '\n}';
 
         s += '\n\n' +
           'public interface ' + modelName + 'Service {\n' +
-          (type == 'FORM' ? nextPrefix + '@FormUrlEncoded' + '\n': (type == 'DATA' ? nextPrefix + '@Multipart' + '\n': ''))  +
+          (type == 'JSON' ? '@Headers({"Content-type:application/json;charset=UTF-8"})' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded' + '\n': (type == 'DATA' ? nextPrefix + '@Multipart' + '\n': '')))  +
           nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPrefix + 'public ' + 'Call<' + dataType + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body LinkedHashMap<String, Object> body' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field')) + ');\n' +
+          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : modelName + 'Response<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody body' : CodeUtil.getJavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', null, ! isSmart)) + ');\n' +
           '}';
+
+        if (! isSmart) {
+          s += '\n\n' +
+            'public class ' + modelName + 'Response<T> {\n' +
+            nextPrefix + 'private int code;\n' +
+            nextPrefix + 'private String msg;\n' +
+            nextPrefix + 'private T data;\n' +
+            nextPrefix + 'private ' + modelName + ' ' + varName + ';\n\n' +
+            nextPrefix + 'public int getCode() {\n' +
+            nextNextPrefix + 'return code;\n' +
+            nextPrefix + '}\n' +
+            nextPrefix + 'public ' + modelName + 'Response<T> setCode(int code) {\n' +
+            nextNextPrefix + 'this.code = code;\n' +
+            nextNextPrefix + 'return this;\n' +
+            nextPrefix + '}\n\n' +
+            nextPrefix + 'public String getMsg() {\n' +
+            nextNextPrefix + 'return msg;\n' +
+            nextPrefix + '}\n' +
+            nextPrefix + 'public ' + modelName + 'Response<T> setMsg(String msg) {\n' +
+            nextNextPrefix + 'this.msg = msg;\n' +
+            nextNextPrefix + 'return this;\n' +
+            nextPrefix + '}\n\n' +
+            nextPrefix + 'public T getData() {\n' +
+            nextNextPrefix + 'return data;\n' +
+            nextPrefix + '}\n' +
+            nextPrefix + 'public ' + modelName + 'Response<T> setData(T data) {\n' +
+            nextNextPrefix + 'this.data = data;\n' +
+            nextNextPrefix + 'return this;\n' +
+            nextPrefix + '}\n\n' +
+            nextPrefix + 'public String get' + modelName + '() {\n' +
+            nextNextPrefix + 'return ' + varName + ';\n' +
+            nextPrefix + '}\n' +
+            nextPrefix + 'public ' + modelName + 'Response set' + modelName + '(' + modelName + ' ' + varName + ') {\n' +
+            nextNextPrefix + 'this.' + varName + ' = ' + varName + ';\n' +
+            nextNextPrefix + 'return this;\n' +
+            nextPrefix + '}\n' +
+            '}';
+        }
 
         return s;
       }
@@ -2161,7 +2201,7 @@ var CodeUtil = {
           }
         }
 
-        var type = CodeUtil.getJavaTypeFromJS(key, value, false, true);
+        var type = CodeUtil.getJavaTypeFromJS(key, value, false, ! onlyParseSimpleValue);
         var varName = JSONResponse.getVariableName(key);
 
         if (isSmart && isTable) { // JSONObject.isTableKey(name)) {
@@ -2414,14 +2454,14 @@ var CodeUtil = {
   /**
    * @param annotionType RequestParam, Param, null
    */
-  getJavaArgs: function(reqObj, withType, annotationType) {
+  getJavaArgs: function(reqObj, withType, annotationType, rawType) {
     var str = '';
     if (reqObj != null) {
       var first = true;
 
       for (var k in reqObj) {
         var v = reqObj[k];
-        var t = withType ? CodeUtil.getJavaTypeFromJS(k, v, false, false, true) : null;
+        var t = withType ? CodeUtil.getJavaTypeFromJS(k, v, false, false, rawType) : null;
 
         str += (first ? '' : ', ') + (annotationType == null ? '' : '@' + annotationType + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + JSONResponse.getVariableName(k);
         first = false;
@@ -2490,8 +2530,8 @@ var CodeUtil = {
      return null;
     }
 
-    var typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
-    var argStr = CodeUtil.getJavaArgs(reqObj, false, null);
+    var typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart);
+    var argStr = CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart);
 
     var code = '@RestController("' + controllerUri + '")\n' +
       'public class ' + modelName + 'Controller {\n' +
@@ -2501,7 +2541,7 @@ var CodeUtil = {
       '\n' +
       '    @' + (requestMethod == 'POST' ? 'Post' : 'Get') + 'Mapping("' + methodUri + '")  //与下面的 @RequestMapping 任选一个\n' +
       '    //@RequestMapping("' + methodUri + '", method = RequestMethod.' + requestMethod + ')\n' +
-      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + (type == 'JSON' ? '@RequestBody String request' : CodeUtil.getJavaArgs(reqObj, true, 'RequestParam')) + ') {\n';
+      '    public ' + (isSmart && isList ? 'PageInfo<' + modelName + '>' : dataType) + ' ' + methodName + '(' + (type == 'JSON' ? '@RequestBody String body' : CodeUtil.getJavaArgs(reqObj, true, 'RequestParam', ! isSmart)) + ') {\n';
 
     if (type == 'JSON') {
       //TODO 是否必要转成 User 类？还要考虑 PageHelper 可能是从里面取出来对象
@@ -2519,6 +2559,7 @@ var CodeUtil = {
       var nextPadding = CodeUtil.getBlank(2);
       var nextNextPadding = CodeUtil.getBlank(3);
 
+      code += nextPadding + 'JSONObject request = JSON.parseObject(body);' + '\n';
       code += nextPadding + 'if (request == null) {' + '\n';
       code += nextNextPadding + 'request = new JSONObject();' + '\n';
       code += nextPadding + '}';
@@ -2533,8 +2574,8 @@ var CodeUtil = {
 
       delete reqObj.orderBy;
 
-      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
-      argStr = CodeUtil.getJavaArgs(reqObj, false, null);
+      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null, ! isSmart);
+      argStr = CodeUtil.getJavaArgs(reqObj, false, null, ! isSmart);
     }
 
     var orderStr = getOrderStr(orderBy);
@@ -2572,7 +2613,7 @@ var CodeUtil = {
       '\n' +
       '@Mapper\n' +
       'public interface ' + modelName + 'Mapper {\n' +
-      '    ' + dataType + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'Param') + ');\n' +
+      '    ' + dataType + ' ' + methodName + '(' + CodeUtil.getJavaArgs(reqObj, true, 'Param', ! isSmart) + ');\n' +
       '}';
 
 
@@ -2582,9 +2623,6 @@ var CodeUtil = {
       delete reqObj.pageNum;
 
       delete reqObj.orderBy;
-
-      typeArgStr = CodeUtil.getJavaArgs(reqObj, true, null);
-      argStr = CodeUtil.getJavaArgs(reqObj, false, null);
     }
 
 
@@ -4051,10 +4089,10 @@ var CodeUtil = {
       return 'String';
     }
     if (value instanceof Array) {
-      return rawType ? 'ArrayList<Object>' : 'JSONArray';
+      return rawType ? 'List<Object>' : 'JSONArray';
     }
     if (value instanceof Object) {
-      return rawType ? 'LinkedHashMap<String, Object>' : 'JSONObject';
+      return rawType ? 'Map<String, Object>' : 'JSONObject';
     }
 
     return 'Object';
