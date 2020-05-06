@@ -34,17 +34,16 @@
 ### 部署方法
 
 可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
-也可以直接访问官网的线上环境 http://apijson.org/auto 或开发环境 http://apijson.org:8000/auto ，<br />
-把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )即可。<br />
+也可以直接访问官网的线上环境 http://apijson.org/auto 或开发环境 http://apijson.org:8000/auto 。<br />
+<br />
+把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )，<br />
+然后在右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。<br />
 <br />
 右上角登录的默认管理员账号为 13000082001 密码为 123456，<br />
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
 [https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server) 
-
-<br />
-然后在 APIAuto 网页右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。
 
 ### 使用登记
 <div style="float:left">
