@@ -2534,8 +2534,15 @@ var CodeUtil = {
 
     var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
 
-    var isList = methodName.startsWith('list') || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
-    var dataType = isList ? 'List<' + modelName + '>' : modelName;
+    var isList = methodName.indexOf('list') >= 0 || methodName.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number';
+    var isGet = isList || methodName.indexOf('get') >= 0 || methodName.indexOf('fetch') >= 0 || methodName.indexOf('query') >= 0;
+    var isPost = isGet != true && (methodName.indexOf('post') >= 0 || methodName.indexOf('add') >= 0);
+    var isPut = isGet != true && (methodName.indexOf('put') >= 0|| methodName.indexOf('edit') >= 0);
+    var isDelete = isGet != true && (methodName.indexOf('delete') >= 0 || methodName.indexOf('remove') >= 0 || methodName.indexOf('del') >= 0);
+    var isWrite = isPost || isPut || isDelete;
+    isGet = ! isWrite;
+
+    var dataType = isWrite ? 'Integer' : (isList ? 'List<' + modelName + '>' : modelName);
 
     var params = isList ? (reqObj.params || {}) : null;
     var pageSize = isList ? (reqObj.pageSize || params.pageSize) : null;
@@ -2661,19 +2668,37 @@ var CodeUtil = {
       delete reqObj.orderBy;
     }
 
+    // var columnStr = (StringUtil.isEmpty(colums, true) ? '' : StringUtil.trim(colums));
+    if (isPost) {
+      code += '\n\n' +
+        '<insert id="' + methodName + '">\n' +
+        '    INSERT INTO ' + modelName;
+    }
+    else if (isPut) {
+      code += '\n\n' +
+        '<update id="' + methodName + '">\n' +
+        '    UPDATE ' + modelName;
+    }
+    else if (isDelete) {
+      code += '\n\n' +
+        '<delete id="' + methodName + '">\n' +
+        '    DELETE FROM ' + modelName;
+    }
+    else {
+      var colums = Object.keys(reqObj); //TODO
 
-    code += '\n\n' +
-      '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
-      '    SELECT * FROM ' + modelName + ' WHERE 1=1';
+      code += '\n\n' +
+        '<select id="' + methodName + '" resultMap="' + varName + 'Map">\n' +
+        '    SELECT ' + (colums == null || colums.length <= 0 ? '*' : colums.join(', ')) + ' FROM ' + modelName;
+    }
 
-
-    function getWhere(reqObj, parent) {
+    function getWhere(reqObj, parent, mustHasKeys) {
       var str = '';
       for (var k in reqObj) {
         var v = reqObj[k];
-        if (v == null) {
-          continue;
-        }
+        // if (v == null) {
+        //   continue;
+        // }
 
         var vn = JSONResponse.getVariableName(k);
         var vnWithPrefix = StringUtil.isEmpty(parent, true) ? vn : parent + '.' + vn;
@@ -2690,14 +2715,73 @@ var CodeUtil = {
         }
         else {
           var isStr = typeof v == 'string';
-          str += '\n' +
-            '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
-            '        AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
-            '    </if>';
+          if (mustHasKeys != null && mustHasKeys.indexOf(k) >= 0) {
+            str += '\n' + '    AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '');
+          }
+          else {
+            str += '\n' +
+              '    <if test="params.' + vnWithPrefix + ' != null' + (isStr ? ' and params.' + vnWithPrefix + ' != \'\'' : '') + '">\n' +
+              '        AND ' + vn + ' ' + (isStr ? 'LIKE concat(\'%\', ' : '= ') + '#{ params.' + vnWithPrefix + ' }' + (isStr ? ', \'%\')' : '') + '\n' +
+              '    </if>';
+          }
         }
       }
 
-      return str;
+      return StringUtil.isEmpty(str, true) ? '' : '\n\n    WHERE 1=1 ' + str;
+    }
+
+    /**必须把所有复杂值处理成 string
+     * @param reqObj
+     * @param parent
+     * @return {string}
+     */
+    function getValues(reqObj) {
+      var prefix = '';
+      var suffix = '';
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        // if (v == null) {
+        //   continue;
+        // }
+
+        var vn = JSONResponse.getVariableName(k);
+
+        prefix += '\n' +
+            '    <if test="params.' + vn + ' != null">\n' +
+            '        , ' + vn + '\n' +
+            '    </if>';
+
+        suffix += '\n' +
+            '    <if test="params.' + vn + ' != null">\n' +
+            '        , ' + '#{ params.' + vn + ' }\n' +
+            '    </if>';
+      }
+
+      return (StringUtil.isEmpty(prefix, true) ? '' : '(' + prefix + '\n    ) ') + '\n    VALUES(' + suffix + '\n)';
+    }
+
+    /**必须把所有复杂值处理成 string
+     * @param reqObj
+     * @param parent
+     * @return {string}
+     */
+    function getSet(reqObj) {
+      var str = '';
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        // if (v == null) {
+        //   continue;
+        // }
+
+        var vn = JSONResponse.getVariableName(k);
+
+        str += '\n' +
+            '    <if test="params.' + vn + ' != null">\n' +
+            '        , ' + vn + ' = #{ params.' + vn + ' }\n' +
+            '    </if>';
+      }
+
+      return StringUtil.isEmpty(str, true) ? '' : '\n\n    SET ' + str;
     }
 
     function getOrder(orderBy) {
@@ -2713,36 +2797,57 @@ var CodeUtil = {
       //   '        #{ item.column, jdbcType=VARCHAR } #{ item.order, jdbcType=VARCHAR }\n' +
       //   '    </foreach>';
 
-      str += isOrderEmpty ? '' : '\n    ORDER BY ${ orderBy }'
+      str += isOrderEmpty ? '' : '\n\n    ORDER BY ${ orderBy }'
 
       return str;
     }
 
-    function getLimit(pageSize, pageNum) {
-      var str = '';
-      if (pageSize != null) {
-        str += '\n\n' +
-          '    <if test="params.pageSize != null">\n' +
-          '        LIMIT \n' +
-          '        <if test="params.pageNum != null and params.pageNum > 1">\n' +
-          '            #{ params.pageSize*(params.pageNum - 1) },\n' +
-          '        </if>\n' +
-          '        #{ params.pageSize }\n' +
-          '    </if>';
+    function getLimit(pageSize, pageNum, isSingle) {
+      if (isSingle) {
+        return '\n\n' +
+          '    LIMIT 1';
       }
 
-      return str;
+      return '\n\n' +
+        '    <if test="params.pageSize != null">\n' +
+        '        LIMIT \n' +
+        '        <if test="params.pageNum != null and params.pageNum > 1">\n' +
+        '            #{ params.pageSize*(params.pageNum - 1) },\n' +
+        '        </if>\n' +
+        '        #{ params.pageSize }\n' +
+        '    </if>';
     }
 
-    code += getWhere(reqObj);
+    if (isPost) {
+      code += getValues(reqObj);
+    }
+    else {
+      if (isPut) {
+        var id = reqObj.id;
+        delete reqObj.id;
+        code += getSet(reqObj);
+        reqObj = { id: id };
+      }
+      code += getWhere(reqObj, null, isPut || isDelete ? ['id'] : null);
+    }
 
-    if (isSmart != true) {
+    if (isSmart != true && isGet) {
       code += getOrder(orderBy);
-      code += getLimit(pageSize, pageNum);
+      code += getLimit(pageSize, pageNum, isList != true && pageSize == null);
     }
 
-    code += '\n' +
-      '</select>';
+    if (isPost) {
+      code += '\n' + '</insert>';
+    }
+    else if (isPut) {
+      code += '\n' + '</update>';
+    }
+    else if (isDelete) {
+      code += '\n' + '</delete>';
+    }
+    else {
+      code += '\n' + '</select>';
+    }
 
     return code;
   },
