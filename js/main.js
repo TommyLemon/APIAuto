@@ -2660,11 +2660,11 @@
         if (header != null && header.Cookie != null) {
           if (this.isDelegateEnabled) {
             header['Set-Cookie'] = header.Cookie
+            delete header.Cookie
           }
           else {
             document.cookie = header.Cookie
           }
-          delete header.Cookie
         }
 
         // axios.defaults.withcredentials = true
@@ -2674,7 +2674,8 @@
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
-          withCredentials: true //Cookie 必须要  type == REQUEST_TYPE_JSON
+          withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
+          crossDomain: true
         })
           .then(function (res) {
             res = res || {}
