@@ -67,7 +67,27 @@ var StringUtil = {
    * @return
    */
   isName(s) {
-    return s != null && /^[0-9a-zA-Z_]+$/.test(s);
+    return s != null && s.length > 0 && /[a-zA-Z_]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+  },
+
+  /**判断是否为代码名称，只能包含字母，数字或下划线
+   * @param s
+   * @return
+   */
+  isBigName(s) {
+    return s != null && s.length > 0 && /[A-Z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+  },
+
+  /**判断是否为代码名称，只能包含字母，数字或下划线
+   * @param s
+   * @return
+   */
+  isSmallName(s) {
+    return s != null && s.length > 0 && /[a-z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+  },
+
+  isConstName(s) {
+    return s != null && s.length > 0 && /[A-Z_]/.test(s.substring(0, 1)) && /^[0-9A-Z_]+$/.test(s);
   },
 
 
@@ -134,6 +154,10 @@ var StringUtil = {
     }
 
     return s.split(separator)
+  },
+
+  isNumber: function (s) {
+    return typeof s == 'string' && /^[0-9]+$/.test(s);
   }
 
 }

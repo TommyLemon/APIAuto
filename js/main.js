@@ -349,31 +349,18 @@
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
 
-  var RANDOM_REAL = 'RANDOM_REAL'
-  var RANDOM_REAL_IN = 'RANDOM_REAL_IN'
+  var RANDOM_DB = 'RANDOM_DB'
+  var RANDOM_IN = 'RANDOM_IN'
   var RANDOM_INT = 'RANDOM_INT'
   var RANDOM_NUM = 'RANDOM_NUM'
   var RANDOM_STR = 'RANDOM_STR'
-  var RANDOM_IN = 'RANDOM_IN'
 
-  var ORDER_REAL = 'ORDER_REAL'
-  var ORDER_INT = 'ORDER_INT'
+  var ORDER_DB = 'ORDER_DB'
   var ORDER_IN = 'ORDER_IN'
+  var ORDER_INT = 'ORDER_INT'
 
   var ORDER_MAP = {}
 
-  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
-  function randomReal(table, key, count) {
-    var json = {
-      count: count,
-      from: table
-    }
-    json[table] = {
-      '@column': key,
-      '@order': 'random()'
-    }
-    return json
-  }
   function randomInt(min, max) {
     return randomNum(min, max, 0);
   }
@@ -401,36 +388,27 @@
     return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)];
   }
 
-  //TODO 实际请求后填值? 每次请求，还是一次加载一页缓存起来？
-  function orderReal(index, table, key, order) {
-    var json = {
-      count: 1,
-      page: index,
-      from: table
-    }
-    json[table] = {
-      '@column': key,
-      '@order': order || (key + '+')
-    }
-    return json
-  }
-  function orderInt(index, min, max) {
+  function orderInt(desc, index, min, max) {
     if (min == null) {
       min = Number.MIN_SAFE_INTEGER
     }
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
     }
+
+    if (desc) {
+      return max - index%(max - min + 1)
+    }
     return min + index%(max - min + 1)
   }
-  function orderIn(index, ...args) {
+  function orderIn(desc, index, ...args) {
     // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
     index = index || 0;
-    return args == null || args.length <= index ? null : args[index];
+    return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
   }
 
-  function getOrderIndex(randomId, lineKey, argCount) {
-    // alert('randomId = ' + randomId + '; lineKey = ' + lineKey + '; argCount = ' + argCount);
+  function getOrderIndex(randomId, line, argCount) {
+    // alert('randomId = ' + randomId + '; line = ' + line + '; argCount = ' + argCount);
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
 
     if (randomId == null) {
@@ -443,7 +421,7 @@
       ORDER_MAP[randomId] = {};
     }
 
-    var orderIndex = ORDER_MAP[randomId][lineKey];
+    var orderIndex = ORDER_MAP[randomId][line];
     // alert('orderIndex = ' + orderIndex)
 
     if (orderIndex == null || orderIndex < -1) {
@@ -452,7 +430,7 @@
 
     orderIndex ++
     orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
-    ORDER_MAP[randomId][lineKey] = orderIndex;
+    ORDER_MAP[randomId][line] = orderIndex;
 
     // alert('orderIndex = ' + orderIndex)
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
@@ -574,7 +552,7 @@
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
-      language: 'Kotlin',
+      language: CodeUtil.LANGUAGE_C_PLUS_PLUS,
       header: {},
       page: 0,
       count: 100,
@@ -870,41 +848,41 @@
             else if (App.view == 'markdown' || App.view == 'output') {
               var suffix
               switch (App.language) {
-                case 'Java':
-                  suffix = '.java';
-                  break;
-                case 'Swift':
-                  suffix = '.swift';
-                  break;
-                case 'Kotlin':
+                case CodeUtil.LANGUAGE_KOTLIN:
                   suffix = '.kt';
                   break;
-                case 'Objective-C':
-                  suffix = '.h';
+                case CodeUtil.LANGUAGE_JAVA:
+                  suffix = '.java';
                   break;
-                case 'C#':
+                case CodeUtil.LANGUAGE_C_SHARP:
                   suffix = '.cs';
                   break;
-                case 'PHP':
-                  suffix = '.php';
+
+                case CodeUtil.LANGUAGE_SWIFT:
+                  suffix = '.swift';
                   break;
-                case 'Go':
+                case CodeUtil.LANGUAGE_OBJECTIVE_C:
+                  suffix = '.h';
+                  break;
+
+                case CodeUtil.LANGUAGE_GO:
                   suffix = '.go';
                   break;
-                case 'C++':
+                case CodeUtil.LANGUAGE_C_PLUS_PLUS:
                   suffix = '.cpp';
                   break;
-                case 'C++':
-                  suffix = '.cpp';
-                  break;
-                //以下都不需要解析，直接用左侧的 JSON
-                case 'JavaScript':
-                  suffix = '.js';
-                  break;
-                case 'TypeScript':
+
+                case CodeUtil.LANGUAGE_TYPE_SCRIPT:
                   suffix = '.ts';
                   break;
-                case 'Python':
+                case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+                  suffix = '.js';
+                  break;
+
+                case CodeUtil.LANGUAGE_PHP:
+                  suffix = '.php';
+                  break;
+                case CodeUtil.LANGUAGE_PYTHON:
                   suffix = '.py';
                   break;
                 default:
@@ -950,7 +928,7 @@
               App.isConfigShow = true
 
               if (index == 0) {
-                alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE')
+                alert('可填数据库:\nMYSQL,POSTGRESQL,SQLSERVER,ORACLE,DB2,SQLITE')
               }
               else if (index == 2) {
                 alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
@@ -1254,37 +1232,41 @@
 
             var s = ''
             switch (App.language) {
-              case 'Java':
-                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
-                break;
-              case 'Swift':
-                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
-                break;
-              case 'Kotlin':
+              case CodeUtil.LANGUAGE_KOTLIN:
                 s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle)
                 break;
-              case 'Objective-C':
-                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+              case CodeUtil.LANGUAGE_JAVA:
+                s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
                 break;
-              case 'C#':
+              case CodeUtil.LANGUAGE_C_SHARP:
                 s += '(C#):\n\n' + CodeUtil.parseCSharpResponse('', res, 0)
                 break;
-              case 'PHP':
-                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+
+              case CodeUtil.LANGUAGE_SWIFT:
+                s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
-              case 'Go':
+              case CodeUtil.LANGUAGE_OBJECTIVE_C:
+                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+                break;
+
+              case CodeUtil.LANGUAGE_GO:
                 s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
                 break;
-              case 'C++':
+              case CodeUtil.LANGUAGE_C_PLUS_PLUS:
                 s += '(C++):\n\n' + CodeUtil.parseCppResponse('', res, 0, isSingle)
                 break;
-              case 'JavaScript':
-                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
-                break;
-              case 'TypeScript':
+
+              case CodeUtil.LANGUAGE_TYPE_SCRIPT:
                 s += '(TypeScript):\n\n' + CodeUtil.parseTypeScriptResponse('', res, 0, isSingle)
                 break;
-              case 'Python':
+              case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+                s += '(JavaScript):\n\n' + CodeUtil.parseJavaScriptResponse('', res, 0, isSingle)
+                break;
+
+              case CodeUtil.LANGUAGE_PHP:
+                s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
+                break;
+              case CodeUtil.LANGUAGE_PYTHON:
                 s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0, isSingle)
                 break;
               default:
@@ -1400,6 +1382,10 @@
                     count: App.requestCount,
                     name: '默认配置(上传测试用例时自动生成)',
                     config: config
+                  },
+                  TestRecord: {
+                    host: App.getBaseUrl(),
+                    response: ''
                   },
                   'tag': 'Random'
                 }, {}, function (url, res, err) {
@@ -2405,7 +2391,7 @@
             throw new Error(e2.message)
           }
 
-          before = App.toDoubleJSON(before);
+          before = App.toDoubleJSON(StringUtil.trim(before));
           log('onHandle  before = \n' + before);
 
           var afterObj;
@@ -2447,9 +2433,9 @@
             }
           }
 
-          vInput.value = before
-            + '\n                                                                                           '
-            + '                                                                                               \n';  //解决遮挡
+          vInput.value = StringUtil.trim(before)
+            + '\n                                                                                                       '
+            + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
           vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
@@ -2458,9 +2444,9 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language)
-              + '\n                                                                                           '
-              + '                                                                                               \n';  //解决遮挡
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language))
+              + '\n                                                                                                       '
+              + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
 
             if (isSingle != true && afterObj.tag == null) {
@@ -2671,6 +2657,16 @@
       request: function (isAdminOperation, type, url, req, header, callback) {
         type = type || REQUEST_TYPE_JSON
 
+        if (header != null && header.Cookie != null) {
+          if (this.isDelegateEnabled) {
+            header['Set-Cookie'] = header.Cookie
+            delete header.Cookie
+          }
+          else {
+            document.cookie = header.Cookie
+          }
+        }
+
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
@@ -2678,7 +2674,8 @@
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
-          withCredentials: true //Cookie 必须要  type == REQUEST_TYPE_JSON
+          withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
+          crossDomain: true
         })
           .then(function (res) {
             res = res || {}
@@ -2924,63 +2921,75 @@
       getCode: function (rq) {
         var s = '\n\n\n### 请求代码(自动生成) \n';
         switch (App.language) {
-          case 'Java':
-            s += '\n#### <= Android-Java: 同名变量需要重命名'
-              + ' \n ```java \n'
-              + StringUtil.trim(CodeUtil.parseJava(null, JSON.parse(rq), 0, isSingle))
-              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 中的 JSONObject(true) 等有序JSON构造方法\n');
-            break;
-          case 'Swift':
-            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
-              + '\n ```swift \n'
-              + CodeUtil.parseSwift(null, JSON.parse(rq), 0)
-              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
-            break;
-          case 'Kotlin':
+          case CodeUtil.LANGUAGE_KOTLIN:
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
-              + CodeUtil.parseKotlin(null, JSON.parse(rq), 0)
+              + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
-          case 'Objective-C':
-            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
-              + CodeUtil.parseObjectiveC(null, JSON.parse(rq))
-              + '\n ```  \n';
+          case CodeUtil.LANGUAGE_JAVA:
+            s += '\n#### <= Android-Java: 同名变量需要重命名'
+              + ' \n ```java \n'
+              + StringUtil.trim(CodeUtil.parseJavaRequest(null, JSON.parse(rq), 0, isSingle, false, false, App.type, '/' + App.getMethod(), App.urlComment))
+              + '\n ``` \n注：' + (isSingle ? '用了 APIJSON 的 JSONRequest, JSONResponse 类，也可使用其它类封装，只要 JSON 有序就行\n' : 'LinkedHashMap&lt;&gt;() 可替换为 fastjson 的 JSONObject(true) 等有序JSON构造方法\n');
+
+            var serverCode = CodeUtil.parseJavaServer(App.type, '/' + App.getMethod(), App.database, App.schema, JSON.parse(rq), isSingle);
+            if (StringUtil.isEmpty(serverCode, true) != true) {
+              s += '\n#### <= Server-Java: RESTful 等非 APIJSON 规范的 API'
+                + ' \n ```java \n'
+                + serverCode
+                + '\n ``` \n注：' + (isSingle ? '分页和排序用了 Mybatis-PageHelper，如不需要可在生成代码基础上修改\n' : '使用 SSM(Spring + SpringMVC + Mybatis) 框架 \n');
+            }
             break;
-          case 'C#':
+          case CodeUtil.LANGUAGE_C_SHARP:
             s += '\n#### <= Unity3D-C\#: 键值对用 {"key", value}' +
               '\n ```csharp \n'
-              + CodeUtil.parseCSharp(null, JSON.parse(rq), 0)
+              + CodeUtil.parseCSharpRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 new JObject{{"key", value}}，数组 [] 用 new JArray{value0, value1}\n';
             break;
-          case 'PHP':
-            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
-              + ' \n ```php \n'
-              + CodeUtil.parsePHP(null, JSON.parse(rq), 0, isSingle)
-              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
+
+          case CodeUtil.LANGUAGE_SWIFT:
+            s += '\n#### <= iOS-Swift: 空对象用 [ : ]'
+              + '\n ```swift \n'
+              + CodeUtil.parseSwiftRequest(null, JSON.parse(rq), 0)
+              + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
             break;
-          case 'Go':
+          case CodeUtil.LANGUAGE_OBJECTIVE_C:
+            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
+              + CodeUtil.parseObjectiveCRequest(null, JSON.parse(rq))
+              + '\n ```  \n';
+            break;
+
+          case CodeUtil.LANGUAGE_GO:
             s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'
               + ' \n ```go \n'
-              + CodeUtil.parseGo(null, JSON.parse(rq), 0)
+              + CodeUtil.parseGoRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 map[string]interface{} {"key": value}，数组 [] 用 []interface{} {value0, value1}\n';
             break;
-          case 'C++':
+          case CodeUtil.LANGUAGE_C_PLUS_PLUS:
             s += '\n#### <= Web-C++: 使用 RapidJSON'
               + ' \n ```cpp \n'
-              + StringUtil.trim(CodeUtil.parseCpp(null, JSON.parse(rq), 0, isSingle))
+              + StringUtil.trim(CodeUtil.parseCppRequest(null, JSON.parse(rq), 0, isSingle))
               + '\n ``` \n注：std::string 类型值需要判断 RAPIDJSON_HAS_STDSTRING\n';
             break;
+
+          case CodeUtil.LANGUAGE_PHP:
+            s += '\n#### <= Web-PHP: 空对象用 (object) ' + (isSingle ? '[]' : 'array()')
+              + ' \n ```php \n'
+              + CodeUtil.parsePHPRequest(null, JSON.parse(rq), 0, isSingle)
+              + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
+            break;
+
           //以下都不需要解析，直接用左侧的 JSON
-          case 'JavaScript':
-          case 'TypeScript':
-          case 'Python':
+          case CodeUtil.LANGUAGE_TYPE_SCRIPT:
+          case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+          case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
             break;
           default:
             s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
             break;
         }
-        s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
 
         s += '\n\n#### 开放源码 '
           + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
@@ -3044,7 +3053,10 @@
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
               'name()': 'getWithDefault(alias,name)',
-              'r0()': 'removeKey(alias)'
+              'r0()': 'removeKey(alias)',
+              'name$': search,
+              'alias$': search,
+              '@combine': search == null ? null : 'name$,alias$',
             }
           },
           '[]': {
@@ -3118,14 +3130,20 @@
               'demo()': 'getFunctionDemo()',
               'detail()': 'getFunctionDetail()',
               'r0()': 'removeKey(name)',
-              'r1()': 'removeKey(arguments)'
+              'r1()': 'removeKey(arguments)',
+              'name$': search,
+              'detail$': search,
+              '@combine': search == null ? null : 'name$,detail$',
             }
           },
           'Request[]': {
             'count': 0,
             'Request': {
               '@order': 'version-,method-',
-              '@json': 'structure'
+              '@json': 'structure',
+              'tag$': search,
+              'detail$': search,
+              '@combine': search == null ? null : 'tag$,detail$',
             }
           }
         }, {}, function (url, res, err) {
@@ -3428,21 +3446,28 @@
               delete obj[k];
             }
           }
+
+          if (tag != null && obj[tag] == null) { //补全省略的Table
+            var isArrayKey = tag.endsWith(":[]");  //JSONObject.isArrayKey(tag);
+            var key = isArrayKey ? tag.substring(0, tag.length - 3) : tag;
+
+            if (this.isTableKey(key)) {
+              if (isArrayKey) { //自动为 tag = Comment:[] 的 { ... } 新增键值对 "Comment[]":[] 为 { "Comment[]":[], ... }
+                obj[key + "[]"] = [];
+              }
+              else { //自动为 tag = Comment 的 { ... } 包一层为 { "Comment": { ... } }
+                var realObj = {};
+                realObj[tag] = obj;
+                obj = realObj;
+              }
+            }
+          }
+
         }
+
+        obj.tag = tag; //补全tag
 
         log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
-
-        if (tag != null) {
-          //补全省略的Table
-          if (this.isTableKey(tag) && obj[tag] == null) {
-            log('getStructure  isTableKey(tag) && obj[tag] == null >>>>> ');
-            var realObj = {};
-            realObj[tag] = obj;
-            obj = realObj;
-            log('getStructure  realObj = \n' + JSON.stringify(realObj));
-          }
-          obj.tag = tag; //补全tag
-        }
 
         return obj;
       },
@@ -3582,74 +3607,84 @@
         subs = existCount <= 0 ? subs : JSON.parse(JSON.stringify(subs))
 
         var count = random.count || 0
+        var respCount = 0;
 
         for (var i = 0; i < count; i ++) {
           // var constConfig = i < existCount ? ((subs[i] || {}).Random || {}).config : this.getRandomConstConfig(random.config, random.id) //第1遍，把 key : expression 改为 key : value
           // var constJson = this.getRandomJSON(JSON.parse(JSON.stringify(json)), constConfig, random.id) //第2遍，用新的 random config 来修改原 json
 
+          const which = i;
           var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Random || {}).config : random.config
-          var result = this.parseRandom(
+          this.parseRandom(
             JSON.parse(JSON.stringify(json)), rawConfig, random.id
             , ! testSubList, testSubList && i >= existCount, testSubList && i >= existCount
-          )
+            , function (randomName, constConfig, constJson) {
 
-          if (testSubList) {  //在原来已上传的基础上，生成新的
-            if (i >= existCount) {
-              subs.push({
-                Random: {
-                  id: -i - 1, //表示未上传
-                  toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
-                  userId: random.userId,
-                  documentId: random.documentId,
-                  count: 1,
-                  name: result.name || 'Temp ' + i,
-                  config: result.config
-                },
-                //不再需要，因为子项里前面一部分就是已上传的，而且这样更准确，交互更直观
-                // TestRecord: {  //解决子项始终没有对比标准
-                //   id: 0, //不允许子项撤回 tr.id, //表示未上传
-                //   userId: random.userId,
-                //   documentId: random.documentId,
-                //   testAccountId: tr.testAccountId,
-                //   randomId: -i - 1,
-                //   response: tr.response,
-                //   standard: tr.standard,
-                //   date: tr.date,
-                //   compare: tr.compare
-                // }
-              })
-            }
-          }
-          else {
-            var cb = function (url, res, err) {
-              if (callback != null) {
-                callback(url, res, err, random)
+              respCount ++;
+
+              if (testSubList) {  //在原来已上传的基础上，生成新的
+                if (which >= existCount) {
+                  //异步导致顺序错乱 subs.push({
+                  subs[which] = {
+                    Random: {
+                      id: -i - 1, //表示未上传
+                      toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
+                      userId: random.userId,
+                      documentId: random.documentId,
+                      count: 1,
+                      name: randomName || 'Temp ' + i,
+                      config: constConfig
+                    },
+                    //不再需要，因为子项里前面一部分就是已上传的，而且这样更准确，交互更直观
+                    // TestRecord: {  //解决子项始终没有对比标准
+                    //   id: 0, //不允许子项撤回 tr.id, //表示未上传
+                    //   userId: random.userId,
+                    //   documentId: random.documentId,
+                    //   testAccountId: tr.testAccountId,
+                    //   randomId: -i - 1,
+                    //   response: tr.response,
+                    //   standard: tr.standard,
+                    //   date: tr.date,
+                    //   compare: tr.compare
+                    // }
+                  // })
+                  };
+                }
               }
               else {
-                App.onResponse(url, res, err)
+                var cb = function (url, res, err) {
+                  if (callback != null) {
+                    callback(url, res, err, random)
+                  }
+                  else {
+                    App.onResponse(url, res, err)
+                  }
+                };
+
+                if (show == true) {
+                  vInput.value = JSON.stringify(constJson, null, '    ');
+                  App.send(false, cb);
+                }
+                else {
+                  App.request(false, type, url, constJson, header, cb);
+                }
               }
-            };
 
-            var constJson = result.json
-            if (show == true) {
-              vInput.value = JSON.stringify(constJson, null, '    ');
-              this.send(false, cb);
-            }
-            else {
-              this.request(false, type, url, constJson, header, cb);
-            }
-          }
-        }
+              if (testSubList && respCount >= count) { // && which >= count - 1) {
+                App.randomSubs = subs
+                if (App.isRandomListShow == true) {
+                  App.resetCount(item)
+                  item.subs = subs
+                }
+                App.testRandom(false, false, true, count)
+              }
 
-        if (testSubList) {
-          this.randomSubs = subs
-          if (this.isRandomListShow == true) {
-            this.resetCount(item)
-            item.subs = subs
-          }
-          this.testRandom(false, false, true, count)
-        }
-      },
+            }
+          );
+
+        }  //for
+
+    },
 
       resetCount: function (randomItem) {
         if (randomItem == null) {
@@ -3710,201 +3745,299 @@
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName) {
+      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
-          return null;
+          // return null;
+          callback(null, null, null);
+          return
         }
+        json = json || {};
+
+        baseUrl = this.getBaseUrl();
+
+        var reqCount = lines.length; //有无效的行  lines.length;  //等待次数
+        var respCount = 0;
 
         randomId = randomId || 0;
-        var randomName = ''
-        var constConfig = '' //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
-
-        var json = json || {};
+        var randomNameKeys = []
+        var constConfigLines = [] //TODO 改为 [{ "rawPath": "User/id", "replacePath": "User/id@", "replaceValue": "RANDOM_INT(1, 10)", "isExpression": true }] ?
 
         // alert('< json = ' + JSON.stringify(json, null, '    '))
 
-        var line;
-
-        var path; // User/id
-        var key; // id
-        var value; // RANDOM_DATABASE
-
-        var index;
-        var pathKeys;
-        var customizeKey;
-
-        for (var i = 0; i < lines.length; i ++) {
-          line = lines[i] || '';
+        for (let i = 0; i < reqCount; i ++) {
+          const which = i;
+          const lineItem = lines[i] || '';
 
           // remove comment
-          index = line.indexOf('//');
-          if (index >= 0) {
-            line = line.substring(0, index).trim();
-          }
+          const commentIndex = lineItem.indexOf('//');
+          const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
+
           if (line.length <= 0) {
+            respCount ++;
+            if (i >= lines.length - 1 && respCount >= reqCount) {
+              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
+            }
             continue;
           }
 
           // path User/id  key id@
-          index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
-          var p_k = line.substring(0, index);
-          var bi = p_k.indexOf(' ');
-          path = bi < 0 ? p_k : p_k.substring(0, bi);
+          const index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
+          const p_k = line.substring(0, index);
+          const bi = p_k.indexOf(' ');
+          const path = bi < 0 ? p_k : p_k.substring(0, bi); // User/id
 
-          pathKeys = path.split('/')
+          const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
-              '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  //注释\n的格式！其中 replaceKey 可省略。');
           }
 
-          var lastKeyInPath = pathKeys[pathKeys.length - 1]
-          customizeKey = bi > 0;
-          key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
+          const lastKeyInPath = pathKeys[pathKeys.length - 1]
+          const customizeKey = bi > 0;
+          const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || key.trim().length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + key + ' 不是合法的 JSON key!' +
-              '\n每个随机变量配置都必须按照 key0/key1/../targetKey replaceKey : value  //注释 的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  // 注释\n的格式！其中 replaceKey 可省略。');
           }
 
-          // value RANDOM_REAL
-          value = line.substring(index + ' : '.length);
+          // value RANDOM_DB
+          const value = line.substring(index + ' : '.length);
 
-          if (value == RANDOM_REAL) {
-            value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", 1)';
-            if (customizeKey != true) {
-              key += '@';
+          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
+            try {
+              if (generateConfig) {
+                var configVal;
+                if (val instanceof Object) {
+                  configVal = JSON.stringify(val);
+                }
+                else if (typeof val == 'string') {
+                  configVal = '"' + val + '"';
+                }
+                else {
+                  configVal = val
+                }
+                constConfigLines[which] = p_k + ' : ' + configVal;
+              }
+
+              if (generateName) {
+                var valStr;
+                if (val instanceof Array) {
+                  valStr = '[' + val.length + ']';
+                }
+                else if (val instanceof Object) {
+                  valStr = '{...}';
+                }
+                else if (typeof val == 'boolean') {
+                  valStr = '' + val;
+                }
+                else {
+                  valStr = new String(val);
+                  if (valStr.length > 13) {
+                    valStr = valStr.substring(0, 5) + '...';
+                  }
+                }
+                randomNameKeys[which] = valStr;
+              }
+
+              if (generateJSON) {
+                //先按照单行简单实现
+                //替换 JSON 里的键值对 key: value
+                var parent = json;
+                var current = null;
+                for (var j = 0; j < pathKeys.length - 1; j ++) {
+                  current = parent[pathKeys[j]]
+                  if (current == null) {
+                    current = parent[pathKeys[j]] = {}
+                  }
+                  if (parent instanceof Object == false) {
+                    throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
+                      ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
+                  }
+                  parent = current;
+                }
+
+                if (current == null) {
+                  current = json;
+                }
+                // alert('< current = ' + JSON.stringify(current, null, '    '))
+
+                if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
+                  delete current[lastKeyInPath];
+                }
+
+                current[key] = val;
+              }
+
             }
-          }
-          else if (value == RANDOM_REAL_IN) {
-            value = 'randomReal(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '", null)';
-            if (customizeKey != true) {
-              key += '{}@';
+            catch (e) {
+              throw new Error('第 ' + which + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
             }
-          }
-          else if (value == ORDER_REAL) {
-            value = 'orderReal(' +
-              getOrderIndex(
-                randomId
-                , line.substring(0, line.indexOf(' : '))
-                , 0
-              ) + ', JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), "' + key + '")';
-            if (customizeKey != true) {
-              key += '@';
+
+            respCount ++;
+            if (respCount >= reqCount) {
+              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
             }
-          }
-          else {
-            var start = value.indexOf('(');
-            var end = value.lastIndexOf(')');
+          };
 
-            //支持 1, "a" 这种原始值
-            // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
-            //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
-            // }
 
-            if (start > 0 && end > start) {
-              var fun = value.substring(0, start);
-              if (fun == RANDOM_INT) {
-                value = 'randomInt' + value.substring(start);
+          const start = value.indexOf('(');
+          const end = value.lastIndexOf(')');
+
+          var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step) {
+            // const tableName = JSONResponse.getTableName(pathKeys[pathKeys.length - 2]);
+            vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
+
+            const args = StringUtil.split(value.substring(start + 1, end)) || [];
+            const min = StringUtil.isEmpty(args[0], true) ? null : +args[0];
+            const max = StringUtil.isEmpty(args[1], true) ? null : +args[1]
+
+            const tableReq = {
+              '@column': lastKeyInPath,
+              '@order': isRandom ? 'rand()' : (lastKeyInPath + (isDesc ? '-' : '+'))
+            };
+            tableReq[lastKeyInPath + '>='] = min;
+            tableReq[lastKeyInPath + '<='] = max;
+
+            const req = {};
+            const listName = isRandom ? null : tableName + '-' + lastKeyInPath + '[]';
+            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
+
+            if (isRandom) {
+              req[tableName] = tableReq;
+            }
+            else {
+              // 从数据库获取时不考虑边界，不会在越界后自动循环
+              var listReq = {
+                count: 1, // count <= 100 ? count : 0,
+                page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，lastKeyInPath 未必是 id
+              };
+              listReq[tableName] = tableReq;
+              req[listName] = listReq;
+            }
+
+            // reqCount ++;
+            App.request(true, REQUEST_TYPE_JSON, baseUrl + '/get', req, {}, function (url, res, err) {
+              // respCount ++;
+              try {
+                App.onResponse(url, res, err)
+              } catch (e) {}
+
+              var data = (res || {}).data || {}
+              if (data.code != CODE_SUCCESS) {
+                respCount = -reqCount;
+                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
+                alert(StringUtil.get(vOutput.value));
+                return
+                // throw new Error('随机测试 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
+              }
+
+              if (isRandom) {
+                invoke((data[tableName] || {})[lastKeyInPath], which, p_k, pathKeys, key, lastKeyInPath);
+              }
+              else {
+                var val = (data[listName] || [])[0];
+                //越界，重新获取
+                if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
+                  ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
+                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step);
+                }
+                else {
+                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath);
+                }
+              }
+
+              // var list = data[listName] || [];
+              //代码变化会导致缓存失效，而且不好判断，数据量大会导致页面很卡 ORDER_MAP[randomId][line].list = list;
+              //
+              // if (step == null) {
+              //   invoke('randomIn(' + list.join() + ')');
+              // }
+              // else {
+              //   invoke('orderIn(' + isDesc + ', ' + step*getOrderIndex(randomId, line, list.length) + list.join() + ')');
+              // }
+
+            })
+          };
+
+
+
+          //支持 1, "a" 这种原始值
+          // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
+          //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+          // }
+
+          var toEval = value;
+          if (start > 0 && end > start) {
+
+            var funWithOrder = value.substring(0, start);
+            var splitIndex = funWithOrder.indexOf('+');
+
+            var isDesc = false;
+            if (splitIndex < 0) {  // -(1+2) 这种是表达式，不能作为函数   splitIndex <= 0) {
+              splitIndex = funWithOrder.indexOf('-');
+              isDesc = splitIndex > 0;
+            }
+
+            var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
+
+            if ([ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
+              var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
+              var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
+
+              if (Number.isSafeInteger(step) != true || step <= 0
+                || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
+              ) {
+                throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                  + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
+                  + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
+                  + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
+                  + '\n  ODER_IN+step(start, end)\n  ODER_IN-step(start, end)'
+                  + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
+                  + '\n+，-，step 前后都不能有空格等其它字符！');
+              }
+
+              if (fun == ORDER_DB) {
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step); //request4Db(key + (isDesc ? '-' : '+'), step);
+                continue;
+              }
+
+              toEval = (fun == ORDER_IN ? 'orderIn' : 'orderInt')
+                + '(' + isDesc + ', ' + step*getOrderIndex(
+                  randomId, line
+                  , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
+                ) + ', ' + value.substring(start + 1);
+            }
+            else {  //随机函数
+              fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
+
+              if (fun == RANDOM_DB) {
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true); //'random()');
+                continue;
+              }
+
+              if (fun == RANDOM_IN) {
+                toEval = 'randomIn' + value.substring(start);
+              }
+              else if (fun == RANDOM_INT) {
+                toEval = 'randomInt' + value.substring(start);
               }
               else if (fun == RANDOM_NUM) {
-                value = 'randomNum' + value.substring(start);
+                toEval = 'randomNum' + value.substring(start);
               }
               else if (fun == RANDOM_STR) {
-                value = 'randomStr' + value.substring(start);
+                toEval = 'randomStr' + value.substring(start);
               }
-              else if (fun == RANDOM_IN) {
-                value = 'randomIn' + value.substring(start);
-              }
-              else if (fun == ORDER_INT || fun == ORDER_IN) {
-                value = (fun == ORDER_INT ? 'orderInt' : 'orderIn') + '(' + getOrderIndex(
-                    randomId
-                    , line.substring(0, line.indexOf(' : '))
-                    , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
-                  ) + ',' + value.substring(start + 1);
-              }
+
             }
 
           }
 
-          try {
-            var val = eval(value)
-
-            if (generateConfig) {
-              var configVal;
-              if (val instanceof Object) {
-                configVal = JSON.stringify(val);
-              }
-              else if (typeof val == 'string') {
-                configVal = '"' + val + '"';
-              }
-              else {
-                configVal = val
-              }
-              constConfig += ((i <= 0 ? '' : ' \n') + p_k + ' : ' + configVal);
-            }
-
-            if (generateName) {
-              var valStr;
-              if (val instanceof Array) {
-                valStr = '[' + val.length + ']';
-              }
-              else if (val instanceof Object) {
-                valStr = '{...}';
-              }
-              else if (typeof val == 'boolean') {
-                valStr = '' + val;
-              }
-              else {
-                valStr = new String(val);
-                if (valStr.length > 13) {
-                  valStr = valStr.substring(0, 5) + '...';
-                }
-              }
-              randomName += ((i <= 0 ? '' : ', ') + valStr);
-            }
-
-            if (generateJSON) {
-              //先按照单行简单实现
-              //替换 JSON 里的键值对 key: value
-              var parent = json;
-              var current = null;
-              for (var j = 0; j < pathKeys.length - 1; j ++) {
-                current = parent[pathKeys[j]]
-                if (current == null) {
-                  current = parent[pathKeys[j]] = {}
-                }
-                if (parent instanceof Object == false) {
-                  throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
-                    ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} !');
-                }
-                parent = current;
-              }
-
-              if (current == null) {
-                current = json;
-              }
-              // alert('< current = ' + JSON.stringify(current, null, '    '))
-
-            if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
-              delete current[lastKeyInPath];
-            }
-
-              current[key] = val;
-            }
-
-          }
-          catch (e) {
-            throw new Error('第 ' + i + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
-          }
+          invoke(eval(toEval), which, p_k, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
 
-        return {
-          name: randomName,
-          config: constConfig,
-          json: json
-        }
       },
 
 
