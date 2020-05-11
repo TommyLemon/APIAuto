@@ -2657,6 +2657,16 @@
       request: function (isAdminOperation, type, url, req, header, callback) {
         type = type || REQUEST_TYPE_JSON
 
+        if (header != null && header.Cookie != null) {
+          if (this.isDelegateEnabled) {
+            header['Set-Cookie'] = header.Cookie
+          }
+          else {
+            document.cookie = header.Cookie
+          }
+          delete header.Cookie
+        }
+
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
