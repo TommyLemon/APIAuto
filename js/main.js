@@ -344,6 +344,10 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  var PLATFORM_SWAGGER = 'SWAGGER'
+  var PLATFORM_YAPI = 'YAPI'
+  var PLATFORM_RAP = 'RAP'
+
   var REQUEST_TYPE_PARAM = 'PARAM'  // GET ?a=1&b=c&key=value
   var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
@@ -551,7 +555,8 @@
       schema: 'sys',
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
-      swagger: 'http://apijson.cn:8080/v2/api-docs',  //apijson.org:8000
+      // thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
+      thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
       language: CodeUtil.LANGUAGE_C_PLUS_PLUS,
       header: {},
       page: 0,
@@ -924,7 +929,7 @@
             case 7:
             case 8:
               App.exTxt.name = index == 0 ? App.database : (index == 1 ? App.schema : (index == 2
-                ? App.language : (index == 6 ? App.server : (index == 8 ? App.swagger : (App.types || []).join()))))
+                ? App.language : (index == 6 ? App.server : (index == 8 ? App.thirdParty : (App.types || []).join()))))
               App.isConfigShow = true
 
               if (index == 0) {
@@ -1581,44 +1586,115 @@
             App.saveCache('', 'types', App.types)
             break
           case 8:
-            App.swagger = App.exTxt.name
-            App.saveCache('', 'swagger', App.swagger)
+            App.thirdParty = App.exTxt.name
+            App.saveCache('', 'thirdParty', App.thirdParty)
 
-            App.request(false, REQUEST_TYPE_PARAM, App.swagger, {}, {}, function (url, res, err) {
-              if (App.isSyncing) {
-                alert('正在同步，请等待完成')
-                return
+            var tp = StringUtil.trim(App.thirdParty)
+            var index = tp.indexOf(' ')
+            var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
+            var docUrl = index <= 0 ? tp : tp.substring(index + 1).trim()
+
+            var host = App.getBaseUrl()
+
+            if (platform == PLATFORM_SWAGGER) {
+              if (docUrl.startsWith('/')) {
+                docUrl = host + docUrl
               }
-              App.isSyncing = true
-              App.onResponse(url, res, err)
 
-              var apis = (res.data || {}).paths
-              if (apis == null) { // || apis.length <= 0) {
-                alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
-                return
-              }
-              App.exTxt.button = '...'
+              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+                if (App.isSyncing) {
+                  alert('正在同步，请等待完成')
+                  return
+                }
+                App.isSyncing = true
+                App.onResponse(url_, res, err)
 
-              App.uploadTotal = 0 // apis.length || 0
-              App.uploadDoneCount = 0
-              App.uploadFailCount = 0
+                var apis = (res.data || {}).paths
+                if (apis == null) { // || apis.length <= 0) {
+                  App.isSyncing = false
+                  alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  return
+                }
+                App.exTxt.button = '...'
 
-              var item
-              // var i = 0
-              for (var url in apis) {
-                item = apis[url]
-                //导致 url 全都是一样的  setTimeout(function () {
+                App.uploadTotal = 0 // apis.length || 0
+                App.uploadDoneCount = 0
+                App.uploadFailCount = 0
+
+                var item
+                // var i = 0
+                for (var url in apis) {
+                  item = apis[url]
+                  //导致 url 全都是一样的  setTimeout(function () {
                   if (App.uploadSwaggerApi(url, item, 'get')
                     || App.uploadSwaggerApi(url, item, 'post')
                     || App.uploadSwaggerApi(url, item, 'put')
                     || App.uploadSwaggerApi(url, item, 'delete')
                   ) {}
-                // }, 100*i)
-                // i ++
+                  // }, 100*i)
+                  // i ++
+                }
+              })
+            }
+            else if (platform == PLATFORM_YAPI) {
+              index = docUrl.indexOf(' ')
+              var listUrl = index < 0 ? docUrl + '/api/interface/list_menu' : docUrl.substring(0, index).trim()
+              var itemUrl = index < 0 ? docUrl + '/api/interface/get' : docUrl.substring(index + 1).trim()
+
+              if (listUrl.startsWith('/')) {
+                listUrl = host + listUrl
+              }
+              if (itemUrl.startsWith('/')) {
+                itemUrl = host + itemUrl
               }
 
+              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                if (App.isSyncing) {
+                  alert('正在同步，请等待完成')
+                  return
+                }
+                App.isSyncing = true
+                App.onResponse(url_, res, err)
 
-            })
+                var apis = (res.data || {}).data
+                if (apis == null) { // || apis.length <= 0) {
+                  App.isSyncing = false
+                  alert('没有查到 YApi 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  return
+                }
+                App.exTxt.button = '...'
+
+                App.uploadTotal = 0 // apis.length || 0
+                App.uploadDoneCount = 0
+                App.uploadFailCount = 0
+
+                var item
+                for (var url in apis) {
+                  item = apis[url]
+
+                  var list = (item == null ? null : item.list) || []
+                  for (let i1 = 0; i1 < list.length; i1++) {
+                    var listItem1 = list[i1]
+                    if (listItem1 == null || listItem1._id == null) {
+                      App.log('listItem1 == null || listItem1._id == null >> continue')
+                      continue
+                    }
+
+                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url, res, err) {
+                      try {
+                        App.onResponse(url, res, err)
+                      } catch (e) {}
+
+                      var data = res.data == null ? null : res.data.data
+                      App.uploadYApi(data)
+                    })
+                  }
+
+                }
+              })
+
+            }
+
             break
         }
       },
@@ -1629,7 +1705,7 @@
        * @param method
        * @param callback
        */
-      uploadSwaggerApi: function(url, docItem, method, callback) {
+      uploadSwaggerApi: function(url, docItem, method) {
         method = method || 'get'
         var api = docItem == null ? null : docItem[method]
         if (api == null) {
@@ -1687,17 +1763,152 @@
         }
         req += '\n}'
 
+        App.uploadThirdPartyApi(
+          method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON
+          , api.summary, url, req, api.headers
+        )
+
+        return true
+      },
+
+
+      /**上传 Swagger API
+       * @param docItem
+       * @param callback
+       */
+      uploadYApi: function(docItem) {
+        var api = docItem
+        if (api == null) {
+          log('postApi', 'api == null  >> return')
+          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+          return false
+        }
+
+        App.uploadTotal ++
+
+        var type
+        var parameters
+        var isOther = false
+        switch (api.req_body_type || '') {
+          case 'form':
+            type = REQUEST_TYPE_FORM
+            parameters = api.req_body_form
+            break
+          case 'data':
+            type = REQUEST_TYPE_DATA
+            parameters = api.req_params
+            break
+          case 'query':
+            type = REQUEST_TYPE_PARAM
+            parameters = api.req_query
+            break
+          default:
+            isOther = true
+            type = REQUEST_TYPE_JSON
+            parameters = api.req_body_other == null ? null : JSON.parse(api.req_body_other)
+
+            var params = parameters.properties || {}
+            var required = parameters.required || []
+            var newParams = []
+            for (var k in params) {  //TODO 递归里面的子项
+              var item = params[k]
+              item.name = k
+              item.required = required.indexOf(k) >= 0
+              newParams.push(item)
+            }
+            parameters = newParams
+            break
+        }
+
+        var req = '{'
+
+        if (parameters != null) {
+          for (var k = 0; k < parameters.length; k++) {
+            var paraItem = parameters[k] || {}
+            var name = paraItem.name || ''
+            if (StringUtil.isEmpty(name, true)) {
+              continue
+            }
+
+            var val = (paraItem.mock || {}).mock
+            if (val == null && paraItem.type == 'array') {
+              val = []
+              var it = paraItem.items || {}
+              var v = it == null ? null : (it.mock || {}).mock
+              val.push(v)
+            }
+
+            if (val == undefined) {
+              if (paraItem.type == 'boolean') {
+                val = 'true'
+              }
+              if (paraItem.type == 'integer') {
+                val = name == 'pageSize' ? '10' : '1'
+              }
+              else if (paraItem.type == 'string') {
+                val = '""'
+              }
+              else if (paraItem.type == 'object') {
+                val = '{}'
+              }
+              else if (paraItem.type == 'array') {
+                val = '[]'
+              }
+              else {
+                var suffix = name.length >= 3 ? name.substring(name.length - 3).toLowerCase() : null
+                if (suffix == 'dto') {
+                  val = '{}'
+                } else {
+                  val = 'null'
+                }
+              }
+            }
+            else if (typeof val == 'string') {
+              val = '"' + val + '"'
+            }
+            else if (val instanceof Object) {
+              val = JSON.stringify(val, null, '    ')
+            }
+
+            req += '\n    "' + paraItem.name + '": ' + val + (k < parameters.length - 1 ? ',' : '')
+              + (StringUtil.isEmpty(paraItem.description) ? '' : '  //' + paraItem.description)
+          }
+
+        }
+
+        req += '\n}'
+
+        if (StringUtil.isEmpty(api.markdown, true) == false) {
+          req += '\n/**\n\n' + StringUtil.trim(api.markdown) + '\n\n*/'
+        }
+
+        var headers = api.req_headers || []
+        var header = ''
+        for (var i = 0; i < headers.length; i ++) {
+          var item = headers[i];
+          var name = item == null ? null : item.name
+          if (name == null) {
+            continue
+          }
+          header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
+        }
+
+        App.uploadThirdPartyApi(type, api.title, api.path, req, header)
+        return true
+      },
+
+      uploadThirdPartyApi: function(type, name, url, req, header) {
         var currentAccountId = App.getCurrentAccountId()
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
             'userId': App.User.id,
             'testAccountId': currentAccountId,
-            'type': method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON,
-            'name': StringUtil.get(api.summary),
+            'type': type,
+            'name': StringUtil.get(name),
             'url': url,
             'request': req,
-            'header': api.headers
+            'header': header
           },
           'TestRecord': {
             'documentId@': '/Document/id',
@@ -1719,14 +1930,12 @@
           App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
           if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
             alert('导入完成')
+            App.isSyncing = false
             App.showTestCase(false, false)
             App.remotes = []
             App.showTestCase(true, false)
           }
-
         })
-
-        return true
       },
 
       // 切换主题
@@ -4662,9 +4871,9 @@
         if (StringUtil.isEmpty(server, true) == false) {
           this.server = server
         }
-        var swagger = this.getCache('', 'swagger')
-        if (StringUtil.isEmpty(swagger, true) == false) {
-          this.swagger = swagger
+        var thirdParty = this.getCache('', 'thirdParty')
+        if (StringUtil.isEmpty(thirdParty, true) == false) {
+          this.thirdParty = thirdParty
         }
 
         this.locals = this.getCache('', 'locals') || []
