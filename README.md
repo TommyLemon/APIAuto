@@ -1,6 +1,6 @@
 # APIAuto (原名 APIJSONAuto)
 机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理工具。<br />
-支持 HTTP GET/POST API，智能显示和切换，支持一键导入 Swagger, Rap, YApi 等接口。<br />
+支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 等接口。<br />
 针对 APIJSON 做了静态检查、生成代码、格式化等大量优化。
 
 ### 特点功能
