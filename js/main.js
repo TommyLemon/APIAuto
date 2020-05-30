@@ -944,7 +944,7 @@
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
               }
               else if (index == 8) {
-                alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nRAP /repository/joined /interface/get\nYAPI /api/interface/list_menu /api/interface/get')
+                alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
               }
               break
             case 3:
@@ -1597,7 +1597,7 @@
             var tp = StringUtil.trim(App.thirdParty)
             var index = tp.indexOf(' ')
             var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
-            var docUrl = index <= 0 ? tp : tp.substring(index + 1).trim()
+            var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
 
             var host = App.getBaseUrl()
 
@@ -1606,7 +1606,7 @@
             }
             else if (platform == PLATFORM_SWAGGER) {
               if (docUrl.startsWith('/')) {
-                docUrl = host + docUrl
+                docUrl = host + docUrl + (docUrl.length > 1 ? '' : '/v2/api-docs')
               }
 
               App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
