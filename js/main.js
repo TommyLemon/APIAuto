@@ -344,6 +344,7 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  var PLATFORM_POSTMAN = 'POSTMAN'
   var PLATFORM_SWAGGER = 'SWAGGER'
   var PLATFORM_YAPI = 'YAPI'
   var PLATFORM_RAP = 'RAP'
@@ -556,6 +557,7 @@
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       // thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
+      // thirdParty: 'RAP /repository/joined /repository/get',
       thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
       language: CodeUtil.LANGUAGE_C_PLUS_PLUS,
       header: {},
@@ -940,6 +942,9 @@
               }
               else if (index == 7) {
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data)')
+              }
+              else if (index == 8) {
+                alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nRAP /repository/joined /interface/get\nYAPI /api/interface/list_menu /api/interface/get')
               }
               break
             case 3:
@@ -1596,7 +1601,10 @@
 
             var host = App.getBaseUrl()
 
-            if (platform == PLATFORM_SWAGGER) {
+            if (platform == PLATFORM_POSTMAN) {
+              alert('尚未开发 ' + PLATFORM_POSTMAN)
+            }
+            else if (platform == PLATFORM_SWAGGER) {
               if (docUrl.startsWith('/')) {
                 docUrl = host + docUrl
               }
@@ -1636,10 +1644,11 @@
                 }
               })
             }
-            else if (platform == PLATFORM_YAPI) {
+            else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+              var isRap = platform == PLATFORM_RAP
               index = docUrl.indexOf(' ')
-              var listUrl = index < 0 ? docUrl + '/api/interface/list_menu' : docUrl.substring(0, index).trim()
-              var itemUrl = index < 0 ? docUrl + '/api/interface/get' : docUrl.substring(index + 1).trim()
+              var listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
+              var itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
 
               if (listUrl.startsWith('/')) {
                 listUrl = host + listUrl
@@ -1659,7 +1668,7 @@
                 var apis = (res.data || {}).data
                 if (apis == null) { // || apis.length <= 0) {
                   App.isSyncing = false
-                  alert('没有查到 YApi 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
                   return
                 }
                 App.exTxt.button = '...'
@@ -1670,9 +1679,9 @@
 
                 var item
                 for (var url in apis) {
-                  item = apis[url]
+                  item = apis[url] || {}
 
-                  var list = (item == null ? null : item.list) || []
+                  var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
                   for (let i1 = 0; i1 < list.length; i1++) {
                     var listItem1 = list[i1]
                     if (listItem1 == null || listItem1._id == null) {
@@ -1686,13 +1695,31 @@
                       } catch (e) {}
 
                       var data = res.data == null ? null : res.data.data
-                      App.uploadYApi(data)
+                      if (isRap) {
+                        var modules = data == null ? null : data.modules
+                        if (modules != null) {
+                          for (var i = 0; i < modules.length; i++) {
+                            var it = modules[i] || {}
+                            var interfaces = it.interfaces || []
+
+                            for (var j = 0; j < interfaces.length; j++) {
+                              App.uploadRapApi(interfaces[j])
+                            }
+                          }
+                        }
+                      }
+                      else {
+                        App.uploadYApi(data)
+                      }
                     })
                   }
 
                 }
               })
 
+            }
+            else {
+              alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
             }
 
             break
@@ -1716,65 +1743,99 @@
 
         App.uploadTotal ++
 
-        var req = '{'
         var parameters = api.parameters || []
-        var paraItem
-        for (var k = 0; k < parameters.length; k++) {
-          paraItem = parameters[k] || {}
-          var name = paraItem.name || ''
-          if (name == 'mock') {
-            continue
-          }
-          var val = paraItem.default
-          if (val == undefined) {
-            if (paraItem.type == 'boolean') {
-              val = 'true'
-            }
-            if (paraItem.type == 'integer') {
-              val = name == 'pageSize' ? '10' : '1'
-            }
-            else if (paraItem.type == 'string') {
-              val = '""'
-            }
-            else if (paraItem.type == 'object') {
-              val = '{}'
-            }
-            else if (paraItem.type == 'array') {
-              val = '[]'
-            }
-            else {
-              var suffix = name.length >= 3 ? name.substring(name.length - 3).toLowerCase() : null
-              if (suffix == 'dto') {
-                val = '{}'
-              } else {
-                val = 'null'
-              }
-            }
-          }
-          else if (typeof val == 'string') {
-            val = '"' + val + '"'
-          }
-          else if (val instanceof Object) {
-            val = JSON.stringify(val, null, '    ')
-          }
+        var parameters2 = []
+        if (parameters != null && parameters.length > 0) {
 
-          req += '\n    "' + paraItem.name + '": ' + val + (k < parameters.length - 1 ? ',' : '')
-            + (StringUtil.isEmpty(paraItem.description) ? '' : '  //' + paraItem.description)
+          for (var k = 0; k < parameters.length; k++) {
+            var paraItem = parameters[k] || {}
+            var name = paraItem.name || ''
+            if (name == 'mock') {
+              continue
+            }
+
+            parameters2.push(paraItem)
+          }
         }
-        req += '\n}'
 
-        App.uploadThirdPartyApi(
-          method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON
-          , api.summary, url, req, api.headers
-        )
-
-        return true
+        return App.uploadThirdPartyApi(method == 'get' ? REQUEST_TYPE_PARAM : REQUEST_TYPE_JSON
+          , api.summary, url, parameters2, api.headers, api.description)
       },
 
 
-      /**上传 Swagger API
+      /**上传 Rap API
        * @param docItem
-       * @param callback
+       */
+      uploadRapApi: function(docItem) {
+        var api = docItem
+        if (api == null) {
+          log('postApi', 'api == null  >> return')
+          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+          return false
+        }
+
+        App.uploadTotal ++
+
+        var type
+        switch ((api.summary || {}).requestParamsType || '') {
+          case 'QUERY_PARAMS':
+            type = REQUEST_TYPE_PARAM
+            break
+          case 'BODY_PARAMS':
+            switch ((api.summary || {}).bodyOption || '') {
+              case 'FORM_DATA':
+                type = REQUEST_TYPE_DATA
+                break
+              case 'FORM_URLENCODED':
+                type = REQUEST_TYPE_FORM
+                break
+              // case 'RAW':  //JSON
+              default:
+                type = REQUEST_TYPE_JSON
+                break
+            }
+            break
+          default:
+            type = REQUEST_TYPE_JSON
+            break
+        }
+
+        var header = ''
+
+        var parameters = api.properties
+
+        var parameters2 = []
+        if (parameters != null && parameters.length > 0) {
+
+          for (var k = 0; k < parameters.length; k++) {
+
+            var paraItem = parameters[k] || {}
+            var name = paraItem.name || ''
+            if (StringUtil.isEmpty(name, true) || paraItem.scope != 'request') {
+              continue
+            }
+
+            var val = paraItem.value
+
+            if (paraItem.pos == 1) { //header
+              header += (k <= 0 ? '' : '\n') + name + ' : ' + (val == null ? '' : val)
+                + (StringUtil.isEmpty(paraItem.description, true) ? '' : '  // ' + paraItem.description)
+              continue
+            }
+
+            //转成和 Swagger 一样的字段及格式
+            paraItem.type = paraItem.type == 'Number' ? 'integer' : StringUtil.toLowerCase(paraItem.type)
+            paraItem.default = val
+
+            parameters2.push(paraItem)
+          }
+        }
+
+        return App.uploadThirdPartyApi(type, api.name, api.url, parameters2, header, api.description)
+      },
+
+      /**上传 YApi
+       * @param docItem
        */
       uploadYApi: function(docItem) {
         var api = docItem
@@ -1784,7 +1845,7 @@
           return false
         }
 
-        App.uploadTotal ++
+        App.uploadTotal++
 
         var type
         var parameters
@@ -1820,68 +1881,6 @@
             break
         }
 
-        var req = '{'
-
-        if (parameters != null) {
-          for (var k = 0; k < parameters.length; k++) {
-            var paraItem = parameters[k] || {}
-            var name = paraItem.name || ''
-            if (StringUtil.isEmpty(name, true)) {
-              continue
-            }
-
-            var val = (paraItem.mock || {}).mock
-            if (val == null && paraItem.type == 'array') {
-              val = []
-              var it = paraItem.items || {}
-              var v = it == null ? null : (it.mock || {}).mock
-              val.push(v)
-            }
-
-            if (val == undefined) {
-              if (paraItem.type == 'boolean') {
-                val = 'true'
-              }
-              if (paraItem.type == 'integer') {
-                val = name == 'pageSize' ? '10' : '1'
-              }
-              else if (paraItem.type == 'string') {
-                val = '""'
-              }
-              else if (paraItem.type == 'object') {
-                val = '{}'
-              }
-              else if (paraItem.type == 'array') {
-                val = '[]'
-              }
-              else {
-                var suffix = name.length >= 3 ? name.substring(name.length - 3).toLowerCase() : null
-                if (suffix == 'dto') {
-                  val = '{}'
-                } else {
-                  val = 'null'
-                }
-              }
-            }
-            else if (typeof val == 'string') {
-              val = '"' + val + '"'
-            }
-            else if (val instanceof Object) {
-              val = JSON.stringify(val, null, '    ')
-            }
-
-            req += '\n    "' + paraItem.name + '": ' + val + (k < parameters.length - 1 ? ',' : '')
-              + (StringUtil.isEmpty(paraItem.description) ? '' : '  //' + paraItem.description)
-          }
-
-        }
-
-        req += '\n}'
-
-        if (StringUtil.isEmpty(api.markdown, true) == false) {
-          req += '\n/**\n\n' + StringUtil.trim(api.markdown) + '\n\n*/'
-        }
-
         var headers = api.req_headers || []
         var header = ''
         for (var i = 0; i < headers.length; i ++) {
@@ -1891,13 +1890,95 @@
             continue
           }
           header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
+            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
         }
 
-        App.uploadThirdPartyApi(type, api.title, api.path, req, header)
-        return true
+        var parameters2 = []
+        if (parameters != null && parameters.length > 0) {
+          //过滤掉无效的，避免多拼接 , 导致 req 不是合法 JSON
+          for (var k = 0; k < parameters.length; k++) {
+            var paraItem = parameters[k] || {}
+            var name = paraItem.name || ''
+            if (StringUtil.isEmpty(name, true)) {
+              continue
+            }
+
+            //转成和 Swagger 一样的字段及格式
+            paraItem.url = paraItem.path
+
+            var val = (paraItem.mock || {}).mock
+            if (val == null && type == 'array') {
+              val = []
+              var it = paraItem.items || {}
+              var v = it == null ? null : (it.mock || {}).mock
+              val.push(v)
+            }
+            paraItem.default = val
+
+            parameters2.push(paraItem)
+          }
+        }
+
+        return App.uploadThirdPartyApi(type, api.title, api.path, parameters2, header
+          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
       },
 
-      uploadThirdPartyApi: function(type, name, url, req, header) {
+      //上传第三方平台的 API 至 APIAuto
+      uploadThirdPartyApi: function(type, name, url, parameters, header, description) {
+        var req = '{'
+
+        if (parameters != null && parameters.length > 0) {
+          for (var k = 0; k < parameters.length; k++) {
+            var paraItem = parameters[k] || {}
+            var n = paraItem.name || ''  //传进来前已过滤，这里只是避免万一为 null 导致后面崩溃
+            var t = paraItem.type || ''
+            var val = paraItem.default
+
+            if (val == undefined) {
+              if (t == 'boolean') {
+                val = 'true'
+              }
+              if (t == 'integer') {
+                val = n == 'pageSize' ? '10' : '1'
+              }
+              else if (t == 'string') {
+                val = '""'
+              }
+              else if (t == 'object') {
+                val = '{}'
+              }
+              else if (t == 'array') {
+                val = '[]'
+              }
+              else {
+                var suffix = n.length >= 3 ? n.substring(n.length - 3).toLowerCase() : null
+                if (suffix == 'dto') {
+                  val = '{}'
+                } else {
+                  val = 'null'
+                }
+              }
+            }
+            else if (typeof val == 'string' && (StringUtil.isEmpty(t, true) || t == 'string')) {
+              val = '"' + val + '"'
+            }
+            else if (val instanceof Object) {
+              val = JSON.stringify(val, null, '    ')
+            }
+
+            req += '\n    "' + n + '": ' + val + (k < parameters.length - 1 ? ',' : '')
+              + '  // ' + (paraItem.required ? '必填。 ' : '') + StringUtil.trim(paraItem.description)
+          }
+
+        }
+
+        req += '\n}'
+
+        if (StringUtil.isEmpty(description, true) == false) {
+          req += '\n/**\n\n' + StringUtil.trim(description) + '\n\n*/'
+        }
+
+
         var currentAccountId = App.getCurrentAccountId()
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
@@ -1908,7 +1989,7 @@
             'name': StringUtil.get(name),
             'url': url,
             'request': req,
-            'header': header
+            'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header)
           },
           'TestRecord': {
             'documentId@': '/Document/id',
@@ -1936,6 +2017,8 @@
             App.showTestCase(true, false)
           }
         })
+
+        return true
       },
 
       // 切换主题
