@@ -1591,13 +1591,24 @@
             App.saveCache('', 'types', App.types)
             break
           case 8:
-            App.thirdParty = App.exTxt.name
-            App.saveCache('', 'thirdParty', App.thirdParty)
+            var thirdParty = App.exTxt.name
 
-            var tp = StringUtil.trim(App.thirdParty)
+            var tp = StringUtil.trim(thirdParty)
             var index = tp.indexOf(' ')
             var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
             var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
+
+            var jsonData = null
+            try {
+              jsonData = JSON.parse(docUrl)
+            }
+            catch (e) {}
+
+            var isJSONData = jsonData instanceof Object
+            if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
+              App.thirdParty = thirdParty
+              App.saveCache('', 'thirdParty', App.thirdParty)
+            }
 
             var host = App.getBaseUrl()
 
@@ -1605,11 +1616,14 @@
               alert('尚未开发 ' + PLATFORM_POSTMAN)
             }
             else if (platform == PLATFORM_SWAGGER) {
+              if (docUrl == '/') {
+                docUrl += '/v2/api-docs'
+              }
               if (docUrl.startsWith('/')) {
-                docUrl = host + docUrl + (docUrl.length > 1 ? '' : '/v2/api-docs')
+                docUrl = host + docUrl
               }
 
-              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+              var swaggerCallback = function (url_, res, err) {
                 if (App.isSyncing) {
                   alert('正在同步，请等待完成')
                   return
@@ -1642,7 +1656,14 @@
                   // }, 100*i)
                   // i ++
                 }
-              })
+              }
+
+              if (isJSONData) {
+                swaggerCallback(docUrl, { data: jsonData }, null)
+              }
+              else {
+                App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+              }
             }
             else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
               var isRap = platform == PLATFORM_RAP
@@ -1657,65 +1678,73 @@
                 itemUrl = host + itemUrl
               }
 
-              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
-                if (App.isSyncing) {
-                  alert('正在同步，请等待完成')
-                  return
+              var itemCallback = function (url, res, err) {
+                try {
+                  App.onResponse(url, res, err)
+                } catch (e) {}
+
+                var data = res.data == null ? null : res.data.data
+                if (isRap) {
+                  var modules = data == null ? null : data.modules
+                  if (modules != null) {
+                    for (var i = 0; i < modules.length; i++) {
+                      var it = modules[i] || {}
+                      var interfaces = it.interfaces || []
+
+                      for (var j = 0; j < interfaces.length; j++) {
+                        App.uploadRapApi(interfaces[j])
+                      }
+                    }
+                  }
                 }
-                App.isSyncing = true
-                App.onResponse(url_, res, err)
-
-                var apis = (res.data || {}).data
-                if (apis == null) { // || apis.length <= 0) {
-                  App.isSyncing = false
-                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
-                  return
+                else {
+                  App.uploadYApi(data)
                 }
-                App.exTxt.button = '...'
+              }
 
-                App.uploadTotal = 0 // apis.length || 0
-                App.uploadDoneCount = 0
-                App.uploadFailCount = 0
+              if (isJSONData) {
+                itemCallback(itemUrl, { data: jsonData }, null)
+              }
+              else {
+                App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                  if (App.isSyncing) {
+                    alert('正在同步，请等待完成')
+                    return
+                  }
+                  App.isSyncing = true
+                  App.onResponse(url_, res, err)
 
-                var item
-                for (var url in apis) {
-                  item = apis[url] || {}
+                  var apis = (res.data || {}).data
+                  if (apis == null) { // || apis.length <= 0) {
+                    App.isSyncing = false
+                    alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                    return
+                  }
+                  App.exTxt.button = '...'
 
-                  var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
-                  for (let i1 = 0; i1 < list.length; i1++) {
-                    var listItem1 = list[i1]
-                    if (listItem1 == null || listItem1._id == null) {
-                      App.log('listItem1 == null || listItem1._id == null >> continue')
-                      continue
+                  App.uploadTotal = 0 // apis.length || 0
+                  App.uploadDoneCount = 0
+                  App.uploadFailCount = 0
+
+                  var item
+                  for (var url in apis) {
+                    item = apis[url] || {}
+
+                    var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                    for (let i1 = 0; i1 < list.length; i1++) {
+                      var listItem1 = list[i1]
+                      if (listItem1 == null || listItem1._id == null) {
+                        App.log('listItem1 == null || listItem1._id == null >> continue')
+                        continue
+                      }
+
+                      App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                     }
 
-                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url, res, err) {
-                      try {
-                        App.onResponse(url, res, err)
-                      } catch (e) {}
-
-                      var data = res.data == null ? null : res.data.data
-                      if (isRap) {
-                        var modules = data == null ? null : data.modules
-                        if (modules != null) {
-                          for (var i = 0; i < modules.length; i++) {
-                            var it = modules[i] || {}
-                            var interfaces = it.interfaces || []
-
-                            for (var j = 0; j < interfaces.length; j++) {
-                              App.uploadRapApi(interfaces[j])
-                            }
-                          }
-                        }
-                      }
-                      else {
-                        App.uploadYApi(data)
-                      }
-                    })
                   }
+                })
 
-                }
-              })
+              }
 
             }
             else {
@@ -1983,7 +2012,6 @@
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
-            'userId': App.User.id,
             'testAccountId': currentAccountId,
             'type': type,
             'name': StringUtil.get(name),
@@ -1992,9 +2020,7 @@
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header)
           },
           'TestRecord': {
-            'documentId@': '/Document/id',
             'randomId': 0,
-            'userId': App.User.id,
             'host': App.getBaseUrl(),
             'testAccountId': currentAccountId,
             'response': ''
@@ -3434,8 +3460,8 @@
               '@order': 'version-,method-',
               '@json': 'structure',
               'tag$': search,
-              'detail$': search,
-              '@combine': search == null ? null : 'tag$,detail$',
+              // 界面又不显示这个字段，搜出来莫名其妙 'detail$': search,
+              // '@combine': search == null ? null : 'tag$,detail$',
             }
           }
         }, {}, function (url, res, err) {
