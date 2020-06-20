@@ -3341,7 +3341,7 @@
           + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/APIJSON/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2016-2019 Tommy Lemon<br><br></p>'
+          + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
         );
 
         App.view = 'markdown';
@@ -3355,6 +3355,9 @@
        */
       getDoc: function (callback) {
 
+        var count = this.count || 100  //超过就太卡了
+        var page = this.page || 0
+
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
@@ -3366,7 +3369,8 @@
             }
           },
           'Access[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Access': {
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
@@ -3378,8 +3382,8 @@
             }
           },
           '[]': {
-            'count': this.count || 100,  //超过就太卡了
-            'page': this.page || 0,
+            'count': count,
+            'page': page,
             'Table': this.database == 'SQLSERVER' ? null : {
               'table_schema': this.schema,
               'table_type': 'BASE TABLE',
@@ -3441,7 +3445,8 @@
             }
           },
           'Function[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Function': {
               '@order': 'date-,name+',
               '@column': 'name,arguments,demo,detail',
@@ -3455,7 +3460,8 @@
             }
           },
           'Request[]': {
-            'count': 0,
+            'count': count,
+            'page': page,
             'Request': {
               '@order': 'version-,method-',
               '@json': 'structure',

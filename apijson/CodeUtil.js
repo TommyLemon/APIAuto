@@ -2117,7 +2117,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 1, isTableKey, isSmart);
+          s += CodeUtil.parseKotlinResponse(itemName, value[0], depth + 2, isTableKey, isSmart);
         }
         // }
 
@@ -2149,7 +2149,7 @@ var CodeUtil = {
         s += nextNextPadding + k + ' = ' + (isTableKey && isSmart ? t : 'JSONObject') + '()';
         s += nextPadding + '}\n';
 
-        s += CodeUtil.parseKotlinResponse(k, value, depth, isTableKey, isSmart);
+        s += CodeUtil.parseKotlinResponse(k, value, depth + 1, isTableKey, isSmart);
 
         s += padding + '}' + blockBlank + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -2649,11 +2649,11 @@ var CodeUtil = {
       '    }\n' +
       '}\n' +
       '\n' +
-      '@Service\n' +
       'public interface ' + modelName + 'Service {\n' +
       '    ' + dataType + ' ' + methodName + '(' + typeArgStr + ');\n' +
       '}\n' +
       '\n' +
+      '@Service\n' +
       'public class ' + modelName + 'ServiceImpl implements ' + modelName + 'Service {\n' +
       '\n' +
       '    @Autowired\n' +
