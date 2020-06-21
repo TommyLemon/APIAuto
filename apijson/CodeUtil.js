@@ -533,19 +533,23 @@ var CodeUtil = {
 
           s += '\n\n' +
             'open class ' + responseName + '<T> : Response<T> {\n' +
+            nextPadding + '@Transient\n' +
             nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n\n' +
             '}';
 
           s += '\n\n' +
             'open class Response<T> {\n' +
-            nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n' +
-            nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n' +
+            nextPadding + '@Transient\n' +
+            nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n\n' +
+            nextPadding + '@Transient\n' +
+            nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n\n' +
+            nextPadding + '@Transient\n' +
             nextPadding + 'open var data: T? = null\n\n' +
             '}';
 
         }
 
-        return s;
+        return s + (isSmart ? '' : CodeUtil.parseKotlinClasses('Request', reqObj, 0, false, true));
       }
       //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
     }
@@ -2263,7 +2267,7 @@ var CodeUtil = {
 
         return s;
       }
-    })
+    }) + (depth > 0 || ! isSmart ? '' : '\n\n\n' + CodeUtil.parseKotlinClasses('Response', resObj, 0, false, true))
 
   },
 
@@ -2436,7 +2440,7 @@ var CodeUtil = {
 
         return s;
       }
-    })
+    }) + (depth > 0 || ! isSmart ? '' : '\n\n\n' + CodeUtil.parseKotlinClasses('Response', resObj, 0, false, ! isSmart))
 
   },
 
