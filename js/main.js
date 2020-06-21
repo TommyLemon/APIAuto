@@ -3244,7 +3244,7 @@
               + '```kotlin \n'
               + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0)
               + '\n'
-              + CodeUtil.parseKotlinClasses('Request', JSON.parse(rq), 0, false, isSingle)
+              + CodeUtil.parseKotlinClasses('Request', JSON.parse(rq), 0, false, ! isSingle)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
           case CodeUtil.LANGUAGE_JAVA:

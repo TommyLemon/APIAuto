@@ -2090,13 +2090,13 @@ var CodeUtil = {
 
         var isTableKey = JSONObject.isTableKey(t);
         if (isTable && isSmart) {
-          s += nextPadding + 'var ' + k + ':List<' + (isTableKey ? t : type) + '?>? = ' + name + '?.get' + StringUtil.firstCase(vn, true) + '()'
+          s += nextPadding + 'var ' + k + ': List<' + (isTableKey ? t : type) + '?>? = ' + name + '?.get' + StringUtil.firstCase(vn, true) + '()'
         }
         else if (isTableKey && isSmart) {
-          s += nextPadding + 'var ' + k + ':List<' + t + '?>? = JSON.parseArray(' + name + '?.getString("' + key + '"), ' + t + '::class.java)';
+          s += nextPadding + 'var ' + k + ': List<' + t + '?>? = JSON.parseArray(' + name + '?.getString("' + key + '"), ' + t + '::class.java)';
         }
         else {
-          s += nextPadding + 'var ' + k + ':JSONArray? = ' + name + '?.getJSONArray("' + key + '")';
+          s += nextPadding + 'var ' + k + ': JSONArray? = ' + name + '?.getJSONArray("' + key + '")';
         }
 
         s += nextPadding + 'if (' + k + ' == null) {';
@@ -2550,8 +2550,7 @@ var CodeUtil = {
             s += padding + 'package apijson.demo.server.model\n';
         }
 
-        s += padding + '@MethodAccess'
-          + padding + 'open class ' + name + ' : Serializable {'
+        s += padding + 'open class ' + name + ' : Serializable {'
           + padding + tab + 'companion object { '
           + nextPadding + tab + 'const val serialVersionUID: Long = 1L'
           + padding + tab + '}';
@@ -2584,13 +2583,10 @@ var CodeUtil = {
           return this.onParseJSONObject(key, value, index);
         }
 
-        var type = CodeUtil.getJavaTypeFromJS(key, value, false, false);
-        if (type == 'Object') {
-          type = 'Any';
-        }
+        var type = CodeUtil.getKotlinTypeFromJS(key, value, false, false);
         var varName = JSONResponse.getVariableName(key);
 
-        var s = '\n' + nextPadding + '@Serializable("' + key + '")'
+        var s = '\n' + nextPadding + '@SerializedName("' + key + '")'
           + nextPadding + 'var ' + varName + ': ' + type + this.initEmptyValue4Type(type);
         return s;
       },
@@ -2603,15 +2599,25 @@ var CodeUtil = {
               return ' = false';
             case 'Number':
             case 'Integer':
+            case 'Int':
               return ' = 0';
             case 'Long':
               return ' = 0L';
+            case 'Float':
+              return ' = 0f';
+            case 'Double':
+              return ' = 0d';
             case 'String':
               return ' = ""';
             case 'Array':
+            case 'List':
               return ' = mutableListOf()';
+            case 'Map':
+              return ' = mutableMapOf()';
             case 'Object':
             case 'Any':
+              return '? = null';
+            default:
               return ' = ' + type + '()';
           }
         }
@@ -2624,34 +2630,24 @@ var CodeUtil = {
 
         var vn = JSONResponse.getVariableName(key);
         var k = vn + (depth <= 0 ? '' : depth);
+        var itemName = StringUtil.firstCase(k, true) + 'Item' + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
-        var type = value[0] instanceof Object ? 'List<' + StringUtil.firstCase(k, true) + '>' : CodeUtil.getJavaTypeFromJS(k, value[0], false, false);
-        if (type == 'Object') {
-          type = 'Any';
-        }
-
         var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-        s += '\n' + nextPadding + '@Serializable("' + key + '")';
+        s += '\n' + nextPadding + '@SerializedName("' + key + '")';
 
         var t = JSONResponse.getTableName(key);
         if (t.endsWith('[]')) {
           t = t.substring(0, t.length - 2);
         }
-
         var isTableKey = JSONObject.isTableKey(t);
-        if (isTable && isSmart) {
-          s += nextPadding + 'var ' + k + ':List<' + (isTableKey ? t : type) + '?>' + this.initEmptyValue4Type(t);
-        }
-        else if (isTableKey && isSmart) {
-          s += nextPadding + 'var ' + k + ':List<' + t + '?>' + this.initEmptyValue4Type(t);
-        }
-        else {
-          s += nextPadding + 'var ' + k + ':JSONArray' + this.initEmptyValue4Type(t);
-        }
+
+        var type = value[0] instanceof Object ? itemName : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
+
+        s += nextPadding + 'var ' + k + ': List<' + type + '?>' + this.initEmptyValue4Type('List');
 
         if (value[0] instanceof Object) {
-          s += CodeUtil.parseKotlinClasses(StringUtil.firstCase(k, true), value[0], depth + 1, isTableKey, isSmart);
+          s += CodeUtil.parseKotlinClasses(type, value[0], depth + 1, isTableKey, isSmart);
         }
 
         s += '\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
@@ -2663,13 +2659,19 @@ var CodeUtil = {
         var k = JSONResponse.getVariableName(key);
         var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
         var t = JSONResponse.getTableName(key);
+        var isArray = false;
+        if (t.endsWith('[]')) {
+          t = t.substring(0, t.length - 2);
+          isArray = true;
+        }
         var isTableKey = JSONObject.isTableKey(t);
 
-        var type = StringUtil.firstCase(t, true)
-        s += '\n' + nextPadding + '@Serializable("' + key + '")'
+        var type = isArray ? 'Item' : (StringUtil.firstCase(t, true) || 'Any')
+        s += '\n' + nextPadding + '@SerializedName("' + key + '")'
           + nextPadding + 'var ' + k + ': ' + type + this.initEmptyValue4Type(type);
 
-        if (['Boolean', 'Number', 'Integer', 'Long', 'String'].indexOf(type) < 0) {
+        // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {
+        if (['Boolean', 'Number', 'Integer', 'Int', 'Long', 'String'].indexOf(type) < 0) {
           s += CodeUtil.parseKotlinClasses(StringUtil.firstCase(type, true), value, depth + 1, isTableKey, isSmart);
         }
 
@@ -4503,6 +4505,32 @@ var CodeUtil = {
     }
 
     return 'Object';
+  },
+
+  getKotlinTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType) {
+    if (typeof value == 'boolean') {
+      return baseFirst ? 'boolean' : 'Boolean';
+    }
+    if (typeof value == 'number') {
+      if (String(value).indexOf(".") >= 0) {
+        return baseFirst ? 'double' : 'Double';
+      }
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
+        return baseFirst ? 'long' : 'Long';
+      }
+      return baseFirst ? 'int' : 'Int';
+    }
+    if (typeof value == 'string') {
+      return 'String';
+    }
+    if (value instanceof Array) {
+      return rawType ? 'List<Object>' : 'JSONArray';
+    }
+    if (value instanceof Object) {
+      return rawType ? 'Map<String, Object>' : 'JSONObject';
+    }
+
+    return 'Any';
   },
 
   getCSharpTypeFromJS: function (key, value, baseFirst) {
