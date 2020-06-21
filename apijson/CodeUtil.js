@@ -449,7 +449,7 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseKotlinRequest: function(name, reqObj, depth) {
+  parseKotlinRequest: function(name, reqObj, depth, isSmart, isArrayItem, useVar4Value, type, url, comment) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -463,11 +463,102 @@ var CodeUtil = {
 
     var padding = CodeUtil.getBlank(depth);
     var nextPadding = CodeUtil.getBlank(depth + 1);
+    var nextNextPadding = CodeUtil.getBlank(depth + 2);
+
+    if (depth <= 0) {
+      //RESTful 等非 APIJSON 规范的 API <<<<<<<<<<<<<<<<<<<<<<<<<<
+      var requestMethod = StringUtil.isEmpty(type, true) || type == 'PARAM' ? 'GET' : 'POST';
+
+      url = url || '';
+
+      var lastIndex = url.lastIndexOf('/');
+      var methodUri = url; // lastIndex < 0 ? url : url.substring(lastIndex);
+      var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+
+      url = url.substring(0, lastIndex);
+      lastIndex = url.lastIndexOf('/');
+      var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
+      var modelName = StringUtil.firstCase(varName, true);
+
+      if (StringUtil.isEmpty(modelName, true) != true) {
+        // var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
+        var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0 || methodUri.indexOf('create') >= 0);
+        var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
+        var isDelete = type != 'PARAM' && (methodUri.indexOf('delete') >= 0 || methodUri.indexOf('remove') >= 0 || methodUri.indexOf('del') >= 0);
+        var isWrite = isPost || isPut || isDelete;
+        var isGet = ! isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
+        var isList = isGet && (methodUri.indexOf('list') >= 0 || methodUri.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number');
+
+        var dataType = isWrite ? 'Int' : (isList ? 'List<' + modelName + '>' : modelName);
+
+        var responseName = modelName + (isList ? 'List' : '') + 'Response';
+
+        var str = '';
+        if (reqObj != null) {
+          for (var k in reqObj) {
+            var v = reqObj[k];
+
+            if (v instanceof Object) {
+              str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(JSONResponse.getVariableName(k), v, depth, isSmart);
+            }
+          }
+        }
+
+        var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
+          + '\n' + methodName + '(' + CodeUtil.getCode4KotlinArgValues(reqObj, true) + ');\n'
+          + '\n/**'
+          + '\n * ' + StringUtil.trim(comment)
+          + '\n */'
+          + '\n@JvmStatic'
+          + '\npublic ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! isSmart) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' {\n'
+          + (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url)) : '') + '\n'
+          + (type == 'JSON' ? '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
+          + '\n' + nextPadding + 'var service = retrofit.create(' + modelName + 'Service.class);'
+          + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, ! isSmart, true, true))) + ')'
+          + '\n}';
+
+        //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
+        s += '\n\n' +
+          'public interface ' + modelName + 'Service {\n' +
+          (type == 'JSON' ? nextPadding + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPadding + '@FormUrlEncoded\n': (type == 'DATA' ? nextPadding + '@Multipart\n': '')))  +
+          nextPadding + '@' + requestMethod + '("' + methodUri + '")\n' +
+          nextPadding + methodName + '(' + (type == 'JSON' ? '@Body requestBody: RequestBody' : (type == 'DATA' ? 'requestBodyMap: @PartMap Map<String, RequestBody>' : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + '\n' +
+          '}';
+
+        if (! isSmart) {
+          if (isList) {
+            modelName += 'List';
+            varName += 'List';
+          }
+
+          s += '\n\n' +
+            'open class ' + responseName + '<T> : Response<T> {\n' +
+            nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n\n' +
+            '}';
+
+          s += '\n\n' +
+            'open class Response<T> {\n' +
+            nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n' +
+            nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n' +
+            nextPadding + 'open var data: T? = null\n\n' +
+            '}';
+
+        }
+
+        return s;
+      }
+      //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
+    }
+
+
+    var parentKey = JSONObject.isArrayKey(name)
+      ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
+      : CodeUtil.getTableKey(JSONResponse.getVariableName(name));
 
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n';
+        return useVar4Value && type == 'DATA' ? 'Map<String, RequestBody>' : (isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n');
       },
 
       onParseParentEnd: function () {
@@ -475,14 +566,24 @@ var CodeUtil = {
       },
 
       onParseChildArray: function (key, value, index) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index);
+        }
         return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
       },
 
       onParseChildObject: function (key, value, index) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index);
+        }
         return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
       },
 
       onParseArray: function (key, value, index, isOuter) {
+        if (useVar4Value) {
+          return this.onParseChildOther(key, value, index, isOuter);
+        }
+
         var isEmpty = value.length <= 0;
         var s = isEmpty ? 'ArrayList<Any>(' : 'listOf(\n';
 
@@ -496,25 +597,32 @@ var CodeUtil = {
         }
 
         s += isEmpty ? ')' : '\n' + (isOuter ? padding : nextPadding) + ')';
+
+        if (isArrayItem != true) {
+          if (reqObj instanceof Array) {
+            s += '\n\n' + nextPadding + parentKey + '.add(' + varName + ');';
+          }
+          else if (reqObj instanceof Object) {
+            s += '\n\n' + nextPadding + parentKey + '.put("' + key + '", ' + varName + ');';
+          }
+          else {
+            s += '//FIXME 这里不可能出现 reqObj 类型为 ' + (typeof reqObj) + '！'; //不可能
+          }
+        }
+
         return s;
       },
 
       onParseChildOther: function (key, value, index, isOuter) {
-        var v; //避免改变原来的value
-        if (value == null) {
-          v = 'null';
-        }
-        else if (value instanceof Array) {
-          v = this.onParseArray(key, value, index, isOuter);
-        }
-        else if (typeof value == 'string') {
-          v = '"' + value + '"';
-        }
-        else {
-          v = value
+        var valStr = useVar4Value ? JSONResponse.getVariableName(key) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, value);
+        if (useVar4Value && type == 'DATA') {
+          if (value instanceof Object) {
+            valStr = 'JSON.toJSONString(' + valStr + ')';
+          }
+          valStr = 'RequestBody.create(MediaType.parse("multipart/form-data", ' + valStr + ')';
         }
 
-        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + '"' + key + '" to ') + v;
+        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + '"' + key + '" to ') + valStr;
       }
     })
 
@@ -2456,6 +2564,41 @@ var CodeUtil = {
   },
 
 
+
+  initEmptyValue4Type: function(type, isSmart) {
+    if (isSmart) {
+      type = type || ''
+      switch (type) {
+        case 'Boolean':
+          return ' = false';
+        case 'Number':
+        case 'Integer':
+        case 'Int':
+          return ' = 0';
+        case 'Long':
+          return ' = 0L';
+        case 'Float':
+          return ' = 0f';
+        case 'Double':
+          return ' = 0d';
+        case 'String':
+          return ' = ""';
+        case 'Array':
+        case 'List':
+          return ' = mutableListOf()';
+        case 'Map':
+          return ' = mutableMapOf()';
+        case 'Object':
+        case 'Any':
+          return '? = null';
+        default:
+          return ' = ' + type + '()';
+      }
+    }
+
+    return '? = null';
+  },
+
   getCode4JavaArgValues: function (reqObj, useVar4ComplexValue) {
     var str = '';
     if (reqObj != null) {
@@ -2469,6 +2612,27 @@ var CodeUtil = {
         }
         else {
           str += (first ? '' : ', ') + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, v, k, 0);
+        }
+        first = false;
+      }
+    }
+
+    return str;
+  },
+
+  getCode4KotlinArgValues: function (reqObj, useVar4ComplexValue) {
+    var str = '';
+    if (reqObj != null) {
+      var first = true;
+
+      for (var k in reqObj) {
+        var v = reqObj[k];
+
+        if (useVar4ComplexValue && v instanceof Object) {
+          str += (first ? '' : ', ') + JSONResponse.getVariableName(k);
+        }
+        else {
+          str += (first ? '' : ', ') + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, v, k, 0);
         }
         first = false;
       }
@@ -2512,6 +2676,48 @@ var CodeUtil = {
         }
 
         str += (first ? '' : ', ') + (at == null ? '' : '@' + at + '("' + k + '") ' ) + (t == null ? '' : t + ' ') + vk;
+        first = false;
+      }
+    }
+
+    return str;
+  },
+  /**获取参数代码
+   * @param reqObj 对象
+   * @param withType 带上类型
+   * @param annotionType null, Server: RequestParam, Param; Android: Query, Field, Part, Query-QueryMap, Query-QueryMap(encode=true), Part-PartMap
+   * @param rawType true-使用 JDK 有的原始类型，其它-使用 JSONObject, JSONRequest 等第三方库封装类型
+   * @param complex2String 将复杂类型转为 String，值转为 toJSONString
+   */
+  getCode4KotlinArgs: function(reqObj, withType, annotationType, rawType, complex2String) {
+    var str = '';
+    if (reqObj != null) {
+      var first = true;
+
+      for (var k in reqObj) {
+        var v = reqObj[k];
+        var t = withType ? CodeUtil.getKotlinTypeFromJS(k, v, false, false, rawType) : null;
+
+        var at = annotationType;
+        if (annotationType != null) { //简单数据注解类型-复杂数据注解类型
+          var index = annotationType.indexOf('-');
+          if (index >= 0) {
+            at = v instanceof Object ? annotationType.substring(index + 1, annotationType.length) : annotationType.substring(0, index);
+          }
+        }
+
+        var vk = JSONResponse.getVariableName(k);
+
+        if (complex2String && v instanceof Object) {
+          if (withType) {
+            t = 'String';
+          }
+          else {
+            vk = 'JSON.toJSONString(' + vk + ')';
+          }
+        }
+
+        str += (first ? '' : ', ') + (at == null ? '' : '@' + at + '("' + k + '") ' ) + vk + (t == null ? '' : ': ' + t + '?');
         first = false;
       }
     }
@@ -2587,42 +2793,8 @@ var CodeUtil = {
         var varName = JSONResponse.getVariableName(key);
 
         var s = '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'var ' + varName + ': ' + type + this.initEmptyValue4Type(type);
+          + nextPadding + 'var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
         return s;
-      },
-
-      initEmptyValue4Type: function(type) {
-        if (isSmart) {
-          type = type || ''
-          switch (type) {
-            case 'Boolean':
-              return ' = false';
-            case 'Number':
-            case 'Integer':
-            case 'Int':
-              return ' = 0';
-            case 'Long':
-              return ' = 0L';
-            case 'Float':
-              return ' = 0f';
-            case 'Double':
-              return ' = 0d';
-            case 'String':
-              return ' = ""';
-            case 'Array':
-            case 'List':
-              return ' = mutableListOf()';
-            case 'Map':
-              return ' = mutableMapOf()';
-            case 'Object':
-            case 'Any':
-              return '? = null';
-            default:
-              return ' = ' + type + '()';
-          }
-        }
-
-        return '? = null';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -2644,7 +2816,7 @@ var CodeUtil = {
 
         var type = value[0] instanceof Object ? itemName : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
 
-        s += nextPadding + 'var ' + k + ': List<' + type + '?>' + this.initEmptyValue4Type('List');
+        s += nextPadding + 'var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
 
         if (value[0] instanceof Object) {
           s += CodeUtil.parseKotlinClasses(type, value[0], depth + 1, isTableKey, isSmart);
@@ -2668,7 +2840,7 @@ var CodeUtil = {
 
         var type = isArray ? 'Item' : (StringUtil.firstCase(t, true) || 'Any')
         s += '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'var ' + k + ': ' + type + this.initEmptyValue4Type(type);
+          + nextPadding + 'var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
 
         // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {
         if (['Boolean', 'Number', 'Integer', 'Int', 'Long', 'String'].indexOf(type) < 0) {
