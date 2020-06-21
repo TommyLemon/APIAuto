@@ -1243,7 +1243,7 @@
             var s = ''
             switch (App.language) {
               case CodeUtil.LANGUAGE_KOTLIN:
-                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle)
+                s += '(Kotlin):\n\n' + CodeUtil.parseKotlinResponse('', res, 0, false, ! isSingle) + CodeUtil.parseKotlinClasses('Response', res, 0, false, ! isSingle)
                 break;
               case CodeUtil.LANGUAGE_JAVA:
                 s += '(Java):\n\n' + CodeUtil.parseJavaResponse('', res, 0, false, ! isSingle)
@@ -3243,6 +3243,8 @@
             s += '\n#### <= Android-Kotlin: 空对象用 HashMap&lt;String, Any&gt;()，空数组用 ArrayList&lt;Any&gt;()\n'
               + '```kotlin \n'
               + CodeUtil.parseKotlinRequest(null, JSON.parse(rq), 0)
+              + '\n'
+              + CodeUtil.parseKotlinClasses('Request', JSON.parse(rq), 0, false, isSingle)
               + '\n ``` \n注：对象 {} 用 mapOf("key": value)，数组 [] 用 listOf(value0, value1)\n';
             break;
           case CodeUtil.LANGUAGE_JAVA:

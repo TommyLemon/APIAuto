@@ -2519,6 +2519,171 @@ var CodeUtil = {
     return str;
   },
 
+
+  /**生成 Android-Kotlin 解析 Response JSON 的为 class 和 field 的静态代码
+   * 不能像 Java 那样执行 {} 代码段里的代码，所以不能用 Java 那种代码段隔离的方式
+   * @param name_
+   * @param resObj
+   * @param depth
+   * @return parseCode
+   */
+  parseKotlinClasses: function(name, resObj, depth, isTable, isSmart) {
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+
+    var tab = CodeUtil.getBlank(1);
+    var padding = '\n' + CodeUtil.getBlank(depth);
+    var nextPadding = padding + tab;
+    var nextNextPadding = nextPadding + tab;
+
+    return CodeUtil.parseCode(name, resObj, {
+
+      onParseParentStart: function () {
+        if (StringUtil.isEmpty(name, true)) {
+          return ''
+        }
+
+        var s = '\n';
+        if (depth <= 0) {
+            s += padding + 'package apijson.demo.server.model\n';
+        }
+
+        s += padding + '@MethodAccess'
+          + padding + 'open class ' + name + ' : Serializable {'
+          + padding + tab + 'companion object { '
+          + nextPadding + tab + 'const val serialVersionUID: Long = 1L'
+          + padding + tab + '}';
+
+        return s;
+      },
+
+      onParseParentEnd: function () {
+        return '\n' + padding + '}';
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return this.onParseChildObject(key, value, index);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return this.onParseJSONObject(key, value, index);
+      },
+
+      onParseChildOther: function (key, value, index) {
+
+        if (value instanceof Array) {
+          log(CodeUtil.TAG, 'parseKotlinResponse  for typeof value === "array" >>  ');
+
+          return this.onParseJSONArray(key, value, index);
+        }
+        if (value instanceof Object) {
+          log(CodeUtil.TAG, 'parseKotlinResponse  for typeof value === "array" >>  ');
+
+          return this.onParseJSONObject(key, value, index);
+        }
+
+        var type = CodeUtil.getJavaTypeFromJS(key, value, false, false);
+        if (type == 'Object') {
+          type = 'Any';
+        }
+        var varName = JSONResponse.getVariableName(key);
+
+        var s = '\n' + nextPadding + '@Serializable("' + key + '")'
+          + nextPadding + 'var ' + varName + ': ' + type + this.initEmptyValue4Type(type);
+        return s;
+      },
+
+      initEmptyValue4Type: function(type) {
+        if (isSmart) {
+          type = type || ''
+          switch (type) {
+            case 'Boolean':
+              return ' = false';
+            case 'Number':
+            case 'Integer':
+              return ' = 0';
+            case 'Long':
+              return ' = 0L';
+            case 'String':
+              return ' = ""';
+            case 'Array':
+              return ' = mutableListOf()';
+            case 'Object':
+            case 'Any':
+              return ' = ' + type + '()';
+          }
+        }
+
+        return '? = null';
+      },
+
+      onParseJSONArray: function (key, value, index) {
+        value = value || []
+
+        var vn = JSONResponse.getVariableName(key);
+        var k = vn + (depth <= 0 ? '' : depth);
+        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+
+        var type = value[0] instanceof Object ? 'List<' + StringUtil.firstCase(k, true) + '>' : CodeUtil.getJavaTypeFromJS(k, value[0], false, false);
+        if (type == 'Object') {
+          type = 'Any';
+        }
+
+        var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        s += '\n' + nextPadding + '@Serializable("' + key + '")';
+
+        var t = JSONResponse.getTableName(key);
+        if (t.endsWith('[]')) {
+          t = t.substring(0, t.length - 2);
+        }
+
+        var isTableKey = JSONObject.isTableKey(t);
+        if (isTable && isSmart) {
+          s += nextPadding + 'var ' + k + ':List<' + (isTableKey ? t : type) + '?>' + this.initEmptyValue4Type(t);
+        }
+        else if (isTableKey && isSmart) {
+          s += nextPadding + 'var ' + k + ':List<' + t + '?>' + this.initEmptyValue4Type(t);
+        }
+        else {
+          s += nextPadding + 'var ' + k + ':JSONArray' + this.initEmptyValue4Type(t);
+        }
+
+        if (value[0] instanceof Object) {
+          s += CodeUtil.parseKotlinClasses(StringUtil.firstCase(k, true), value[0], depth + 1, isTableKey, isSmart);
+        }
+
+        s += '\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      },
+
+      onParseJSONObject: function (key, value, index) {
+        var k = JSONResponse.getVariableName(key);
+        var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var t = JSONResponse.getTableName(key);
+        var isTableKey = JSONObject.isTableKey(t);
+
+        var type = StringUtil.firstCase(t, true)
+        s += '\n' + nextPadding + '@Serializable("' + key + '")'
+          + nextPadding + 'var ' + k + ': ' + type + this.initEmptyValue4Type(type);
+
+        if (['Boolean', 'Number', 'Integer', 'Long', 'String'].indexOf(type) < 0) {
+          s += CodeUtil.parseKotlinClasses(StringUtil.firstCase(type, true), value, depth + 1, isTableKey, isSmart);
+        }
+
+        s += '\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+
+        return s;
+      }
+    })
+
+  },
+
+
+
+
   /**生成 Server-Java API 相关代码
    * @param type
    * @param url
@@ -4096,16 +4261,10 @@ var CodeUtil = {
           + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
-          + '\ndata class ' + model + ': Serializable {'
-          + '\n' + blank + 'private val Long serialVersionUID = 1L\n';
-
-        doc += '\n'
-          + '\n' + blank + 'public constructor(): super() {'
-          + '\n' + blank + '}'
-          + '\n' + blank + 'public constructor(id: Long): this(id: Long) {'
-          + '\n' + blank2 + 'setId(id)'
-          + '\n' + blank + '}'
-          + '\n\n'
+          + '\nopen class ' + t + ' : Serializable {'
+          + '\n' + blank + 'companion object { '
+          + '\n' + blank + blank + 'const val serialVersionUID: Long = 1L';
+          + '\n' + blank + '}';
 
         //Column[]
         columnList = item['[]'];
