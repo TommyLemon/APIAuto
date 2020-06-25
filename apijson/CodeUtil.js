@@ -449,7 +449,7 @@ var CodeUtil = {
    * @return parseCode
    * @return isSmart 是否智能
    */
-  parseKotlinRequest: function(name, reqObj, depth, isSmart, isArrayItem, useVar4Value, type, url, comment) {
+  parseKotlinRequest: function(name, reqObj, depth, isSmart, isArrayItem, useVar4Value, type, host, url, comment, isRESTful) {
     if (depth == null || depth < 0) {
       depth = 0;
     }
@@ -481,6 +481,11 @@ var CodeUtil = {
       var modelName = StringUtil.firstCase(varName, true);
 
       if (StringUtil.isEmpty(modelName, true) != true) {
+        var useStaticClass = type == 'JSON' && ! isSmart
+
+        var nextNextNextPadding = CodeUtil.getBlank(depth + 3);
+        var nextNextNextNextPadding = CodeUtil.getBlank(depth + 4);
+
         // var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
         var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0 || methodUri.indexOf('create') >= 0);
         var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
@@ -491,7 +496,9 @@ var CodeUtil = {
 
         var dataType = isWrite ? 'Int' : (isList ? 'List<' + modelName + '>' : modelName);
 
-        var responseName = modelName + (isList ? 'List' : '') + 'Response';
+        var requestType = (type == 'JSON' ? (isSmart ? 'RequestBody' : modelName + (isList ? 'List' : '') + 'Request') : (type == 'DATA' ? 'Map<String, RequestBody>' : ''));
+        var responseType = modelName + (isList ? 'List' : '') + 'Response';
+        var fullResponseType = responseType + '<' + dataType + '>'
 
         var str = '';
         if (reqObj != null) {
@@ -499,30 +506,55 @@ var CodeUtil = {
             var v = reqObj[k];
 
             if (v instanceof Object) {
-              str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(JSONResponse.getVariableName(k), v, depth, isSmart);
+              var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, ! isSmart);
+              str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
             }
           }
         }
 
         var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
-          + '\n' + methodName + '(' + CodeUtil.getCode4KotlinArgValues(reqObj, true) + ');\n'
+          + '\n' + methodName + '(' + CodeUtil.getCode4KotlinArgValues(reqObj, true) + ')'
+          + '\n' + nextPadding + '.enqueue(object : Callback<' + fullResponseType + '>() {'
+          + '\n' + nextNextPadding + 'override fun onFailure(call: Call<' + fullResponseType  + '>, t: Throwable) {'
+          + '\n' + nextNextNextPadding + 'Toast.makeText(context, t.message, Toast.LENGTH_SHORT).show()'
+          + '\n' + nextNextNextPadding + '//TODO 继续处理'
+          + '\n' + nextNextPadding + '}'
+          + '\n' + nextNextPadding + 'override fun onResponse(call: Call<' + fullResponseType  + '>, response: Response<' + fullResponseType  + '>) {'
+          + '\n' + nextNextNextPadding + 'if (! response.isSuccessful()){'
+          + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(response.message()))'
+          + '\n' + nextNextNextNextPadding + 'return'
+          + '\n' + nextNextNextPadding + '}'
+          + '\n' + nextNextNextPadding + 'var body = response.body()'
+          + '\n' + nextNextNextPadding + 'if (! body.isSuccess()){'
+          + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(body.msg))'
+          + '\n' + nextNextNextNextPadding + 'return'
+          + '\n' + nextNextNextPadding + '}\n'
+          + '\n' + nextNextNextPadding + 'var data = body.data'
+          + '\n' + nextNextNextPadding + '//TODO 继续处理'
+          + '\n' + nextNextPadding + '}'
+          + '\n' + nextPadding + '})\n\n'
+          + '\n' + '//接口定义'
+          + '\n' + 'const val RETROFIT = Retrofit.Builder()'
+          + '\n' + nextPadding + '.baseUrl("' + StringUtil.trim(host) + '")'
+          + '\n' + nextPadding + '.addConverterFactory(GsonConverterFactory.create())'
+          + '\n' + nextPadding + '.build()\n'
           + '\n/**'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
           + '\n@JvmStatic'
-          + '\nfun ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! isSmart) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' {\n'
-          + (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url)) : '') + '\n'
-          + (type == 'JSON' ? '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
-          + '\n' + nextPadding + 'var service = retrofit.create(' + modelName + 'Service.class);'
-          + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, ! isSmart, true, true))) + ')'
-          + '\n}';
+          + '\nfun ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! useStaticClass, useStaticClass, false) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>' + ' {\n'
+          + (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(isSmart || type != 'JSON' ? name : requestType, reqObj, depth + 1, isSmart, isArrayItem, true, type, null, null, null, true)) : '') + '\n'
+          + (type == 'JSON' && ! useStaticClass ? '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
+          + '\n' + nextPadding + 'var service = RETROFIT.create(' + modelName + 'Service.class)'
+          + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? (isSmart ? 'requestBody' : 'request') : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, ! isSmart, true, true))) + ')'
+          + '\n}'
 
         //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
         s += '\n\n@Keep\n' +
           'interface ' + modelName + 'Service {\n' +
           (type == 'JSON' ? nextPadding + '@Headers("Content-Type: application/json;charset=UTF-8")\n' : (type == 'FORM' ? nextPadding + '@FormUrlEncoded\n': (type == 'DATA' ? nextPadding + '@Multipart\n': '')))  +
           nextPadding + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPadding + 'fun ' + methodName + '(' + (type == 'JSON' ? '@Body requestBody: RequestBody' : (type == 'DATA' ? 'requestBodyMap: @PartMap Map<String, RequestBody>' : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + '\n' +
+          nextPadding + 'fun ' + methodName + '(' + (type == 'JSON' ? (isSmart ? '@Body requestBody: ' + requestType : '@Body req: ' + requestType) : (type == 'DATA' ? '@PartMap requestBodyMap: ' + requestType : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>' + '\n' +
           '}';
 
         if (! isSmart) {
@@ -532,28 +564,32 @@ var CodeUtil = {
           }
 
           s += '\n\n@Keep\n' +
-            'open class ' + responseName + '<T> : Response<T> {\n' +
+            'open class ' + responseType + '<T> : BaseResponse<T> {\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n\n' +
             '}';
 
           s += '\n\n@Keep\n' +
-            'open class Response<T> {\n' +
+            'open class BaseResponse<T> {\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var data: T? = null\n\n' +
+            nextPadding + 'open fun isSuccess(): Boolean {\n' +
+            nextNextPadding + 'return code == 200\n' +
+            nextPadding + '}\n\n' +
             '}';
 
         }
 
-        return s + (isSmart ? '' : CodeUtil.parseKotlinClasses(modelName + 'Request', reqObj, 0, false, false));
+        return s + (isSmart || type != 'JSON' ? '' : CodeUtil.parseKotlinClasses(requestType, reqObj, 0, false, false));
       }
       //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
     }
 
+    var useStaticClass = isRESTful && type == 'JSON' && ! isSmart
 
     var parentKey = JSONObject.isArrayKey(name)
       ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
@@ -562,10 +598,16 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        return useVar4Value && type == 'DATA' ? 'Map<String, RequestBody>' : (isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n');
+        if (useStaticClass) {
+          return name + '()' + (isEmpty ? '' : '.apply {\n')
+        }
+        return useVar4Value && type == 'DATA' ? 'mapOf<String, RequestBody>(\n' : (isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n');
       },
 
       onParseParentEnd: function () {
+        if (useStaticClass) {
+          return isEmpty ? '' : '\n' + padding + '}'
+        }
         return isEmpty ? ')' : '\n' + padding + ')';
       },
 
@@ -573,14 +615,18 @@ var CodeUtil = {
         if (useVar4Value) {
           return this.onParseChildOther(key, value, index);
         }
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
+        var vn = useStaticClass ? JSONResponse.getVariableName(key) : null
+        var kn = useStaticClass ? StringUtil.firstCase(JSONResponse.getVariableName(key), true) : null
+        return (index <= 0 ? '' : (useStaticClass ? '\n' : ',\n')) + nextPadding + (useStaticClass ? vn + ' = ' : '"' + key + '" to ') + CodeUtil.parseKotlinRequest(useStaticClass ? kn : key, value, depth + 1, isSmart, isArrayItem, useVar4Value, type, null, null, null, isRESTful);
       },
 
       onParseChildObject: function (key, value, index) {
         if (useVar4Value) {
           return this.onParseChildOther(key, value, index);
         }
-        return (index > 0 ? ',\n' : '') + nextPadding + '"' + key + '" to ' + CodeUtil.parseKotlinRequest(key, value, depth + 1);
+        var vn = useStaticClass ? JSONResponse.getVariableName(key) : null
+        var kn = useStaticClass ? StringUtil.firstCase(JSONResponse.getVariableName(key), true) : null
+        return (index <= 0 ? '' : (useStaticClass ? '\n' : ',\n')) + nextPadding + (useStaticClass ? vn + ' = ' : '"' + key + '" to ') + CodeUtil.parseKotlinRequest(useStaticClass ? kn : key, value, depth + 1, isSmart, isArrayItem, useVar4Value, type, null, null, null, isRESTful);
       },
 
       onParseArray: function (key, value, index, isOuter) {
@@ -595,7 +641,7 @@ var CodeUtil = {
           var inner = '';
           var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
           for (var i = 0; i < value.length; i ++) {
-            inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlinRequest(null, value[i], depth + (isOuter ? 1 : 2));
+            inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlinRequest(null, value[i], depth + (isOuter ? 1 : 2), isSmart, isArrayItem, useVar4Value, type, null, null, null, isRESTful);
           }
           s += inner;
         }
@@ -626,7 +672,8 @@ var CodeUtil = {
           valStr = 'RequestBody.create(MediaType.parse("multipart/form-data", ' + valStr + ')';
         }
 
-        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + '"' + key + '" to ') + valStr;
+        return (index <= 0 ? '' : (useStaticClass ? '\n' : ',\n')) + (key == null ? '' : (isOuter ? padding : nextPadding)
+            + (useStaticClass ? JSONResponse.getVariableName(key) + ' = ' : '"' + key + '" to ')) + valStr;
       }
     })
 
@@ -677,7 +724,7 @@ var CodeUtil = {
 
         var dataType = isWrite ? 'Integer' : (isList ? 'List<' + modelName + '>' : modelName);
 
-        var responseName = modelName + (isList ? 'List' : '') + 'Response';
+        var responseType = modelName + (isList ? 'List' : '') + 'Response';
 
         var str = '';
         if (reqObj != null) {
@@ -695,7 +742,7 @@ var CodeUtil = {
           + '\n/**'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
-          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getCode4JavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
+          + '\npublic static ' + 'Call<' + (isSmart ? 'JSONResponse' : responseType + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + CodeUtil.getCode4JavaArgs(reqObj, true, null, ! isSmart) + ') {\n'
           + (type == 'JSON' || type == 'DATA' ? CodeUtil.parseJavaRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url) : '') + '\n'
           + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
@@ -707,7 +754,7 @@ var CodeUtil = {
           'public interface ' + modelName + 'Service {\n' +
           (type == 'JSON' ? nextPrefix + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded\n': (type == 'DATA' ? nextPrefix + '@Multipart\n': '')))  +
           nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getCode4JavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + ');\n' +
+          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseType + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getCode4JavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + ');\n' +
           '}';
 
         if (! isSmart) {
@@ -717,12 +764,12 @@ var CodeUtil = {
           }
 
           s += '\n\n' +
-            'public class ' + responseName + '<T> extends Response<T> {\n' +
+            'public class ' + responseType + '<T> extends Response<T> {\n' +
             nextPrefix + 'private ' + dataType + ' ' + varName + ';\n\n' +
             nextPrefix + 'public '+ dataType + ' get' + modelName + '() {\n' +
             nextNextPrefix + 'return ' + varName + ';\n' +
             nextPrefix + '}\n' +
-            nextPrefix + 'public ' + responseName + '<T> set' + modelName + '(' + dataType + ' ' + varName + ') {\n' +
+            nextPrefix + 'public ' + responseType + '<T> set' + modelName + '(' + dataType + ' ' + varName + ') {\n' +
             nextNextPrefix + 'this.' + varName + ' = ' + varName + ';\n' +
             nextNextPrefix + 'return this;\n' +
             nextPrefix + '}\n' +
@@ -2693,14 +2740,14 @@ var CodeUtil = {
    * @param rawType true-使用 JDK 有的原始类型，其它-使用 JSONObject, JSONRequest 等第三方库封装类型
    * @param complex2String 将复杂类型转为 String，值转为 toJSONString
    */
-  getCode4KotlinArgs: function(reqObj, withType, annotationType, rawType, complex2String) {
+  getCode4KotlinArgs: function(reqObj, withType, annotationType, rawType, isSmart, complex2String) {
     var str = '';
     if (reqObj != null) {
       var first = true;
 
       for (var k in reqObj) {
         var v = reqObj[k];
-        var t = withType ? CodeUtil.getKotlinTypeFromJS(k, v, false, false, rawType) : null;
+        var t = withType ? CodeUtil.getKotlinTypeFromJS(k, v, false, false, rawType, isSmart) : null;
 
         var at = annotationType;
         if (annotationType != null) { //简单数据注解类型-复杂数据注解类型
@@ -4653,7 +4700,7 @@ var CodeUtil = {
     return '\n' + CodeUtil.getBlank(depth + 1) + callback(key, value, depth + 1, isSmart, isArrayItem);// + '\n' + CodeUtil.getBlank(depth);
   },
 
-  getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType) {
+  getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType, isSmart) {
     if (typeof value == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
@@ -4670,16 +4717,16 @@ var CodeUtil = {
       return 'String';
     }
     if (value instanceof Array) {
-      return rawType ? 'List<Object>' : 'JSONArray';
+      return rawType ? 'List<Object>' : (! isSmart ? 'JSONArray' : 'List<' + StringUtil.firstCase(JSONResponse.getTableName(key), true) + '>');
     }
     if (value instanceof Object) {
-      return rawType ? 'Map<String, Object>' : 'JSONObject';
+      return rawType ? 'Map<String, Object>' : (! isSmart ? 'JSONObject' : StringUtil.firstCase(JSONResponse.getTableName(key), true));
     }
 
     return 'Object';
   },
 
-  getKotlinTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType) {
+  getKotlinTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType, isSmart) {
     if (typeof value == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
@@ -4696,10 +4743,10 @@ var CodeUtil = {
       return 'String';
     }
     if (value instanceof Array) {
-      return rawType ? 'List<Object>' : 'JSONArray';
+      return rawType ? 'List<Any?>' : (! isSmart ? 'JSONArray' : 'List<' + StringUtil.firstCase(JSONResponse.getTableName(key), true) + '>');
     }
     if (value instanceof Object) {
-      return rawType ? 'Map<String, Object>' : 'JSONObject';
+      return rawType ? 'Map<String, Any?>' : (! isSmart ? 'JSONObject' : StringUtil.firstCase(JSONResponse.getTableName(key), true));
     }
 
     return 'Any';
