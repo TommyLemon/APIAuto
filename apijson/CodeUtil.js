@@ -481,17 +481,17 @@ var CodeUtil = {
       var modelName = StringUtil.firstCase(varName, true);
 
       if (StringUtil.isEmpty(modelName, true) != true) {
-        var useStaticClass = type == 'JSON' && ! isSmart
+        var useStaticClass = type == 'JSON' && !isSmart
 
         var nextNextNextPadding = CodeUtil.getBlank(depth + 3);
         var nextNextNextNextPadding = CodeUtil.getBlank(depth + 4);
 
         // var controllerUri = url; // lastIndex < 0 ? '' : url.substring(0, lastIndex);
         var isPost = type != 'PARAM' && (methodUri.indexOf('post') >= 0 || methodUri.indexOf('add') >= 0 || methodUri.indexOf('create') >= 0);
-        var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0|| methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
+        var isPut = type != 'PARAM' && (methodUri.indexOf('put') >= 0 || methodUri.indexOf('edit') >= 0 || methodUri.indexOf('update') >= 0);
         var isDelete = type != 'PARAM' && (methodUri.indexOf('delete') >= 0 || methodUri.indexOf('remove') >= 0 || methodUri.indexOf('del') >= 0);
         var isWrite = isPost || isPut || isDelete;
-        var isGet = ! isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
+        var isGet = !isWrite; // methodUri.indexOf('get') >= 0 || methodUri.indexOf('fetch') >= 0 || methodUri.indexOf('query') >= 0;
         var isList = isGet && (methodUri.indexOf('list') >= 0 || methodUri.indexOf('List') >= 0 || typeof reqObj.pageNum == 'number');
 
         var dataType = isWrite ? 'Int' : (isList ? 'List<' + modelName + '>' : modelName);
@@ -510,7 +510,7 @@ var CodeUtil = {
               var v = reqObj[k];
 
               if (v instanceof Object) {
-                var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, ! isSmart);
+                var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, !isSmart);
                 str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
               }
             }
@@ -519,31 +519,46 @@ var CodeUtil = {
 
         var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
           + '\n' + methodName + '(' + (useStaticClass ? 'request' : CodeUtil.getCode4KotlinArgValues(reqObj, true)) + ')'
-          + '\n' + nextPadding + '.enqueue(object : Callback<' + fullResponseType + '>() {'
-          + '\n' + nextNextPadding + 'override fun onFailure(call: Call<' + fullResponseType  + '>, t: Throwable) {'
-          + '\n' + nextNextNextPadding + 'Toast.makeText(context, t.message, Toast.LENGTH_SHORT).show()'
-          + '\n' + nextNextNextPadding + '//TODO 继续处理'
-          + '\n' + nextNextPadding + '}'
-          + '\n' + nextNextPadding + 'override fun onResponse(call: Call<' + fullResponseType  + '>, response: Response<' + fullResponseType  + '>) {'
-          + '\n' + nextNextNextPadding + 'if (! response.isSuccessful()){'
-          + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(response.message()))'
-          + '\n' + nextNextNextNextPadding + 'return'
-          + '\n' + nextNextNextPadding + '}'
-          + '\n' + nextNextNextPadding + 'var body = response.body()'
-          + '\n' + nextNextNextPadding + 'if (! body.isSuccess()){'
-          + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(body.msg))'
-          + '\n' + nextNextNextNextPadding + 'return'
-          + '\n' + nextNextNextPadding + '}\n'
-          + '\n' + nextNextNextPadding + 'var data = body.data'
-          + '\n' + nextNextNextPadding + '//TODO 继续处理'
-          + '\n' + nextNextPadding + '}'
-          + '\n' + nextPadding + '})\n\n'
-          + '\n' + '//接口定义'
-          + '\n' + 'const val RETROFIT = Retrofit.Builder()'
-          + '\n' + nextPadding + '.baseUrl("' + StringUtil.trim(host) + '")'
-          + '\n' + nextPadding + '.addConverterFactory(GsonConverterFactory.create())'
-          + '\n' + nextPadding + '.build()\n'
-          + '\n/**'
+
+        if (isSmart) {
+          s += '\n' + nextPadding + '.enqueue(object : HttpCallbackImpl<' + fullResponseType + '>() {'
+            + '\n' + nextNextPadding + 'override fun onHttpSucceed(data: ' + fullResponseType + ', requestCode: Int) {'
+            + '\n' + nextNextNextPadding + 'super.onHttpSucceed(data, requestCode)'
+            + '\n' + nextNextNextPadding + '//TODO 继续处理'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextPadding + '})\n\n'
+        }
+        else {
+          s += '\n' + nextPadding + '.enqueue(object : Callback<' + fullResponseType + '>() {'
+            + '\n' + nextNextPadding + 'override fun onFailure(call: Call<' + fullResponseType + '>, t: Throwable) {'
+            + '\n' + nextNextNextPadding + 'Toast.makeText(context, t.message, Toast.LENGTH_SHORT).show()'
+            + '\n' + nextNextNextPadding + '//TODO 继续处理'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextNextPadding + 'override fun onResponse(call: Call<' + fullResponseType + '>, response: Response<' + fullResponseType + '>) {'
+            + '\n' + nextNextNextPadding + 'if (! response.isSuccessful()){'
+            + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(response.message()))'
+            + '\n' + nextNextNextNextPadding + 'return'
+            + '\n' + nextNextNextPadding + '}'
+            + '\n' + nextNextNextPadding + 'var body = response.body()'
+            + '\n' + nextNextNextPadding + 'if (! body.isSuccess()){'
+            + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(body.msg))'
+            + '\n' + nextNextNextNextPadding + 'return'
+            + '\n' + nextNextNextPadding + '}\n'
+            + '\n' + nextNextNextPadding + 'var data = body.data'
+            + '\n' + nextNextNextPadding + '//TODO 继续处理'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextPadding + '})\n\n'
+        }
+
+        //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
+        s += '\n//接口定义'
+          + '\n@Keep'
+          + '\ninterface ' + modelName + 'Service {  // ApiService {  // 建议统一用这个，方法都放进来'
+          + (type == 'JSON' ? '\n' + nextPadding + '@Headers("Content-Type: application/json;charset=UTF-8")' : (type == 'FORM' ? '\n' + nextPadding + '@FormUrlEncoded' : (type == 'DATA' ? '\n' + nextPadding + '@Multipart' : '')))
+          + '\n' + nextPadding + '@' + requestMethod + '("' + methodUri + '")'
+          + '\n' + nextPadding + 'fun ' + methodName + '(' + (type == 'JSON' ? (isSmart ? '@Body requestBody: ' + requestType : '@Body req: ' + requestType) : (type == 'DATA' ? '@PartMap requestBodyMap: ' + requestType : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', !isSmart, !isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>'
+          + '\n' +'}\n'
+          + '\n/**请求方法'
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
           + '\n@JvmStatic'
@@ -552,45 +567,143 @@ var CodeUtil = {
               + '\n' + (type != 'JSON' ? '' : '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request))')
           )
           + '\n' + nextPadding + 'var service = RETROFIT.create(' + modelName + 'Service.class)'
-          + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? (isSmart ? 'requestBody' : 'request') : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, ! isSmart, true, true))) + ')'
-          + '\n}'
+          + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? (isSmart ? 'requestBody' : 'request') : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, !isSmart, true, true))) + ')'
+          + '\n}\n'
+          + '\n' + '//Retrofit 实例，全局存一份，可改为单例'
+          + '\n' + 'const val RETROFIT = Retrofit.Builder()'
+          + '\n' + nextPadding + '.baseUrl("' + StringUtil.trim(host) + '")'
+          + '\n' + nextPadding + '.addConverterFactory(GsonConverterFactory.create())'
+          + '\n' + nextPadding + '.build()\n'
 
-        //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
-        s += '\n\n@Keep\n' +
-          'interface ' + modelName + 'Service {\n' +
-          (type == 'JSON' ? nextPadding + '@Headers("Content-Type: application/json;charset=UTF-8")\n' : (type == 'FORM' ? nextPadding + '@FormUrlEncoded\n': (type == 'DATA' ? nextPadding + '@Multipart\n': '')))  +
-          nextPadding + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPadding + 'fun ' + methodName + '(' + (type == 'JSON' ? (isSmart ? '@Body requestBody: ' + requestType : '@Body req: ' + requestType) : (type == 'DATA' ? '@PartMap requestBodyMap: ' + requestType : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>' + '\n' +
-          '}';
 
-        if (! isSmart) {
+        if (isSmart) {
+          s += '\n' + '//通用 HTTP 回调 API，全局保存一份'
+            + '\n@Keep'
+            + '\ninterface HttpCallback<D> {'
+            + '\n' + nextPadding + 'fun onHttpFailed(code: Int, msg: String)'
+            + '\n' + nextPadding + 'fun onHttpSucceed(data: D, requestCode: Int)'
+            + '\n' + nextPadding + 'fun showToast(msg: String)'
+            + '\n' + nextPadding + 'fun showLoading()'
+            + '\n' + nextPadding + 'fun hideLoading()'
+            + '\n' + '}\n'
+            + '\n//通用 HTTP 回调解析类，全局存一份'
+            + '\n@Keep'
+            + '\nopen class HttpCallbackImpl<R, D> : Callback<R>, HttpCallback<D> {\n'
+            + '\n' + nextPadding + 'companion object {'
+            + '\n' + nextNextPadding + 'const val TAG = "HttpCallbackImpl"'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'open var isShowToast: Boolean = true'
+            + '\n' + nextPadding + 'open var isShowLoading: Boolean = true'
+            + '\n' + nextPadding + 'open var requestCode: Int = 0'
+            + '\n' + nextPadding + 'open var callback: Callback<R>? = null'
+            + '\n' + nextPadding + 'open var httpCallback: HttpCallback<D>? = null\n'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(): super() {}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(callback: Callback<R>) : this() {'
+            + '\n' + nextNextPadding + 'this.callback = callback'
+            + '\n' + nextPadding + '}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(httpCallback: HttpCallback<D>?) : this() {'
+            + '\n' + nextNextPadding + 'this.httpCallback = httpCallback'
+            + '\n' + nextPadding + '}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(requestCode: Int, httpCallback: HttpCallback<D>?) : this(httpCallback) {'
+            + '\n' + nextNextPadding + 'this.requestCode = requestCode'
+            + '\n' + nextPadding + '}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(isShowLoading: Boolean, httpCallback: HttpCallback<D>?) : this(httpCallback) {'
+            + '\n' + nextNextPadding + 'this.isShowLoading = isShowLoading'
+            + '\n' + nextPadding + '}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(isShowToast: Boolean, isShowLoading: Boolean, httpCallback: HttpCallback<D>?) : this(isShowLoading, httpCallback) {'
+            + '\n' + nextNextPadding + 'this.isShowToast = isShowToast'
+            + '\n' + nextPadding + '}'
+            + '\n' + nextPadding + 'constructor HttpCallbackImpl(requestCode: Int, isShowToast: Boolean, isShowLoading: Boolean, httpCallback: HttpCallback<D>?) : this(isShowToast, isShowLoading, httpCallback) {'
+            + '\n' + nextNextPadding + 'this.requestCode = requestCode'
+            + '\n' + nextPadding + '}\n\n'
+            + '\n' + nextPadding + 'override fun onFailure(call: Call<R>, t: Throwable) {'
+            + '\n' + nextNextPadding + 'try {'
+            + '\n' + nextNextNextPadding + 'callback?.onFailure(call, t)'
+            + '\n' + nextNextNextPadding + 'onHttpFailed(0, t.message)'
+            + '\n' + nextNextPadding + '} catch(e: Exception) {'
+            + '\n' + nextNextNextPadding + 'Log.e(TAG, "onFailure  catch e: Exception = " + e.message)'
+            + '\n' + nextNextNextPadding + 'if (BuildConfig.DEBUG) {'
+            + '\n' + nextNextNextNextPadding + 'throw e'
+            + '\n' + nextNextNextPadding + '}'
+            + '\n' + nextNextNextPadding + 'CrashReport.postCatchedException(e)'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun onResponse(call: Call<R>, response: Response<' + fullResponseType + '>) {'
+            + '\n' + nextNextPadding + 'try {'
+            + '\n' + nextNextNextPadding + 'callback?.onResponse(call, response)'
+            + '\n' + nextNextNextPadding + 'if (! response.isSuccessful()){'
+            + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(response.message()))'
+            + '\n' + nextNextNextNextPadding + 'return'
+            + '\n' + nextNextNextPadding + '}'
+            + '\n' + nextNextNextPadding + 'var body = response.body()'
+            + '\n' + nextNextNextPadding + 'if (body == null || ! body.isSuccess()){'
+            + '\n' + nextNextNextNextPadding + 'onFailure(call, Exception(body?.msg ?: "网络异常"))'
+            + '\n' + nextNextNextNextPadding + 'return'
+            + '\n' + nextNextNextPadding + '}'
+            + '\n' + nextNextNextPadding + 'onHttpSucceed(body.data, requestCode)'
+            + '\n' + nextNextPadding + '} catch(e: Exception) {'
+            + '\n' + nextNextNextPadding + 'Log.e(TAG, "onResponse  catch e: Exception = " + e.message)'
+            + '\n' + nextNextNextPadding + 'if (BuildConfig.DEBUG) {'
+            + '\n' + nextNextNextNextPadding + 'throw e'
+            + '\n' + nextNextNextPadding + '}'
+            + '\n' + nextNextNextPadding + 'CrashReport.postCatchedException(e)'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun onHttpFailed(code: Int, msg: String) {'
+            + '\n' + nextNextPadding + 'if (isShowLoading) {'
+            + '\n' + nextNextNextPadding + 'hideLoading()'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextNextPadding + 'if (isShowToast) {'
+            + '\n' + nextNextNextPadding + 'showToast(msg)'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextNextPadding + 'httpCallback?.onHttpFailed(code, msg)'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun onHttpSucceed(data: D, requestCode: Int) {'
+            + '\n' + nextNextPadding + 'if (isShowLoading) {'
+            + '\n' + nextNextNextPadding + 'hideLoading()'
+            + '\n' + nextNextPadding + '}'
+            + '\n' + nextNextPadding + 'httpCallback?.onHttpSucceed(data, requestCode)'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun showToast(msg: String) {'
+            + '\n' + nextNextPadding + 'httpCallback?.showToast(msg)'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun showLoading() {'
+            + '\n' + nextNextPadding + 'httpCallback?.showLoading()'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + nextPadding + 'override fun hideLoading() {'
+            + '\n' + nextNextPadding + 'httpCallback?.hideLoading()'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + '}\n'
+        }
+        else {
           if (isList) {
             modelName += 'List';
             varName += 'List';
           }
 
-          s += '\n\n@Keep\n' +
-            'open class ' + responseType + '<T> : BaseResponse<T> {\n' +
-            nextPadding + '@Transient\n' +
-            nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n\n' +
-            '}';
-
-          s += '\n\n@Keep\n' +
-            'open class BaseResponse<T> {\n' +
-            nextPadding + '@Transient\n' +
-            nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n\n' +
-            nextPadding + '@Transient\n' +
-            nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n\n' +
-            nextPadding + '@Transient\n' +
-            nextPadding + 'open var data: T? = null\n\n' +
-            nextPadding + 'open fun isSuccess(): Boolean {\n' +
-            nextNextPadding + 'return code == 200\n' +
-            nextPadding + '}\n\n' +
-            '}';
+          s += '\n\n//回调实体类'
+            + '\n@Keep'
+            + '\nopen class ' + responseType + '<T> : BaseResponse<T> {'
+            + '\n' + nextPadding + '@Transient'
+            + '\n' + nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n'
+            + '\n}\n'
+            + '\n//通用 HTTP 解析实体基类，全局存一份'
+            + '\n@Keep'
+            + '\nopen class BaseResponse<T> {'
+            + '\n' + nextPadding + '@Transient'
+            + '\n' + nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n'
+            + '\n' + nextPadding + '@Transient'
+            + '\n' + nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n'
+            + '\n' + nextPadding + '@Transient'
+            + '\n' + nextPadding + 'open var data: T? = null\n'
+            + '\n' + nextPadding + 'open fun isSuccess(): Boolean {'
+            + '\n' + nextNextPadding + 'return code == 200'
+            + '\n' + nextPadding + '}\n'
+            + '\n' + '}';
 
         }
 
-        return s + (isSmart || type != 'JSON' ? '' : CodeUtil.parseKotlinClasses(requestType, reqObj, 0, false, false));
+        return s + (isSmart || type != 'JSON' ? '' : '\n\n//请求实体类\n' + StringUtil.trim(CodeUtil.parseKotlinClasses(requestType, reqObj, 0, false, false)));
       }
       //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
     }
@@ -753,15 +866,14 @@ var CodeUtil = {
           + (type == 'JSON' ? '\n' + nextPrefix + 'RequestBody requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPrefix + modelName + 'Service service = retrofit.create(' + modelName + 'Service.class);'
           + '\n' + nextPrefix + 'return service.' + methodName + '(' + (type == 'JSON' ? 'requestBody' : (type == 'DATA' ? 'request' : CodeUtil.getCode4JavaArgs(reqObj, false, null, ! isSmart, true, true))) + ');'
-          + '\n}';
+          + '\n}\n';
 
         //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
-        s += '\n\n' +
-          'public interface ' + modelName + 'Service {\n' +
-          (type == 'JSON' ? nextPrefix + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPrefix + '@FormUrlEncoded\n': (type == 'DATA' ? nextPrefix + '@Multipart\n': '')))  +
-          nextPrefix + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseType + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getCode4JavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + ');\n' +
-          '}';
+        s += '\npublic interface ' + modelName + 'Service {  // ApiService {  //建议统一用这个，方法都放进来'
+          + (type == 'JSON' ? '\n' + nextPrefix + '@Headers("Content-Type: application/json;charset=UTF-8")' : (type == 'FORM' ? '\n' + nextPrefix + '@FormUrlEncoded': (type == 'DATA' ? '\n' + nextPrefix + '@Multipart': '')))
+          + '\n' + nextPrefix + '@' + requestMethod + '("' + methodUri + '")'
+          + '\n' + nextPrefix + 'Call<' + (isSmart ? 'JSONResponse' : responseType + '<' + dataType + '>') + '>' + ' ' + methodName + '(' + (type == 'JSON' ? '@Body RequestBody requestBody' : (type == 'DATA' ? '@PartMap Map<String, RequestBody> requestBodyMap' : CodeUtil.getCode4JavaArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + ');'
+          + '\n' + '}';
 
         if (! isSmart) {
           if (isList) {
@@ -2849,7 +2961,7 @@ var CodeUtil = {
         var varName = JSONResponse.getVariableName(key);
 
         var s = '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
+          + nextPadding + 'open var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
         return s;
       },
 
@@ -2872,7 +2984,7 @@ var CodeUtil = {
 
         var type = value[0] instanceof Object ? itemName : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
 
-        s += nextPadding + 'var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
+        s += nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
 
         if (value[0] instanceof Object) {
           s += CodeUtil.parseKotlinClasses(type, value[0], depth + 1, isTableKey, isSmart);
@@ -2896,7 +3008,7 @@ var CodeUtil = {
 
         var type = isArray ? 'Item' : (StringUtil.firstCase(t, true) || 'Any')
         s += '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
+          + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
 
         // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {
         if (['Boolean', 'Number', 'Integer', 'Int', 'Long', 'String'].indexOf(type) < 0) {
