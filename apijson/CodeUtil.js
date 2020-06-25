@@ -502,18 +502,23 @@ var CodeUtil = {
 
         var str = '';
         if (reqObj != null) {
-          for (var k in reqObj) {
-            var v = reqObj[k];
+          if (useStaticClass) {
+            str += '\nvar request = ' + CodeUtil.parseKotlinRequest(requestType, reqObj, depth, isSmart, isArrayItem, false, type, null, null, null, true);
+          }
+          else {
+            for (var k in reqObj) {
+              var v = reqObj[k];
 
-            if (v instanceof Object) {
-              var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, ! isSmart);
-              str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
+              if (v instanceof Object) {
+                var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, ! isSmart);
+                str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
+              }
             }
           }
         }
 
         var s = '//调用示例' + (StringUtil.isEmpty(str, true) ? '' : '\n' + StringUtil.trim(str) + '\n')
-          + '\n' + methodName + '(' + CodeUtil.getCode4KotlinArgValues(reqObj, true) + ')'
+          + '\n' + methodName + '(' + (useStaticClass ? 'request' : CodeUtil.getCode4KotlinArgValues(reqObj, true)) + ')'
           + '\n' + nextPadding + '.enqueue(object : Callback<' + fullResponseType + '>() {'
           + '\n' + nextNextPadding + 'override fun onFailure(call: Call<' + fullResponseType  + '>, t: Throwable) {'
           + '\n' + nextNextNextPadding + 'Toast.makeText(context, t.message, Toast.LENGTH_SHORT).show()'
@@ -542,9 +547,10 @@ var CodeUtil = {
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
           + '\n@JvmStatic'
-          + '\nfun ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! useStaticClass, useStaticClass, false) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>' + ' {\n'
-          + (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(isSmart || type != 'JSON' ? name : requestType, reqObj, depth + 1, isSmart, isArrayItem, true, type, null, null, null, true)) : '') + '\n'
-          + (type == 'JSON' && ! useStaticClass ? '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
+          + '\nfun ' + methodName + '(' + (useStaticClass ? 'request: ' + requestType : CodeUtil.getCode4KotlinArgs(reqObj, true, null, true, false, false)) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : fullResponseType) + '>' + ' {'
+          + '\n' + (useStaticClass ? '' : (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, null, null, null, true)) : '')
+              + '\n' + (type != 'JSON' ? '' : '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request))')
+          )
           + '\n' + nextPadding + 'var service = RETROFIT.create(' + modelName + 'Service.class)'
           + '\n' + nextPadding + 'return service.' + methodName + '(' + (type == 'JSON' ? (isSmart ? 'requestBody' : 'request') : (type == 'DATA' ? 'request' : CodeUtil.getCode4KotlinArgs(reqObj, false, null, ! isSmart, true, true))) + ')'
           + '\n}'
