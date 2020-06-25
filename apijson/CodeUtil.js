@@ -35,6 +35,12 @@ var CodeUtil = {
   LANGUAGE_PHP: 'PHP',
   LANGUAGE_PYTHON: 'Python',
 
+  type: 'JSON',
+  database: 'MYSQL',
+  schema: 'sys',
+  language: 'Kotlin',
+  tableList: [],
+
   /**生成JSON的注释
    * @param reqStr //已格式化的JSON String
    * @param tableList
@@ -2910,9 +2916,8 @@ var CodeUtil = {
 
 
     var tab = CodeUtil.getBlank(1);
-    var padding = '\n' + CodeUtil.getBlank(depth);
+    var padding = CodeUtil.getBlank(depth);
     var nextPadding = padding + tab;
-    var nextNextPadding = nextPadding + tab;
 
     return CodeUtil.parseCode(name, resObj, {
 
@@ -2926,14 +2931,19 @@ var CodeUtil = {
         //     s += padding + 'package apijson.demo.model\n';
         // }
 
-        s += padding + '@Keep'
-          + padding + 'open class ' + name + ' {';
+        var c = CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, null, 'GET', CodeUtil.database, CodeUtil.language, true);
+        if (StringUtil.isEmpty(c, true) == false) {
+          s += '\n' + CodeUtil.getComment(c, true, padding);
+        }
+
+        s += '\n' + padding + '@Keep'
+          + '\n' + padding + 'open class ' + name + ' {';
 
         return s;
       },
 
       onParseParentEnd: function () {
-        return '\n' + padding + '}';
+        return '\n\n' + padding + '}';
       },
 
       onParseChildArray: function (key, value, index) {
@@ -2960,8 +2970,9 @@ var CodeUtil = {
         var type = CodeUtil.getKotlinTypeFromJS(key, value, false, false);
         var varName = JSONResponse.getVariableName(key);
 
-        var s = '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'open var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
+        var s = '\n\n' + nextPadding + '@SerializedName("' + key + '")'
+          + '\n' + nextPadding + 'open var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart)
+          + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
         return s;
       },
 
@@ -2973,8 +2984,8 @@ var CodeUtil = {
         var itemName = StringUtil.firstCase(k, true) + 'Item' + (depth <= 0 ? '' : depth);
         //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
 
-        var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-        s += '\n' + nextPadding + '@SerializedName("' + key + '")';
+        var s = '\n\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        s += '\n\n' + nextPadding + '@SerializedName("' + key + '")';
 
         var t = JSONResponse.getTableName(key);
         if (t.endsWith('[]')) {
@@ -2984,20 +2995,20 @@ var CodeUtil = {
 
         var type = value[0] instanceof Object ? itemName : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
 
-        s += nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
+        s += '\n' + nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
 
         if (value[0] instanceof Object) {
           s += CodeUtil.parseKotlinClasses(type, value[0], depth + 1, isTableKey, isSmart);
         }
 
-        s += '\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
 
       onParseJSONObject: function (key, value, index) {
         var k = JSONResponse.getVariableName(key);
-        var s = '\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+        var s = '\n\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
         var t = JSONResponse.getTableName(key);
         var isArray = false;
         if (t.endsWith('[]')) {
@@ -3007,15 +3018,15 @@ var CodeUtil = {
         var isTableKey = JSONObject.isTableKey(t);
 
         var type = isArray ? 'Item' : (StringUtil.firstCase(t, true) || 'Any')
-        s += '\n' + nextPadding + '@SerializedName("' + key + '")'
-          + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
+        s += '\n\n' + nextPadding + '@SerializedName("' + key + '")'
+          + '\n' + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
 
         // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {
         if (['Boolean', 'Number', 'Integer', 'Int', 'Long', 'String'].indexOf(type) < 0) {
           s += CodeUtil.parseKotlinClasses(StringUtil.firstCase(type, true), value, depth + 1, isTableKey, isSmart);
         }
 
-        s += '\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += '\n\n' + nextPadding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
@@ -4603,7 +4614,7 @@ var CodeUtil = {
           + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
-          + '\nopen class ' + t + ' {';
+          + '\nopen class ' + model + ' {';
 
         //Column[]
         columnList = item['[]'];

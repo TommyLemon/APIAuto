@@ -1557,7 +1557,7 @@
 
         switch (App.exTxt.index) {
           case 0:
-            App.database = App.exTxt.name
+            App.database = CodeUtil.database = App.exTxt.name
             App.saveCache('', 'database', App.database)
 
             doc = null
@@ -1566,7 +1566,7 @@
             App.onClickAccount(App.currentAccountIndex, item)
             break
           case 1:
-            App.schema = App.exTxt.name
+            App.schema = CodeUtil.schema = App.exTxt.name
             App.saveCache('', 'schema', App.schema)
 
             doc = null
@@ -1575,7 +1575,7 @@
             App.onClickAccount(App.currentAccountIndex, item)
             break
           case 2:
-            App.language = App.exTxt.name
+            App.language = CodeUtil.language = App.exTxt.name
             App.saveCache('', 'language', App.language)
 
             doc = null
@@ -2885,6 +2885,7 @@
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
+        CodeUtil.type = this.type;
         this.onChange(false);
       },
 
@@ -3486,6 +3487,7 @@
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docObj == null ? null : docObj['[]'];
+          CodeUtil.tableList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  [] = \n' + format(JSON.stringify(list)));
@@ -4968,15 +4970,15 @@
         }
         var database = this.getCache('', 'database')
         if (StringUtil.isEmpty(database, true) == false) {
-          this.database = database
+          this.database = CodeUtil.database = database
         }
         var schema = this.getCache('', 'schema')
         if (StringUtil.isEmpty(schema, true) == false) {
-          this.schema = schema
+          this.schema = CodeUtil.schema = schema
         }
         var language = this.getCache('', 'language')
         if (StringUtil.isEmpty(language, true) == false) {
-          this.language = language
+          this.language = CodeUtil.language = language
         }
         var types = this.getCache('', 'types')
         if (types != null && types.length > 0) {
