@@ -510,7 +510,7 @@ var CodeUtil = {
           + '\n * ' + StringUtil.trim(comment)
           + '\n */'
           + '\n@JvmStatic'
-          + '\npublic ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! isSmart) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' {\n'
+          + '\nfun ' + methodName + '(' + CodeUtil.getCode4KotlinArgs(reqObj, true, null, ! isSmart) + '): ' + 'Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + ' {\n'
           + (type == 'JSON' || type == 'DATA' ? (nextPadding + 'var request = ' + CodeUtil.parseKotlinRequest(name, reqObj, depth + 1, isSmart, isArrayItem, true, type, url)) : '') + '\n'
           + (type == 'JSON' ? '\n' + nextPadding + 'var requestBody = RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), JSON.toJSONString(request));' : '')
           + '\n' + nextPadding + 'var service = retrofit.create(' + modelName + 'Service.class);'
@@ -518,11 +518,11 @@ var CodeUtil = {
           + '\n}';
 
         //这里不用 Query-QueryMap ，而是直接 toJSONString 传给 String，是因为 QueryMap 会用 Retrofit/OKHttp 内部会取出值来拼接
-        s += '\n\n' +
-          'public interface ' + modelName + 'Service {\n' +
-          (type == 'JSON' ? nextPadding + '@Headers({"Content-type:application/json;charset=UTF-8"})\n' : (type == 'FORM' ? nextPadding + '@FormUrlEncoded\n': (type == 'DATA' ? nextPadding + '@Multipart\n': '')))  +
+        s += '\n\n@Keep\n' +
+          'interface ' + modelName + 'Service {\n' +
+          (type == 'JSON' ? nextPadding + '@Headers("Content-Type: application/json;charset=UTF-8")\n' : (type == 'FORM' ? nextPadding + '@FormUrlEncoded\n': (type == 'DATA' ? nextPadding + '@Multipart\n': '')))  +
           nextPadding + '@' + requestMethod + '("' + methodUri + '")\n' +
-          nextPadding + methodName + '(' + (type == 'JSON' ? '@Body requestBody: RequestBody' : (type == 'DATA' ? 'requestBodyMap: @PartMap Map<String, RequestBody>' : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + '\n' +
+          nextPadding + 'fun ' + methodName + '(' + (type == 'JSON' ? '@Body requestBody: RequestBody' : (type == 'DATA' ? 'requestBodyMap: @PartMap Map<String, RequestBody>' : CodeUtil.getCode4KotlinArgs(reqObj, true, type == 'PARAM' ? 'Query' : 'Field', ! isSmart, true))) + '): Call<' + (isSmart ? 'JSONResponse' : responseName + '<' + dataType + '>') + '>' + '\n' +
           '}';
 
         if (! isSmart) {
@@ -531,13 +531,13 @@ var CodeUtil = {
             varName += 'List';
           }
 
-          s += '\n\n' +
+          s += '\n\n@Keep\n' +
             'open class ' + responseName + '<T> : Response<T> {\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n\n' +
             '}';
 
-          s += '\n\n' +
+          s += '\n\n@Keep\n' +
             'open class Response<T> {\n' +
             nextPadding + '@Transient\n' +
             nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n\n' +
@@ -549,7 +549,7 @@ var CodeUtil = {
 
         }
 
-        return s + (isSmart ? '' : CodeUtil.parseKotlinClasses('Request', reqObj, 0, false, true));
+        return s + (isSmart ? '' : CodeUtil.parseKotlinClasses(modelName + 'Request', reqObj, 0, false, false));
       }
       //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
     }
@@ -2600,7 +2600,7 @@ var CodeUtil = {
       }
     }
 
-    return '? = null';
+    return '? = null' + (isSmart ? '' : '  //' + CodeUtil.initEmptyValue4Type(type, true));
   },
 
   getCode4JavaArgValues: function (reqObj, useVar4ComplexValue) {
@@ -2730,7 +2730,8 @@ var CodeUtil = {
   },
 
 
-  /**生成 Android-Kotlin 解析 Response JSON 的为 class 和 field 的静态代码
+  /**TODO 用带注释的 JSON 来解析，能把注释也带上
+   * 生成 Android-Kotlin 解析 Response JSON 的为 class 和 field 的静态代码
    * 不能像 Java 那样执行 {} 代码段里的代码，所以不能用 Java 那种代码段隔离的方式
    * @param name_
    * @param resObj
@@ -2756,14 +2757,12 @@ var CodeUtil = {
         }
 
         var s = '\n';
-        if (depth <= 0) {
-            s += padding + 'package apijson.demo.server.model\n';
-        }
+        // if (depth <= 0) {
+        //     s += padding + 'package apijson.demo.model\n';
+        // }
 
-        s += padding + 'open class ' + name + ' : Serializable {'
-          + padding + tab + 'companion object { '
-          + nextPadding + tab + 'const val serialVersionUID: Long = 1L'
-          + padding + tab + '}';
+        s += padding + '@Keep'
+          + padding + 'open class ' + name + ' {';
 
         return s;
       },
@@ -4439,10 +4438,7 @@ var CodeUtil = {
           + '\npackage apijson.demo.server.model\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
-          + '\nopen class ' + t + ' : Serializable {'
-          + '\n' + blank + 'companion object { '
-          + '\n' + blank + blank + 'const val serialVersionUID: Long = 1L';
-          + '\n' + blank + '}';
+          + '\nopen class ' + t + ' {';
 
         //Column[]
         columnList = item['[]'];
