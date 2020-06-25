@@ -2988,14 +2988,17 @@ var CodeUtil = {
         s += '\n\n' + nextPadding + '@SerializedName("' + key + '")';
 
         var t = JSONResponse.getTableName(key);
+        var isAPIJSONArray = false
         if (t.endsWith('[]')) {
           t = t.substring(0, t.length - 2);
+          isAPIJSONArray = true
         }
         var isTableKey = JSONObject.isTableKey(t);
 
-        var type = value[0] instanceof Object ? itemName : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
+        var type = value[0] instanceof Object ? (isAPIJSONArray && t.length > 1 ? StringUtil.firstCase(t, true) : itemName) : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
 
-        s += '\n' + nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart);
+        s += '\n' + nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart)
+          + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
 
         if (value[0] instanceof Object) {
           s += CodeUtil.parseKotlinClasses(type, value[0], depth + 1, isTableKey, isSmart);
@@ -3010,16 +3013,17 @@ var CodeUtil = {
         var k = JSONResponse.getVariableName(key);
         var s = '\n\n' + nextPadding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
         var t = JSONResponse.getTableName(key);
-        var isArray = false;
+        var isAPIJSONArray = false;
         if (t.endsWith('[]')) {
           t = t.substring(0, t.length - 2);
-          isArray = true;
+          isAPIJSONArray = true;
         }
         var isTableKey = JSONObject.isTableKey(t);
 
-        var type = isArray ? 'Item' : (StringUtil.firstCase(t, true) || 'Any')
+        var type = (StringUtil.firstCase(t, true) || (isAPIJSONArray ? 'Item' : 'Any'))
         s += '\n\n' + nextPadding + '@SerializedName("' + key + '")'
-          + '\n' + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart);
+          + '\n' + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart)
+          + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
 
         // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {
         if (['Boolean', 'Number', 'Integer', 'Int', 'Long', 'String'].indexOf(type) < 0) {
