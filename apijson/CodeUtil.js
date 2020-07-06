@@ -281,6 +281,77 @@ var CodeUtil = {
     })
 
   },
+  /**生成封装 Web-Python 请求JSON 的代码
+   * 转换注释符号和关键词
+   * @param reqStr
+   * @return
+   */
+  parsePythonRequest: function(name, reqObj, depth, isSmart, reqStr) {
+    if (isSmart != true) {
+      if (StringUtil.isEmpty(reqStr, true) && reqObj != null) {
+        reqStr = JSON.stringify(reqObj, null, '    ')
+      }
+      return StringUtil.trim(reqStr).replace(/\/\//g, '#').replace(/null/g, 'None').replace(/false/g, 'False').replace(/true/g, 'True').replace(/\/\*/g, isSmart ? '\'\'\'' : '"""').replace(/\*\//g, isSmart ? '\'\'\'' : '"""').replace(/'/g, '"')
+    }
+
+    if (depth == null || depth < 0) {
+      depth = 0;
+    }
+
+    var isEmpty = true;
+    if (reqObj instanceof Array) {
+      isEmpty = reqObj.length <= 0;
+    }
+    else if (reqObj instanceof Object) {
+      isEmpty = Object.keys(reqObj).length <= 0;
+    }
+
+    var padding = CodeUtil.getBlank(depth);
+    var nextPadding = CodeUtil.getBlank(depth + 1);
+    var nextNextPadding = CodeUtil.getBlank(depth + 2);
+    var nextNextNextPadding = CodeUtil.getBlank(depth + 3);
+    var quote = isSmart ? "'" : '"'
+
+    return CodeUtil.parseCode(name, reqObj, {
+
+      onParseParentStart: function () {
+        return isEmpty ? '{' : '{\n';
+      },
+
+      onParseParentEnd: function () {
+        return isEmpty ? '}' : ('\n' + CodeUtil.getBlank(depth) + '}');
+      },
+
+      onParseChildArray: function (key, value, index) {
+        return (index > 0 ? ',\n' : '') + nextPadding + quote + key + quote + ': ' + CodeUtil.parsePythonRequest(key, value, depth + 1, isSmart);
+      },
+
+      onParseChildObject: function (key, value, index) {
+        return (index > 0 ? ',\n' : '') + nextPadding + quote + key + quote + ': ' + CodeUtil.parsePythonRequest(key, value, depth + 1, isSmart);
+      },
+
+      onParseArray: function (key, value, index, isOuter) {
+        var isEmpty = value.length <= 0;
+        var s = '[' + (isEmpty ? '' : '\n');
+
+        var inner = '';
+        var innerPadding = isOuter ? nextNextPadding : nextNextNextPadding;
+        for (var i = 0; i < value.length; i ++) {
+          inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parsePythonRequest(null, value[i], depth + (isOuter ? 1 : 2), isSmart);
+        }
+        s += inner;
+
+        s += isEmpty ? ']' : '\n' + (isOuter ? nextPadding : nextNextPadding) + ']';
+        return s;
+      },
+
+      onParseChildOther: function (key, value, index, isOuter) {
+        var valStr = (value instanceof Array ? this.onParseArray(key, value, index, true) :CodeUtil.getCode4Value(CodeUtil.LANGUAGE_PYTHON, value, key, depth, isSmart));
+        return (index > 0 ? ',\n' : '') + (key == null ? '' : (isOuter ? padding : nextPadding) + quote + key + quote + ': ') + valStr;
+      }
+    })
+
+  },
 
   /**封装 生成 iOS-Swift 请求 JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
@@ -723,14 +794,14 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        if (useStaticClass) {
+        if (useStaticClass && StringUtil.isEmpty(name, true) != true) {
           return name + '()' + (isEmpty ? '' : '.apply {\n')
         }
         return useVar4Value && type == 'DATA' ? 'mapOf<String, RequestBody>(\n' : (isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n');
       },
 
       onParseParentEnd: function () {
-        if (useStaticClass) {
+        if (useStaticClass && StringUtil.isEmpty(name, true) != true) {
           return isEmpty ? '' : '\n' + padding + '}'
         }
         return isEmpty ? ')' : '\n' + padding + ')';
@@ -764,16 +835,18 @@ var CodeUtil = {
 
         if (isEmpty != true) {
           var inner = '';
-          var innerPadding = isOuter ? nextPadding : CodeUtil.getBlank(depth + 2);
+          var innerPadding = isOuter ? nextNextPadding : nextNextNextPadding;
+
           for (var i = 0; i < value.length; i ++) {
             inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlinRequest(null, value[i], depth + (isOuter ? 1 : 2), isSmart, isArrayItem, useVar4Value, type, null, null, null, isRESTful);
           }
           s += inner;
         }
 
-        s += isEmpty ? ')' : '\n' + (isOuter ? padding : nextPadding) + ')';
+        s += isEmpty ? ')' : ('\n' + (isOuter ? nextPadding : nextNextPadding) + ')');
 
-        if (isArrayItem != true) {
+        if (isArrayItem != true && StringUtil.isEmpty(name, true) != true) {
+          var varName = CodeUtil.getItemKey(key)
           if (reqObj instanceof Array) {
             s += '\n\n' + nextPadding + parentKey + '.add(' + varName + ');';
           }
@@ -789,7 +862,7 @@ var CodeUtil = {
       },
 
       onParseChildOther: function (key, value, index, isOuter) {
-        var valStr = useVar4Value ? JSONResponse.getVariableName(key) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, value);
+        var valStr = useVar4Value ? JSONResponse.getVariableName(key) : (value instanceof Array ? this.onParseArray(key, value, index, true) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, value));
         if (useVar4Value && type == 'DATA') {
           if (value instanceof Object) {
             valStr = 'JSON.toJSONString(' + valStr + ')';
@@ -2092,7 +2165,8 @@ var CodeUtil = {
         var varName = JSONResponse.getVariableName(key);
 
         return padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + name + '[' + quote + key + quote + ']'
-          + padding + 'print(\'' + name + '.' + varName + ' = \' + str(' + varName + '))';
+          + padding + 'print(\'' + name + '.' + varName + ' = \' + str(' + varName + '))'
+          + padding + 'self.assertEqual(' + varName + ', ' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_PYTHON, value, key) + ')\n';
       },
 
       onParseJSONArray: function (key, value, index) {
@@ -2111,6 +2185,7 @@ var CodeUtil = {
 
         //不支持 varname: list[int] 这种语法   s += padding + k + (isSmart ? '' : ': list[' + type + ']') + ' = ' + name + '[' + quote + key + quote + ']'
         s += padding + k + (isSmart ? '' : ': list') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + '# self.assertIsNotNone(' + k + ')';
         s += padding + 'if ' + k + ' == None:';
         s += padding + '    ' + k + ' = []\n';
 
@@ -2145,6 +2220,7 @@ var CodeUtil = {
         var s = '\n' + padding + '# ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
 
         s += padding + k + (isSmart ? '' : ': dict') + ' = ' + name + '[' + quote + key + quote + ']'
+        s += padding + '# self.assertIsNotNone(' + k + ')';
         s += padding + 'if ' + k + ' == None:';
         s += padding + '    ' + k + ' = {}\n';
 
@@ -4822,6 +4898,9 @@ var CodeUtil = {
     }
     if (typeof value == 'string') {
       log(CodeUtil.TAG, 'getCode4Value  typeof value === "string"  >>  return " + value + ";' );
+      if (isSmart && [CodeUtil.LANGUAGE_JAVA_SCRIPT, CodeUtil.LANGUAGE_TYPE_SCRIPT, CodeUtil.LANGUAGE_PHP, CodeUtil.LANGUAGE_PYTHON].indexOf(language) >= 0) {
+        return "'" + value + "'";
+      }
       return '"' + value + '"';
     }
 

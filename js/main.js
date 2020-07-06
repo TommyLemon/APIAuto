@@ -3299,11 +3299,18 @@
               + '\n ``` \n注：对象 {} 用 ' + (isSingle ? '[\'key\' => value]' : 'array("key" => value)') + '，数组 [] 用 ' + (isSingle ? '[value0, value1]\n' : 'array(value0, value1)\n');
             break;
 
+          case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-Python: 注释符用 \'\#\''
+              + ' \n ```python \n'
+              + CodeUtil.parsePythonRequest(null, JSON.parse(rq), 0, isSingle, vInput.value)
+              + '\n ``` \n注：关键词转换 null: None, false: False, true: True';
+            break;
+
           //以下都不需要解析，直接用左侧的 JSON
           case CodeUtil.LANGUAGE_TYPE_SCRIPT:
           case CodeUtil.LANGUAGE_JAVA_SCRIPT:
-          case CodeUtil.LANGUAGE_PYTHON:
-            s += '\n#### <= Web-JavaScript/TypeScript/Python: 和左边的请求 JSON 一样 \n';
+          //case CodeUtil.LANGUAGE_PYTHON:
+            s += '\n#### <= Web-JavaScript/TypeScript: 和左边的请求 JSON 一样 \n';
             break;
           default:
             s += '\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。\n';
