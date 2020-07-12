@@ -588,7 +588,7 @@ var CodeUtil = {
 
               if (v instanceof Object) {
                 var kn = isSmart ? JSONResponse.getVariableName(k) : CodeUtil.getKotlinTypeFromJS(k, v, false, false, false, !isSmart);
-                str += '\nvar ' + k + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
+                str += '\nvar ' + kn + ' = ' + CodeUtil.parseKotlinRequest(kn, v, depth, isSmart, isArrayItem, false, type, null, null, null, true);
               }
             }
           }
@@ -762,15 +762,15 @@ var CodeUtil = {
             + '\n@Keep'
             + '\nopen class ' + responseType + '<T> : BaseResponse<T> {'
             + '\n' + nextPadding + '@Transient'
-            + '\n' + nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true) + '\n'
+            + '\n' + nextPadding + 'open var ' + varName + ': ' + dataType + CodeUtil.initEmptyValue4Type(dataType, true, true) + '\n'
             + '\n}\n'
             + '\n//通用 HTTP 解析实体基类，全局存一份'
             + '\n@Keep'
             + '\nopen class BaseResponse<T> {'
             + '\n' + nextPadding + '@Transient'
-            + '\n' + nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true) + '\n'
+            + '\n' + nextPadding + 'open var code: Int' + CodeUtil.initEmptyValue4Type('Int', true, true) + '\n'
             + '\n' + nextPadding + '@Transient'
-            + '\n' + nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true) + '\n'
+            + '\n' + nextPadding + 'open var msg: String' + CodeUtil.initEmptyValue4Type('String', true, true) + '\n'
             + '\n' + nextPadding + '@Transient'
             + '\n' + nextPadding + 'open var data: T? = null\n'
             + '\n' + nextPadding + 'open fun isSuccess(): Boolean {'
@@ -785,7 +785,7 @@ var CodeUtil = {
       //RESTful 等非 APIJSON 规范的 API >>>>>>>>>>>>>>>>>>>>>>>>>>
     }
 
-    var useStaticClass = isRESTful && type == 'JSON' && ! isSmart
+    var useStaticClass = isRESTful && type == 'JSON' && isSmart != true && StringUtil.isEmpty(name, true) != true
 
     var parentKey = JSONObject.isArrayKey(name)
       ? JSONResponse.getVariableName(CodeUtil.getItemKey(name)) + (depth <= 1 ? '' : depth)
@@ -794,14 +794,14 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, reqObj, {
 
       onParseParentStart: function () {
-        if (useStaticClass && StringUtil.isEmpty(name, true) != true) {
-          return name + '()' + (isEmpty ? '' : '.apply {\n')
+        if (useStaticClass) {
+          return StringUtil.firstCase(JSONResponse.getVariableName(name), true) + '()' + (isEmpty ? '' : '.apply {\n')
         }
         return useVar4Value && type == 'DATA' ? 'mapOf<String, RequestBody>(\n' : (isEmpty ? 'HashMap<String, Any>(' : 'mapOf(\n');
       },
 
       onParseParentEnd: function () {
-        if (useStaticClass && StringUtil.isEmpty(name, true) != true) {
+        if (useStaticClass) {
           return isEmpty ? '' : '\n' + padding + '}'
         }
         return isEmpty ? ')' : '\n' + padding + ')';
@@ -835,7 +835,7 @@ var CodeUtil = {
 
         if (isEmpty != true) {
           var inner = '';
-          var innerPadding = isOuter ? nextNextPadding : nextNextNextPadding;
+          var innerPadding = isOuter ? nextPadding : nextNextPadding;
 
           for (var i = 0; i < value.length; i ++) {
             inner += (i > 0 ? ',\n' : '') + innerPadding + CodeUtil.parseKotlinRequest(null, value[i], depth + (isOuter ? 1 : 2), isSmart, isArrayItem, useVar4Value, type, null, null, null, isRESTful);
@@ -843,31 +843,24 @@ var CodeUtil = {
           s += inner;
         }
 
-        s += isEmpty ? ')' : ('\n' + (isOuter ? nextPadding : nextNextPadding) + ')');
-
-        if (isArrayItem != true && StringUtil.isEmpty(name, true) != true) {
-          var varName = CodeUtil.getItemKey(key)
-          if (reqObj instanceof Array) {
-            s += '\n\n' + nextPadding + parentKey + '.add(' + varName + ');';
-          }
-          else if (reqObj instanceof Object) {
-            s += '\n\n' + nextPadding + parentKey + '.put("' + key + '", ' + varName + ');';
-          }
-          else {
-            s += '//FIXME 这里不可能出现 reqObj 类型为 ' + (typeof reqObj) + '！'; //不可能
-          }
-        }
+        s += isEmpty ? ')' : ('\n' + (isOuter ? padding : nextPadding) + ')');
 
         return s;
       },
 
       onParseChildOther: function (key, value, index, isOuter) {
-        var valStr = useVar4Value ? JSONResponse.getVariableName(key) : (value instanceof Array ? this.onParseArray(key, value, index, true) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, value));
-        if (useVar4Value && type == 'DATA') {
-          if (value instanceof Object) {
-            valStr = 'JSON.toJSONString(' + valStr + ')';
+        var valStr;
+        if (useVar4Value != true && value instanceof Array) {
+          valStr = this.onParseArray(key, value, index, isOuter);
+        }
+        else {
+          valStr = useVar4Value ? JSONResponse.getVariableName(key) : CodeUtil.getCode4Value(CodeUtil.LANGUAGE_KOTLIN, value);
+          if (useVar4Value && type == 'DATA') {
+            if (value instanceof Object) {
+              valStr = 'JSON.toJSONString(' + valStr + ')';
+            }
+            valStr = 'RequestBody.create(MediaType.parse("multipart/form-data", ' + valStr + ')';
           }
-          valStr = 'RequestBody.create(MediaType.parse("multipart/form-data", ' + valStr + ')';
         }
 
         return (index <= 0 ? '' : (useStaticClass ? '\n' : ',\n')) + (key == null ? '' : (isOuter ? padding : nextPadding)
@@ -2816,7 +2809,7 @@ var CodeUtil = {
 
 
 
-  initEmptyValue4Type: function(type, isSmart) {
+  initEmptyValue4Type: function(type, isSmart, isKotlin) {
     if (isSmart) {
       type = type || ''
       switch (type) {
@@ -2827,18 +2820,18 @@ var CodeUtil = {
         case 'Int':
           return ' = 0';
         case 'Long':
-          return ' = 0L';
+          return isKotlin ? ' = 0' : ' = 0L';
         case 'Float':
           return ' = 0f';
         case 'Double':
-          return ' = 0d';
+          return isKotlin ? ' = 0.0' : ' = 0d';
         case 'String':
           return ' = ""';
         case 'Array':
         case 'List':
-          return ' = mutableListOf()';
+          return isKotlin ? ' = mutableListOf()' : ' = new ArrayList<>()';
         case 'Map':
-          return ' = mutableMapOf()';
+          return isKotlin ? ' = mutableMapOf()' : ' = new LinkedHashMap<>()';
         case 'Object':
         case 'Any':
           return '? = null';
@@ -2847,7 +2840,7 @@ var CodeUtil = {
       }
     }
 
-    return '? = null' + (isSmart ? '' : '  //' + CodeUtil.initEmptyValue4Type(type, true));
+    return '? = null' + (isSmart ? '' : '  //' + CodeUtil.initEmptyValue4Type(type, true, isKotlin));
   },
 
   getCode4JavaArgValues: function (reqObj, useVar4ComplexValue) {
@@ -3047,7 +3040,7 @@ var CodeUtil = {
         var varName = JSONResponse.getVariableName(key);
 
         var s = '\n\n' + nextPadding + '@SerializedName("' + key + '")'
-          + '\n' + nextPadding + 'open var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart)
+          + '\n' + nextPadding + 'open var ' + varName + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart, true)
           + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
         return s;
       },
@@ -3073,7 +3066,7 @@ var CodeUtil = {
 
         var type = value[0] instanceof Object ? (isAPIJSONArray && t.length > 1 ? StringUtil.firstCase(t, true) : itemName) : CodeUtil.getKotlinTypeFromJS(itemName, value[0], false, false);
 
-        s += '\n' + nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart)
+        s += '\n' + nextPadding + 'open var ' + k + ': List<' + type + '?>' + CodeUtil.initEmptyValue4Type('List', isSmart, true)
           + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
 
         if (value[0] instanceof Object) {
@@ -3098,7 +3091,7 @@ var CodeUtil = {
 
         var type = (StringUtil.firstCase(t, true) || (isAPIJSONArray ? 'Item' : 'Any'))
         s += '\n\n' + nextPadding + '@SerializedName("' + key + '")'
-          + '\n' + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart)
+          + '\n' + nextPadding + 'open var ' + k + ': ' + type + CodeUtil.initEmptyValue4Type(type, isSmart, true)
           + CodeUtil.getComment(CodeUtil.getCommentFromDoc(CodeUtil.tableList, name, key, 'GET', CodeUtil.database, CodeUtil.language, true), false, '  ');
 
         // if (['Boolean', 'Number', 'Integer', 'Long', 'String', 'List', 'Map', 'Any'].indexOf(type) < 0) {

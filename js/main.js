@@ -559,7 +559,7 @@
       // thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
       // thirdParty: 'RAP /repository/joined /repository/get',
       thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
-      language: CodeUtil.LANGUAGE_C_PLUS_PLUS,
+      language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
       count: 100,
@@ -2409,18 +2409,18 @@
       },
 
       showLogin(show, isAdmin) {
-        App.isLoginShow = show
-        App.isAdminOperation = isAdmin
+        this.isLoginShow = show
+        this.isAdminOperation = isAdmin
 
         if (show != true) {
           return
         }
 
-        var user = isAdmin ? App.User : null //add account   App.accounts[App.currentAccountIndex]
+        var user = isAdmin ? App.User : null  // add account   App.accounts[App.currentAccountIndex]
 
         // alert("showLogin  isAdmin = " + isAdmin + "; user = \n" + JSON.stringify(user, null, '    '))
 
-        if (user == null) {
+        if (user == null || StringUtil.isEmpty(user.phone, true)) {
           user = {
             phone: 13000082001,
             password: 123456
@@ -2428,8 +2428,8 @@
         }
 
         this.setRememberLogin(user.remember)
-        App.account = user.phone
-        App.password = user.password
+        this.account = user.phone
+        this.password = user.password
       },
 
       setRememberLogin(remember) {
@@ -3092,7 +3092,7 @@
                 name: r.name
               },
               tag: 'Random'
-            }, vHeader.value, function (url, res, err) {
+            }, {}, function (url, res, err) {
 
               var isOk = (res.data || {}).code == CODE_SUCCESS
 
