@@ -317,7 +317,7 @@
               // }
             }
             else {
-              if (isRestful || JSONObject.isTableKey(table, val, isRestful)) {
+              if (isRestful || JSONObject.isTableKey(table)) {
                 column = key
               }
               // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
