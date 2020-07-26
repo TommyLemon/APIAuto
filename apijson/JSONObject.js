@@ -23,17 +23,42 @@ var JSONObject = {
    * @param key
    * @return
    */
-  isTableKey: function(key) {
+  isTableKey: function(key, value, isRestful) {
     log(this.TAG, 'isTableKey  typeof key = ' + (typeof key));
-    return key != null && /^[A-Z][A-Za-z0-9_]*$/.test(key);
+    if (key == null) {
+      return false;
+    }
+
+    if (value != null && typeof value != 'object') {
+      return false;
+    }
+
+    if (isRestful == true) {
+      return true;
+    }
+
+    return  /^[A-Z][A-Za-z0-9_]*$/.test(key);
   },
   /**判断key是否为数组名
    * @param key
    * @return
    */
-  isArrayKey: function(key) {
+  isArrayKey: function(key, value, isRestful) {
     log(this.TAG, 'isArrayKey  typeof key = ' + (typeof key));
-    return key != null && key.endsWith('[]');
+
+    if (key == null) {
+      return false;
+    }
+
+    if (isRestful == true) {
+      return value == null || typeof value == 'array';
+    }
+
+    if (value != null && value instanceof Object == false) {
+      return false;
+    }
+
+    return key.endsWith('[]');
   }
 
 }

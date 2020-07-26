@@ -5945,7 +5945,7 @@ var CodeUtil = {
         }
 
         var c = doc == null ? null : StringUtil.trim(doc.description || doc.title);
-        if (doc != null && StringUtil.isEmpty(doc.type, true) == false && doc.type != CodeUtil.getType4Request(value)) {
+        if (doc != null && StringUtil.isEmpty(doc.type, true) == false && doc.type != (isReq ? CodeUtil.getType4Request(value) : typeof value)) {
           throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, doc.type) + '类型！' + CodeUtil.getComment(c, false, '  '));
         }
         else {
@@ -6148,7 +6148,8 @@ var CodeUtil = {
   },
 
   getType4Request: function (value) {
-    return typeof JSON.parse(value);
+    var t = typeof value;
+    return t != 'string' ? t : typeof JSON.parse(value);
   }
 
 }

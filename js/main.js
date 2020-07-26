@@ -97,9 +97,13 @@
           return false
         }
 
+        var method = App.getMethod();
+        var mIndex = method == null ? -1 : method.indexOf('/');
+        var isRestful = mIndex > 0 && mIndex < method.length - 1;
+
         try {
           if (val instanceof Array) {
-            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key)) {
+            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key, null, isRestful)) {
               // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
               var ckey = key.substring(0, key.lastIndexOf('[]'));
@@ -113,7 +117,7 @@
               for (var i = 0; i < val.length; i++) {
                 var cPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
 
-                if (JSONObject.isTableKey(firstKey)) {
+                if (JSONObject.isTableKey(firstKey, val, isRestful)) {
                   // var newVal = JSON.parse(JSON.stringify(val[i]))
 
                   var newVal = {}
@@ -154,7 +158,7 @@
 
             val._$_this_$_ = JSON.stringify({
               path: (StringUtil.isEmpty(path, false) ? '' : path + '/') + key,
-              table: JSONObject.isTableKey(objName) ? objName : null
+              table: JSONObject.isTableKey(objName, val, isRestful) ? objName : null
             })
 
             for (var k in newVal) {
@@ -215,6 +219,11 @@
           var path = null
           var table = null
           var column = null
+
+          var method = App.getMethod();
+          var mIndex = method == null ? -1 : method.indexOf('/');
+          var isRestful = mIndex > 0 && mIndex < method.length - 1;
+
           if (val instanceof Object && (val instanceof Array == false)) {
 
             var parent = $event.currentTarget.parentElement.parentElement
@@ -238,10 +247,10 @@
               var aliaIndex = key == null ? -1 : key.indexOf(':');
               var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-              if (JSONObject.isTableKey(objName)) {
+              if (JSONObject.isTableKey(objName, val, isRestful)) {
                 table = objName
               }
-              else if (JSONObject.isTableKey(table)) {
+              else if (JSONObject.isTableKey(table, val, isRestful)) {
                 column = key
               }
 
@@ -267,7 +276,7 @@
               }
             }
 
-            if (val instanceof Array && JSONObject.isArrayKey(key)) {
+            if (val instanceof Array && JSONObject.isArrayKey(key, val, isRestful)) {
               var key2 = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
 
               var aliaIndex = key2 == null ? -1 : key2.indexOf(':');
@@ -277,7 +286,7 @@
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
               // alert('key = ' + key + '; firstKey = ' + firstKey + '; firstIndex = ' + firstIndex)
-              if (JSONObject.isTableKey(firstKey)) {
+              if (JSONObject.isTableKey(firstKey, null, isRestful)) {
                 table = firstKey
 
                 var s0 = '';
@@ -286,11 +295,15 @@
                   firstIndex = objName.indexOf('-');
                   column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true); // this.getResponseHint({}, table, $event
+                  var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, null, App.getMethod(), App.database, App.language, true);
+                var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
+
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -304,7 +317,7 @@
               // }
             }
             else {
-              if (JSONObject.isTableKey(table)) {
+              if (isRestful || JSONObject.isTableKey(table, val, isRestful)) {
                 column = key
               }
               // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
@@ -312,9 +325,10 @@
           }
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true);
+          var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
 
-          s += (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? (StringUtil.isEmpty(table) ? key : table) : column) + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
+          s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
         catch (e) {
           s += '\n' + e.message
