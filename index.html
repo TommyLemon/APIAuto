@@ -381,7 +381,7 @@ User/id : RANDOM_INT(82001, 82020)  // 随机整数
               </a>
               <ul class="historys pop" style="width: 240px">
                   <li v-for="(his, index) in historys">
-                    <a href="javascript:void(0)" @click="restore(his)"  > {{his.name}}</a>
+                    <a href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
 
                     <svg class="icon" @click="remove(his, index, false)">
                       <use xlink:href="svg/icon.svg#trash"></use>

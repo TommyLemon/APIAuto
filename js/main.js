@@ -1074,6 +1074,7 @@
           type: App.type,
           url: '/' + this.getMethod(),
           request: inputted,
+          response: App.jsoncon,
           header: vHeader.value,
           random: vRandom.value
         }
@@ -1122,6 +1123,12 @@
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
         vRandom.value = StringUtil.get(random.config)
+
+        var response = ((item || {}).TestRecord || {}).response
+        if (StringUtil.isEmpty(response, true) == false) {
+            App.jsoncon = StringUtil.trim(response)
+            App.view = 'code'
+        }
       },
       // 根据测试用例/历史记录恢复数据
       restoreRemoteAndTest: function (item) {
@@ -1130,12 +1137,12 @@
       // 根据测试用例/历史记录恢复数据
       restoreRemote: function (item, test) {
         this.currentRemoteItem = item
-        this.restore((item || {}).Document, true, test)
+        this.restore((item || {}).Document, ((item || {}).TestRecord || {}).response, true, test)
       },
       // 根据历史恢复数据
-      restore: function (item, isRemote, test) {
+      restore: function (item, response, isRemote, test) {
         item = item || {}
-        localforage.getItem(item.key || '', function (err, value) {
+        // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
@@ -1156,10 +1163,20 @@
             App.randoms = []
             App.showRandomList(App.isRandomListShow, item)
           }
+
           if (test) {
             App.send(false)
           }
-        })
+          else {
+            if (StringUtil.isEmpty(response, true) == false) {
+              setTimeout(function () {
+                App.jsoncon = StringUtil.trim(response)
+                App.view = 'code'
+              }, 500)
+            }
+          }
+
+        // })
       },
 
       // 获取所有保存的json
@@ -1490,10 +1507,10 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n//可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -1517,17 +1534,18 @@
                       : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + (hasDot ? ', ' + keep + ')' : ')'))
                   )
                 var hasDot = String(value).indexOf('.') >= 0
+
                 if (value < 0) {
-                  config += prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) {  // 0-1 比例
-                  config += prefix + 'RANDOM_NUM(0, 1)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) {  // 10% 百分比
-                  config += prefix + 'RANDOM_INT(0, 100)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += prefix + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
