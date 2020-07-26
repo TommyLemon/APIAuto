@@ -40,6 +40,8 @@ var CodeUtil = {
   schema: 'sys',
   language: 'Kotlin',
   tableList: [],
+  thirdParty: 'YAPI',
+  thirdPartyApiMap: {},
 
   /**生成JSON的注释
    * @param reqStr //已格式化的JSON String
@@ -49,12 +51,16 @@ var CodeUtil = {
    * @param language
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList, method, database, language) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method, database, language, isReq) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
-    method = method == null ? 'GET' : method.toUpperCase();
-
+    method = method == null ? 'GET' : method;
+    var mIndex = method.indexOf('/');
+    var isRestful = mIndex > 0 && mIndex < method.length - 1;
+    if (isRestful != true) {
+      method = method.toUpperCase();
+    }
 
     var lines = reqStr.split('\n');
     var line;
@@ -86,14 +92,14 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database, language);
+        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database, language, isReq, names, isRestful);
       }
       else {
         if (line.endsWith('}')) {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database, language);
+            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database, language, isReq, names, isRestful);
           }
           else {
             depth --;
@@ -105,9 +111,9 @@ var CodeUtil = {
         }
         else { //其它，直接在后面加上注释
           var isArray = line.endsWith('['); // []  不影响
+          value = isArray ? [] : line.substring(index + 2).trim()
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-          comment = value == 'null' ? ' ! null无效' : CodeUtil.getComment4Request(tableList, names[depth], key
-            , isArray ? [] : line.substring(index + 2).trim(), method, isInSubquery, database, language);
+          comment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful);
         }
       }
 
@@ -5641,12 +5647,35 @@ var CodeUtil = {
    * @param isInSubquery
    * @param database
    */
-  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database, language) {
+  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database, language, isReq, names, isRestful) {
     // alert('name = ' + name + '; key = ' + key + '; value = ' + value + '; method = ' + method);
 
     if (key == null) {
       return '';
     }
+
+    if (isRestful == true) {
+      if (StringUtil.isEmpty(key, true)) {
+        return '';
+      }
+
+      var pathKeys = []; // slice 居然每次都返回数字 1  names == null || names.length < 2 ? null : names.slice(2).push(key)
+      if (names != null && names.length > 2) {
+        for (var i = 2; i < names.length; i ++) {
+          pathKeys.push(names[i]);
+        }
+      }
+      pathKeys.push(key);
+
+      try {
+        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value == null ? {} : value);
+        return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : CodeUtil.getComment(c, false, '  ');
+      }
+      catch (e) {
+        return e.message;
+      }
+    }
+
     // if (value == null) {
     //  return ' ! key:value 中 key 或 value 任何一个为 null 时，该 key:value 都无效！'
     // }
@@ -5666,7 +5695,7 @@ var CodeUtil = {
     }
     else if (value == null || value instanceof Object) {
 
-      if (key.endsWith('@')) {
+      if (isRestful != true && key.endsWith('@')) {
         if (key == '@from@') {
           return CodeUtil.getComment('数据来源：匿名子查询，例如 {"from":"Table", "Table":{}}', false, '  ');
         }
@@ -5679,7 +5708,7 @@ var CodeUtil = {
         return CodeUtil.getComment('子查询 ' + StringUtil.get(name) + "，需要被下面的表字段相关 key 引用赋值", false, '  ');
       }
 
-      if (JSONObject.isArrayKey(key)) {
+      if (isRestful != true && JSONObject.isArrayKey(key)) {
         if (method != 'GET') {
           return ' ! key[]:{}只支持GET方法！';
         }
@@ -5699,7 +5728,7 @@ var CodeUtil = {
       var aliaIndex = key.indexOf(':');
       var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-      if (JSONObject.isTableKey(objName)) {
+      if (isRestful == true || JSONObject.isTableKey(objName)) {
         var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language);
         return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(
           (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length) + ' < ' + objName + ': ') + c, false, '  ');
@@ -5708,7 +5737,7 @@ var CodeUtil = {
       return '';
     }
 
-    if (isInSubquery || JSONObject.isArrayKey(name)) {
+    if (isRestful != true && (isInSubquery || JSONObject.isArrayKey(name))) {
       switch (key) {
         case 'count':
           return CodeUtil.getType4Request(value) != 'number' ? ' ! value必须是Number类型！' : CodeUtil.getComment('最多数量: 例如 5 10 20 ...', false, '  ');
@@ -5781,7 +5810,7 @@ var CodeUtil = {
     var aliaIndex = name.indexOf(':');
     var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
 
-    if (JSONObject.isTableKey(objName)) {
+    if (isRestful != true && JSONObject.isTableKey(objName)) {
       switch (key) {
         case '@column':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段：例如 id,name;json_length(contactIdList):contactCount;...', false, '  ');
@@ -5822,7 +5851,7 @@ var CodeUtil = {
     }
 
     // alert('name = ' + name + '; key = ' + key);
-    if (StringUtil.isEmpty(name)) {
+    if (isRestful != true && StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
           // if (method == 'GET' || method == 'HEAD') {
@@ -5870,10 +5899,62 @@ var CodeUtil = {
    * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn) {
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName
       + '; method = ' + method + '; database = ' + database + '; language = ' + language
       + '; onlyTableAndColumn = ' + onlyTableAndColumn + '; tableList = \n' + JSON.stringify(tableList));
+
+    if (isRestful == true && StringUtil.isEmpty(columnName, true) == false && StringUtil.isEmpty(CodeUtil.thirdParty, true) == false) { // } && CodeUtil.thirdParty == 'YAPI') {
+      var apiMap = CodeUtil.thirdPartyApiMap;
+      var api = apiMap == null ? null : apiMap[(method.startsWith('/') ? '' : '/') + method];
+      var doc = api == null ? null : (isReq ? api.request : api.response);
+      if (doc != null) {
+        if (pathKeys != null && pathKeys.length > 0) {
+          for (var i = 0; i < pathKeys.length; i ++) {
+            var p = pathKeys[i];
+
+            if (doc instanceof Array) {
+              var find = false;
+              for (var j = 0; j < doc.length; j++) {
+                var d = doc[j];
+                if (d != null && d.name == p) {
+                  doc = d;
+                  find = true;
+                  break;
+                }
+              }
+
+              if (find == false) {
+                doc = null;
+              }
+            }
+            else if (doc instanceof Object) {
+              if (doc.type == 'object') {
+                doc = doc.properties;
+              }
+              else if (doc.type == 'array') {
+                doc = doc.items;
+              }
+
+              doc = doc[p];
+            }
+          }
+        }
+        else if (doc instanceof Array) {
+          doc = null;
+        }
+
+        var c = doc == null ? null : StringUtil.trim(doc.description || doc.title);
+        if (doc != null && StringUtil.isEmpty(doc.type, true) == false && doc.type != CodeUtil.getType4Request(value)) {
+          throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, doc.type) + '类型！' + CodeUtil.getComment(c, false, '  '));
+        }
+        else {
+          if (StringUtil.isEmpty(c, true) == false) {
+            return CodeUtil.getType4Language(language, doc.type, true) + ', ' + c;
+          }
+        }
+      }
+    }
 
     if (tableList == null || tableList.length <= 0) {
       return '...';

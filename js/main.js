@@ -945,6 +945,49 @@
               }
               else if (index == 8) {
                 alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
+
+                try {
+                  App.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+                    CodeUtil.thirdParty = platform
+                    App.onResponse(url_, res, err)
+                    return false
+                  }, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+                    var data = (res || {}).data
+                    var apiMap = CodeUtil.thirdPartyApiMap || {}
+
+                    if (platform == PLATFORM_POSTMAN) {
+                      alert('尚未开发 ' + PLATFORM_POSTMAN)
+                      return true
+                    }
+                    else if (platform == PLATFORM_SWAGGER) {
+                    }
+                    else if (platform == PLATFORM_RAP) {
+                    }
+                    else if (platform == PLATFORM_YAPI) {
+                      var api = (data || {}).data
+                      var typeAndParam = App.parseYApiTypeAndParam(api)
+                      api = api || {}
+                      var url = api.path
+
+                      apiMap[url] = {
+                        request: typeAndParam.param,
+                        response: api.res_body == null ? null : JSON.parse(api.res_body)
+                      }
+                    }
+                    else {
+                      alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+                      return true
+                    }
+
+                    CodeUtil.thirdPartyApiMap = apiMap
+                    return true
+                  })
+                } catch (e) {
+                  console.log('created  try { ' +
+                    '\nthis.User = this.getCache(this.server, User) || {}' +
+                    '\n} catch (e) {\n' + e.message)
+                }
+
               }
               break
             case 3:
@@ -1609,122 +1652,19 @@
             App.saveCache('', 'types', App.types)
             break
           case 8:
-            var thirdParty = App.exTxt.name
-
-            var tp = StringUtil.trim(thirdParty)
-            var index = tp.indexOf(' ')
-            var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
-            var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
-
-            var jsonData = null
-            try {
-              jsonData = JSON.parse(docUrl)
-            }
-            catch (e) {}
-
-            var isJSONData = jsonData instanceof Object
-            if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
-              App.thirdParty = thirdParty
-              App.saveCache('', 'thirdParty', App.thirdParty)
-            }
-
-            var host = App.getBaseUrl()
-
-            if (platform == PLATFORM_POSTMAN) {
-              alert('尚未开发 ' + PLATFORM_POSTMAN)
-            }
-            else if (platform == PLATFORM_SWAGGER) {
-              if (docUrl == '/') {
-                docUrl += '/v2/api-docs'
-              }
-              if (docUrl.startsWith('/')) {
-                docUrl = host + docUrl
+            App.getThirdPartyApiList(App.exTxt.name, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
+              var jsonData = (res || {}).data
+              var isJSONData = jsonData instanceof Object
+              if (isJSONData == false) {  //后面是 URL 才存储；是 JSON 数据则不存储
+                App.thirdParty = thirdParty
+                App.saveCache('', 'thirdParty', App.thirdParty)
               }
 
-              var swaggerCallback = function (url_, res, err) {
-                if (App.isSyncing) {
-                  alert('正在同步，请等待完成')
-                  return
-                }
-                App.isSyncing = true
-                App.onResponse(url_, res, err)
-
-                var apis = (res.data || {}).paths
-                if (apis == null) { // || apis.length <= 0) {
-                  App.isSyncing = false
-                  alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
-                  return
-                }
-                App.exTxt.button = '...'
-
-                App.uploadTotal = 0 // apis.length || 0
-                App.uploadDoneCount = 0
-                App.uploadFailCount = 0
-
-                var item
-                // var i = 0
-                for (var url in apis) {
-                  item = apis[url]
-                  //导致 url 全都是一样的  setTimeout(function () {
-                  if (App.uploadSwaggerApi(url, item, 'get')
-                    || App.uploadSwaggerApi(url, item, 'post')
-                    || App.uploadSwaggerApi(url, item, 'put')
-                    || App.uploadSwaggerApi(url, item, 'delete')
-                  ) {}
-                  // }, 100*i)
-                  // i ++
-                }
+              if (platform == PLATFORM_POSTMAN) {
+                alert('尚未开发 ' + PLATFORM_POSTMAN)
               }
-
-              if (isJSONData) {
-                swaggerCallback(docUrl, { data: jsonData }, null)
-              }
-              else {
-                App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
-              }
-            }
-            else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
-              var isRap = platform == PLATFORM_RAP
-              index = docUrl.indexOf(' ')
-              var listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
-              var itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
-
-              if (listUrl.startsWith('/')) {
-                listUrl = host + listUrl
-              }
-              if (itemUrl.startsWith('/')) {
-                itemUrl = host + itemUrl
-              }
-
-              var itemCallback = function (url, res, err) {
-                try {
-                  App.onResponse(url, res, err)
-                } catch (e) {}
-
-                var data = res.data == null ? null : res.data.data
-                if (isRap) {
-                  var modules = data == null ? null : data.modules
-                  if (modules != null) {
-                    for (var i = 0; i < modules.length; i++) {
-                      var it = modules[i] || {}
-                      var interfaces = it.interfaces || []
-
-                      for (var j = 0; j < interfaces.length; j++) {
-                        App.uploadRapApi(interfaces[j])
-                      }
-                    }
-                  }
-                }
-                else {
-                  App.uploadYApi(data)
-                }
-              }
-
-              if (isJSONData) {
-                itemCallback(itemUrl, { data: jsonData }, null)
-              }
-              else {
-                App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+              else if (platform == PLATFORM_SWAGGER) {
+                var swaggerCallback = function (url_, res, err) {
                   if (App.isSyncing) {
                     alert('正在同步，请等待完成')
                     return
@@ -1732,10 +1672,10 @@
                   App.isSyncing = true
                   App.onResponse(url_, res, err)
 
-                  var apis = (res.data || {}).data
+                  var apis = (res.data || {}).paths
                   if (apis == null) { // || apis.length <= 0) {
                     App.isSyncing = false
-                    alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                    alert('没有查到 Swagger 文档！请开启跨域代理，并检查 URL 是否正确！')
                     return
                   }
                   App.exTxt.button = '...'
@@ -1745,32 +1685,224 @@
                   App.uploadFailCount = 0
 
                   var item
+                  // var i = 0
                   for (var url in apis) {
-                    item = apis[url] || {}
+                    item = apis[url]
+                    //导致 url 全都是一样的  setTimeout(function () {
+                    if (App.uploadSwaggerApi(url, item, 'get')
+                      || App.uploadSwaggerApi(url, item, 'post')
+                      || App.uploadSwaggerApi(url, item, 'put')
+                      || App.uploadSwaggerApi(url, item, 'delete')
+                    ) {}
+                    // }, 100*i)
+                    // i ++
+                  }
+                }
 
-                    var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
-                    for (let i1 = 0; i1 < list.length; i1++) {
-                      var listItem1 = list[i1]
-                      if (listItem1 == null || listItem1._id == null) {
-                        App.log('listItem1 == null || listItem1._id == null >> continue')
-                        continue
+                if (isJSONData) {
+                  swaggerCallback(docUrl, { data: jsonData }, null)
+                }
+                else {
+                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+                }
+              }
+              else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+                var isRap = platform == PLATFORM_RAP
+
+                var itemCallback = function (url, res, err) {
+                  try {
+                    App.onResponse(url, res, err)
+                  } catch (e) {}
+
+                  var data = res.data == null ? null : res.data.data
+                  if (isRap) {
+                    var modules = data == null ? null : data.modules
+                    if (modules != null) {
+                      for (var i = 0; i < modules.length; i++) {
+                        var it = modules[i] || {}
+                        var interfaces = it.interfaces || []
+
+                        for (var j = 0; j < interfaces.length; j++) {
+                          App.uploadRapApi(interfaces[j])
+                        }
+                      }
+                    }
+                  }
+                  else {
+                    App.uploadYApi(data)
+                  }
+                }
+
+                if (isJSONData) {
+                  itemCallback(itemUrl, { data: jsonData }, null)
+                }
+                else {
+                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                    if (App.isSyncing) {
+                      alert('正在同步，请等待完成')
+                      return
+                    }
+                    App.isSyncing = true
+                    App.onResponse(url_, res, err)
+
+                    var apis = (res.data || {}).data
+                    if (apis == null) { // || apis.length <= 0) {
+                      App.isSyncing = false
+                      alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                      return
+                    }
+                    App.exTxt.button = '...'
+
+                    App.uploadTotal = 0 // apis.length || 0
+                    App.uploadDoneCount = 0
+                    App.uploadFailCount = 0
+
+                    var item
+                    for (var url in apis) {
+                      item = apis[url] || {}
+
+                      var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                      for (let i1 = 0; i1 < list.length; i1++) {
+                        var listItem1 = list[i1]
+                        if (listItem1 == null || listItem1._id == null) {
+                          App.log('listItem1 == null || listItem1._id == null >> continue')
+                          continue
+                        }
+
+                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                       }
 
-                      App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
                     }
+                  })
 
-                  }
-                })
+                }
 
               }
+              else {
+                alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+              }
 
-            }
-            else {
-              alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
-            }
+              return true
+            })
 
             break
         }
+      },
+
+      getThirdPartyApiList: function (thirdParty, listCallback, itemCallback) {
+        App.parseThirdParty(thirdParty, function (platform, jsonData, docUrl, listUrl, itemUrl) {
+          var isJSONData = jsonData instanceof Object
+
+          if (platform == PLATFORM_POSTMAN) {
+            alert('尚未开发 ' + PLATFORM_POSTMAN)
+          }
+          else if (platform == PLATFORM_SWAGGER) {
+            if (isJSONData) {
+              listCallback(platform, docUrl, listUrl, itemUrl, itemUrl, { data: jsonData }, null)
+            }
+            else {
+              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+                if (listCallback != null) {
+                  listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
+                }
+              })
+            }
+          }
+          else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+            var isRap = platform == PLATFORM_RAP
+
+            if (isJSONData) {
+              if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, listUrl, {data: [jsonData]}, null)) {
+                return
+              }
+
+              if (itemCallback != null) {
+                itemCallback(platform, docUrl, listUrl, itemUrl, itemUrl, {data: jsonData}, null)
+              }
+            }
+            else {
+              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)) {
+                  return
+                }
+
+                var apis = (res.data || {}).data
+                if (apis == null) { // || apis.length <= 0) {
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  return
+                }
+
+                var item
+                for (var url in apis) {
+                  item = apis[url] || {}
+
+                  var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
+                  for (let i1 = 0; i1 < list.length; i1++) {
+                    var listItem1 = list[i1]
+                    if (listItem1 == null || listItem1._id == null) {
+                      App.log('listItem1 == null || listItem1._id == null >> continue')
+                      continue
+                    }
+
+                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url_, res, err) {
+                      if (itemCallback != null) {
+                        itemCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
+                      }
+                    })
+                  }
+
+                }
+              })
+
+            }
+
+          }
+          else {
+            alert('第三方平台只支持 Postman, Swagger, Rap, YApi ！')
+          }
+        })
+
+      },
+
+      parseThirdParty: function (thirdParty, callback) {
+        var tp = StringUtil.trim(thirdParty)
+        var index = tp.indexOf(' ')
+        var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
+        var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
+
+        var jsonData = null
+        try {
+          jsonData = JSON.parse(docUrl)
+        }
+        catch (e) {}
+
+        var host = App.getBaseUrl()
+        var listUrl = null
+        var itemUrl = null
+
+        if (platform == PLATFORM_SWAGGER) {
+          if (docUrl == '/') {
+            docUrl += 'v2/api-docs'
+          }
+          if (docUrl.startsWith('/')) {
+            docUrl = host + docUrl
+          }
+        }
+        else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
+          var isRap = platform == PLATFORM_RAP
+          index = docUrl.indexOf(' ')
+          listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
+          itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
+
+          if (listUrl.startsWith('/')) {
+            listUrl = host + listUrl
+          }
+          if (itemUrl.startsWith('/')) {
+            itemUrl = host + itemUrl
+          }
+        }
+
+        callback(platform, jsonData, docUrl, listUrl, itemUrl)
       },
 
       /**上传 Swagger API
@@ -1894,9 +2026,32 @@
 
         App.uploadTotal++
 
+        var headers = api.req_headers || []
+        var header = ''
+        for (var i = 0; i < headers.length; i ++) {
+          var item = headers[i];
+          var name = item == null ? null : item.name
+          if (name == null) {
+            continue
+          }
+          header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
+            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
+        }
+
+        var typeAndParam = App.parseYApiTypeAndParam(api)
+
+        return App.uploadThirdPartyApi(typeAndParam.type, api.title, api.path, typeAndParam.param, header
+          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+      },
+
+
+      parseYApiTypeAndParam: function (api) {
+        if (api == null) {
+          return {}
+        }
+
         var type
         var parameters
-        var isOther = false
         switch (api.req_body_type || '') {
           case 'form':
             type = REQUEST_TYPE_FORM
@@ -1911,7 +2066,6 @@
             parameters = api.req_query
             break
           default:
-            isOther = true
             type = REQUEST_TYPE_JSON
             parameters = api.req_body_other == null ? null : JSON.parse(api.req_body_other)
 
@@ -1926,18 +2080,6 @@
             }
             parameters = newParams
             break
-        }
-
-        var headers = api.req_headers || []
-        var header = ''
-        for (var i = 0; i < headers.length; i ++) {
-          var item = headers[i];
-          var name = item == null ? null : item.name
-          if (name == null) {
-            continue
-          }
-          header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
-            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
         }
 
         var parameters2 = []
@@ -1966,8 +2108,10 @@
           }
         }
 
-        return App.uploadThirdPartyApi(type, api.title, api.path, parameters2, header
-          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+        return {
+          type: type,
+          param: parameters2
+        }
       },
 
       //上传第三方平台的 API 至 APIAuto
@@ -2780,7 +2924,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, '/' + App.getMethod(), true))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -5066,6 +5210,7 @@
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
       this.listHistory()
       this.transfer()
+
     }
   })
 })()
