@@ -807,7 +807,7 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf('//') //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = item.indexOf('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -820,7 +820,20 @@
                 + '\n错误位置: 第 ' + (i + 1) + ' 行'
                 + '\n错误文本: ' + item)
             }
-            header[StringUtil.trim(item2.substring(0, index))] = item2.substring(index + 1, item2.length)
+
+            var val = item2.substring(index + 1, item2.length)
+
+            var ind = val.indexOf('(')  //一定要有函数是为了避免里面是一个简短单词和 APIAuto 代码中变量冲突
+            if (ind > 0 && val.indexOf(')') > ind) {  //不从 0 开始是为了保证是函数，且不是 (1) 这种单纯限制作用域的括号
+              try {
+                val = eval(val)
+              }
+              catch (e) {
+                App.log("getHeader  if (hs != null && hs.length > 0) { ... if (ind > 0 && val.indexOf(')') > ind) { ... try { val = eval(val) } catch (e) = " + e.message)
+              }
+            }
+
+            header[StringUtil.trim(item2.substring(0, index))] = val
           }
         }
 
