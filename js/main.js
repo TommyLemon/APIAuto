@@ -816,7 +816,7 @@
 
             index = item2.indexOf(':')
             if (index <= 0) {
-              throw new Error('请求头 Request Header 输入错误！请按照每行 key:value 的格式输入，不要有多余的换行或空格！'
+              throw new Error('请求头 Request Header 输入错误！请按照每行 key: value 的格式输入，不要有多余的换行或空格！'
                 + '\n错误位置: 第 ' + (i + 1) + ' 行'
                 + '\n错误文本: ' + item)
             }
@@ -1512,7 +1512,7 @@
 
         var config = ''
         var childPath = path == null || path == '' ? key : path + '/' + key
-        var prefix = '\n' + childPath + ' : '
+        var prefix = '\n' + childPath + ': '
 
         if (value instanceof Array) {
           var val
@@ -2024,7 +2024,7 @@
             var val = paraItem.value
 
             if (paraItem.pos == 1) { //header
-              header += (k <= 0 ? '' : '\n') + name + ' : ' + (val == null ? '' : val)
+              header += (k <= 0 ? '' : '\n') + name + ': ' + (val == null ? '' : val)
                 + (StringUtil.isEmpty(paraItem.description, true) ? '' : '  // ' + paraItem.description)
               continue
             }
@@ -2061,7 +2061,7 @@
           if (name == null) {
             continue
           }
-          header += (i <= 0 ? '' : '\n') + name + ' : ' + item.value
+          header += (i <= 0 ? '' : '\n') + name + ': ' + item.value
             + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
         }
 
@@ -4304,27 +4304,33 @@
           }
 
           // path User/id  key id@
-          const index = line.indexOf(' : '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(' : '); // indexOf(' : '); 可能会有 Comment:to
+          const index = line.indexOf(': '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(': '); // indexOf(': '); 可能会有 Comment:to
           const p_k = line.substring(0, index);
           const bi = p_k.indexOf(' ');
           const path = bi < 0 ? p_k : p_k.substring(0, bi); // User/id
 
           const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  //注释\n的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           const lastKeyInPath = pathKeys[pathKeys.length - 1]
           const customizeKey = bi > 0;
           const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || key.trim().length <= 0) {
-            throw new Error('随机测试 第 ' + i + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey : value  // 注释\n的格式！其中 replaceKey 可省略。');
+            throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
+              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           // value RANDOM_DB
-          const value = line.substring(index + ' : '.length);
+          const value = line.substring(index + ': '.length);
 
           var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
             try {
@@ -4339,7 +4345,7 @@
                 else {
                   configVal = val
                 }
-                constConfigLines[which] = p_k + ' : ' + configVal;
+                constConfigLines[which] = p_k + ': ' + configVal;
               }
 
               if (generateName) {
@@ -4373,7 +4379,7 @@
                     current = parent[pathKeys[j]] = {}
                   }
                   if (parent instanceof Object == false) {
-                    throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中' +
+                    throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
                       ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
                   }
                   parent = current;
@@ -4393,7 +4399,7 @@
 
             }
             catch (e) {
-              throw new Error('第 ' + which + ' 行随机配置 key : value 后的 value 不合法！ \nerr: ' + e.message)
+              throw new Error('第 ' + (which + 1) + ' 行随机配置 key: value 后的 value 不合法！ \nerr: ' + e.message)
             }
 
             respCount ++;
@@ -4448,7 +4454,7 @@
               var data = (res || {}).data || {}
               if (data.code != CODE_SUCCESS) {
                 respCount = -reqCount;
-                vOutput.value = '随机测试 为第 ' + which + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
+                vOutput.value = '随机测试 为第 ' + (which + 1) + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
                 alert(StringUtil.get(vOutput.value));
                 return
                 // throw new Error('随机测试 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
@@ -4486,7 +4492,7 @@
 
           //支持 1, "a" 这种原始值
           // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
-          //   throw new Error('随机测试 第 ' + i + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+          //   throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
           // }
 
           var toEval = value;
@@ -4510,7 +4516,7 @@
               if (Number.isSafeInteger(step) != true || step <= 0
                 || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
               ) {
-                throw new Error('随机测试 第 ' + i + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                throw new Error('随机测试 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
                   + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
                   + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
                   + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
