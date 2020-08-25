@@ -3026,7 +3026,7 @@
       getTypeName: function (type) {
         var ts = this.types
         var t = type || REQUEST_TYPE_JSON
-        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0)) {
+        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
           return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
         }
         return t
