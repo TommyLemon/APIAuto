@@ -1,4 +1,21 @@
-# APIAuto (原名 APIJSONAuto)
+<h1 align="center" style="text-align:center;">
+  APIAuto
+</h1>
+ 
+<p align="center">机器学习 HTTP 接口管理及测试工具</p>
+
+<p align="center" >
+  <a href="https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95">使用文档</a>
+  <a href="http://i.youku.com/apijson">视频教程</a>
+  <a href="http://apijson.org/auto">在线体验</a>
+</p>
+
+<p align="center" >
+  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/logo.png" />
+</p>
+
+---
+
 机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最先进的接口管理工具。<br />
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 管理/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
