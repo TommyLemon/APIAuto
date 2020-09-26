@@ -45,6 +45,10 @@
 
 <br />
 
+### 演讲稿件
+
+https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share
+
 ### 视频教程
 
 [http://i.youku.com/apijson](http://i.youku.com/apijson)
