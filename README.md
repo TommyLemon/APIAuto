@@ -47,7 +47,7 @@
 
 ### 演讲稿件
 
-https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share
+[APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share)
 
 ### 视频教程
 
