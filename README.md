@@ -91,19 +91,6 @@
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
 [https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server) 
 
-### 使用登记
-<div style="float:left">
-  <a href="http://www.transsion.com"><img src="http://apijson.org:8000/images/www.transsion.com.jpeg" height="90"></a>
-  <a href="http://shebaochina.com"><img src="http://shebaochina.com/static/cn/img/index/logo.png" height="90"></a>
-  <a href="http://www.xmfish.com"><img src="http://www.xmfish.com/images/chanel/www/f_logo.gif" height="90"></a>
-  <a href="http://www.xxwolo.com"><img src="http://img.qichacha.com/Product/a917fcca-fbb1-44a2-a079-56985ebf8f9c.jpg" height="90"></a>
-  <a href="http://t-think.com"><img src="http://t-think.com/img/logo-1.png" height="90"></a>
-  <a href="http://www.8soo.com"><img src="http://ww1.sinaimg.cn/large/756dd729gw1f9n5ckuq6vj208902it8v.jpg" height="90"></a>
-  <a href="http://hh.com"><img src="https://www.9800.com/img/logo.png?v=19032201" height="90"></a>
-  <a href="http://www.aipaipai-inc.com"><img src="http://www.aipaipai-inc.com/uploadfile/upload/2019042913403029.png" height="90"></a>
-  <a href="https://www.shulian8.com"><img src="https://bookstore-prod.oss-cn-hangzhou.aliyuncs.com/%E5%90%8E%E5%8F%B0%E9%A1%B5%E9%9D%A2_03.png" height="90"></a>
-  <a href="http://www.hec-bang.com"><img src="http://www.hec-bang.com/assets/images/logo-200x50.png" height="90"></a>
-<br />
 
 ### 感谢开源
 * jsonon
