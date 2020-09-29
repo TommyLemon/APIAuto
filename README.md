@@ -44,6 +44,9 @@
 [https://github.com/TommyLemon/APIAuto/blob/master/apijson/README.md](https://github.com/TommyLemon/APIAuto/blob/master/apijson/README.md)
 
 <br />
+<br />
+
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/invitation.png) 
 
 ### 演讲稿件
 
