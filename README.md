@@ -32,10 +32,32 @@
 
 <br />
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_generate_comment_4_request_and_response.jpg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_generate_code_4_request_json.jpg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIJSON_Auto_doc.jpg) 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_test_machine_learning.jpg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.001.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.002.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.003.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.004.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.005.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.006.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.007.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.008.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.009.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.010.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.011.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.012.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.013.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.014.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.015.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.016.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.017.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.018.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.019.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.020.jpeg)
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.021.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.022.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.023.jpeg) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.024.jpeg) 
+
+
 
 <br />
 
