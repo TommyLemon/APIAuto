@@ -68,8 +68,6 @@
 <br />
 <br />
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/invitation.png) 
-
 ### 演讲稿件
 
 [APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share)
