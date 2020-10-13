@@ -11,7 +11,7 @@
 </p>
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/img/logo_with_domain.png" />
+  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/img/logo.png" />
 </p>
 
 ---
