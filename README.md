@@ -11,7 +11,7 @@
 </p>
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/logo.png" />
+  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/img/logo_with_domain.png" />
 </p>
 
 ---
@@ -31,6 +31,10 @@
 * 自动保存历史请求记录，一键恢复
 
 <br />
+
+<h3 align="center" style="text-align:center;">
+腾讯 AI 测试圈子演讲(部分)
+</h3>
 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.001.jpeg) 
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/Share/scenes/scenes.002.jpeg) 
