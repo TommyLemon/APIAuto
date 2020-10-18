@@ -808,7 +808,7 @@
           var item
           for (var i = 0; i < hs.length; i++) {
             item = hs[i]
-            var index = item.indexOf('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -1422,7 +1422,6 @@
               config: vRandom.value
             },
             'TestRecord': {
-              'userId': App.User.id,
               'response': JSON.stringify(currentResponse),
               'standard': isML ? JSON.stringify(stddObj) : null
             },
@@ -1430,7 +1429,6 @@
           } : {
             format: false,
             'Document': {
-              'userId': App.User.id,
               'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
@@ -1440,7 +1438,6 @@
             },
             'TestRecord': {
               'randomId': 0,
-              'userId': App.User.id,
               'host': App.getBaseUrl(),
               'testAccountId': currentAccountId,
               'response': JSON.stringify(currentResponse),
@@ -2439,19 +2436,19 @@
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
-                'testAccountId': this.getCurrentAccountId(),
+		'userId': App.User.id,
+                'testAccountId': App.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,response' + (this.isMLEnabled ? ',standard' : ''),
-                'userId': this.User.id,
-                '@having': this.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
+                '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
+                '@having': App.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
             '@role': 'LOGIN'
           }
 
-          this.onChange(false)
-          this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+          App.onChange(false)
+          App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
             App.onResponse(url, res, err)
 
             var rpObj = res.data
@@ -3557,9 +3554,9 @@
         var page = this.page || 0
 
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
-        this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
+        App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
-          '@database': this.database,
+          '@database': App.database,
           'sql@': {
             'from': 'Access',
             'Access': {
@@ -4293,7 +4290,7 @@
           const lineItem = lines[i] || '';
 
           // remove comment
-          const commentIndex = lineItem.indexOf('//');
+          const commentIndex = lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
           const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
 
           if (line.length <= 0) {
@@ -5007,14 +5004,12 @@
             const req = {
               Random: isNewRandom != true ? null : {
                 toId: random.toId,
-                userId: App.User.id,
                 documentId: random.documentId,
                 name: random.name,
                 count: random.count,
                 config: random.config
               },
               TestRecord: {
-                userId: App.User.id, //TODO 权限问题？ item.userId,
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 host: App.getBaseUrl(),

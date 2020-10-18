@@ -2651,7 +2651,7 @@ var CodeUtil = {
 
         s += nextPadding + '}';
 
-        s += padding + '}' + blockBlank + '//' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}' + blockBlank + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       },
@@ -2682,7 +2682,7 @@ var CodeUtil = {
 
         s += CodeUtil.parseJavaResponse(k, value, depth + 1, isTableKey, isSmart);
 
-        s += padding + '}' + blockBlank + '//' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+        s += padding + '}' + blockBlank + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
         return s;
       }
