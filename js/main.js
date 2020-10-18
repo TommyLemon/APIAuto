@@ -526,7 +526,7 @@
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isRandomShow: true,  //默认展示
+      isRandomShow: true,  // 默认展示
       isRandomListShow: false,
       isRandomSubListShow: false,
       isRandomEditable: false,
@@ -1547,16 +1547,16 @@
 
               prefix = '\n' + (childPath == null || childPath == '' ? '' : childPath + '/') + k + '/'
               if (v.hasOwnProperty('page')) {
-                config += prefix + 'page : ' + 'ORDER_INT(0, 10)'
+                config += prefix + 'page: ' + 'ORDER_INT(0, 10)'
                 delete v.page
               }
               if (v.hasOwnProperty('count')) {
-                config += prefix + 'count : ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
+                config += prefix + 'count: ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
                   + ([0, 1, 5, 10, 20].indexOf(v.count) >= 0 ? ')' : ', ' + v.count + ')')
                 delete v.count
               }
               if (v.hasOwnProperty('query')) {
-                config += prefix + 'query : ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
+                config += prefix + 'query: ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
                 delete v.query
               }
             }
@@ -2598,7 +2598,7 @@
         }
       },
 
-      showLogin(show, isAdmin) {
+      showLogin: function (show, isAdmin) {
         this.isLoginShow = show
         this.isAdminOperation = isAdmin
 
@@ -2612,8 +2612,8 @@
 
         if (user == null || StringUtil.isEmpty(user.phone, true)) {
           user = {
-            phone: 13000082001,
-            password: 123456
+            phone: '13000082001',
+            password: '123456'
           }
         }
 
@@ -3184,7 +3184,7 @@
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
           withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
-          crossDomain: true
+          // crossDomain: true
         })
           .then(function (res) {
             res = res || {}

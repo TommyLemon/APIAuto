@@ -179,7 +179,7 @@
                             <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
                             <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
                         </div>
-                        <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 8px" @click="remove(item, index, true)">
+                        <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
                             <use xlink:href="svg/icon.svg#trash"></use>
                         </svg>
                     </div>
@@ -250,7 +250,7 @@
                                     <!-- 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
                                     <button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button>
                                 </div>
-                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px; top: 12px;" @click="remove(item, index, true, true)">
+                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
                             </li>
@@ -293,7 +293,7 @@
                                     </div>
                                 </div>
 
-                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 8px; top: 14px;" @click="remove(item, index, true, true)">
+                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
                             </li>

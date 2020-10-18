@@ -5525,6 +5525,30 @@ var CodeUtil = {
     return s;
   },
 
+  /**根据数组arr生成用 , 分割的字符串
+   * 直接用 join 会导致里面的 String 没有被 "" 包裹
+   * @param arr
+   * @param path
+   */
+  getArrayString: function(arr, path) {
+    if (arr == null || arr.length <= 0) {
+      return arr;
+    }
+
+    var s = '';
+    var v;
+    var t;
+    for (var i = 0; i < arr.length; i ++) {
+      t = typeof arr[i];
+      if (t == 'object' || t == 'array') {
+        //TODO 不止为什么parseJavaResponse会调用这个函数，先放过  throw new Error('请求JSON中 ' + (path || '""') + ':[] 格式错误！key:[] 的[]中所有元素都不能为对象{}或数组[] ！');
+      }
+      v = (t == 'string' ? '"' + arr[i] + '"': arr[i]) //只支持基本类型
+      s += (i > 0 ? ', ' : '') + v;
+    }
+    return s;
+  },
+
 
   /**获取Table变量名
    * @param key
