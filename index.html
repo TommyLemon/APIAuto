@@ -156,7 +156,7 @@
         </div>
         <div v-show="isTestCaseShow" style="bottom: 4px; padding: 4px 13px 0px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
             <a >搜索</a>
-            <input id="vTestCaseSearch" v-model="testCaseSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" />
+            <input id="vTestCaseSearch" v-model="testCaseSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" />
             <button @click="pageDown('testCase')">上一页</button>
             <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
             <button @click="pageUp('testCase')">下一页</button>
@@ -258,7 +258,7 @@
 
                         <div v-show="isRandomSubListShow" style="bottom: 0px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
                             <a >搜索</a>
-                            <input id="vRandomSubSearch" v-model="randomSubSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'randomSub', true)" />
+                            <input id="vRandomSubSearch" v-model="randomSubSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'randomSub', true)" />
                             <button @click="pageDown('randomSub')">上一页</button>
                             <input id="vRandomSubPage" v-model="randomSubPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'randomSub', true)" />
                             <button @click="pageUp('randomSub')">下一页</button>
@@ -301,7 +301,7 @@
 
                         <div v-show="isRandomListShow" style="bottom: 0px; padding: 4px 13px 4px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
                             <a >搜索</a>
-                            <input id="vRandomSearch" v-model="randomSearch" style="width: 60px;text-align: center" @keyup="doOnKeyUp(event, 'random', true)" />
+                            <input id="vRandomSearch" v-model="randomSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'random', true)" />
                             <button @click="pageDown('random')">上一页</button>
                             <input id="vRandomPage" v-model="randomPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" />
                             <button @click="pageUp('random')">下一页</button>
@@ -464,7 +464,7 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
                 <div class="right-main" id="vMarkdown" v-show="view == 'markdown'"></div>
                 <div v-show="view == 'markdown'" style="bottom: -6px; text-align: right; position: absolute; width: 100%; padding: 4px 20px 0px 4px; background-color: white;">
                     <a >搜索</a>
-                    <input id="vSearch" v-model="search" style="width: 90px; text-align: center" @keyup="doOnKeyUp(event, 'document', true)" />
+                    <input id="vSearch" v-model="search" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'document', true)" />
                     <button @click="pageDown('document')">上一页</button>
                     <input id="vPage"  v-model="page" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" />
                     <button @click="pageUp('document')">下一页</button>

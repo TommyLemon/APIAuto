@@ -3508,7 +3508,7 @@
           + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
           + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
-          + '\nAPIJSON 官方网站: https://github.com/Tencent/APIJSON.org '
+          + '\nAPIJSON 官方网站: https://github.com/APIJSON/APIJSON.org '
           + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
