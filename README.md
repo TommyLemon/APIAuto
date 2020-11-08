@@ -93,7 +93,7 @@
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
-[https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/APIJSON/APIJSON/tree/master/APIJSON-Java-Server) 
+[https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server) 
 
 
 ### 感谢开源
@@ -118,13 +118,13 @@
 
 
 ### 其它项目
-[APIJSON](https://github.com/APIJSON/APIJSON) 🏆码云最有价值开源项目 🚀后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构！
+[APIJSON](https://github.com/Tencent/APIJSON) 🏆码云最有价值开源项目 🚀后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构！
 
 [apijson-doc](https://github.com/vincentCheng/apijson-doc) APIJSON 官方文档，提供排版清晰、搜索方便的文档内容展示，包括设计规范、图文教程等
 
 [APIJSONdocs](https://github.com/ruoranw/APIJSONdocs) APIJSON 英文文档，提供排版清晰的文档内容展示，包括详细介绍、设计规范、使用方式等
 
-[apijson.org](https://github.com/APIJSON/apijson.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
+[apijson.org](https://github.com/Tencent/APIJSON.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
 
