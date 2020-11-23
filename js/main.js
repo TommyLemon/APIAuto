@@ -3509,7 +3509,7 @@
           + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
           + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
-          + '\nAPIJSON 官方网站: https://github.com/APIJSON/APIJSON.org '
+          + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
           + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
           + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
           + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
