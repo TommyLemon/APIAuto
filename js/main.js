@@ -3505,7 +3505,8 @@
         }
 
         s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口工具: https://github.com/TommyLemon/APIAuto '
+          + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
+          + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
           + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
           + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
           + '\nAPIJSON 官方网站: https://github.com/APIJSON/APIJSON.org '
