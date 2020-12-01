@@ -93,7 +93,7 @@
 右侧上方中间 3 个标签是默认的测试用户账号，点击登录/退出，左侧 - 删除，右侧 + 新增。<br />
 <br />
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
-[https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server](https://github.com/Tencent/APIJSON/tree/master/APIJSON-Java-Server) 
+https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 
 ### 感谢开源
