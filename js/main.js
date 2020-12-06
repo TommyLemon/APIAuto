@@ -543,6 +543,7 @@
       isCrossEnabled: false,
       isMLEnabled: false,
       isDelegateEnabled: false,
+      isPreviewEnabled: false,
       isLocalShow: false,
       uploadTotal: 0,
       uploadDoneCount: 0,
@@ -571,9 +572,9 @@
       schema: 'sys',
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
-      // thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
+      thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
       // thirdParty: 'RAP /repository/joined /repository/get',
-      thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
+      // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
       language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
@@ -1034,6 +1035,12 @@
               App.isDelegateEnabled = show
               App.saveCache('', 'isDelegateEnabled', show)
               break
+            case 10:
+              App.isPreviewEnabled = show
+              App.saveCache('', 'isPreviewEnabled', show)
+
+              App.onChange(false)
+              break
           }
         }
         else if (index == 3) {
@@ -1055,6 +1062,11 @@
         else if (index == 9) {
           App.isDelegateEnabled = show
           App.saveCache('', 'isDelegateEnabled', show)
+        }
+        else if (index == 10) {
+          App.isPreviewEnabled = show
+          App.saveCache('', 'isPreviewEnabled', show)
+          // vRequestMarkdown.innerHTML = ''
         }
       },
 
@@ -2970,6 +2982,19 @@
           } catch (e) {
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
+
+          try {
+            // 去掉前面的 JSON
+            var raw = vInput.value || ''
+            var start = raw.lastIndexOf('\n\/*')
+            var end = raw.lastIndexOf('\n*\/')
+            markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
+              // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+              + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+          } catch (e3) {
+            log(e3)
+          }
+
         } catch(e) {
           log(e)
           vSend.disabled = true
@@ -3504,19 +3529,21 @@
             break;
         }
 
-        s += '\n\n#### 开放源码 '
-          + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
-          + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
-          + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
-          + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
-          + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
-          + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
-          + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
-          + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
-          + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
-          + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
-          + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
-          + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
+        if (((App.User || {}).id || 0) > 0) {
+          s += '\n\n#### 开放源码 '
+            + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
+            + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
+            + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+            + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
+            + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
+            + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
+            + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
+            + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
+            + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
+            + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
+            + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
+            + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
+        }
 
         return s;
       },
@@ -3899,6 +3926,7 @@
           //无效
           s = s.replace(/\|/g, '\|');
           s = s.replace(/\n/g, ' <br /> ');
+          // s = s.replace(/ /g, '&ensp;');
         }
 
         return s;
@@ -4350,10 +4378,11 @@
               if (generateName) {
                 var valStr;
                 if (val instanceof Array) {
-                  valStr = '[' + val.length + ']';
+                  valStr = val.length <= 0 ? '[]' : '[..' + val.length + '..]';
                 }
                 else if (val instanceof Object) {
-                  valStr = '{...}';
+                  var kl = Object.keys(val).length
+                  valStr = kl <= 0 ? '{}' : '{..' + kl + '..}';
                 }
                 else if (typeof val == 'boolean') {
                   valStr = '' + val;
@@ -5195,6 +5224,7 @@
         this.locals = this.getCache('', 'locals') || []
 
         this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled') || this.isDelegateEnabled
+        //预览了就不能编辑了，点开看会懵 this.isPreviewEnabled = this.getCache('', 'isPreviewEnabled') || this.isPreviewEnabled
         this.isHeaderShow = this.getCache('', 'isHeaderShow') || this.isHeaderShow
         this.isRandomShow = this.getCache('', 'isRandomShow') || this.isRandomShow
       } catch (e) {

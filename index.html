@@ -106,20 +106,17 @@
                    {{ User.id != null && User.id > 0 ? User.name : '设置' }}
                 </a>
                 <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 10px;width: 300px">
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型Database: {{ database || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式Schema: {{ schema || '点击设置' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析): {{ language || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型 Database: {{ database || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库模式   Schema: {{ schema || '点击设置' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析) : {{ language || '点击设置' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">托管服务器代理: {{ isDelegateEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isPreviewEnabled, 10)">预览请求输入框:  {{ isPreviewEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : types.join() }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)随机测试 Random Test' : '显示(编辑)随机测试 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ isHeaderShow ? '隐藏(固定)请求头 Request Header' : '显示(编辑)请求头 Request Header' }}</a>
-                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址URL: {{ server || '点击设置' }}</a>
+                  <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址 URL: {{ server || '点击设置' }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 8)">导入第三方文档(平台名 URL): <br/>{{ thirdParty || '点击设置' }}</a>
-                  <li v-show="User.id != null && User.id > 0" style="padding: 0px;margin: 0px; border-bottom: #DDD 1px solid;width: 100%; display: inline-block;text-align: center;" >
-                    <img style="padding: 0px;margin: 0px" src="img/wechat_collect.jpg" />
-                    <div style="padding: 0px;margin: 0px">微信扫码，请作者喝咖啡~</div>
-                  </li>
                 </ul>
       </span>
 
@@ -193,9 +190,9 @@
             </ul>
             <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
-                <div style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
-          <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
-          </textarea>
+                <div v-show="! isPreviewEnabled" style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
+                    <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
+                    </textarea>
                     <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
 {
     "User": {
@@ -207,8 +204,9 @@
         }
     }
 }
-          </textarea>
+                    </textarea>
                 </div>
+                <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
                 <div style="width: 100%; height: auto; position: absolute;bottom: 0px; z-index: 100; background: white;" >
 
@@ -317,7 +315,7 @@
                         </div>
 
                         <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
-                                  placeholder="常用：
+                                  placeholder="# 常用：
 RANDOM_IN(val0:Any, val1:Any ...)  // 从选项内随机取值
 RANDOM_INT(min:Integer, max:Integer)  // 从范围内随机取整数
 RANDOM_DB(min:Integer, max:Integer)  // 从数据库随机取值
@@ -327,7 +325,7 @@ ORDER_IN(val0:Any, val1:Any ...)  // 从选项内顺序取值
 ORDER_INT(min:Integer, max:Integer)  // 从范围内顺序取整数
 ORDER_DB(min:Integer, max:Integer)  // 从数据库顺序取值
 其中 RANDOM 开头的是随机函数；ORDER 开头的是顺序函数，可以使用 + - 升降序 和 step 跨步，例如 ORDER_IN-(1, 2, 3) 降序取值，ORDER_INT+3(0, 100) 间隔 step = 3 位来升序取整数。
-模板：
+# 模板：
 format: ORDER_IN(true, false, null, undefined)  // 从选项中顺序取值
 User/id id>: RANDOM_DB()  // 用 id> 替换 User 内的 id，从数据库随机取值
 []/page: Math.round(100*Math.random())  // 通过 JavaScript 代码来自定义 [] 内的 page
@@ -336,7 +334,7 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
 []/count: RANDOM_IN(5, 10, 's', false, [], {})  // 随机取值
 []/page: Math.round(5*Math.random())  // 通过代码来自定义
 @explain: ORDER_IN(true, false)  // 顺序取值
-//  []/Comment/toId: RANDOM_DB()  // 从数据库随机取值
+  // 从数据库随机取值  []/Comment/toId: RANDOM_DB()
 
   // 注释可省略，但如果未省略则前面两个空格必须；清空文本内容可查看规则。</textarea>
                     </div>
@@ -753,6 +751,7 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
 
   vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 
+  var vRequestMarkdown = document.getElementById('vRequestMarkdown');
   var vMarkdown = document.getElementById('vMarkdown');
   var vPage = document.getElementById('vPage');
   var vCount = document.getElementById('vCount');
@@ -786,9 +785,14 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
 
 
 
-  function markdownToHTML(md) {
-    vMarkdown.innerHTML = '';
-    editormd.markdownToHTML("vMarkdown", {
+  function markdownToHTML(md, isRequest) {
+    if (isRequest) {
+      vRequestMarkdown.innerHTML = '';
+    }
+    else {
+      vMarkdown.innerHTML = '';
+    }
+    editormd.markdownToHTML(isRequest ? 'vRequestMarkdown' : "vMarkdown", {
       markdown        : md ,//+ "\r\n" + $("#append-test").text(),
       //htmlDecode      : true,       // 开启 HTML 标签解析，为了安全性，默认不开启
       htmlDecode      : "style,script,iframe",  // you can filter tags decode
