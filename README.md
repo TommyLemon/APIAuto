@@ -16,7 +16,7 @@
 
 ---
 
-机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等，做最强大易用的 HTTP 接口工具。<br />
+ 敏捷开发最强大易用的 HTTP API 文档/测试 工具，机器学习测试、自动生成代码、自动静态检查、自动生成文档与注释等。<br />
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
