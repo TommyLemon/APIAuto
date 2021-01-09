@@ -322,6 +322,7 @@ var JSONResponse = {
   COMPARE_NO_STANDARD: -1,
   COMPARE_EQUAL: 0,
   COMPARE_KEY_MORE: 1,
+  COMPARE_VALUE_MORE: 1,
   COMPARE_LENGTH_CHANGE: 2,
   COMPARE_VALUE_CHANGE: 2,
   COMPARE_KEY_LESS: 3,
@@ -387,15 +388,18 @@ var JSONResponse = {
     // delete target.msg;
     // delete real.msg;
 
-    var result = isMachineLearning == true
-      ? JSONResponse.compareWithStandard(target, real, folder, exceptKeys)
-      : JSONResponse.compareWithBefore(target, real, folder, exceptKeys);
+    var result = null
+    try {
+       result = isMachineLearning == true
+        ? JSONResponse.compareWithStandard(target, real, folder, exceptKeys)
+        : JSONResponse.compareWithBefore(target, real, folder, exceptKeys);
+    } finally {
+      target[codeName] = tCode;
+      real[codeName] = rCode;
 
-    target[codeName] = tCode;
-    real[codeName] = rCode;
-
-    target.throw = tThrw;
-    real.throw = rThrw;
+      target.throw = tThrw;
+      real.throw = rThrw;
+    }
 
     return result;
   },
@@ -717,12 +721,35 @@ var JSONResponse = {
     else { // Boolean, Number, String
       log('compareWithStandard  type == boolean | number | string >> ');
 
-      if (max.code < JSONResponse.COMPARE_VALUE_CHANGE
-        && JSONResponse.isValueCorrect(valueLevel, values, real) != true) {
-        max.code = JSONResponse.COMPARE_VALUE_CHANGE;
-        max.msg = '值超出范围';
+      var valueCompare = max.code >= JSONResponse.COMPARE_VALUE_CHANGE ? 0 : JSONResponse.compareValue(valueLevel, values, real, target.trend);
+      if (valueCompare > 0) {
+        max.code = valueCompare;
         max.path = folder;
         max.value = real;
+        if (valueCompare == JSONResponse.COMPARE_VALUE_MORE) {
+          max.msg = '的值是新增的';
+        }
+        else {
+          var select = (target.trend || {}).select;
+          var max = values == null || values.length <= 0 ? null : values[0];
+          var min = values == null || values.length <= 0 ? null : values[values.length - 1];
+
+          if (select == '>') {
+            max.msg = '值违背必增趋势 > ' + max;
+          }
+          else if (select == '>=') {
+            max.msg = '值违背增长趋势 >= ' + max;
+          }
+          else if (select == '<') {
+            max.msg = '值违背必减趋势 < ' + min;
+          }
+          else if (select == '<=') {
+            max.msg = '值违背缩减趋势 <= ' + min;
+          }
+          else {
+            max.msg = '值超出范围 [' + min + ', ' + max + ']';
+          }
+        }
       }
 
       if (max.code < JSONResponse.COMPARE_LENGTH_CHANGE) {
@@ -745,12 +772,15 @@ var JSONResponse = {
   },
 
 
-  isValueCorrect: function(level, target, real) {
+  isValueCorrect: function(level, target, real, trend) {
+    return JSONResponse.compareValue(level, target, real, trend) <= 0;
+  },
+  compareValue: function(level, target, real, trend) {
     log('isValueCorrect  \nlevel = ' + level + '; \ntarget = ' + JSON.stringify(target)
       + '\nreal = ' + JSON.stringify(real, null, '    '));
-    if (target == null) {
+    if (target == null || real == null) {
       log('isValueCorrect  target == null >>  return true;');
-      return true;
+      return 0;
     }
     if (level == null) {
       level = 0;
@@ -759,25 +789,67 @@ var JSONResponse = {
     if (level == 0) {
       if (target.indexOf(real) < 0) { // 'key{}': [0, 1]
         log('isValueCorrect  target.indexOf(real) < 0 >>  return false;');
-        return false;
+        return JSONResponse.COMPARE_VALUE_CHANGE;
       }
     }
     else if (level == 1) { //real <= max; real >= min
-      if (target[0] != null && target[0] < real) {
-        log('isValueCorrect  target[0] != null && target[0] < real >>  return false;');
-        return false;
+      if (target.length <= 0) {
+        log('isValueCorrect  target.length <= 0  >> return true;');
+        return 0;
       }
-      if (target.length > 1 && target[target.length - 1] != null && target[target.length - 1] > real) {
-        log('isValueCorrect  target.length > 1 && target[target.length - 1] != null && target[target.length - 1] > real >>  return false;');
-        return false;
+
+      var max = target[0]
+      if (target.length == 1) {
+        log('isValueCorrect  target.length == 1  >> return max == real;');
+        return max == real ? 0 : JSONResponse.COMPARE_VALUE_CHANGE;
       }
+      var min = target[target.length - 1]
+      if (max == null || min == null) {
+        log('isValueCorrect  max == null || min == null 这种情况不该出现！！！updateStandard 不应该把 null 值设置进去！  >>  return false;');
+        alertOfDebug('isValueCorrect  max == null || min == null 这种情况不该出现！！！updateStandard 不应该把 null 值设置进去！');
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+
+      //趋势分析，新值落在五个区域之一的次数，"trend":{ "select": ">", "above": 5, "top":4, "center":3, "bottom":2, "below":1 }
+      var select = (trend || {}).select
+      if (select == '>' && max >= real) { // above，例如 自增主键、创建时间 等总是递增
+        log('isValueCorrect  select == > && max >= real  >>  return false;');
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+      else if (select == '>=' && max > real) { // top or above，例如 统计不删改字段的 总数、总金额 等总是不变或增长
+        log('isValueCorrect  select == >= && max > real  >>  return false;');
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+      else if (select == '<' && min <= real) { // below，例如 电池寿命 等总是递减
+        log('isValueCorrect  select == < && min <= real  >>  return false;');
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+      else if (select == '<=' && min < real) { // bottom or below，例如 促销活动倒计时 等总是总是不变或减小
+        log('isValueCorrect  select == <= && min < real  >>  return false;');
+        return JSONResponse.COMPARE_VALUE_CHANGE;
+      }
+      else { // center  select == null || select == '%'
+        log('isValueCorrect  select == null || select == %  >> ');
+        if (max < real) {
+          log('isValueCorrect  max < real  >>  return false;');
+          return JSONResponse.COMPARE_VALUE_CHANGE;
+        }
+        if (min > real) {
+          log('isValueCorrect  min > real  >>  return false;');
+          return JSONResponse.COMPARE_VALUE_CHANGE;
+        }
+
+        return 0;
+      }
+
+      return target.indexOf(real) >= 0 ? 0 : JSONResponse.COMPARE_VALUE_MORE; // 为了提示上传新值，方便以后校验
     }
     else if (level == 2) {
       for (var i = 0; i < target.length; i ++) {
 
         if (eval(real + target[i]) != true) {
           log('isValueCorrect  eval(' + (real + target[i]) + ') != true >>  return false;');
-          return false;
+          return JSONResponse.COMPARE_VALUE_CHANGE;
         }
       }
     }
@@ -786,7 +858,7 @@ var JSONResponse = {
     }
 
     log('isValueCorrect >> return true;');
-    return true;
+    return 0;
   },
 
   getType: function(o) { //typeof [] = 'object'
@@ -983,6 +1055,12 @@ var JSONResponse = {
     if (target == null) {
       target = {};
     }
+
+    // 导致出错，必须设置里面的 leval, values 等字段
+    // if (real == null) {
+    //   return target;
+    // }
+
     var type = target.type;
     log('setValue  type = target.type = ' + type + ' >> ');
 
@@ -1011,7 +1089,84 @@ var JSONResponse = {
         if (origin == null) {
           origin = [];
         }
-        if (real != null && origin.indexOf(real) < 0) {
+        if (real != null && origin.indexOf(real) < 0) { // && real != null) {
+
+          //趋势分析，新值落在五个区域之一的次数，"trend":{ "select": ">", "above": 5, "top":4, "center":3, "bottom":2, "below":1 }
+          if (isLength != true && origin.length > 0) {
+            log('setValue  isLength != true && origin.length > 0  >> ');
+
+            var trend = target.trend || {};
+            var select = trend.select;
+
+            log('setValue  trend.select = ' + select + '  >> ');
+            if (trend.select != '%') {  // 不再统计，可以保证容易调整判断逻辑
+              log('setValue  trend.select != %  >> ');
+
+              var above = trend.above || 0;
+              var top = trend.top || 0;
+              var center = trend.center || 0;
+              var bottom = trend.bottom || 0;
+              var below = trend.below || 0;
+
+              log('setValue  BEFORE  select: ' + select + ', above: ' + above + ', top: ' + top + ', center: ' + center + ', bottom: ' + bottom + ', below: ' + below + ' >>');
+
+              if (real > origin[0]) {
+                trend.above = above = above + 1;
+              }
+              else if (real == origin[0]) {
+                trend.top = top = top + 1;
+              }
+              else if (real == origin[origin.length - 1]) {
+                trend.bottom = bottom = bottom + 1;
+              }
+              else if (real < origin[origin.length - 1]) {
+                trend.below = below = below + 1;
+              }
+              else {
+                trend.center = center = center + 1;
+              }
+
+              // = null 还有在下面判断，否则会把 trend.select 从非 null 值又设置回 null。  var select = null;
+              if (center > 0) {
+                select = '%';  // level: 1 时永远是 % 兜底 above + below <= 0 ? '%' : '~';
+              }
+              else if (bottom + below <= 0) {
+                if (trend.above > 0) {
+                  select = trend.top > 0 ? '>=' : '>';
+                }
+              }
+              else if (top + above <= 0) {
+                if (trend.below > 0) {
+                  select = trend.bottom > 0 ? '<=' : '<';
+                }
+              }
+
+              if (trend.select == null || trend.select == select) {
+                // || (trend.select == '<' && select == '<=')
+                // || (trend.select == '>' && select == '>=')) {
+                log('setValue  trend.select == null || trend.select == select  >>  trend.select = select;');
+                trend.select = select;
+              }
+              else if (trend.select == '<') { // 已简化
+                log('setValue  trend.select == <  >> trend.select = select == <= ? select : %;');
+                trend.select = select == '<=' ? select : '%';
+              }
+              else if (trend.select == '>') { // 已简化
+                log('setValue  trend.select == >  >> trend.select = select == >= ? select : %;');
+                trend.select = select == '>=' ? select : '%';
+              }
+              else {  // 其它情况都未被了 递增或递减 的趋势，只能用 [min, max] 这种包括在内的区间范围
+                log('setValue  else  >> trend.select = %;');
+                trend.select = '%';
+              }
+
+              log('setValue  AFTER  select: ' + trend.select + ', above: ' + trend.above + ', top: ' + trend.top
+                + ', center: ' + trend.center + ', bottom: ' + trend.bottom + ', below: ' + trend.below + ' >>');
+              target.trend = trend;
+            }
+
+          }
+
           origin.push(real);
         }
 
@@ -1063,7 +1218,7 @@ var JSONResponse = {
         case 2: //自定义的复杂条件，一般是准确的，不会纠错
           // target[name] = (StringUtil.isEmpty(origin, true) ? '' : origin + ',')
           //   + ('<=' + vals[0] + (vals.length <= 1 ? '' : ',>=' + vals[vals.length - 1]));
-          break
+          break;
       }
     }
 
