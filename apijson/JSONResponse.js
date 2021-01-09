@@ -668,8 +668,12 @@ var JSONResponse = {
 
       if (max.code < JSONResponse.COMPARE_LENGTH_CHANGE
         && JSONResponse.isValueCorrect(target.lengthLevel, target.lengths, real.length) != true) {
+        var lengths = target.lengths
+        var maxVal = lengths == null || lengths.length <= 0 ? null : lengths[0];
+        var minVal = lengths == null || lengths.length <= 0 ? null : lengths[lengths.length - 1];
+
         max.code = JSONResponse.COMPARE_LENGTH_CHANGE;
-        max.msg = '长度超出范围';
+        max.msg = '长度 ' + real.length + ' 超出范围 [' + minVal + ', ' + maxVal + ']';
         max.path = folder;
         max.value = real.length;
       }
@@ -726,28 +730,32 @@ var JSONResponse = {
         max.code = valueCompare;
         max.path = folder;
         max.value = real;
-        if (valueCompare == JSONResponse.COMPARE_VALUE_MORE) {
-          max.msg = '的值是新增的';
+
+        if (target.valueLevel != 1 || target.type != 'number') {
+          max.msg = '值超出范围';
+        }
+        else if (valueCompare == JSONResponse.COMPARE_VALUE_MORE) {
+          max.msg = '值是新增的';
         }
         else {
           var select = (target.trend || {}).select;
-          var max = values == null || values.length <= 0 ? null : values[0];
-          var min = values == null || values.length <= 0 ? null : values[values.length - 1];
+          var maxVal = values == null || values.length <= 0 ? null : values[0];
+          var minVal = values == null || values.length <= 0 ? null : values[values.length - 1];
 
           if (select == '>') {
-            max.msg = '值违背必增趋势 > ' + max;
+            max.msg = '值违背必增趋势 > ' + maxVal;
           }
           else if (select == '>=') {
-            max.msg = '值违背增长趋势 >= ' + max;
+            max.msg = '值违背增长趋势 >= ' + maxVal;
           }
           else if (select == '<') {
-            max.msg = '值违背必减趋势 < ' + min;
+            max.msg = '值违背必减趋势 < ' + minVal;
           }
           else if (select == '<=') {
-            max.msg = '值违背缩减趋势 <= ' + min;
+            max.msg = '值违背缩减趋势 <= ' + minVal;
           }
           else {
-            max.msg = '值超出范围 [' + min + ', ' + max + ']';
+            max.msg = '值超出范围 [' + minVal + ', ' + maxVal + ']';
           }
         }
       }
@@ -759,8 +767,12 @@ var JSONResponse = {
         log('compareWithStandard  realLength = ' + realLength + ' >> ');
 
         if (realLength != null && JSONResponse.isValueCorrect(target.lengthLevel, target.lengths, realLength) != true) {
+          var lengths = target.lengths
+          var maxVal = lengths == null || lengths.length <= 0 ? null : lengths[0];
+          var minVal = lengths == null || lengths.length <= 0 ? null : lengths[lengths.length - 1];
+
           max.code = JSONResponse.COMPARE_LENGTH_CHANGE;
-          max.msg = '长度超出范围';
+          max.msg = '长度 ' + realLength + ' 超出范围 [' + minVal + ', ' + maxVal + ']';
           max.path = folder;
           max.value = realLength;
         }
@@ -1067,6 +1079,7 @@ var JSONResponse = {
     if (level == null) {
       level = 0;
     }
+
     if (isLength != true || (type == 'array' || type == 'number' || type == 'string')) {
 
       var levelName = isLength != true ? 'valueLevel' : 'lengthLevel';
@@ -1089,10 +1102,10 @@ var JSONResponse = {
         if (origin == null) {
           origin = [];
         }
-        if (real != null && origin.indexOf(real) < 0) { // && real != null) {
 
+        if (real != null) {
           //趋势分析，新值落在五个区域之一的次数，"trend":{ "select": ">", "above": 5, "top":4, "center":3, "bottom":2, "below":1 }
-          if (isLength != true && origin.length > 0) {
+          if (isLength != true && origin.length > 0 && type == 'number') {
             log('setValue  isLength != true && origin.length > 0  >> ');
 
             var trend = target.trend || {};
@@ -1167,7 +1180,9 @@ var JSONResponse = {
 
           }
 
-          origin.push(real);
+          if (origin.indexOf(real) < 0) {
+            origin.push(real);
+          }
         }
 
         vals = origin;
@@ -1178,15 +1193,17 @@ var JSONResponse = {
         }
       }
 
-      vals = vals.sort(function (x, y) { //倒序排列，一般都是用最大长度(数据count，字符串长度等)
-        if (x < y) {
-          return 1;
-        }
-        if (x > y) {
-          return -1;
-        }
-        return 0;
-      })
+      if (vals.length > 1 && type == 'number') {
+        vals = vals.sort(function (x, y) { //倒序排列，一般都是用最大长度(数据count，字符串长度等)
+          if (x < y) {
+            return 1;
+          }
+          if (x > y) {
+            return -1;
+          }
+          return 0;
+        })
+      }
 
       var name = isLength != true ? 'values' : 'lengths';
       log('setValue  name = ' + name + '; vals = ' + JSON.stringify(vals, null, '    ') + ' >> ');
@@ -1198,14 +1215,12 @@ var JSONResponse = {
           var maxCount = JSONResponse.getMaxValueCount(type);
           var extraCount = maxCount <= 0 ? 0 : vals.length - maxCount;
           if (extraCount > 0 && level < 1) {
-            if (typeof real == 'boolean') { //boolean 的 true 和 false 都行，说明不限
-              if (level != 2) { //自定义模型不受影响
-                target[levelName] = 3;
-              }
+            if (typeof real != 'number') { // 只有数字才可能有连续区间模型
+              target[levelName] = 3;
               return target;
             }
 
-            target[levelName] = 1;
+            target[levelName] = 1; // 只有数字才可能有连续区间模型
           }
 
           //从中间删除多余的值
