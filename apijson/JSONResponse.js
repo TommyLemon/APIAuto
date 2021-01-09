@@ -828,7 +828,7 @@ var JSONResponse = {
         log('isValueCorrect  select == <= && min < real  >>  return false;');
         return JSONResponse.COMPARE_VALUE_CHANGE;
       }
-      else { // center  select == null || select == '%'
+      else if (select == null || select == '%') { // center
         log('isValueCorrect  select == null || select == %  >> ');
         if (max < real) {
           log('isValueCorrect  max < real  >>  return false;');
