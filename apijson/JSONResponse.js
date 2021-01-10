@@ -323,6 +323,7 @@ var JSONResponse = {
   COMPARE_EQUAL: 0,
   COMPARE_KEY_MORE: 1,
   COMPARE_VALUE_MORE: 1,
+  COMPARE_EQUAL_EXCEPTION: 1,
   COMPARE_LENGTH_CHANGE: 2,
   COMPARE_VALUE_CHANGE: 2,
   COMPARE_KEY_LESS: 3,
@@ -351,6 +352,7 @@ var JSONResponse = {
     //     path: folder == null ? '' : folder
     //   };
     // }
+
     if (tCode == null) {
       return {
         code: JSONResponse.COMPARE_NO_STANDARD, //未上传对比标准
@@ -358,20 +360,35 @@ var JSONResponse = {
         path: folder == null ? '' : folder
       };
     }
-    if (rCode != tCode) {
-      return {
-        code: JSONResponse.COMPARE_CODE_CHANGE,
-        msg: '状态码 ' + codeName + ' 改变！',
-        path: folder == null ? '' : folder
-      };
-    }
-
 
     var tThrw = target.throw;
     var rThrw = real.throw;
 
-    if (tThrw != rThrw) {
-      return {
+    if (rCode != tCode || rThrw != tThrw) {
+
+      var exceptions = target.exceptions || [];
+      var find = null;
+      for (var i = 0; i < exceptions.length; i++) {
+        var ei = exceptions[i];
+        if (ei != null && ei[codeName] == rCode && ei.throw == rThrw) {
+          find = ei;
+          break;
+        }
+      }
+
+      if (find != null) {
+        return {
+          code: JSONResponse.COMPARE_EQUAL_EXCEPTION,
+          msg: '符合异常分支 ' + codeName + ':' + rCode + (StringUtil.isEmpty(rThrw) ? '' : ', throw:' + rThrw) + ', msg:' + StringUtil.trim(find.msg),
+          path: folder == null ? '' : folder
+        };
+      }
+
+      return rCode != tCode ? {
+        code: JSONResponse.COMPARE_CODE_CHANGE,
+        msg: '状态码 ' + codeName + ' 改变！',
+        path: folder == null ? '' : folder
+      } : {
         code: JSONResponse.COMPARE_THROW_CHANGE,
         msg: '异常 throw 改变！',
         path: folder == null ? '' : folder
@@ -567,7 +584,7 @@ var JSONResponse = {
   },
 
 
-  /**测试compare: 对比 新的请求与上次请求的结果
+  /**测试compare: 对比 新的请求与从历史请求结果提取的校验模型  TODO 新增 exceptions(删除等部分接口只有第一次成功) 和字符串格式 format(DATE, TIME, NUMBER)
    0-相同，无颜色；
    1-新增字段/新增值，绿色；
    2-值改变，蓝色；
@@ -1080,16 +1097,17 @@ var JSONResponse = {
       level = 0;
     }
 
-    if (isLength != true || (type == 'array' || type == 'number' || type == 'string')) {
+    if (type == 'array' || type == 'number' || type == 'string') {
 
       var levelName = isLength != true ? 'valueLevel' : 'lengthLevel';
       target[levelName] = level;
       if (level >= 3) { //无限
         return target;
       }
+
       //String 类型在 长度超过一定值 或 不是 常量名 时，改成 无限模型
       //不用 type 判断类型，这样可以保证 lengthType 不会自动升级
-      if (typeof real == 'string' && (real.length > 20 || StringUtil.isConstName(real) != true)) {
+      if (isLength != true && typeof real == 'string' && (real.length > 20 || StringUtil.isConstName(real) != true)) {
         if (level != 2) { //自定义模型不受影响
           target[levelName] = 3;
         }
@@ -1193,7 +1211,7 @@ var JSONResponse = {
         }
       }
 
-      if (vals.length > 1 && type == 'number') {
+      if (vals.length > 1 && (isLength || type == 'number')) {
         vals = vals.sort(function (x, y) { //倒序排列，一般都是用最大长度(数据count，字符串长度等)
           if (x < y) {
             return 1;
@@ -1212,7 +1230,7 @@ var JSONResponse = {
         case 0:
         case 1:
           //当 离散区间模型 可取值超过最大数量时自动转为 连续区间模型
-          var maxCount = JSONResponse.getMaxValueCount(type);
+          var maxCount = isLength ? 3 : JSONResponse.getMaxValueCount(type);
           var extraCount = maxCount <= 0 ? 0 : vals.length - maxCount;
           if (extraCount > 0 && level < 1) {
             if (typeof real != 'number') { // 只有数字才可能有连续区间模型

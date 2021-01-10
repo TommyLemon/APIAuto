@@ -4752,19 +4752,19 @@
             break;
           case JSONResponse.COMPARE_KEY_MORE:
             it.compareColor = 'green'
-            it.compareMessage = '新增字段/新增值'
+            it.compareMessage = '新增字段/新增值 等'
             break;
           case JSONResponse.COMPARE_VALUE_CHANGE:
             it.compareColor = 'blue'
-            it.compareMessage = '值改变'
+            it.compareMessage = '值改变 等'
             break;
           case JSONResponse.COMPARE_KEY_LESS:
             it.compareColor = 'orange'
-            it.compareMessage = '缺少字段/整数变小数'
+            it.compareMessage = '缺少字段/整数变小数 等'
             break;
           case JSONResponse.COMPARE_TYPE_CHANGE:
             it.compareColor = 'red'
-            it.compareMessage = '状态码/异常/值类型 改变'
+            it.compareMessage = '状态码/异常/值类型 改变等'
             break;
           default:
             it.compareColor = 'white'
@@ -5013,18 +5013,60 @@
             // }
 
 
-            var standard = StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard);
+            var standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {};
+
             var code = currentResponse.code;
             var thrw = currentResponse.throw;
+            var msg = currentResponse.msg;
+
+            var hasCode = standard.code != null;
+            var isCodeChange = standard.code != code;
+            var exceptions = standard.exceptions || [];
+
             delete currentResponse.code; //code必须一致
             delete currentResponse.throw; //throw必须一致
 
-            var isML = this.isMLEnabled;
-            var stddObj = isML ? JSONResponse.updateStandard(standard || {}, currentResponse) : {};
-            stddObj.code = code;
+            var find = false;
+            if (isCodeChange && hasCode) {  // 走异常分支
+              for (var i = 0; i < exceptions.length; i++) {
+                var ei = exceptions[i];
+                if (ei != null && ei.code == code && ei.throw == thrw) {
+                  find = true;
+                  ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
+                  break;
+                }
+              }
+
+              if (find) {
+                delete currentResponse.msg;
+              }
+            }
+
+            var isML = this.isMLEnabled;  // 异常分支不合并内容，只记录 code, throw, msg 等关键信息
+            var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
+
             currentResponse.code = code;
-            stddObj.throw = thrw;
             currentResponse.throw = thrw;
+
+            if (isCodeChange) {
+              if (hasCode != true) {  // 走正常分支
+                stddObj.code = code;
+                stddObj.throw = thrw;
+              }
+              else {  // 走异常分支
+                currentResponse.msg = msg;
+
+                if (find != true) {
+                  exceptions.push({
+                    code: code,
+                    'throw': thrw,
+                    msg: msg
+                  })
+
+                  stddObj.exceptions = exceptions;
+                }
+              }
+            }
 
             const isNewRandom = isRandom && random.id <= 0
 
