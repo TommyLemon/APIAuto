@@ -3540,7 +3540,6 @@
             + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
             + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
             + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
-            + '\nAPIJSON - Go 版: https://github.com/crazytaxi824/APIJSON '
             + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
             + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
         }
@@ -3561,7 +3560,7 @@
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/Tencent/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">简介</h3>'
           + '<p align="center">本站为 APIAuto-自动化接口管理平台'
-          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等服务'
+          + '<br>提供 接口和文档托管、机器学习自动化测试、自动生成文档和代码 等支持'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
           + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon<br><br></p>'
@@ -5066,6 +5065,9 @@
                   stddObj.exceptions = exceptions;
                 }
               }
+            }
+            else {
+              stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
             }
 
             const isNewRandom = isRandom && random.id <= 0

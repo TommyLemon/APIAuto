@@ -364,9 +364,9 @@ var JSONResponse = {
     var tThrw = target.throw;
     var rThrw = real.throw;
 
+    var exceptions = target.exceptions || [];
     if (rCode != tCode || rThrw != tThrw) {
 
-      var exceptions = target.exceptions || [];
       var find = null;
       for (var i = 0; i < exceptions.length; i++) {
         var ei = exceptions[i];
@@ -416,6 +416,14 @@ var JSONResponse = {
 
       target.throw = tThrw;
       real.throw = rThrw;
+    }
+
+    if (exceptions.length > 0 && (target.repeat || 0) <= 0 && (result || {}).code < JSONResponse.COMPARE_VALUE_CHANGE) {
+      return {
+        code: JSONResponse.COMPARE_VALUE_CHANGE,
+        msg: '状态码' + codeName + ' 违背首次成功、后续失败的趋势',
+        path: folder == null ? '' : folder
+      }
     }
 
     return result;
