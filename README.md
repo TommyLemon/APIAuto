@@ -79,6 +79,13 @@
 自动生成文档、自动管理测试用例 这两个功能 需要部署APIJSON后端，见 <br /> 
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
+### 常见问题
+#### 1.无法访问接口
+https://github.com/TommyLemon/APIAuto/issues/9
+
+#### 2.没有生成文档
+https://github.com/Tencent/APIJSON/issues/85
+
 
 ### 感谢开源
 * jsonon
