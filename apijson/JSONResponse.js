@@ -1105,7 +1105,7 @@ var JSONResponse = {
       level = 0;
     }
 
-    if (type == 'array' || type == 'number' || type == 'string') {
+    // 似乎无论怎样都要把 real 加进 values  if (isLength || (type != 'object' || type != 'array')) {
 
       var levelName = isLength != true ? 'valueLevel' : 'lengthLevel';
       target[levelName] = level;
@@ -1237,16 +1237,20 @@ var JSONResponse = {
       switch (level) {
         case 0:
         case 1:
+          var realIsNum = typeof real == 'number'
           //当 离散区间模型 可取值超过最大数量时自动转为 连续区间模型
           var maxCount = isLength ? 3 : JSONResponse.getMaxValueCount(type);
           var extraCount = maxCount <= 0 ? 0 : vals.length - maxCount;
           if (extraCount > 0 && level < 1) {
-            if (typeof real != 'number') { // 只有数字才可能有连续区间模型
+            if (realIsNum != true) {  // 只有数字才可能有连续区间模型
               target[levelName] = 3;
               return target;
             }
 
-            target[levelName] = 1; // 只有数字才可能有连续区间模型
+            target[levelName] = 1;  // 只有数字才可能有连续区间模型
+          }
+          else if (level < 1 && realIsNum && (real < -10 || real > 10000 || Number.isSafeInteger(real) != true)) {
+            target[levelName] = 1;  // 超出了正常的枚举值范围
           }
 
           //从中间删除多余的值
@@ -1261,7 +1265,7 @@ var JSONResponse = {
           //   + ('<=' + vals[0] + (vals.length <= 1 ? '' : ',>=' + vals[vals.length - 1]));
           break;
       }
-    }
+    // }
 
     return target;
   },
