@@ -2692,6 +2692,10 @@
               var item = App.accounts[App.currentAccountIndex]
               item.isLoggedIn = false
               App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
+
+              if (user.id > 0) {
+                App.showTestCase(true, false)
+              }
             }
 
           })
@@ -5317,6 +5321,11 @@
       this.listHistory()
       this.transfer()
 
+      if (this.User != null && this.User.id != null && this.User.id > 0) {
+        setTimeout(function () {
+          App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
+        }, 1000)
+      }
     }
   })
 })()
