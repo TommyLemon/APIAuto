@@ -7,7 +7,7 @@
 <p align="center" >
   <a href="https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95">使用文档</a>
   <a href="http://i.youku.com/apijson">视频教程</a>
-  <a href="http://apijson.org/auto">在线体验</a>
+  <a href="http://apijson.cn/api">在线体验</a>
 </p>
 
 <p align="center" >
