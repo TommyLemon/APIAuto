@@ -92,14 +92,14 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, null, method, false, database, language, isReq, names, isRestful);
+        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful);
       }
       else {
         if (line.endsWith('}')) {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            comment = CodeUtil.getComment4Request(tableList, names[depth], key, null, method, false, database, language, isReq, names, isRestful);
+            comment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful);
           }
           else {
             depth --;
@@ -110,8 +110,22 @@ var CodeUtil = {
           continue;
         }
         else { //其它，直接在后面加上注释
-          var isArray = line.endsWith('['); // []  不影响
-          value = isArray ? [] : line.substring(index + 2).trim()
+          if (line.endsWith('[')) { // []  不影响
+            value = []
+          }
+          else {
+            value = line.substring(index + 2).trim()
+              value = value.substring(1, value.lastIndexOf('"'))
+            }
+            else {
+              try {
+                value = JSON.parse(value)
+              }
+              catch (e) {
+                console.log(e)
+              }
+            }
+          }
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
           comment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful);
         }
@@ -5707,8 +5721,6 @@ var CodeUtil = {
       pathKeys.push(key);
 
       try {
-        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value == null ? {} : value);
-        return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : CodeUtil.getComment(c, false, '  ');
       }
       catch (e) {
         return e.message;
@@ -5799,7 +5811,6 @@ var CodeUtil = {
           }
 
           var s = '';
-          var items = value.length < 3 ? null : StringUtil.split(value.substring(1, value.length - 1));
           if (items != null && items.length > 0) {
 
             var chars = Object.keys(CodeUtil.JOIN_TYPES);
@@ -5808,14 +5819,12 @@ var CodeUtil = {
               var item = items[i] || '';
 
               if (item.endsWith('@') != true) {
-                return ' ! ' + item + ' 不合法 ! 必须以 @ 结尾，例如 &/User/id@ ！';
               }
 
               var index = item.indexOf('/');
               var lastIndex = item.lastIndexOf('/');
 
               if (index < 0 || lastIndex <= index + 1) {
-                return ' ! ' + item + ' 不合法 ! 必须有两个不相邻的 /，例如 &/User/id@ ！';
               }
 
               var c = index <= 0 ? '|' : item.substring(0, index);
@@ -5841,7 +5850,6 @@ var CodeUtil = {
                 if (CodeUtil.getType4Request(value) != 'string') {
                   return ' ! value必须是String类型！';
                 }
-                return CodeUtil.SUBQUERY_RANGES.indexOf(value.substring(1, value.length - 1)) < 0 ? ' ! value必须是[' + CodeUtil.SUBQUERY_RANGES.join() + ']中的一种！' : CodeUtil.getComment('比较范围：ANY-任意 ALL-全部', false, '  ');
               case 'from':
                 return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('数据来源：例如 User，同一层级必须有对应的 "User": {...}', false, '  ');
             }
@@ -5859,7 +5867,6 @@ var CodeUtil = {
         case '@column':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段：例如 id,name;json_length(contactIdList):contactCount;...', false, '  ');
         case '@from@': //value 类型为 Object 时 到不了这里，已在上方处理
-          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String或Object类型！' : CodeUtil.getComment('数据来源：引用赋值 子查询 "' + value.substring(1, value.length - 1) + '@":{...} ', false, '  ');
         case '@group':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式：例如 userId,momentId,...', false, '  ');
         case '@having':
@@ -5875,14 +5882,8 @@ var CodeUtil = {
         case '@json':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('转为JSON：例如 request,response', false, '  ');
         case '@database':
-          try {
-            value = value.substring(1, value.length - 1);
-          } catch (e) {}
           return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL SQLSERVER ORACLE ...', false, '  ');
         case '@role':
-          try {
-            value = value.substring(1, value.length - 1);
-          } catch (e) {}
           var role = CodeUtil.ROLES[value];
           return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('来访角色：' + role, false, '  ');
         case '@cache':
@@ -5894,7 +5895,6 @@ var CodeUtil = {
       if (key.startsWith('@')) {
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database, language);
       return StringUtil.isEmpty(c) ? ' ! 字段不存在！' : CodeUtil.getComment(c, false, '  ');
     }
 
@@ -5916,14 +5916,8 @@ var CodeUtil = {
         case '@schema':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间：例如 sys apijson ...', false, '  ');
         case '@database':
-          try {
-            value = value.substring(1, value.length - 1);
-          } catch (e) {}
           return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 MYSQL POSTGRESQL SQLSERVER ORACLE ...', false, '  ');
         case '@role':
-          try {
-            value = value.substring(1, value.length - 1);
-          } catch (e) {}
           var role = CodeUtil.ROLES[value];
           return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('默认角色：' + role, false, '  ');
         case '@cache':
@@ -6047,7 +6041,6 @@ var CodeUtil = {
         //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
-          return '远程函数';
         }
 
 
@@ -6057,16 +6050,13 @@ var CodeUtil = {
           // var refLastPath =
           // at = '引用赋值: ' + tableName + '.' + columnName + '=' + ;
 
-          at = '引用赋值';
           columnName = columnName.substring(0, columnName.length - 1);
         }
 
         if (columnName.endsWith("$")) {//搜索，查询时处理
-          fun = '模糊搜索';
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith("~")) {//匹配正则表达式，查询时处理
-          fun = '正则匹配';
           key = columnName.substring(0, columnName.length - 1);
           if (key.endsWith("*")) {
             key = key.substring(0, key.length - 1);
@@ -6074,7 +6064,6 @@ var CodeUtil = {
           }
         }
         else if (columnName.endsWith("%")) {//连续范围 BETWEEN AND，查询时处理
-          fun = '连续范围';
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理
@@ -6189,15 +6178,12 @@ var CodeUtil = {
         return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getType4Language(language, column.column_type, true) + ', ' + (o || {}).column_comment;
       }
 
-      break;
     }
 
     return '';
   },
 
   getType4Request: function (value) {
-    var t = typeof value;
-    return t != 'string' ? t : typeof JSON.parse(value);
   }
 
 }
