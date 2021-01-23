@@ -568,8 +568,8 @@
       type: REQUEST_TYPE_JSON,
       types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
       host: '',
-      database: 'MYSQL',// 'POSTGRESQL',
-      schema: 'sys',
+      database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
+      schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
       server: 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
@@ -2656,8 +2656,8 @@
           remember: vRemember.checked,
           format: false,
           defaults: {
-            '@database': App.database,
-            '@schema': App.schema
+            '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
+            '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema
           }
         }
 
@@ -3589,7 +3589,8 @@
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
-          '@database': App.database,
+          '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
+          // '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema,
           'sql@': {
             'from': 'Access',
             'Access': {

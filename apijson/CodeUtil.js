@@ -1232,6 +1232,9 @@ var CodeUtil = {
           if (key == '@role') {
             return '\n' + parentKey + '.setRole(' + valStr + ');';
           }
+          if (key == '@explain') {
+            return '\n' + parentKey + '.setExplain(' + valStr + ');';
+          }
         }
 
         return '\n' + prefix + parentKey + '.put("' + key + '", ' + valStr + ');';
