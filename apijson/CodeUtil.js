@@ -1093,7 +1093,11 @@ var CodeUtil = {
         var combine = isTable ? value['@combine'] : null;
         var schema = isTable ? value['@schema'] : null;
         var database = isTable ? value['@database'] : null;
+        var raw = isTable ? value['@raw'] : null;
         var role = isTable ? value['@role'] : null;
+        var explain = isTable ? value['@explain'] : null;
+        var json = isTable ? value['@json'] : null;
+        var cache = isTable ? value['@cache'] : null;
 
         if (isTable) {
           delete value['@column'];
@@ -1103,7 +1107,11 @@ var CodeUtil = {
           delete value['@combine'];
           delete value['@schema'];
           delete value['@database'];
+          delete value['@raw'];
           delete value['@role'];
+          delete value['@explain'];
+          delete value['@json'];
+          delete value['@cache'];
         }
 
         s += CodeUtil.parseJavaRequest(key, value, depth + 1, isSmart);
@@ -1117,7 +1125,11 @@ var CodeUtil = {
           s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, combine) + ');';
           s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, schema) + ');';
           s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, database) + ');';
+          s = raw == null ? s : s + '\n' + nextPrefix + name + '.setRaw(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, raw) + ');';
           s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, role) + ');';
+          s = explain == null ? s : s + '\n' + nextPrefix + name + '.setExplain(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, explain) + ');';
+          s = json == null ? s : s + '\n' + nextPrefix + name + '.setJson(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, json) + ');';
+          s = cache == null ? s : s + '\n' + nextPrefix + name + '.setCache(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, cache) + ');';
         }
 
         s += '\n\n' + nextPrefix + parentKey + '.put("' + key + '", ' + name + ');';
@@ -5752,10 +5764,15 @@ var CodeUtil = {
       var aliaIndex = key.indexOf(':');
       var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
-      if (isRestful == true || JSONObject.isTableKey(objName)) {
+      var isTableKey = JSONObject.isTableKey(objName)
+      if (isRestful == true || isTableKey) {
         var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language);
         return StringUtil.isEmpty(c) ? ' ! 表不存在！' : CodeUtil.getComment(
           (aliaIndex < 0 ? '' : '新建别名: ' + key.substring(aliaIndex + 1, key.length) + ' < ' + objName + ': ') + c, false, '  ');
+      }
+
+      if (isRestful != true && isTableKey != true && StringUtil.isEmpty(objName) != true) {
+        return CodeUtil.getComment('普通对象。如果要对应数据库表请把 ' + objName + ' 改成 ' + StringUtil.firstCase(objName, true) + ' 这种以大写字母开头的 APIJSON 表名！数据库表不一样要这样，MySQL 默认大小写不敏感。', false, '  ');
       }
 
       return '';
@@ -5850,6 +5867,10 @@ var CodeUtil = {
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('条件组合：例如 name?,|tag?,&id{},!id,...', false, '  ');
         case '@schema':
           return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间：例如 sys apijson ...', false, '  ');
+        case '@raw':
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('原始SQL：例如 @column,@having', false, '  ');
+        case '@json':
+          return CodeUtil.getType4Request(value) != 'string' ? ' ! value必须是String类型！' : CodeUtil.getComment('转为JSON：例如 request,response', false, '  ');
         case '@database':
           try {
             value = value.substring(1, value.length - 1);
