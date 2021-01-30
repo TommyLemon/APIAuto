@@ -354,6 +354,30 @@ var JSONResponse = {
     // }
 
     if (tCode == null) {
+      if (typeof rCode == 'number' && rCode%10 != 0) {
+        return {
+          code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
+          msg: '没有校验标准，且状态码不是 0, 200 等以 0 结尾的数',
+          path: folder == null ? '' : folder
+        };
+      }
+
+      if (real != null && real.throw != null) {
+        return {
+          code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
+          msg: '没有校验标准，且 throw 不是 null',
+          path: folder == null ? '' : folder
+        };
+      }
+
+      if (real == null || real.data == null) {
+        return {
+          code: JSONResponse.COMPARE_KEY_LESS, //未上传对比标准
+          msg: '没有校验标准，且缺少非 null 值的 data 字段',
+          path: folder == null ? '' : folder
+        };
+      }
+
       return {
         code: JSONResponse.COMPARE_NO_STANDARD, //未上传对比标准
         msg: '没有校验标准！',
