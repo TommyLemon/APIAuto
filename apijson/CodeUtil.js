@@ -5754,6 +5754,9 @@ var CodeUtil = {
       return '';
     }
     else if (value instanceof Object) {
+      if (isRestful != true && StringUtil.isEmpty(key, true)) {
+        return ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@explain,@cache 等全局关键词键值对', false, '  ');
+      }
 
       if (isRestful != true && key.endsWith('@')) {
         if (key == '@from@') {
@@ -5927,7 +5930,7 @@ var CodeUtil = {
           // if (method == 'GET' || method == 'HEAD') {
           //   return '';
           // }
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('请求标识' + (method == 'GET' || method == 'HEAD' ? '，GET, HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : (isValueNotEmpty ? '' : '，例如 "User" "Comment[]" "Privacy-CIRCLE" 等')), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('请求标识' + (method == 'GET' || method == 'HEAD' ? '，GET,HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : (isValueNotEmpty ? '' : '，例如 "User" "Comment[]" "Privacy-CIRCLE" 等')), false, '  ');
         case 'version':
           if (method == 'GET' || method == 'HEAD') {
             return '';
