@@ -19,7 +19,7 @@
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
-腾讯内部用户包括 互娱、技术工程、云与智慧 等事业部，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
+腾讯内部用户包括 互娱、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
 ### 特点功能
 
