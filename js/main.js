@@ -2452,7 +2452,7 @@
                 'testAccountId': App.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,response' + (App.isMLEnabled ? ',standard' : ''),
+                '@column': 'id,userId,documentId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
                 '@having': App.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
@@ -4724,16 +4724,21 @@
         var r = isRandom ? it.Random : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
+        var bdt = tr.duration || 0
+        it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? bdt/1000 + 's' : (bdt <= 1000*60*60 ? bdt/1000/60/60 + 'm' : '>1h')))
         try {
           var durationInfo = response['time:start|duration|end']
           it.durationInfo = durationInfo
           it.duration = durationInfo.substring(durationInfo.indexOf('\|') + 1, durationInfo.lastIndexOf('\|') || durationInfo.length) || 0
           var dt = + it.duration
+          it.duration = dt
           it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? dt/1000 + 's' : (dt <= 1000*60*60 ? dt/1000/60/60 + 'm' : '>1h')))
-          var min = 20
-          var max = 50
+          var min = tr.minDuration || 20
+          var max = tr.maxDuration || 200
           it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
-          it.durationHint = dt < min ? '很快：比以往最快还更快' : (dt > 2*max ? '非常慢：比以往最慢的两倍还更慢' : (dt > max + min ? '比较慢：比以往最快最慢之和(平均值两倍)还更慢' : (dt > max ? '有点慢：比以往最慢还更慢' : '正常：在以往最快和最慢之间')))
+          it.durationHint = dt < min ? '很快：比以往 [' + min + 'ms, ' + max + 'ms] 最快还更快' : (dt > 2*max ? '非常慢：比以往 [' + min + 'ms, ' + max + 'ms] 最慢的两倍还更慢'
+            : (dt > max + min ? '比较慢：比以往 [' + min + 'ms, ' + max + 'ms] 最快与最慢之和(平均值两倍)还更慢'
+              : (dt > max ? '有点慢：比以往 [' + min + 'ms, ' + max + 'ms] 最慢还更慢' : '正常：在以往 [' + min + 'ms, ' + max + 'ms] 最快和最慢之间')))
         }
         catch (e) {
           log(e)
@@ -4752,6 +4757,7 @@
           var standardKey = App.isMLEnabled != true ? 'response' : 'standard'
           var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey])
           tr.compare = JSONResponse.compareResponse(standard, App.removeDebugInfo(response) || {}, '', App.isMLEnabled) || {}
+          tr.compare.duration = it.durationHint
         }
 
         App.onTestResponse(allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest);
@@ -4958,7 +4964,7 @@
        * @param index
        * @param item
        */
-      handleTest: function (right, index, item, isRandom) {
+      handleTest: function (right, index, item, isRandom, isDuration) {
         item = item || {}
         var random = item.Random = item.Random || {}
         var document;
@@ -4998,6 +5004,11 @@
           var url
 
           if (isBefore) { //撤回原来错误提交的校验标准
+            if (isDuration) {
+              alert('撤回上次的耗时需要删除上次的对比标准，请点左边 [错的，撤回] 按钮')
+              return
+            }
+
             url = this.server + '/delete'
             const req = {
               TestRecord: {
@@ -5024,6 +5035,9 @@
               item.hintMessage = '没有校验标准！'
               item.TestRecord = null
 
+              item.durationColor = 'black'
+              item.durationHint = '正常：在以往最快和最慢之间'
+
               App.updateTestRecord(0, list, index, item, currentResponse, isRandom, App.currentAccountIndex, true)
             })
           }
@@ -5034,64 +5048,98 @@
             //   App.showExport(true, false, true)
             //   return
             // }
-
-
-            var standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {};
-
-            var code = currentResponse.code;
-            var thrw = currentResponse.throw;
-            var msg = currentResponse.msg;
-
-            var hasCode = standard.code != null;
-            var isCodeChange = standard.code != code;
-            var exceptions = standard.exceptions || [];
-
-            delete currentResponse.code; //code必须一致
-            delete currentResponse.throw; //throw必须一致
-
-            var find = false;
-            if (isCodeChange && hasCode) {  // 走异常分支
-              for (var i = 0; i < exceptions.length; i++) {
-                var ei = exceptions[i];
-                if (ei != null && ei.code == code && ei.throw == thrw) {
-                  find = true;
-                  ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
-                  break;
-                }
-              }
-
-              if (find) {
-                delete currentResponse.msg;
-              }
-            }
-
             var isML = this.isMLEnabled;  // 异常分支不合并内容，只记录 code, throw, msg 等关键信息
-            var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
 
-            currentResponse.code = code;
-            currentResponse.throw = thrw;
+            var standard
+            var stddObj
 
-            if (isCodeChange) {
-              if (hasCode != true) {  // 走正常分支
-                stddObj.code = code;
-                stddObj.throw = thrw;
+            var minDuration = testRecord.minDuration
+            var maxDuration = testRecord.maxDuration
+            if (isRandom != true && isDuration) {
+              if (item.duration == null) {  // 没有获取到
+                alert('最外层缺少字段 "time:start|duration|end": "1613039123780|10|1613039123790"，无法对比耗时！')
+                return
               }
-              else {  // 走异常分支
-                currentResponse.msg = msg;
-
-                if (find != true) {
-                  exceptions.push({
-                    code: code,
-                    'throw': thrw,
-                    msg: msg
-                  })
-
-                  stddObj.exceptions = exceptions;
-                }
+              else if (maxDuration == null && minDuration == null) {
+                maxDuration = item.duration
+                minDuration = Math.round(maxDuration*0.8)
+              }
+              else if (maxDuration == null && minDuration != null) {
+                maxDuration = Math.max(minDuration, item.duration)
+                testRecord.minDuration = Math.min(minDuration, item.duration)
+              }
+              else if (minDuration == null && maxDuration != null) {
+                minDuration = Math.min(maxDuration, item.duration)
+                testRecord.maxDuration = Math.max(maxDuration, item.duration)
+              }
+              else if (maxDuration > 0 && maxDuration < item.duration) {
+                maxDuration = item.duration
+              }
+              else if (minDuration > 0 && minDuration > item.duration) {
+                minDuration = item.duration
+              }
+              else {  // 已经在正常范围中，不需要纠错
+                alert('耗时已经在正常范围中，不需要纠错！')
+                return
               }
             }
             else {
-              stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
+              standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {};
+
+              var code = currentResponse.code;
+              var thrw = currentResponse.throw;
+              var msg = currentResponse.msg;
+
+              var hasCode = standard.code != null;
+              var isCodeChange = standard.code != code;
+              var exceptions = standard.exceptions || [];
+
+              delete currentResponse.code; //code必须一致
+              delete currentResponse.throw; //throw必须一致
+
+              var find = false;
+              if (isCodeChange && hasCode) {  // 走异常分支
+                for (var i = 0; i < exceptions.length; i++) {
+                  var ei = exceptions[i];
+                  if (ei != null && ei.code == code && ei.throw == thrw) {
+                    find = true;
+                    ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
+                    break;
+                  }
+                }
+
+                if (find) {
+                  delete currentResponse.msg;
+                }
+              }
+
+              stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
+
+              currentResponse.code = code;
+              currentResponse.throw = thrw;
+
+              if (isCodeChange) {
+                if (hasCode != true) {  // 走正常分支
+                  stddObj.code = code;
+                  stddObj.throw = thrw;
+                }
+                else {  // 走异常分支
+                  currentResponse.msg = msg;
+
+                  if (find != true) {
+                    exceptions.push({
+                      code: code,
+                      'throw': thrw,
+                      msg: msg
+                    })
+
+                    stddObj.exceptions = exceptions;
+                  }
+                }
+              }
+              else {
+                stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
+              }
             }
 
             const isNewRandom = isRandom && random.id <= 0
@@ -5107,7 +5155,14 @@
                 count: random.count,
                 config: random.config
               },
-              TestRecord: {
+              TestRecord: isDuration ? Object.assign(testRecord, {
+                id: undefined,
+                host: App.getBaseUrl(),
+                duration: item.duration,
+                minDuration: minDuration,
+                maxDuration: maxDuration,
+                compare: JSON.stringify(testRecord.compare || {}),
+              }) : {
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 host: App.getBaseUrl(),
@@ -5150,6 +5205,9 @@
                 }
                 testRecord.response = JSON.stringify(currentResponse)
                 // testRecord.standard = stdd
+
+                item.durationColor = 'black'
+                item.durationHint = '正常：在以往最快和最慢之间'
 
                 if (isRandom) {
                   var r = req == null ? null : req.Random
@@ -5197,7 +5255,7 @@
             testAccountId: App.getCurrentAccountId(),
             'host': App.getBaseUrl(),
             '@order': 'date-',
-            '@column': 'id,userId,documentId,randomId,response' + (App.isMLEnabled ? ',standard' : ''),
+            '@column': 'id,userId,documentId,randomId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
             '@having': App.isMLEnabled ? 'length(standard)>2' : null  // '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
