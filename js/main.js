@@ -3568,7 +3568,7 @@
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
           + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon'
-          // + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
+          + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
           + '</p><br><br>'
         );
 
@@ -4724,6 +4724,22 @@
         var r = isRandom ? it.Random : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
+        try {
+          var durationInfo = response['time:start|duration|end']
+          it.durationInfo = durationInfo
+          it.duration = durationInfo.substring(durationInfo.indexOf('\|') + 1, durationInfo.lastIndexOf('\|') || durationInfo.length) || 0
+          var dt = + it.duration
+          it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? dt/1000 + 's' : (dt <= 1000*60*60 ? dt/1000/60/60 + 'm' : '>1h')))
+          var min = 20
+          var max = 50
+          it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
+          it.durationHint = dt < min ? '很快：比以往最快还更快' : (dt > 2*max ? '非常慢：比以往最慢的两倍还更慢' : (dt > max + min ? '比较慢：比以往最快最慢之和还更慢' : (dt > max ? '有点慢：比以往最慢还更慢' : '正常：在以往最快和最慢之间')))
+        }
+        catch (e) {
+          log(e)
+          it.durationShowStr = it.durationShowStr || it.duration
+        }
+
         if (err != null) {
           tr.compare = {
             code: JSONResponse.COMPARE_ERROR, //请求出错
@@ -5214,11 +5230,11 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
-      setTestHint(index, item, isRandom) {
+      setTestHint(index, item, isRandom, isDuration) {
         item = item || {};
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
-        var h = item.hintMessage;
-        this.$refs[isRandom ? (toId <= 0 ? 'testRandomResultButtons' : 'testRandomSubResultButtons') : 'testResultButtons'][index].setAttribute('data-hint', h || '');
+        var h = isDuration ? item.durationHint : item.hintMessage;
+        this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
       },
 
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
