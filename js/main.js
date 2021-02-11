@@ -513,6 +513,9 @@
         }
       ],
       currentAccountIndex: 0,
+      currentDocIndex: -1,
+      currentRandomIndex: -1,
+      currentRandomSubIndex: -1,
       tests: { '-1':{}, '0':{}, '1':{}, '2': {} },
       crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
@@ -1198,7 +1201,7 @@
       },
 
       // 根据随机测试用例恢复数据
-      restoreRandom: function (item) {
+      restoreRandom: function (index, item) {
         this.currentRandomItem = item
         this.isRandomListShow = false
         this.isRandomSubListShow = false
@@ -1214,11 +1217,12 @@
         }
       },
       // 根据测试用例/历史记录恢复数据
-      restoreRemoteAndTest: function (item) {
-        this.restoreRemote(item, true)
+      restoreRemoteAndTest: function (index, item) {
+        this.restoreRemote(index, item, true)
       },
       // 根据测试用例/历史记录恢复数据
-      restoreRemote: function (item, test) {
+      restoreRemote: function (index, item, test) {
+        this.currentDocIndex = index
         this.currentRemoteItem = item
         this.restore((item || {}).Document, ((item || {}).TestRecord || {}).response, true, test)
       },
@@ -2441,14 +2445,14 @@
               'page': this.testCasePage || 0,
               'Document': {
                 '@order': 'version-,date-',
-                'userId': this.User.id,
+                'userId': App.User.id,
                 'name$': search,
                 'url$': search,
                 '@combine':  search == null ? null : 'name$,url$'
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
-		'userId': App.User.id,
+                'userId': App.User.id,
                 'testAccountId': App.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
@@ -4970,15 +4974,21 @@
         var document;
         if (isRandom) {
           if ((random.count || 0) > 1) {
-            this.restoreRandom(item)
+            this.currentRandomIndex = index
+            // this.currentRandomSubIndex = -1
+            this.restoreRandom(index, item)
             this.randomSubs = (item.subs || item['[]']) || []
             this.isRandomSubListShow = true
             return
           }
 
+          this.currentRandomSubIndex = index
           document = this.currentRemoteItem || {}
         }
         else {
+          this.currentDocIndex = index
+          // this.currentRandomIndex = -1
+          // this.currentRandomSubIndex = -1
           document = item.Document = item.Document || {}
         }
         var testRecord = item.TestRecord = item.TestRecord || {}
