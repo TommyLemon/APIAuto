@@ -5029,14 +5029,18 @@
               if (isRandom) {
                 App.updateToRandomSummary(item, -1)
               }
-              item.compareType = JSONResponse.COMPARE_NO_STANDARD
-              item.compareMessage = '查看结果'
-              item.compareColor = 'white'
-              item.hintMessage = '没有校验标准！'
-              item.TestRecord = null
 
-              item.durationColor = 'black'
-              item.durationHint = '正常：在以往最快和最慢之间'
+              if (isDuration) {
+                item.durationColor = 'black'
+                item.durationHint = '正常：在以往最快和最慢之间'
+              }
+              else {
+                item.compareType = JSONResponse.COMPARE_NO_STANDARD
+                item.compareMessage = '查看结果'
+                item.compareColor = 'white'
+                item.hintMessage = '没有校验标准！'
+                item.TestRecord = null
+              }
 
               App.updateTestRecord(0, list, index, item, currentResponse, isRandom, App.currentAccountIndex, true)
             })
@@ -5055,7 +5059,7 @@
 
             var minDuration = testRecord.minDuration
             var maxDuration = testRecord.maxDuration
-            if (isRandom != true && isDuration) {
+            if (isDuration) {
               if (item.duration == null) {  // 没有获取到
                 alert('最外层缺少字段 "time:start|duration|end": "1613039123780|10|1613039123790"，无法对比耗时！')
                 return
@@ -5158,6 +5162,7 @@
               TestRecord: isDuration ? Object.assign(testRecord, {
                 id: undefined,
                 host: App.getBaseUrl(),
+                testAccountId: App.getCurrentAccountId(),
                 duration: item.duration,
                 minDuration: minDuration,
                 maxDuration: maxDuration,
@@ -5166,6 +5171,7 @@
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 host: App.getBaseUrl(),
+                testAccountId: App.getCurrentAccountId(),
                 compare: JSON.stringify(testRecord.compare || {}),
                 response: JSON.stringify(currentResponse || {}),
                 standard: isML ? JSON.stringify(stddObj) : null
@@ -5194,20 +5200,24 @@
                   App.updateToRandomSummary(item, -1)
                 }
 
-                item.compareType = JSONResponse.COMPARE_EQUAL
-                item.compareMessage = '查看结果'
-                item.compareColor = 'white'
-                item.hintMessage = '结果正确'
                 var testRecord = item.TestRecord || {}
-                testRecord.compare = {
-                  code: 0,
-                  msg: '结果正确'
+                if (isDuration) {
+                  item.durationColor = 'black'
+                  item.durationHint = '正常：在以往最快和最慢之间'
                 }
-                testRecord.response = JSON.stringify(currentResponse)
-                // testRecord.standard = stdd
+                else {
+                  item.compareType = JSONResponse.COMPARE_EQUAL
+                  item.compareMessage = '查看结果'
+                  item.compareColor = 'white'
+                  item.hintMessage = '结果正确'
 
-                item.durationColor = 'black'
-                item.durationHint = '正常：在以往最快和最慢之间'
+                  testRecord.compare = {
+                    code: 0,
+                    msg: '结果正确'
+                  }
+                  testRecord.response = JSON.stringify(currentResponse)
+                  // testRecord.standard = stdd
+                }
 
                 if (isRandom) {
                   var r = req == null ? null : req.Random
