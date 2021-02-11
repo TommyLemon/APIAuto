@@ -4733,11 +4733,12 @@
           var min = 20
           var max = 50
           it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
-          it.durationHint = dt < min ? '很快：比以往最快还更快' : (dt > 2*max ? '非常慢：比以往最慢的两倍还更慢' : (dt > max + min ? '比较慢：比以往最快最慢之和还更慢' : (dt > max ? '有点慢：比以往最慢还更慢' : '正常：在以往最快和最慢之间')))
+          it.durationHint = dt < min ? '很快：比以往最快还更快' : (dt > 2*max ? '非常慢：比以往最慢的两倍还更慢' : (dt > max + min ? '比较慢：比以往最快最慢之和(平均值两倍)还更慢' : (dt > max ? '有点慢：比以往最慢还更慢' : '正常：在以往最快和最慢之间')))
         }
         catch (e) {
           log(e)
           it.durationShowStr = it.durationShowStr || it.duration
+          it.durationHint = it.durationHint || '最外层缺少字段 "time:start|duration|end": "1613039123780|10|1613039123790"，无法对比耗时'
         }
 
         if (err != null) {
