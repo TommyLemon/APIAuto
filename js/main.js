@@ -4729,14 +4729,14 @@
         var tr = it.TestRecord || {} //请求异步
 
         var bdt = tr.duration || 0
-        it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? bdt/1000 + 's' : (bdt <= 1000*60*60 ? bdt/1000/60/60 + 'm' : '>1h')))
+        it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? (bdt/1000).toFixed(1) + 's' : (bdt <= 1000*60*60 ? (bdt/1000/60/60).toFixed(1) + 'm' : '>1h')))
         try {
           var durationInfo = response['time:start|duration|end']
           it.durationInfo = durationInfo
           it.duration = durationInfo.substring(durationInfo.indexOf('\|') + 1, durationInfo.lastIndexOf('\|') || durationInfo.length) || 0
           var dt = + it.duration
           it.duration = dt
-          it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? dt/1000 + 's' : (dt <= 1000*60*60 ? dt/1000/60/60 + 'm' : '>1h')))
+          it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60/60).toFixed(1) + 'm' : '>1h')))
           var min = tr.minDuration || 20
           var max = tr.maxDuration || 200
           it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
