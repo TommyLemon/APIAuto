@@ -354,10 +354,10 @@ var JSONResponse = {
     // }
 
     if (tCode == null) {
-      if (typeof rCode == 'number' && rCode%10 != 0) {
+      if (typeof rCode == 'number' && (rCode%10 != 0 || (rCode >= 400 && rCode < 600))) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且状态码不是 0, 200 等以 0 结尾的数',
+          msg: '没有校验标准，且状态码在 [400, 599] 内或不是 0, 200 等以 0 结尾的数',
           path: folder == null ? '' : folder
         };
       }
