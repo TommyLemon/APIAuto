@@ -215,6 +215,13 @@
         var s = ''
 
         try {
+          var standardObj = null;
+          try {
+            var currentItem = App.isTestCaseShow ? App.remotes[App.currentDocIndex] : App.currentRemoteItem;
+            standardObj = JSON.parse(((currentItem || {}).TestRecord || {}).standard);
+          } catch (e3) {
+            log(e3)
+          }
 
           var path = null
           var table = null
@@ -297,13 +304,13 @@
 
                   var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val); // this.getResponseHint({}, table, $event
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
                 var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -326,7 +333,7 @@
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val);
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj);
 
           s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
@@ -1467,7 +1474,7 @@
           if (isExportRandom != true) {
             var m = App.getMethod();
             commentObj = JSONResponse.updateStandard({}, inputObj);
-            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj);
+            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj, true);
           }
 
           var code = currentResponse.code;
@@ -3025,8 +3032,15 @@
           App.showDoc()
 
           try {
+            var standardObj
+            try {
+              standardObj = JSON.parse(((App.currentRemoteItem || {}).Document || {}).standard)
+            } catch (e3) {
+              log(e3)
+            }
+
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, standardObj))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -3722,7 +3736,7 @@
                 "@order": this.database != 'SQLSERVER' ? null : "table_name+",
                 '@column': this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
-                  : 'column_name:column_name,column_type:column_type,column_comment:column_comment'
+                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_comment:column_comment'
               },
               'PgAttribute': this.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',

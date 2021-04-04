@@ -51,7 +51,7 @@ var CodeUtil = {
    * @param language
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj, isExtract) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
@@ -85,7 +85,7 @@ var CodeUtil = {
 
       comment = '';
       if (cIndex >= 0) {
-        if (standardObj != null) {
+        if (isExtract && standardObj != null) {
           comment = line.substring(cIndex + '  //'.length).trim();
           // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
         }
@@ -99,7 +99,7 @@ var CodeUtil = {
       line = line.trim();
 
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
-        if (standardObj != null && depth > 0) {
+        if (isExtract && standardObj != null && depth > 0) {
           standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
         }
 
@@ -108,18 +108,18 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful);
+        hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful, standardObj);
       }
       else {
         if (line.endsWith('}')) {
-          if (standardObj != null && depth > 0) {
+          if (isExtract && standardObj != null && depth > 0) {
             standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
           }
 
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful, standardObj);
           }
           else {
             depth --;
@@ -127,7 +127,7 @@ var CodeUtil = {
           }
         }
         else if (key == '') { //[ 1, \n 2, \n 3] 跳过
-          if (standardObj != null && depth > 0) {
+          if (isExtract && standardObj != null && depth > 0) {
             standardObj = JSONResponse.updateStandardByPath(standardObj, names, 0, '', comment)
           }
 
@@ -152,10 +152,10 @@ var CodeUtil = {
             }
           }
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-          hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful);
+          hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj);
         }
 
-        if (standardObj != null && depth > 0) {
+        if (isExtract && standardObj != null && depth > 0) {
           standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
         }
       }
@@ -5243,10 +5243,9 @@ var CodeUtil = {
       case 'id':
         return CodeUtil.getType4Long(language, length);
       case 'bit':
-        return CodeUtil.getType4Boolean(language, length);
       case 'bool': //同tinyint
       case 'boolean': //同tinyint
-        return CodeUtil.getType4Integer(language, length);
+        return CodeUtil.getType4Boolean(language, length);
       case 'datetime':
         return CodeUtil.getType4Timestamp(language, length);
       case 'year':
@@ -5729,7 +5728,7 @@ var CodeUtil = {
    * @param isInSubquery
    * @param database
    */
-  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database, language, isReq, names, isRestful) {
+  getComment4Request: function (tableList, name, key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj) {
     // alert('name = ' + name + '; key = ' + key + '; value = ' + value + '; method = ' + method);
 
     if (key == null) {
@@ -5742,21 +5741,21 @@ var CodeUtil = {
     var valuesIsNotBoolean = typeOfValue != 'boolean';
     var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isEmpty(value, true) != true;
 
-    if (isRestful == true) {
+    if (isRestful == true || standardObj != null) {
       if (StringUtil.isEmpty(key, true)) {
         return '';
       }
 
       var pathKeys = []; // slice 居然每次都返回数字 1  names == null || names.length < 2 ? null : names.slice(2).push(key)
       if (names != null && names.length > 2) {
-        for (var i = 2; i < names.length; i ++) {
+        for (var i = 2; i < names.length; i++) {
           pathKeys.push(names[i]);
         }
       }
       pathKeys.push(key);
 
       try {
-        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value);
+        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value, standardObj);
         return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : (c.startsWith(' ! ') ? c : CodeUtil.getComment(c, false, '  '));
       }
       catch (e) {
@@ -5994,10 +5993,18 @@ var CodeUtil = {
    * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value) {
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, standardObj) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName
       + '; method = ' + method + '; database = ' + database + '; language = ' + language
       + '; onlyTableAndColumn = ' + onlyTableAndColumn + '; tableList = \n' + JSON.stringify(tableList));
+
+    if (standardObj != null) {
+      var targetObj = JSONResponse.getStandardByPath(standardObj, pathKeys);
+      var targetComment = targetObj == null ? null : targetObj.comment;
+      if (StringUtil.isEmpty(targetComment, true) == false) {
+        return CodeUtil.getType4Language(language, targetObj.type, true) + (targetObj.notnull ? ', ' : '? ') + StringUtil.trim(targetComment);
+      }
+    }
 
     var typeOfValue = CodeUtil.getType4Request(value);
     var valuesIsNotString = typeOfValue != 'string';
@@ -6053,7 +6060,7 @@ var CodeUtil = {
         }
         else {
           if (StringUtil.isEmpty(c, true) == false) {
-            return CodeUtil.getType4Language(language, doc.type, true) + ', ' + c;
+            return CodeUtil.getType4Language(language, doc.type, true) + (doc.required ? ', ' : '? ') + c;
           }
         }
       }
@@ -6255,7 +6262,7 @@ var CodeUtil = {
           );
 
         column.column_type = CodeUtil.getColumnType(column, database);
-        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getType4Language(language, column.column_type, true) + ', ' + (o || {}).column_comment;
+        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getType4Language(language, column.column_type, true) + (column.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
       }
 
       return onlyTableAndColumn ? '' : ' ! 字段 ' + key + ' 不存在！只能是 [' + columnNames.join() + '] 中的一个！';
