@@ -900,8 +900,14 @@
               App.exTxt.name = '随机配置 ' + App.formatDateTime()
             }
             else {
+              if (App.isEditResponse) {
+                App.isExportRemote = isRemote
+                App.exportTxt()
+                return
+              }
+
               var tag = App.getTag()
-              App.exTxt.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
+              App.exTxt.name = ''  // 避免偷懒不输入名称  App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
             }
           }
           else { //下载到本地
@@ -1455,7 +1461,14 @@
             alert('请先登录！')
             return
           }
+
           var isExportRandom = App.isExportRandom
+
+          if (isExportRandom != true && StringUtil.isEmpty(App.exTxt.name, true)) {
+            alert('请输入接口名！')
+            return
+          }
+
           var did = ((App.currentRemoteItem || {}).Document || {}).id
           if (isExportRandom && did == null) {
             alert('请先共享测试用例！')
