@@ -1669,10 +1669,10 @@
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -1698,16 +1698,16 @@
                 var hasDot = String(value).indexOf('.') >= 0
 
                 if (value < 0) {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) {  // 0-1 比例
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) {  // 10% 百分比
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -2729,6 +2729,7 @@
        */
       login: function (isAdminOperation, callback) {
         App.isLoginShow = false
+        App.isEditResponse = false
 
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
@@ -2906,6 +2907,7 @@
       /**退出
        */
       logout: function (isAdminOperation, callback) {
+        App.isEditResponse = false
         var req = {}
 
         if (isAdminOperation) {
@@ -3080,23 +3082,21 @@
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
 
+          try {
+            // 去掉前面的 JSON
+            var raw = vInput.value || ''
+            var start = raw.lastIndexOf('\n\/*')
+            var end = raw.lastIndexOf('\n*\/')
+            markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
+              // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+              + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+          } catch (e3) {
+            log(e3)
+          }
 
           if (App.isEditResponse) {
             App.view = 'code';
             App.jsoncon = after
-          }
-          else {
-            try {
-              // 去掉前面的 JSON
-              var raw = vInput.value || ''
-              var start = raw.lastIndexOf('\n\/*')
-              var end = raw.lastIndexOf('\n*\/')
-              markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
-                // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-                + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-            } catch (e3) {
-              log(e3)
-            }
           }
 
         } catch(e) {
@@ -3196,7 +3196,7 @@
 
           vUrl.value = url.substring(0, index)
           if ($.isEmptyObject(paramObj) == false) {
-            vInput.value = '//TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n//FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
+            vInput.value = '// TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n// FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
           }
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
@@ -3252,6 +3252,7 @@
         clearTimeout(handler)
 
         if (App.isEditResponse) {
+          App.onChange(false)
           return
         }
 
