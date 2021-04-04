@@ -878,7 +878,7 @@
           }
 
           var tag = App.getTag()
-          App.history.name = App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
+          App.history.name = (App.urlComment || App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)) + ' ' + App.formatTime() //不自定义名称的都是临时的，不需要时间太详细
         }
         App.isSaveShow = show
       },
@@ -906,8 +906,8 @@
                 return
               }
 
-              var tag = App.getTag()
-              App.exTxt.name = ''  // 避免偷懒不输入名称  App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
+              // var tag = App.getTag()
+              App.exTxt.name = App.urlComment || ''  // 避免偷懒不输入名称  App.getMethod() + (StringUtil.isEmpty(tag, true) ? '' : ' ' + tag)
             }
           }
           else { //下载到本地
@@ -1502,7 +1502,7 @@
           currentResponse.code = code;
           currentResponse.throw = thrw;
 
-          var url = App.server + '/post'
+          var url = App.server + (isExportRandom || did == null ? '/post' : '/put')
           var req = isExportRandom ? {
             format: false,
             'Random': {
@@ -1520,6 +1520,7 @@
           } : {
             format: false,
             'Document': App.isEditResponse ? null : {
+              'id': did == null ? undefined : did,
               'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
@@ -1528,7 +1529,7 @@
               'standard': JSON.stringify(commentObj, null, '    '),
               'header': vHeader.value
             },
-            'TestRecord': {
+            'TestRecord': App.isEditResponse != true && did != null ? null : {
               'documentId': App.isEditResponse ? did : undefined,
               'randomId': 0,
               'host': App.getBaseUrl(),
@@ -3017,11 +3018,13 @@
 
           //关键词let在IE和Safari上不兼容
           var code = '';
-          try {
-            code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
-          } catch(e) {
-            code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
-              + '\nError:\n' + e.message + '\n\n\n';
+          if (App.isEditResponse != true) {
+            try {
+              code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+            } catch (e) {
+              code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
+                + '\nError:\n' + e.message + '\n\n\n';
+            }
           }
 
           if (isSingle) {
@@ -3039,10 +3042,12 @@
             + '\n                                                                                                       '
             + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
-          vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
+          if (App.isEditResponse != true) {
+            vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
 
-          App.showDoc()
+            App.showDoc()
+          }
 
           try {
             var standardObj = null;
@@ -3075,22 +3080,23 @@
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
 
-          try {
-            // 去掉前面的 JSON
-            var raw = vInput.value || ''
-            var start = raw.lastIndexOf('\n\/*')
-            var end = raw.lastIndexOf('\n*\/')
-            markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
-              // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-              + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-          } catch (e3) {
-            log(e3)
-          }
 
           if (App.isEditResponse) {
             App.view = 'code';
             App.jsoncon = after
-            return
+          }
+          else {
+            try {
+              // 去掉前面的 JSON
+              var raw = vInput.value || ''
+              var start = raw.lastIndexOf('\n\/*')
+              var end = raw.lastIndexOf('\n*\/')
+              markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
+                // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+                + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+            } catch (e3) {
+              log(e3)
+            }
           }
 
         } catch(e) {
@@ -3276,7 +3282,7 @@
         this.locals.unshift({
           'Document': {
             'userId': App.User.id,
-            'name': App.formatDateTime() + (StringUtil.isEmpty(req.tag, true) ? '' : ' ' + req.tag),
+            'name': App.formatDateTime() + ' ' + (App.urlComment || StringUtil.trim(req.tag)),
             'type': App.type,
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
