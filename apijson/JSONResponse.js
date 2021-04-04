@@ -1063,6 +1063,72 @@ var JSONResponse = {
   },
 
 
+  /**根据路径精准地更新测试标准中的键值对
+   */
+  updateStandardByPath: function(target, names, key, real, comment) {
+    if (target instanceof Array) { // JSONArray
+      throw new Error('Standard 语法错误，' + key + ': value 中 value 类型不应该是 Array！');
+    }
+    if (target == null) {
+      target = {};
+    }
+
+    var tgt = target;
+    var depth = names == null ? 0 : names.length
+    if (depth <= 1 && (key == null || key == '')) {
+      return target;
+    }
+
+    for (var i = 2; i < depth + 1; i ++) {
+      var k = i >= depth ? key : names[i];
+      if (k == null || k == '') {
+        return target;
+      }
+
+      try {
+        var n = Number.parseInt(k);
+        if (Number.isNaN(n) != true) {
+          k = n;
+        }
+      } catch (e) {}
+
+      if (tgt instanceof Array == false && tgt instanceof Object) {
+        if (tgt.values == null) {
+          tgt.values = [];
+        }
+
+        var child = tgt.values[0];
+        if (child == null) {
+          child = {};
+          child.type = typeof k == 'number' ? 'array' : 'number';
+          child.notnull = false;
+          tgt.values[0] = child;
+        }
+
+        if (child[k] == null) {
+          child[k] = {};
+        }
+
+        tgt = child[k];
+      }
+      else {
+        throw new Error('Standard 语法错误，' + k + ': value 中 value 类型应该是 Object ！');
+      }
+    }
+
+    comment = comment == null ? '' : comment.trim();
+
+    if (tgt == null) {
+      tgt = {};
+    }
+    tgt.type = typeof real;
+    tgt.notnull = real != null && comment.startsWith('?') != true
+    tgt.comment = comment
+
+    return target;
+  },
+
+
   getLength: function(value) {
     var type = JSONResponse.getType(value);
     if (type == 'array') {

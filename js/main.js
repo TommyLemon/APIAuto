@@ -537,7 +537,23 @@
       isConfigShow: false,
       isDeleteShow: false,
       currentDocItem: {},
-      currentRemoteItem: {},
+      currentRemoteItem: {
+        "Document":  {
+          "id": 1560244940013 ,
+          "userId": 82001 ,
+          "testAccountId": 82001 ,
+          "version": 3 ,
+          "name": "测试查询" ,
+          "type": "JSON" ,
+          "url": "/get" ,
+          "date": "2019-06-11 17:22:20.0"
+        },
+        "TestRecord":  {
+          "id": 1615135440014 ,
+          "userId": 82001 ,
+          "documentId": 1560244940013
+        }
+      },
       currentRandomItem: {},
       isAdminOperation: false,
       loginType: 'login',
@@ -547,6 +563,7 @@
       isMLEnabled: false,
       isDelegateEnabled: false,
       isPreviewEnabled: false,
+      isEditResponse: false,
       isLocalShow: false,
       uploadTotal: 0,
       uploadDoneCount: 0,
@@ -1044,6 +1061,22 @@
 
               App.onChange(false)
               break
+            case 11:
+              var did = ((App.currentRemoteItem || {}).Document || {}).id
+              if (did == null) {
+                alert('请先选择一个已上传的用例！')
+                return
+              }
+
+              App.isEditResponse = show
+              // App.saveCache('', 'isEditResponse', show)
+
+              vInput.value = (App.currentRemoteItem.TestRecord || {}).response || ''
+              vHeader.value = (App.currentRemoteItem.TestRecord || {}).header || ''
+
+              App.isTestCaseShow = false
+              App.onChange(false)
+              break
           }
         }
         else if (index == 3) {
@@ -1070,6 +1103,16 @@
           App.isPreviewEnabled = show
           App.saveCache('', 'isPreviewEnabled', show)
           // vRequestMarkdown.innerHTML = ''
+        }
+        else if (index == 11) {
+          App.isEditResponse = show
+          // App.saveCache('', 'isEditResponse', show)
+
+          vInput.value = (App.currentRemoteItem.Document || {}).request || ''
+          vHeader.value = (App.currentRemoteItem.Document || {}).header || ''
+
+          App.isTestCaseShow = false
+          App.onChange(false)
         }
       },
 
@@ -1228,6 +1271,8 @@
       },
       // 根据历史恢复数据
       restore: function (item, response, isRemote, test) {
+        App.isEditResponse = false
+
         item = item || {}
         // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
@@ -1415,6 +1460,16 @@
           var currentAccountId = App.getCurrentAccountId()
           var currentResponse = StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon));
 
+          var after = App.toDoubleJSON(inputted);
+          var inputObj = App.getRequest(after, {});
+
+          var commentObj = null;
+          if (isExportRandom != true) {
+            var m = App.getMethod();
+            commentObj = JSONResponse.updateStandard({}, inputObj);
+            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj);
+          }
+
           var code = currentResponse.code;
           var thrw = currentResponse.throw;
           delete currentResponse.code; //code必须一致
@@ -1444,22 +1499,24 @@
             'tag': 'Random'
           } : {
             format: false,
-            'Document': {
+            'Document': App.isEditResponse ? null : {
               'testAccountId': currentAccountId,
               'name': App.exTxt.name,
               'type': App.type,
               'url': '/' + App.getMethod(),
-              'request': App.toDoubleJSON(inputted),
+              'request': JSON.stringify(inputObj, null, '    '),
+              'standard': JSON.stringify(commentObj, null, '    '),
               'header': vHeader.value
             },
             'TestRecord': {
+              'documentId': App.isEditResponse ? did : undefined,
               'randomId': 0,
               'host': App.getBaseUrl(),
               'testAccountId': currentAccountId,
-              'response': JSON.stringify(currentResponse),
-              'standard': isML ? JSON.stringify(stddObj) : null
+              'response': JSON.stringify(App.isEditResponse ? inputObj : currentResponse),
+              'standard': isML ? JSON.stringify(App.isEditResponse ? commentObj : stddObj) : undefined
             },
-            'tag': 'Document'
+            'tag': App.isEditResponse ? 'TestRecord' : 'Document'
           }
 
           App.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
@@ -2969,7 +3026,7 @@
 
           try {
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, '/' + App.getMethod(), true))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -3001,6 +3058,12 @@
               + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
           } catch (e3) {
             log(e3)
+          }
+
+          if (App.isEditResponse) {
+            App.view = 'code';
+            App.jsoncon = after
+            return
           }
 
         } catch(e) {
@@ -3155,6 +3218,10 @@
 
         clearTimeout(handler)
 
+        if (App.isEditResponse) {
+          return
+        }
+
         var header
         try {
           header = this.getHeader(vHeader.value)
@@ -3163,7 +3230,7 @@
           return
         }
 
-        var req = this.getRequest(vInput.value)
+        var req = this.getRequest(vInput.value, {})
 
         var url = this.getUrl()
 

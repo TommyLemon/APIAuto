@@ -43,7 +43,7 @@ var CodeUtil = {
   thirdParty: 'YAPI',
   thirdPartyApiMap: {},
 
-  /**生成JSON的注释
+  /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
    * @param reqStr //已格式化的JSON String
    * @param tableList
    * @param method
@@ -51,7 +51,7 @@ var CodeUtil = {
    * @param language
    * @return parseComment
    */
-  parseComment: function (reqStr, tableList, method, database, language, isReq) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+  parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
@@ -72,14 +72,26 @@ var CodeUtil = {
     var index;
     var key;
     var value;
-
     var comment;
+    var hintComment;
+
     for (var i = 0; i < lines.length; i ++) {
       line = lines[i].trim();
 
       //每一种都要提取:左边的key
       index = line == null ? -1 : line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
       key = index < 0 ? '' : line.substring(1, index - 1);
+      var cIndex = line == null ? -1 : line.indexOf('  //');
+
+      comment = '';
+      if (cIndex >= 0) {
+        if (standardObj != null) {
+          comment = line.substring(cIndex + '  //'.length).trim();
+          // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
+        }
+
+        line = line.substring(0, cIndex).trim();
+      }
 
       if (line.endsWith(',')) {
         line = line.substring(0, line.length - 1);
@@ -87,19 +99,27 @@ var CodeUtil = {
       line = line.trim();
 
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
+        if (standardObj != null && depth > 0) {
+          standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
+        }
+
         isInSubquery = key.endsWith('@');
 
         depth ++;
         names[depth] = key;
 
-        comment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful);
+        hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful);
       }
       else {
         if (line.endsWith('}')) {
+          if (standardObj != null && depth > 0) {
+            standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
+          }
+
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            comment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful);
           }
           else {
             depth --;
@@ -107,6 +127,10 @@ var CodeUtil = {
           }
         }
         else if (key == '') { //[ 1, \n 2, \n 3] 跳过
+          if (standardObj != null && depth > 0) {
+            standardObj = JSONResponse.updateStandardByPath(standardObj, names, 0, '', comment)
+          }
+
           continue;
         }
         else { //其它，直接在后面加上注释
@@ -128,11 +152,15 @@ var CodeUtil = {
             }
           }
           // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-          comment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful);
+          hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful);
+        }
+
+        if (standardObj != null && depth > 0) {
+          standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
         }
       }
 
-      lines[i] += comment;
+      lines[i] += hintComment;
     }
 
     return lines.join('\n');
