@@ -1502,7 +1502,7 @@
           currentResponse.code = code;
           currentResponse.throw = thrw;
 
-          var url = App.server + (isExportRandom || did == null ? '/post' : '/put')
+          var url = App.server + (isExportRandom || App.isEditResponse || did == null ? '/post' : '/put')
           var req = isExportRandom ? {
             format: false,
             'Random': {
@@ -1552,7 +1552,13 @@
               }
             }
             else {
-              if (rpObj.Document != null && rpObj.Document.code == CODE_SUCCESS) {
+              if (rpObj.Document == null || rpObj.Document.code != CODE_SUCCESS) {
+                if (url.indexOf('/put') >= 0) {  // 修改失败就转为新增
+                  App.currentRemoteItem = null;
+                  alert('修改失败，请重试(自动转为新增)！')
+                }
+              }
+              else {
                 App.remotes = []
                 App.showTestCase(true, false)
 
@@ -2983,7 +2989,7 @@
 
         App.view = 'output';
         vComment.value = '';
-        vUrlComment.value = '';
+        // vUrlComment.value = '';
         vOutput.value = 'resolving...';
 
         //格式化输入代码
@@ -3117,7 +3123,7 @@
         this.setBaseUrl();
         inputted = new String(vInput.value);
         vComment.value = '';
-        vUrlComment.value = '';
+        // vUrlComment.value = '';
 
         clearTimeout(handler);
 
@@ -3386,6 +3392,14 @@
        */
       doOnKeyUp: function (event, type, isFilter, item) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
+
+        var obj = event.srcElement ? event.srcElement : event.target;
+        if ($(obj).attr('id') == 'vUrl') {
+          vUrlComment.value = ''
+          App.currentDocItem = null
+          App.currentRemoteItem = null
+        }
+
         if (keyCode == 13) { // enter
           if (isFilter) {
             this.onFilterChange(type)
