@@ -99,8 +99,10 @@ var CodeUtil = {
       line = line.trim();
 
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
-        if (isExtract && standardObj != null && depth > 0) {
-          standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
+        value = {}
+
+        if (depth > 0 && comment.length > 0) {
+          standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
         }
 
         isInSubquery = key.endsWith('@');
@@ -108,54 +110,82 @@ var CodeUtil = {
         depth ++;
         names[depth] = key;
 
-        hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, {}, method, false, database, language, isReq, names, isRestful, standardObj);
+        hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
       }
       else {
         if (line.endsWith('}')) {
-          if (isExtract && standardObj != null && depth > 0) {
-            standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, {}, comment)
+          value = {}
+
+          if (depth > 0 && comment.length > 0) {
+            standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
           }
 
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, {}, method, false, database, language, isReq, names, isRestful, standardObj);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
           }
           else {
             depth --;
             continue;
           }
         }
-        else if (key == '') { //[ 1, \n 2, \n 3] 跳过
-          if (isExtract && standardObj != null && depth > 0) {
-            standardObj = JSONResponse.updateStandardByPath(standardObj, names, 0, '', comment)
-          }
-
-          continue;
-        }
-        else { //其它，直接在后面加上注释
+        // else if (key == '') { //[ 1, \n 2, \n 3] 跳过
+        //   if (depth > 0 && comment.length > 0) {
+        //     standardObj = JSONResponse.updateStandardByPath(standardObj, names, 0, '', comment)
+        //   }
+        //
+        //   continue;
+        // }
+        else {
           if (line.endsWith('[')) { // []  不影响
             value = []
+
+            if (depth > 0 && comment.length > 0) {
+              standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
+            }
+
+            depth ++;
+            names[depth] = key;
+
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
           }
           else {
-            value = line.substring(index + 2).trim()
-            if (value.startsWith('"')) {
-              value = value.substring(1, value.lastIndexOf('"'))
-            }
-            else {
-              try {
-                value = JSON.parse(value)
+            if (line.endsWith(']')) {
+              value = []
+
+              if (depth > 0 && comment.length > 0) {
+                standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
               }
-              catch (e) {
-                console.log(e)
+
+              if (line.endsWith('[]')) { //对象，判断是不是Table，再加对应的注释
+                hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
+              }
+              else {
+                depth--;
+                continue;
               }
             }
+            else { //其它，直接在后面加上注释
+              value = line.substring(index + 2).trim()
+              if (value.startsWith('"')) {
+                value = value.substring(1, value.lastIndexOf('"'))
+              }
+              else {
+                try {
+                  value = JSON.parse(value)
+                }
+                catch (e) {
+                  console.log(e)
+                }
+              }
+            }
+            // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj);
           }
-          // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-          hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj);
         }
 
-        if (isExtract && standardObj != null && depth > 0) {
+        if (depth > 0 && comment.length > 0) {
           standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
         }
       }

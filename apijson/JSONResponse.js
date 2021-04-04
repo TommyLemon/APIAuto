@@ -1085,16 +1085,22 @@ var JSONResponse = {
       }
 
       var k = pathKeys[i];
-      if (k == null || k == '') {
+      if (k == null) {
         return null;
       }
 
-      try {
-        var n = Number.parseInt(k);
-        if (Number.isNaN(n) != true) {
-          k = n;
+      if (k == '') {
+        k = 0;
+      }
+      else {
+        try {
+          var n = Number.parseInt(k);
+          if (Number.isSafeInteger(n)) {
+            k = 0;
+          }
+        } catch (e) {
         }
-      } catch (e) {}
+      }
 
       if (tgt instanceof Array == false && tgt instanceof Object) {
         if (tgt.values == null) {
@@ -1135,16 +1141,22 @@ var JSONResponse = {
 
     for (var i = 2; i < depth + 1; i ++) {
       var k = i >= depth ? key : names[i];
-      if (k == null || k == '') {
+      if (k == null) {
         return target;
       }
 
-      try {
-        var n = Number.parseInt(k);
-        if (Number.isNaN(n) != true) {
-          k = n;
+      if (k == '') {
+        k = 0;
+      }
+      else {
+        try {
+          var n = Number.parseInt(k);
+          if (Number.isSafeInteger(n)) {
+            k = 0;
+          }
+        } catch (e) {
         }
-      } catch (e) {}
+      }
 
       if (tgt instanceof Array == false && tgt instanceof Object) {
         if (tgt.values == null) {

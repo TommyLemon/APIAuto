@@ -1521,7 +1521,7 @@
               'host': App.getBaseUrl(),
               'testAccountId': currentAccountId,
               'response': JSON.stringify(App.isEditResponse ? inputObj : currentResponse),
-              'standard': isML ? JSON.stringify(App.isEditResponse ? commentObj : stddObj) : undefined
+              'standard': isML || App.isEditResponse ? JSON.stringify(App.isEditResponse ? commentObj : stddObj) : undefined
             },
             'tag': App.isEditResponse ? 'TestRecord' : 'Document'
           }
