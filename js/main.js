@@ -3032,9 +3032,9 @@
           App.showDoc()
 
           try {
-            var standardObj
+            var standardObj = null;
             try {
-              standardObj = JSON.parse(((App.currentRemoteItem || {}).Document || {}).standard)
+              standardObj = JSON.parse(((App.currentRemoteItem || {})[App.isEditResponse ? 'TestRecord' : 'Document'] || {}).standard);
             } catch (e3) {
               log(e3)
             }

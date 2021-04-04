@@ -5786,10 +5786,14 @@ var CodeUtil = {
 
       try {
         var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value, standardObj);
-        return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : (c.startsWith(' ! ') ? c : CodeUtil.getComment(c, false, '  '));
+        if (isRestful == true || StringUtil.isEmpty(c) == false) {  // TODO 最好都放行，查不到都去数据库查表和字段属性
+          return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : (c.startsWith(' ! ') ? c : CodeUtil.getComment(c, false, '  '));
+        }
       }
       catch (e) {
-        return e.message;
+        if (isRestful == true) {
+          return e.message;
+        }
       }
     }
 
