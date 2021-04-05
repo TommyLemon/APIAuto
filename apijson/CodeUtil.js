@@ -126,6 +126,7 @@ var CodeUtil = {
             hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
           }
           else {
+            names.splice(depth)
             depth --;
             continue;
           }
@@ -162,7 +163,8 @@ var CodeUtil = {
                 hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
               }
               else {
-                depth--;
+                names.splice(depth)
+                depth --;
                 continue;
               }
             }
@@ -5000,25 +5002,30 @@ var CodeUtil = {
   },
 
   getJavaTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType, isSmart) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return baseFirst ? 'double' : 'Double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
         return baseFirst ? 'long' : 'Long';
       }
       return baseFirst ? 'int' : 'Integer';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'String';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return rawType ? 'List<Object>' : (! isSmart ? 'JSONArray' : 'List<' + StringUtil.firstCase(JSONResponse.getTableName(key), true) + '>');
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return rawType ? 'Map<String, Object>' : (! isSmart ? 'JSONObject' : StringUtil.firstCase(JSONResponse.getTableName(key), true));
     }
 
@@ -5026,51 +5033,63 @@ var CodeUtil = {
   },
 
   getKotlinTypeFromJS: function (key, value, isArrayItem, baseFirst, rawType, isSmart) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return baseFirst ? 'boolean' : 'Boolean';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return baseFirst ? 'double' : 'Double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
         return baseFirst ? 'long' : 'Long';
       }
       return baseFirst ? 'int' : 'Int';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'String';
     }
-    if (value instanceof Array) {
-      return rawType ? 'List<Any?>' : (! isSmart ? 'JSONArray' : 'List<' + StringUtil.firstCase(JSONResponse.getTableName(key), true) + '>');
+    if (t == 'array') {
+      return rawType ? 'List<Any>' : (! isSmart ? 'JSONArray' : 'List<' + StringUtil.firstCase(JSONResponse.getTableName(key), true) + '>');
     }
-    if (value instanceof Object) {
-      return rawType ? 'Map<String, Any?>' : (! isSmart ? 'JSONObject' : StringUtil.firstCase(JSONResponse.getTableName(key), true));
+    if (t == 'object') {
+      return rawType ? 'Map<String, Any>' : (! isSmart ? 'JSONObject' : StringUtil.firstCase(JSONResponse.getTableName(key), true));
     }
 
     return 'Any';
   },
 
   getCSharpTypeFromJS: function (key, value, baseFirst) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return baseFirst ? 'bool' : 'Boolean';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return baseFirst ? 'double' : 'Double';
       }
-      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint')) {
+    }
+
+    if (t == 'number' || t == 'integer') {
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
         return baseFirst ? 'long' : 'Int64';
       }
       return baseFirst ? 'int' : 'Int32';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'String';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return 'JArray';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'JObject';
     }
 
@@ -5078,22 +5097,28 @@ var CodeUtil = {
   },
 
   getSwiftTypeFromJS: function (key, value) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return 'Bool';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return 'Double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       return 'Int';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'String';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return 'NSArray';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'NSDictionary';
     }
 
@@ -5102,25 +5127,31 @@ var CodeUtil = {
 
 
   getCppTypeFromJS: function (key, value, isArrayItem) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return 'bool';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return 'double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
         return 'long'
       }
       return 'int';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'const char*'; //CLion 报错 'rapidjson::Value::Ch*';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return 'rapidjson::Value::Array';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'rapidjson::Value::Object';
     }
 
@@ -5128,22 +5159,31 @@ var CodeUtil = {
   },
 
   getCppGetterFromJS: function (key, value, isArrayItem) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return 'GetBool';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return 'GetDouble';
       }
-      return Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem) ? 'GetInt64' : 'GetInt';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'number' || t == 'integer') {
+      if (Math.abs(value) >= 2147483647 || CodeUtil.isId(key, 'bigint', isArrayItem)) {
+        return 'GetInt64';
+      }
+      return 'GetInt';
+    }
+
+    if (t == 'string') {
       return 'GetString';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return 'GetArray';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'GetObject';
     }
 
@@ -5151,22 +5191,28 @@ var CodeUtil = {
   },
 
   getPythonTypeFromJS: function (key, value) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return 'bool';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return 'double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       return 'int';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'str';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return 'list';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'dict';
     }
 
@@ -5174,26 +5220,32 @@ var CodeUtil = {
   },
 
   getGoTypeFromJS: function (key, value) {
-    if (typeof value == 'boolean') {
+    var t = JSONResponse.getType(value);
+    if (t == 'boolean') {
       return 'bool';
     }
-    if (typeof value == 'number') {
-      if (String(value).indexOf(".") >= 0) {
+
+    if (t == 'number') {
+      if (Number.isInteger(value) != true) {
         return 'double';
       }
+    }
+
+    if (t == 'number' || t == 'integer') {
       return 'int';
     }
-    if (typeof value == 'string') {
+
+    if (t == 'string') {
       return 'string';
     }
-    if (value instanceof Array) {
+    if (t == 'array') {
       return '[]interface{}';
     }
-    if (value instanceof Object) {
+    if (t == 'object') {
       return 'map[string]interface{}';
     }
 
-    return 'map[string]interface{}';
+    return 'interface{}';
   },
 
   getColumnType: function (column, database) {
@@ -5308,7 +5360,7 @@ var CodeUtil = {
         return 'NSObject' + length;
 
       case CodeUtil.LANGUAGE_GO:
-        return 'map[string]interface{}' + length;
+        return 'interface{}' + length;
       case CodeUtil.LANGUAGE_C_PLUS_PLUS:
         return 'GenericValue';
 
@@ -5542,7 +5594,7 @@ var CodeUtil = {
       case CodeUtil.LANGUAGE_GO:
         return 'map[string]interface{}';
       case CodeUtil.LANGUAGE_C_PLUS_PLUS:
-        return 'map<string, string>';
+        return 'map<string, object>';
 
       case CodeUtil.LANGUAGE_JAVA_SCRIPT:
       case CodeUtil.LANGUAGE_TYPE_SCRIPT:
@@ -5564,7 +5616,7 @@ var CodeUtil = {
       case CodeUtil.LANGUAGE_KOTLIN:
       case CodeUtil.LANGUAGE_JAVA:
       case CodeUtil.LANGUAGE_C_SHARP:
-        return 'List<String>';
+        return 'List<Object>';
 
       case CodeUtil.LANGUAGE_SWIFT:
         return 'Array';
@@ -5572,19 +5624,19 @@ var CodeUtil = {
         return 'NSArray';
 
       case CodeUtil.LANGUAGE_GO:
-        return '[]string';
+        return '[]interface{}';
       case CodeUtil.LANGUAGE_C_PLUS_PLUS:
-        return 'vector<string>';
+        return 'vector<object>';
 
       case CodeUtil.LANGUAGE_JAVA_SCRIPT:
-        return 'string[]';
+        return 'object[]';
       case CodeUtil.LANGUAGE_TYPE_SCRIPT:
-        return 'string[]';
+        return 'any[]';
 
       case CodeUtil.LANGUAGE_PHP:
-        return 'string[]';
+        return 'Any[]';
       case CodeUtil.LANGUAGE_PYTHON:
-        return 'list[str]';
+        return 'list[any]';
     }
     return 'Array';  //以 JSON 类型为准
   },
@@ -5782,7 +5834,10 @@ var CodeUtil = {
           pathKeys.push(names[i]);
         }
       }
-      pathKeys.push(key);
+
+      // FIXME names 居然出现 ['', 'user', 'user']  if (value instanceof Object == false) {
+        pathKeys.push(key);
+      // }
 
       try {
         var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value, standardObj);
@@ -5940,7 +5995,7 @@ var CodeUtil = {
       return '';
     }
 
-    var aliaIndex = name.indexOf(':');
+    var aliaIndex = name == null ? -1 : name.indexOf(':');
     var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
 
     if (isRestful != true && JSONObject.isTableKey(objName)) {

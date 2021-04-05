@@ -103,7 +103,7 @@
 
         try {
           if (val instanceof Array) {
-            if (val[0] instanceof Object && (val[0] instanceof Array == false) && JSONObject.isArrayKey(key, null, isRestful)) {
+            if (val[0] instanceof Object && (val[0] instanceof Array == false)) {  // && JSONObject.isArrayKey(key, null, isRestful)) {
               // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
               var ckey = key.substring(0, key.lastIndexOf('[]'));
@@ -1469,7 +1469,9 @@
             return
           }
 
-          var did = ((App.currentRemoteItem || {}).Document || {}).id
+          var doc = (App.currentRemoteItem || {}).Document || {}
+          var tr = (App.currentRemoteItem || {}).TestRecord || {}
+          var did = doc.id
           if (isExportRandom && did == null) {
             alert('请先共享测试用例！')
             return
@@ -1486,7 +1488,15 @@
           var commentObj = null;
           if (isExportRandom != true) {
             var m = App.getMethod();
-            commentObj = JSONResponse.updateStandard({}, inputObj);
+            var commentStddObj = null
+            try {
+              commentStddObj = JSON.parse(App.isEditResponse ? tr.standard : doc.standard);
+            }
+            catch(e) {
+              log(e)
+            }
+
+            commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
             CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj, true);
           }
 
@@ -1552,8 +1562,10 @@
               }
             }
             else {
+              var isPut = url.indexOf('/put') >= 0
+
               if (rpObj.Document == null || rpObj.Document.code != CODE_SUCCESS) {
-                if (url.indexOf('/put') >= 0) {  // 修改失败就转为新增
+                if (isPut) {  // 修改失败就转为新增
                   App.currentRemoteItem = null;
                   alert('修改失败，请重试(自动转为新增)！')
                 }
@@ -1562,6 +1574,10 @@
                 App.remotes = []
                 App.showTestCase(true, false)
 
+                if (isPut) {  // 修改失败就转为新增
+                  alert('修改成功')
+                  return
+                }
 
                 //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
                 var req = App.getRequest(vInput.value, {})

@@ -923,9 +923,19 @@ var JSONResponse = {
   },
 
   getType: function(o) { //typeof [] = 'object'
-    log('getType  o = ' + JSON.stringify(o) + '>> return ' + (o instanceof Array ? 'array' : typeof o));
+    if (o == null) {
+      return 'object';
+    }
+    if (o instanceof Array) {
+      return 'array';
+    }
 
-    return o instanceof Array ? 'array' : typeof o;
+    var t = typeof o;
+    if (t == 'number' && Number.isInteger(t)) {
+      return 'integer';
+    }
+
+    return t;
   },
 
 
@@ -1188,7 +1198,7 @@ var JSONResponse = {
       tgt = {};
     }
     var startsWithQuestion = comment.startsWith('?')
-    tgt.type = typeof real;
+    tgt.type = JSONResponse.getType(real);
     tgt.notnull = real != null && startsWithQuestion != true
     tgt.comment = startsWithQuestion ? comment.substring(1) : comment
 
