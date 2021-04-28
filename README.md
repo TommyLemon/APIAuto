@@ -21,7 +21,7 @@
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
 腾讯内部用户包括 互娱、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
-#### 先后被腾讯 TEG 工具开发组、微信支付部门、腾讯 IEG 工具开发者邀请分享了 
+#### 先后被腾讯 TEG 工具开发组、微信支付部门、腾讯 IEG 工具开发组邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
 * 零代码开发和测试(API测试•单元测试•API开发)
@@ -34,7 +34,7 @@
 ![image](https://user-images.githubusercontent.com/5738175/116197967-f6dbc480-a767-11eb-8648-a1a9957c2c8b.png)
 ![image](https://user-images.githubusercontent.com/5738175/116198123-2a1e5380-a768-11eb-9edb-61d3b30648dc.png)
 ![image](https://user-images.githubusercontent.com/5738175/116198091-1b37a100-a768-11eb-914f-9f507b10c4e8.png)
-
+![image](https://user-images.githubusercontent.com/5738175/116338706-c0a55000-a80e-11eb-8502-78c4bb1d3af2.png)
 
 
 ### 特点功能
