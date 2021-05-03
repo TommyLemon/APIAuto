@@ -892,8 +892,8 @@
               alert('请先输入请求内容！')
               return
             }
-            if (App.view != 'code') {
-              alert('请先测试请求，确保是正确可用的！')
+            if (App.view == 'error') {  // App.view != 'code') {
+              alert('发现错误，请输入正确的内容！')  // alert('请先测试请求，确保是正确可用的！')
               return
             }
             if (isRandom) {
@@ -1480,7 +1480,7 @@
           App.isTestCaseShow = false
 
           var currentAccountId = App.getCurrentAccountId()
-          var currentResponse = StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon));
+          var currentResponse = App.view != 'code' || StringUtil.isEmpty(App.jsoncon, true) ? {} : App.removeDebugInfo(JSON.parse(App.jsoncon));
 
           var after = App.toDoubleJSON(inputted);
           var inputObj = App.getRequest(after, {});
