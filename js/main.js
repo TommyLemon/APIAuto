@@ -1871,7 +1871,7 @@
                   swaggerCallback(docUrl, { data: jsonData }, null)
                 }
                 else {
-                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, swaggerCallback)
+                  App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, header, swaggerCallback)
                 }
               }
               else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
@@ -1991,7 +1991,7 @@
               }
             }
             else {
-              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+              App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, header, function (url_, res, err) {
                 if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)) {
                   return
                 }

@@ -5337,8 +5337,8 @@ var CodeUtil = {
       case 'year':
         return CodeUtil.getType4Date(language, length);
       case 'decimal':
-      case 'numer':
-      case 'numeric':
+      case 'number':
+      case 'numberic':
         return CodeUtil.getType4Decimal(language, length);
       case 'json':
       case 'jsonb':
@@ -6175,7 +6175,7 @@ var CodeUtil = {
           t = 'number';
         }
 
-        if (ignoreError != true && StringUtil.isEmpty(t, true) == false && t != (isReq ? CodeUtil.getType4Request(value) : typeof value)) {
+        if (ignoreError != true && StringUtil.isEmpty(t, true) == false && t != CodeUtil.getType4Request(value)) {
           throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + CodeUtil.getComment(c, false, '  '));
         }
         else {
