@@ -41,7 +41,7 @@ var CodeUtil = {
   language: 'Kotlin',
   tableList: [],
   thirdParty: 'YAPI',
-  thirdPartyApiMap: {},
+  thirdPartyApiMap: null,  // {}
 
   /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
    * @param reqStr //已格式化的JSON String
@@ -85,7 +85,7 @@ var CodeUtil = {
 
       comment = '';
       if (cIndex >= 0) {
-        if (isExtract && standardObj != null) {
+        if (isExtract && standardObj != null && (depth != 1 || (key != 'code' && key != 'throw'))) {
           comment = line.substring(cIndex + '  //'.length).trim();
           // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
         }
@@ -107,10 +107,10 @@ var CodeUtil = {
 
         isInSubquery = key.endsWith('@');
 
-        depth ++;
-        names[depth] = key;
-
         hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
+
+        names[depth] = key;
+        depth ++;
       }
       else {
         if (line.endsWith('}')) {
@@ -123,11 +123,11 @@ var CodeUtil = {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
           }
           else {
-            names.splice(depth)
             depth --;
+            names = names.slice(0, depth)
             continue;
           }
         }
@@ -146,10 +146,10 @@ var CodeUtil = {
               standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
             }
 
-            depth ++;
-            names[depth] = key;
-
             hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
+
+            names[depth] = key;
+            depth ++;
           }
           else {
             if (line.endsWith(']')) {
@@ -160,11 +160,11 @@ var CodeUtil = {
               }
 
               if (line.endsWith('[]')) { //对象，判断是不是Table，再加对应的注释
-                hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
+                hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj);
               }
               else {
-                names.splice(depth)
                 depth --;
+                names = names.slice(0, depth)
                 continue;
               }
             }
@@ -183,7 +183,7 @@ var CodeUtil = {
               }
             }
             // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
-            hintComment = CodeUtil.getComment4Request(tableList, names[depth], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj);
+            hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj);
           }
         }
 
@@ -195,7 +195,11 @@ var CodeUtil = {
       lines[i] += hintComment;
     }
 
-    return lines.join('\n');
+    var apiMap = isRestful ? CodeUtil.thirdPartyApiMap : null;
+    var api = apiMap == null ? null : apiMap['/' + method];
+    var detail = api == null ? null : api.detail;
+
+    return lines.join('\n') + (StringUtil.isEmpty(detail, true) ? '' : '\n\n/*\n\n' + detail + '\n\n*/');
   },
 
 
@@ -4988,9 +4992,9 @@ var CodeUtil = {
     if (typeof value == 'string') {
       log(CodeUtil.TAG, 'getCode4Value  typeof value === "string"  >>  return " + value + ";' );
       if (isSmart && [CodeUtil.LANGUAGE_JAVA_SCRIPT, CodeUtil.LANGUAGE_TYPE_SCRIPT, CodeUtil.LANGUAGE_PHP, CodeUtil.LANGUAGE_PYTHON].indexOf(language) >= 0) {
-        return "'" + value + "'";
+        return (language == CodeUtil.LANGUAGE_PYTHON ? 'u' : '') + "'" + value + "'";
       }
-      return '"' + value + '"';
+      return (language == CodeUtil.LANGUAGE_PYTHON ? 'u' : '') + '"' + value + '"';
     }
 
     if (callback == null) {
@@ -5303,7 +5307,7 @@ var CodeUtil = {
     var index = type.indexOf('(');
 
     var t = index < 0 ? type : type.substring(0, index);
-    if (t == '') {
+    if (t == '' || t == 'object') {
       return CodeUtil.getType4Any(language, '');
     }
     var length = index < 0 || saveLength != true ? '' : type.substring(index);
@@ -5333,11 +5337,15 @@ var CodeUtil = {
       case 'year':
         return CodeUtil.getType4Date(language, length);
       case 'decimal':
+      case 'numer':
       case 'numeric':
         return CodeUtil.getType4Decimal(language, length);
       case 'json':
       case 'jsonb':
+      case 'array':
         return CodeUtil.getType4Array(language);
+      case 'string':
+        return CodeUtil.getType4String(language, length);
       default:
         return StringUtil.firstCase(t, true) + length;
     }
@@ -5634,7 +5642,7 @@ var CodeUtil = {
         return 'any[]';
 
       case CodeUtil.LANGUAGE_PHP:
-        return 'Any[]';
+        return 'any[]';
       case CodeUtil.LANGUAGE_PYTHON:
         return 'list[any]';
     }
@@ -5829,8 +5837,8 @@ var CodeUtil = {
       }
 
       var pathKeys = []; // slice 居然每次都返回数字 1  names == null || names.length < 2 ? null : names.slice(2).push(key)
-      if (names != null && names.length > 2) {
-        for (var i = 2; i < names.length; i++) {
+      if (names != null && names.length > 1) {
+        for (var i = 1; i < names.length; i++) {
           pathKeys.push(names[i]);
         }
       }
@@ -5840,7 +5848,7 @@ var CodeUtil = {
       // }
 
       try {
-        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value, standardObj);
+        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, false, isReq, pathKeys, isRestful, value == null ? {} : value, true, standardObj);
         if (isRestful == true || StringUtil.isEmpty(c) == false) {  // TODO 最好都放行，查不到都去数据库查表和字段属性
           return StringUtil.isEmpty(c) ? ' ! 字段 ' + key + ' 不存在！' : (c.startsWith(' ! ') ? c : CodeUtil.getComment(c, false, '  '));
         }
@@ -6082,7 +6090,7 @@ var CodeUtil = {
    * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, standardObj) {
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, ignoreError, standardObj) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName
       + '; method = ' + method + '; database = ' + database + '; language = ' + language
       + '; onlyTableAndColumn = ' + onlyTableAndColumn + '; tableList = \n' + JSON.stringify(tableList));
@@ -6105,7 +6113,11 @@ var CodeUtil = {
 
     if (isRestful == true && StringUtil.isEmpty(columnName, true) == false && StringUtil.isEmpty(CodeUtil.thirdParty, true) == false) { // } && CodeUtil.thirdParty == 'YAPI') {
       var apiMap = CodeUtil.thirdPartyApiMap;
-      var api = apiMap == null ? null : apiMap[(method.startsWith('/') ? '' : '/') + method];
+      if (apiMap == null) {
+        return '...';
+      }
+
+      var api = apiMap[(method.startsWith('/') ? '' : '/') + method];
       var doc = api == null ? null : (isReq ? api.request : api.response);
       if (doc != null) {
         if (pathKeys != null && pathKeys.length > 0) {
@@ -6133,6 +6145,14 @@ var CodeUtil = {
               }
               else if (doc.type == 'array') {
                 doc = doc.items;
+
+                try {
+                  if (p != null && p != '' && Number.isNaN(+ p)) {
+                    i --;
+                  }
+                } catch (e) {}
+
+                continue;
               }
 
               doc = doc[p];
@@ -6144,12 +6164,23 @@ var CodeUtil = {
         }
 
         var c = doc == null ? null : StringUtil.trim(doc.description || doc.title);
-        if (doc != null && StringUtil.isEmpty(doc.type, true) == false && doc.type != (isReq ? CodeUtil.getType4Request(value) : typeof value)) {
-          throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, doc.type) + '类型！' + CodeUtil.getComment(c, false, '  '));
+        var t = doc == null ? null : doc.type;
+        if (t == null) {
+          // 避免崩溃
+        }
+        else if (t.endsWith('[]')) {
+          t = 'array';
+        }
+        else if (t == 'integer') {
+          t = 'number';
+        }
+
+        if (ignoreError != true && StringUtil.isEmpty(t, true) == false && t != (isReq ? CodeUtil.getType4Request(value) : typeof value)) {
+          throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + CodeUtil.getComment(c, false, '  '));
         }
         else {
-          if (StringUtil.isEmpty(c, true) == false) {
-            return CodeUtil.getType4Language(language, doc.type, true) + (doc.required ? ', ' : '? ') + c;
+          if (c != null) {  // 可能存在但只是没注释  StringUtil.isEmpty(c, true) == false) {
+            return CodeUtil.getType4Language(language, t, true) + (doc.required ? ', ' : '? ') + c;
           }
         }
       }

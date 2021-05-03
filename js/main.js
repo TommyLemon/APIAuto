@@ -227,7 +227,7 @@
           var table = null
           var column = null
 
-          var method = App.getMethod();
+          var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
           var mIndex = method == null ? -1 : method.indexOf('/');
           var isRestful = mIndex > 0 && mIndex < method.length - 1;
 
@@ -304,13 +304,13 @@
 
                   var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj); // this.getResponseHint({}, table, $event
+                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj); // this.getResponseHint({}, table, $event
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
                 var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, App.getMethod(), App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj);
+                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -333,7 +333,7 @@
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, standardObj);
+          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
 
           s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
@@ -1006,11 +1006,19 @@
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data),\nGRPC(POST application/json 需要 GRPC 服务开启反射)')
               }
               else if (index == 8) {
+                App.isHeaderShow = true
+
                 alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get')
 
                 try {
                   App.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
                     CodeUtil.thirdParty = platform
+                    if (err != null || ((res || {}).data || {}).errCode != 0) {
+                      App.isHeaderShow = true
+                      App.isRandomShow = false
+                      alert('请把 YApi/Rap/Swagger 等网站的有效 Cookie 粘贴到请求头 Request Header 输入框后再试！')
+                    }
+
                     App.onResponse(url_, res, err)
                     return false
                   }, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
@@ -1027,13 +1035,22 @@
                     }
                     else if (platform == PLATFORM_YAPI) {
                       var api = (data || {}).data
-                      var typeAndParam = App.parseYApiTypeAndParam(api)
-                      api = api || {}
-                      var url = api.path
+                      var url = api == null || api.path == null ? null : StringUtil.noBlank(api.path).replace(/\/\//g, '/')
+                      if (StringUtil.isEmpty(url, true)) {
+                        return
+                      }
 
+                      var typeAndParam = App.parseYApiTypeAndParam(api)
+
+                      var name = StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
                       apiMap[url] = {
+                        name: name,
                         request: typeAndParam.param,
-                        response: api.res_body == null ? null : JSON.parse(api.res_body)
+                        response: api.res_body == null ? null : JSON.parse(api.res_body),
+                        detail: name
+                        + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
+                        + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+                        + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_'))
                       }
                     }
                     else {
@@ -1042,6 +1059,8 @@
                     }
 
                     CodeUtil.thirdPartyApiMap = apiMap
+                    App.saveCache(App.thirdParty, 'thirdPartyApiMap', apiMap);
+
                     return true
                   })
                 } catch (e) {
@@ -1084,7 +1103,9 @@
               App.isEditResponse = show
               // App.saveCache('', 'isEditResponse', show)
 
-              vInput.value = (App.currentRemoteItem.TestRecord || {}).response || ''
+              vInput.value = ((App.view != 'code' || StringUtil.isEmpty(App.jsoncon, true) ? null : App.jsoncon)
+                || (App.currentRemoteItem.TestRecord || {}).response) || ''
+
               vHeader.value = (App.currentRemoteItem.TestRecord || {}).header || ''
 
               App.isTestCaseShow = false
@@ -1495,9 +1516,13 @@
             catch(e) {
               log(e)
             }
+            var code_ = inputObj.code
+            inputObj.code = null  // delete inputObj.code
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
             CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, commentObj, true);
+
+            inputObj.code = code_
           }
 
           var code = currentResponse.code;
@@ -1556,7 +1581,7 @@
             var rpObj = res.data || {}
 
             if (isExportRandom) {
-              if (rpObj.Random != null && rpObj.Random.code == CODE_SUCCESS) {
+              if (rpObj.code == CODE_SUCCESS) {
                 App.randoms = []
                 App.showRandomList(true, (App.currentRemoteItem || {}).Document)
               }
@@ -1564,10 +1589,10 @@
             else {
               var isPut = url.indexOf('/put') >= 0
 
-              if (rpObj.Document == null || rpObj.Document.code != CODE_SUCCESS) {
+              if (rpObj.code != CODE_SUCCESS) {
                 if (isPut) {  // 修改失败就转为新增
                   App.currentRemoteItem = null;
-                  alert('修改失败，请重试(自动转为新增)！')
+                  alert('修改失败，请重试(自动转为新增)！' + StringUtil.trim(rpObj.msg))
                 }
               }
               else {
@@ -1801,6 +1826,8 @@
                 App.saveCache('', 'thirdParty', App.thirdParty)
               }
 
+              const header = App.getHeader(vHeader.value)
+
               if (platform == PLATFORM_POSTMAN) {
                 alert('尚未开发 ' + PLATFORM_POSTMAN)
               }
@@ -1878,7 +1905,7 @@
                   itemCallback(itemUrl, { data: jsonData }, null)
                 }
                 else {
-                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, {}, function (url_, res, err) {
+                  App.request(false, REQUEST_TYPE_PARAM, listUrl, {}, header, function (url_, res, err) {
                     if (App.isSyncing) {
                       alert('正在同步，请等待完成')
                       return
@@ -1910,7 +1937,7 @@
                           continue
                         }
 
-                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, itemCallback)
+                        App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, header, itemCallback)
                       }
 
                     }
@@ -1934,6 +1961,8 @@
         App.parseThirdParty(thirdParty, function (platform, jsonData, docUrl, listUrl, itemUrl) {
           var isJSONData = jsonData instanceof Object
 
+          const header = App.getHeader(vHeader.value)
+
           if (platform == PLATFORM_POSTMAN) {
             alert('尚未开发 ' + PLATFORM_POSTMAN)
           }
@@ -1942,7 +1971,7 @@
               listCallback(platform, docUrl, listUrl, itemUrl, itemUrl, { data: jsonData }, null)
             }
             else {
-              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, {}, function (url_, res, err) {
+              App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, header, function (url_, res, err) {
                 if (listCallback != null) {
                   listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
                 }
@@ -1969,7 +1998,7 @@
 
                 var apis = (res.data || {}).data
                 if (apis == null) { // || apis.length <= 0) {
-                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！')
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！YApi/Rap/Swagger 网站的 Cookie 必须粘贴到请求头 Request Header 输入框！')
                   return
                 }
 
@@ -1985,7 +2014,12 @@
                       continue
                     }
 
-                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, {}, function (url_, res, err) {
+                    // var p = listItem1.path == null ? null : StringUtil.noBlank(listItem1.path).replace(/\/\//g, '/')
+                    // if (p == null) {
+                    //   continue
+                    // }
+
+                    App.request(false, REQUEST_TYPE_PARAM, itemUrl + '?id=' + listItem1._id, {}, header, function (url_, res, err) {
                       if (itemCallback != null) {
                         itemCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
                       }
@@ -2181,8 +2215,14 @@
 
         var typeAndParam = App.parseYApiTypeAndParam(api)
 
-        return App.uploadThirdPartyApi(typeAndParam.type, api.title, api.path, typeAndParam.param, header
-          , StringUtil.isEmpty(api.markdown, true) ? api.description : api.markdown)
+        return App.uploadThirdPartyApi(
+          typeAndParam.type, api.title, api.path, typeAndParam.param, header
+          ,  (StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
+          + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
+          + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+          + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_')))
+          , api.username
+        )
       },
 
 
@@ -2256,7 +2296,7 @@
       },
 
       //上传第三方平台的 API 至 APIAuto
-      uploadThirdPartyApi: function(type, name, url, parameters, header, description) {
+      uploadThirdPartyApi: function(type, name, url, parameters, header, description, creator) {
         var req = '{'
 
         if (parameters != null && parameters.length > 0) {
@@ -2292,7 +2332,7 @@
               }
             }
             else if (typeof val == 'string' && (StringUtil.isEmpty(t, true) || t == 'string')) {
-              val = '"' + val + '"'
+              val = '"' + val.replace(/"/g, '\\"') + '"'
             }
             else if (val instanceof Object) {
               val = JSON.stringify(val, null, '    ')
@@ -2307,7 +2347,7 @@
         req += '\n}'
 
         if (StringUtil.isEmpty(description, true) == false) {
-          req += '\n/**\n\n' + StringUtil.trim(description) + '\n\n*/'
+          req += '\n\n/**\n\n' + StringUtil.trim(description).replace(/\*\//g, '* /') + '\n\n*/'
         }
 
 
@@ -2315,6 +2355,7 @@
         App.request(true, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
           'Document': {
+            'creator': creator,
             'testAccountId': currentAccountId,
             'type': type,
             'name': StringUtil.get(name),
@@ -2401,6 +2442,8 @@
 
 
       onClickAccount: function (index, item, callback) {
+        App.isTestCaseShow = false
+
         if (this.currentAccountIndex == index) {
           if (item == null) {
             if (callback != null) {
@@ -2443,6 +2486,7 @@
                   item.remember = data.remember
                   item.isLoggedIn = true
 
+                  App.accounts[App.currentAccountIndex] = item
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                   App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
 
@@ -2536,6 +2580,7 @@
 
           this.isTestCaseShow = false
 
+          var types = App.types
           var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
           var url = this.server + '/get'
           var req = {
@@ -2548,7 +2593,8 @@
                 'userId': App.User.id,
                 'name$': search,
                 'url$': search,
-                '@combine':  search == null ? null : 'name$,url$'
+                '@combine':  search == null ? null : 'name$,url$',
+                'type{}': types == null || types.length <= 0 ? null : types
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
@@ -2777,6 +2823,7 @@
 
             if (rpObj.code != CODE_SUCCESS) {
               alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
+              App.onResponse(url, res, err)
             }
             else {
               var user = rpObj.user || {}
@@ -3082,7 +3129,7 @@
             }
 
             var m = App.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, true, standardObj))
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, App.database, App.language, App.isEditResponse != true, standardObj))
               + '\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
@@ -3098,6 +3145,22 @@
               ? '' : vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
               + ' - ' + (App.requestVersion > 0 ? 'V' + App.requestVersion : 'V*');
 
+            if (! isSingle) {
+              var method = App.getMethod();  // m 已经 toUpperCase 了
+              var mIndex = method.indexOf('/');
+              var isRestful = mIndex > 0 && mIndex < method.length - 1;
+              if (isRestful != true) {
+                method = method.toUpperCase();
+              }
+              var apiMap = isRestful ? CodeUtil.thirdPartyApiMap : null;
+              var api = apiMap == null ? null : apiMap['/' + method];
+              var name = api == null ? null : api.name;
+              if (StringUtil.isEmpty(name, true) == false) {
+                App.urlComment = name;
+                vUrlComment.value = vUrl.value + CodeUtil.getComment(App.urlComment, false, '  ')
+              }
+            }
+
             onScrollChanged()
             onURLScrollChanged()
           } catch (e) {
@@ -3106,10 +3169,13 @@
 
           try {
             // 去掉前面的 JSON
-            var raw = vInput.value || ''
+            var it = StringUtil.trim(vInput.value);
+            var ct = StringUtil.trim(vComment.value);
+
+            var raw = (it.lastIndexOf('\n\/*') < 0 || it.lastIndexOf('\n*\/') < 0 ? ct : it) || '';
             var start = raw.lastIndexOf('\n\/*')
             var end = raw.lastIndexOf('\n*\/')
-            markdownToHTML('```js\n' + (StringUtil.isEmpty(vComment.value, true) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : vComment.value) + '\n```\n'
+            markdownToHTML('```js\n' + (StringUtil.isEmpty(ct) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : ct) + '\n```\n'
               // + App.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
               + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
           } catch (e3) {
@@ -3187,6 +3253,7 @@
           var index = this.types.indexOf(this.type)
           index++;
           this.type = this.types[index % count]
+          CodeUtil.type = this.type;
         }
 
         var url = StringUtil.get(vUrl.value)
@@ -3223,7 +3290,6 @@
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
 
-        CodeUtil.type = this.type;
         this.onChange(false);
       },
 
@@ -3399,6 +3465,15 @@
           App.jsoncon = JSON.stringify(data, null, '    ');
           App.view = 'code';
           vOutput.value = '';
+
+          // 会导致断言用了这个
+          // if (App.currentRemoteItem == null) {
+          //   App.currentRemoteItem = {}
+          // }
+          // if (App.currentRemoteItem.TestRecord == null) {
+          //   App.currentRemoteItem.TestRecord = {}
+          // }
+          // App.currentRemoteItem.TestRecord.response = data
         }
       },
 
@@ -5118,6 +5193,7 @@
         }
         else {
           this.currentDocIndex = index
+          this.currentRemoteItem = item
           // this.currentRandomIndex = -1
           // this.currentRandomSubIndex = -1
           document = item.Document = item.Document || {}
@@ -5406,7 +5482,7 @@
             testAccountId: App.getCurrentAccountId(),
             'host': App.getBaseUrl(),
             '@order': 'date-',
-            '@column': 'id,userId,documentId,randomId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
+            '@column': 'id,userId,testAccountId,documentId,randomId,duration,minDuration,maxDuration,response' + (App.isMLEnabled ? ',standard' : ''),
             '@having': App.isMLEnabled ? 'length(standard)>2' : null  // '@having': App.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
@@ -5537,6 +5613,7 @@
         this.randomSubPage = this.getCache(this.server, 'randomSubPage') || this.randomSubPage
         this.randomSubCount = this.getCache(this.server, 'randomSubCount') || this.randomSubCount
 
+        CodeUtil.thirdPartyApiMap = this.getCache(this.thirdParty, 'thirdPartyApiMap')
       } catch (e) {
         console.log('created  try { ' +
           '\nthis.User = this.getCache(this.server, User) || {}' +

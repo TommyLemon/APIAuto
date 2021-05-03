@@ -679,7 +679,8 @@ var JSONResponse = {
 
 
 
-    if (type != JSONResponse.getType(real)) { //类型改变
+    var realType = JSONResponse.getType(real);
+    if (type != realType && (type != 'number' || realType != 'integer')) { //类型改变
       log('compareWithStandard  type != getType(real) >> return COMPARE_TYPE_CHANGE');
       return {
         code: JSONResponse.COMPARE_TYPE_CHANGE,
@@ -931,7 +932,7 @@ var JSONResponse = {
     }
 
     var t = typeof o;
-    if (t == 'number' && Number.isInteger(t)) {
+    if (t == 'number' && Number.isInteger(o)) {
       return 'integer';
     }
 
@@ -1149,7 +1150,7 @@ var JSONResponse = {
       return target;
     }
 
-    for (var i = 2; i < depth + 1; i ++) {
+    for (var i = 1; i < depth + 1; i ++) {
       var k = i >= depth ? key : names[i];
       if (k == null) {
         return target;
@@ -1451,10 +1452,11 @@ var JSONResponse = {
   },
 
 
-  getAbstractPath: function (folder, name) {
+  getAbstractPath: function (folder, name, divider) {
     folder = folder == null ? '' : folder;
     name = name == null ? '' : name; //导致 0 变为 ''   name = name || '';
-    return StringUtil.isEmpty(folder, true) ? name : folder + '/' + name;
+    divider = divider == null ? '/' : divider;
+    return StringUtil.isEmpty(folder, true) ? name : folder + divider + name;
   },
 
   getShowString(arr, lineItemCount) {
