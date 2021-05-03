@@ -5831,7 +5831,7 @@ var CodeUtil = {
     var valuesIsNotBoolean = typeOfValue != 'boolean';
     var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isEmpty(value, true) != true;
 
-    if (isRestful == true || standardObj != null) {
+    if (isRestful == true || (standardObj != null && key.indexOf('@') < 0)) {
       if (StringUtil.isEmpty(key, true)) {
         return '';
       }
