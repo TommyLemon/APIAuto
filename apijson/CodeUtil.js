@@ -5827,7 +5827,8 @@ var CodeUtil = {
 
     var typeOfValue = CodeUtil.getType4Request(value);
     var valuesIsNotString = typeOfValue != 'string';
-    var valuesIsNotNumber = typeOfValue != 'number';
+    var valuesIsNotInteger = typeOfValue != 'integer';
+    // var valuesIsNotNumber = valuesIsNotInteger && typeOfValue != 'number';
     var valuesIsNotBoolean = typeOfValue != 'boolean';
     var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isEmpty(value, true) != true;
 
@@ -5932,10 +5933,10 @@ var CodeUtil = {
     if (isRestful != true && (isInSubquery || JSONObject.isArrayKey(name))) {
       switch (key) {
         case 'count':
-          return value != null && valuesIsNotNumber ? ' ! value必须是Number类型！' : CodeUtil.getComment('每页数量' + (isValueNotEmpty ? '' : '，例如 5 10 20 等'), false, '  ');
+          return value != null && valuesIsNotInteger ? ' ! value必须是Integer类型！' : CodeUtil.getComment('每页数量' + (isValueNotEmpty ? '' : '，例如 5 10 20 等'), false, '  ');
         case 'page':
-          if (value != null && valuesIsNotNumber) {
-            return ' ! value必须是Number类型！';
+          if (value != null && valuesIsNotInteger) {
+            return ' ! value必须是Integer类型！';
           }
           return value != null && value < 0 ? ' ! 必须 >= 0 ！' : CodeUtil.getComment('分页页码' + (isValueNotEmpty ? '' : ': 例如 0 1 2 ...'), false, '  ');
         case 'query':
@@ -6059,7 +6060,7 @@ var CodeUtil = {
           if (method == 'GET' || method == 'HEAD') {
             return '';
           }
-          return value != null && valuesIsNotNumber ? ' ! value必须是Number类型！' : CodeUtil.getComment('版本号' + (isValueNotEmpty ? '' : '，例如 1 2 3 等'), false, '  ');
+          return value != null && valuesIsNotInteger ? ' ! value必须是Integer类型！' : CodeUtil.getComment('版本号' + (isValueNotEmpty ? '' : '，例如 1 2 3 等'), false, '  ');
         case 'format':
           return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('格式化: true-是 false-否', false, '  ');
         case '@schema':
@@ -6097,15 +6098,25 @@ var CodeUtil = {
 
     if (standardObj != null) {
       var targetObj = JSONResponse.getStandardByPath(standardObj, pathKeys);
+      var t = targetObj == null ? null : targetObj.type;
       var targetComment = targetObj == null ? null : targetObj.comment;
-      if (StringUtil.isEmpty(targetComment, true) == false) {
-        return CodeUtil.getType4Language(language, targetObj.type, true) + (targetObj.notnull ? ', ' : '? ') + StringUtil.trim(targetComment);
+      var c = targetObj == null ? null : CodeUtil.getType4Language(language, t, true) + (targetObj.notnull ? ', ' : '? ') + StringUtil.trim(targetComment);
+      if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value))) {
+        c = ' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + CodeUtil.getComment(c, false, '  ');
+        if (ignoreError != true) {
+          throw new Error(c);
+        }
+      }
+
+      if ((isRestful && StringUtil.isEmpty(c, true) == false) || (isRestful != true && StringUtil.isEmpty(targetComment, true) == false)) {
+        return c;
       }
     }
 
     var typeOfValue = CodeUtil.getType4Request(value);
     var valuesIsNotString = typeOfValue != 'string';
-    var valuesIsNotNumber = typeOfValue != 'number';
+    // var valuesIsNotInteger = typeOfValue != 'integer';
+    // var valuesIsNotNumber = valuesIsNotInteger && typeOfValue != 'number';
     var valuesIsNotArray = typeOfValue != 'array';
     var valuesIsNotObject = typeOfValue != 'object';
     var valuesIsNotStringOrArrayOrObject = valuesIsNotString && valuesIsNotArray && valuesIsNotObject;
@@ -6163,8 +6174,8 @@ var CodeUtil = {
           doc = null;
         }
 
-        var c = doc == null ? null : StringUtil.trim(doc.description || doc.title);
         var t = doc == null ? null : doc.type;
+        var c = doc == null ? null : CodeUtil.getType4Language(language, t, true) + (doc.required ? ', ' : '? ') + StringUtil.trim(doc.description || doc.title);
         if (t == null) {
           // 避免崩溃
         }
@@ -6175,12 +6186,16 @@ var CodeUtil = {
           t = 'number';
         }
 
-        if (ignoreError != true && StringUtil.isEmpty(t, true) == false && t != CodeUtil.getType4Request(value)) {
-          throw new Error(' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + CodeUtil.getComment(c, false, '  '));
+        if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value))) {
+            c = ' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + CodeUtil.getComment(c, false, '  ')
+            if (ignoreError != true) {
+              throw new Error(c);
+            }
+            return c;
         }
         else {
           if (c != null) {  // 可能存在但只是没注释  StringUtil.isEmpty(c, true) == false) {
-            return CodeUtil.getType4Language(language, t, true) + (doc.required ? ', ' : '? ') + c;
+            return c;
           }
         }
       }
@@ -6392,9 +6407,18 @@ var CodeUtil = {
   },
 
   getType4Request: function (value) {
-    // var t = typeof value;
     // return t != 'string' ? t : typeof JSON.parse(value);
-    return value instanceof Array ? 'array' : typeof value;
+    if (value instanceof Array) {
+      return 'array'
+    }
+    if (Number.isInteger(value)) {
+      return 'integer';
+    }
+    return typeof value;
+  },
+
+  isTypeMatch(targetType, realType) {
+    return StringUtil.isEmpty(targetType, true) == false && targetType != realType && (targetType != 'number' || realType != 'integer');
   }
 
 }
