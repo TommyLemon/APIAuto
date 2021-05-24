@@ -6108,7 +6108,7 @@ var CodeUtil = {
         }
       }
 
-      if ((isRestful && StringUtil.isEmpty(c, true) == false) || (isRestful != true && StringUtil.isEmpty(targetComment, true) == false)) {
+      if (StringUtil.isEmpty(targetComment, true) == false) {  // 如果这里没注释就从数据库/第三方平台取
         return c;
       }
     }
