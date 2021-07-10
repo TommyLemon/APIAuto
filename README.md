@@ -21,15 +21,22 @@
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
 腾讯内部用户包括 互娱、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
-#### APIJSON 和 APIAuto-零代码开发和测试（QECon 全球软件质量&效能大会）
-
+#### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
+零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例<br />
 https://www.bilibili.com/video/BV1yv411p7Y4
 
 <img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
 
-#### 腾讯内先后被 TEG 工具开发组、微信支付部门、腾讯 IEG 工具开发组邀请分享了 
+![image](https://user-images.githubusercontent.com/5738175/125167121-86bed580-e1d1-11eb-9dc6-2ea190146fe6.png)
+
+现场录播回放视频：QECon大会-零代码开发和测试(APIJSON和APIAuto)<br />
+https://www.bilibili.com/video/BV1yv411p7Y4
+<br />
+
+#### 腾讯内先后被 TEG 工具开发组、微信支付部门、腾讯 IEG 工具开发组、腾讯 CDG 金融支付组 邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
+* 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
 
 ![image](https://user-images.githubusercontent.com/5738175/116197821-c72cbc80-a767-11eb-8df1-5dc6f1d46e8f.png)
