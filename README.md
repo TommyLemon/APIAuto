@@ -115,6 +115,8 @@ https://github.com/TommyLemon/APIAuto/issues/9
 #### 2.没有生成文档
 https://github.com/Tencent/APIJSON/issues/85
 
+#### 3.托管服务器访问不了
+https://github.com/TommyLemon/APIAuto/issues/12
 
 ### 感谢开源
 * jsonon
