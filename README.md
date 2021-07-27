@@ -122,7 +122,7 @@ https://github.com/Tencent/APIJSON/issues/85
 https://github.com/TommyLemon/APIAuto/issues/12
 
 更多常见问题 <br />
-https://github.com/Tencent/APIJSON/issues/36
+https://github.com/TommyLemon/APIAuto
 
 ### 感谢开源
 * jsonon
