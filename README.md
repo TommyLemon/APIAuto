@@ -121,8 +121,8 @@ https://github.com/Tencent/APIJSON/issues/85
 不能代理接口、不能展示文档、不能对断言结果纠错 等 <br />
 https://github.com/TommyLemon/APIAuto/issues/12
 
-#### 4.apijson.org 打不开
-最近阿里云停了 apijson.org 这个域名的解析，改用 apijson.cn  <br />
+#### 4.apijson.org 访问不了
+管理后台网页改用 http://apijson.cn/unit ，托管服务地址改为 http://47.74.39.68:9090  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
 
 
