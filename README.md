@@ -122,7 +122,7 @@ https://github.com/Tencent/APIJSON/issues/85
 https://github.com/TommyLemon/APIAuto/issues/12
 
 #### 4.apijson.org 访问不了
-管理后台网页改用 http://apijson.cn/unit ，托管服务地址改为 http://47.74.39.68:9090  <br />
+管理后台网页改用 http://apijson.cn/api ，托管服务地址改为 http://47.74.39.68:9090  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
 
 
