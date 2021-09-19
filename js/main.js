@@ -570,6 +570,7 @@
       isMLEnabled: false,
       isDelegateEnabled: false,
       isPreviewEnabled: false,
+      isEncodeEnabled: true,
       isEditResponse: false,
       isLocalShow: false,
       uploadTotal: 0,
@@ -597,7 +598,7 @@
       host: '',
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
-      server: 'http://apijson.org:9090',  //apijson.org:8000
+      server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.org:8000
       // server: 'http://47.74.39.68:9090',  // apijson.org
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
       // thirdParty: 'RAP /repository/joined /repository/get',
@@ -1093,6 +1094,10 @@
 
               App.onChange(false)
               break
+            case 12:
+              App.isEncodeEnabled = show
+              App.saveCache('', 'isEncodeEnabled', show)
+              break
             case 11:
               var did = ((App.currentRemoteItem || {}).Document || {}).id
               if (did == null) {
@@ -1137,6 +1142,10 @@
           App.isPreviewEnabled = show
           App.saveCache('', 'isPreviewEnabled', show)
           // vRequestMarkdown.innerHTML = ''
+        }
+        else if (index == 12) {
+          App.isEncodeEnabled = show
+          App.saveCache('', 'isEncodeEnabled', show)
         }
         else if (index == 11) {
           App.isEditResponse = show
@@ -3398,7 +3407,8 @@
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '') + '$_delegate_url=') : '' ) + StringUtil.noBlank(url),
+          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '') + '$_delegate_url=') : '' )
+          + (App.isEncodeEnabled ? encodeURI(StringUtil.noBlank(url)) : StringUtil.noBlank(url)),
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
@@ -5577,6 +5587,7 @@
         this.locals = this.getCache('', 'locals') || []
 
         this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled') || this.isDelegateEnabled
+        this.isEncodeEnabled = this.getCache('', 'isEncodeEnabled') || this.isEncodeEnabled
         //预览了就不能编辑了，点开看会懵 this.isPreviewEnabled = this.getCache('', 'isPreviewEnabled') || this.isPreviewEnabled
         this.isHeaderShow = this.getCache('', 'isHeaderShow') || this.isHeaderShow
         this.isRandomShow = this.getCache('', 'isRandomShow') || this.isRandomShow
