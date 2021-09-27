@@ -97,7 +97,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 ### 部署方法
 
 可以直接下载源码解压后用浏览器打开 index.html，建议用 Chrome 或 火狐 (Safari、Edge、IE 等可能有兼容问题)。<br />
-也可以直接访问官网的线上环境 http://apijson.cn/api 或开发环境 http://apijson.org:8000/api 。<br />
+也可以直接访问官方网站 http://apijson.cn/api <br />
 <br />
 把左侧 URL 输入框内基地址改为你主机的地址(例如 http://localhost:8080 )，<br />
 然后在右上角 设置 下拉菜单内修改 数据库类型Database、数据库模式Schema。<br />

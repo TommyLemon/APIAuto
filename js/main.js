@@ -592,13 +592,13 @@
         balance: null //点击更新提示需要判空 0.00
       },
       type: REQUEST_TYPE_JSON,
-      types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
+      types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON],  // 很多人喜欢用 GET 接口测试，默认的 JSON 看不懂 , REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
       host: '',
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
-      server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.org:8000
+      server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.cn
       // server: 'http://47.74.39.68:9090',  // apijson.org
-      thirdParty: 'SWAGGER /v2/api-docs',  //apijson.org:8000
+      thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
       language: CodeUtil.LANGUAGE_KOTLIN,
@@ -1052,7 +1052,7 @@
                         response: api.res_body == null ? null : JSON.parse(api.res_body),
                         detail: name
                         + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
-                        + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+                        + '\nhttp://apijson.cn/yapi/project/1/interface/api/' + api._id
                         + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_'))
                       }
                     }
@@ -2230,7 +2230,7 @@
           typeAndParam.type, api.title, api.path, typeAndParam.param, header
           ,  (StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
           + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
-          + '\nhttp://apijson.org/yapi/project/1/interface/api/' + api._id
+          + '\nhttp://apijson.cn/yapi/project/1/interface/api/' + api._id
           + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_')))
           , api.username
         )
@@ -4317,10 +4317,10 @@
           //   alert('请把URL改成你自己的！\n例如 http://localhost:8080')
           //   return
           // }
-          if (baseUrl.indexOf('/apijson.org') >= 0) {
-            alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
-            return
-          }
+          // if (baseUrl.indexOf('/apijson.org') >= 0) {
+          //   alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
+          //   return
+          // }
 
           const list = (testSubList ? this.randomSubs : this.randoms) || []
           var allCount = list.length
@@ -4865,10 +4865,10 @@
         //   alert('请把URL改成你自己的！\n例如 http://localhost:8080')
         //   return
         // }
-        if (baseUrl.indexOf('/apijson.org') >= 0) {
-          alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
-          return
-        }
+        // if (baseUrl.indexOf('/apijson.org') >= 0) {
+        //   alert('请把URL改成 http://apijson.cn:8080 或 你自己的！\n例如 http://localhost:8080')
+        //   return
+        // }
 
         const list = App.remotes || []
         const allCount = list.length
