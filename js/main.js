@@ -3126,7 +3126,7 @@
           vSend.disabled = false;
 
           if (App.isEditResponse != true) {
-            vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](http://i.youku.com/apijson)' + code;
+            vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](https://i.youku.com/i/UNTg1NzI1MjQ4MA==/videos?spm=a2hzp.8244740.0.0)' + code;
 
             App.showDoc()
           }
@@ -3762,8 +3762,9 @@
             + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
             + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
             + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
+            + '\nAPIJSON - Go 版: https://gitee.com/tiangao/apijson-go '
             + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
-            + '\nAPIJSON - PHP版: https://github.com/qq547057827/apijson-php '
+            + '\nAPIJSON - PHP版: https://github.com/xianglong111/APIJSON-php '
             + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
             + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
             + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
