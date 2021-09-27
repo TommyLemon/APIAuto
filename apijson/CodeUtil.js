@@ -5612,6 +5612,7 @@ var CodeUtil = {
         return 'time_t' + length;
 
       case CodeUtil.LANGUAGE_JAVA_SCRIPT:
+        return 'string';
       case CodeUtil.LANGUAGE_TYPE_SCRIPT:
         break;
 
@@ -5921,13 +5922,13 @@ var CodeUtil = {
 
       if (isRestful != true && key.endsWith('@')) {
         if (key == '@from@') {
-          return CodeUtil.getComment('数据来源：子查询' + (isValueNotEmpty ? '，里面必须有 from 键值对和 表对象 Table:{}' : '，例如 { "from":"User", "User":{} }'), false, '  ');
+          return CodeUtil.getComment('数据来源：子查询' + (isValueNotEmpty ? '，里面必须有 "from":Table, Table:{}' : '，例如 { "from":"User", "User":{} }'), false, '  ');
         }
 
         var aliaIndex = name == null ? -1 : name.indexOf(':');
         var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
         if (JSONObject.isTableKey(objName)) {
-          return CodeUtil.getComment('子查询 < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database, language, false, isReq, pathKeys, isRestful, value), false, '  ');
+          return CodeUtil.getComment('子查询，里面必须有 "from":Table, Table:{} < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database, language, false, isReq, pathKeys, isRestful, value, null, null, true), false, '  ');
         }
         return CodeUtil.getComment('子查询，可在内部加 from,range 或 数组关键词 等键值对，需要被下面的表字段相关 key 引用赋值', false, '  ');
       }
@@ -5977,13 +5978,14 @@ var CodeUtil = {
           return value != null && value < 0 ? ' ! 必须 >= 0 ！' : CodeUtil.getComment('分页页码' + (isValueNotEmpty ? '' : ': 例如 0 1 2 ...'), false, '  ');
         case 'query':
           var query = CodeUtil.QUERY_TYPES[value];
-          return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：0-数据 1-总数 2-全部', false, '  ');
+          return StringUtil.isEmpty(query) ? ' ! value必须是[' + CodeUtil.QUERY_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('查询内容：0-对象 1-总数和分页详情 2-数据、总数和分页详情', false, '  ');
         case 'join':
           if (valuesIsNotString) {
             return ' ! value必须是String类型！';
           }
 
           var s = '';
+          var must = '';
           var items = value.length < 1 ? null : StringUtil.split(value);
           if (items != null && items.length > 0) {
 
@@ -6017,11 +6019,12 @@ var CodeUtil = {
                 return ' ! 表名 ' + t + ' 不合法 ! 必须是 Table 这种大驼峰格式' + (isValueNotEmpty ? '' : '，例如 "User" "Comment" "ViewTable" 等 ！');
               }
 
-              s += CodeUtil.JOIN_TYPES[c] + ' JOIN ' + t + (a.length <= 0 ? '' : ' AS ' + a) + ' ';
+              s += CodeUtil.JOIN_TYPES[c] + ' JOIN ' + t + (a.length <= 0 ? '' : ' AS ' + a);
+              must += (i > 0 ? ', ' : '，同一层级必须有 "') + t + '":{ "' + item.substring(lastIndex + 1) + '":"/../.." }';
             }
           }
 
-          return CodeUtil.getComment('多表连接：' + (s || '例如 &/User/id@,</Comment/momentId@,... ' +
+          return CodeUtil.getComment('多表连接：' + (s + must || '例如 &/User/id@,</Comment/momentId@,... ' +
             '对应关系为 @ APP, < LEFT, > RIGHT, * CROSS, & INNER, | FULL, ! OUTER, ^ SIDE, ( ANTI, ) FOREIGN'), false, '  ');
         default:
           if (isInSubquery) {
@@ -6032,7 +6035,7 @@ var CodeUtil = {
                 }
                 return CodeUtil.SUBQUERY_RANGES.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.SUBQUERY_RANGES.join() + ']中的一种！' : CodeUtil.getComment('比较范围：ANY-任意 ALL-全部', false, '  ');
               case 'from':
-                return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('数据来源' + (isValueNotEmpty ? '，同一层级必须有对应的 "' + value + '":{...}' : '，例如 "User"，同一层级必须有对应的 "User":{...}'), false, '  ');
+                return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('数据来源' + (isValueNotEmpty ? '，同一层级必须有 "' + value + '":{...}' : '，例如 "User"，同一层级必须有 "User":{...}'), false, '  ');
             }
           }
           break;
@@ -6046,39 +6049,39 @@ var CodeUtil = {
     if (isRestful != true && JSONObject.isTableKey(objName)) {
       switch (key) {
         case '@column':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段' + (isValueNotEmpty ? '' : '：例如 "name" "toId:parentId" "id,userId;json_length(praiseUserIdList):praiseCount" 等'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('返回字段' + (isValueNotEmpty ? '，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词' : '：例如 "name" "toId:parentId" "id,userId;json_length(praiseUserIdList):praiseCount" 等'), false, '  ');
         case '@from@': //value 类型为 Object 时 到不了这里，已在上方处理
           return valuesIsNotString && typeOfValue != 'object' ? ' ! value必须是String或Object类型！' : CodeUtil.getComment('数据来源：引用赋值 子查询 "' + value + '@":{...} ', false, '  ');
         case '@group':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('分组方式' + (isValueNotEmpty ? '' : '，例如 "userId" "momentId,toId" 等'), false, '  ');
         case '@having':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('SQL函数' + (isValueNotEmpty ? '' : '，例如 "max(id)>100" "length(phone)>0;sum(balance)<=10000" 等'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('聚合函数' + (isValueNotEmpty ? '，可传 SQL 函数(用分号 ; 隔开)、表达式，以及部分 SQL 关键词' : '，例如 "max(id)>100" "length(phone)>0;sum(balance)<=10000" 等'), false, '  ');
         case '@order':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('排序方式：+升序，-降序' + (isValueNotEmpty ? '' : '，例如 "date-" "name+,id-" 等'), false, '  ');
-        case '@combine':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('条件组合' + (isValueNotEmpty ? '' : '，例如 "name$,tag$" "!userId<,!toId" 等'), false, '  ');
+        case '@combine':  //TODO 解析 value 并直接给出条件组合结果
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('条件组合' + (isValueNotEmpty ? '，| 可省略。合并同类，外层按照 & | ! 顺序，内层按传参顺序组合成 (key0 & key1 & key6 & 其它key) & (key2 | key3 | key7) & !(key4 | key5)' : '，例如 "name$,tag$" "!userId<,!toId" 等'), false, '  ');
         case '@schema':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间(数据库名/模式)' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" "postgres" "dbo" 等'), false, '  ');
         case '@datasource':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('跨数据源' + (isValueNotEmpty ? '' : '，例如 "DRUID" "HIKARICP" 等'), false, '  ');
         case '@raw':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('原始SQL' + (isValueNotEmpty ? '' : '，例如 "@column" "id{},@having" 等'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('原始SQL片段' + (isValueNotEmpty ? '，由后端 RAW_MAP 代码配置指定 "key0,key1.." 中每个 key 对应 key:"SQL片段" 中的 SQL片段' : '，例如 "@column" "id{},@having" 等'), false, '  ');
         case '@json':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('转为JSON' + (isValueNotEmpty ? '' : '，例如 "request" "gets,heads" 等'), false, '  ');
         case '@database':
           return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库类型：例如 "MYSQL" "POSTGRESQL" "SQLSERVER" "ORACLE" "DB2" "CLICKHOUSE" 等', false, '  ');
         case '@role':
           var role = CodeUtil.ROLES[value];
-          return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('来访角色：' + role, false, '  ');
+          return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('来访角色：' + role + '，限制可操作的数据，假定真实强制匹配', false, '  ');
         case '@cache':
           var cache = CodeUtil.CACHE_TYPES[value];
           return StringUtil.isEmpty(cache) ? ' ! value必须是[' + CodeUtil.CACHE_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('缓存方式：0-全部 1-磁盘 2-内存', false, '  ');
         case '@explain':
-          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('性能分析：true-开启 false-关闭', false, '  ');
+          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('性能分析：true-开启 false-关闭，返回执行的 SQL 及查询计划', false, '  ');
       }
       if (key.startsWith('@')) {
         if (key.endsWith('()')) {
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('存储过程' + (isValueNotEmpty ? '' : '：例如 "getCommentByUserId(id,@limit,@offset)"'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('存储过程' + (isValueNotEmpty ? '，触发调用数据库存储过程' : '：例如 "getCommentByUserId(id,@limit,@offset)"'), false, '  ');
         }
         return '';
       }
@@ -6090,17 +6093,11 @@ var CodeUtil = {
     if (isRestful != true && StringUtil.isEmpty(name)) {
       switch (key) {
         case 'tag':
-          // if (method == 'GET' || method == 'HEAD') {
-          //   return '';
-          // }
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('请求标识' + (method == 'GET' || method == 'HEAD' ? '，GET,HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : (isValueNotEmpty ? '' : '，例如 "User" "Comment[]" "Privacy-CIRCLE" 等')), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('请求标识' + (method == 'GET' || method == 'HEAD' ? '，GET,HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : (isValueNotEmpty ? '，用来区分不同请求并校验，由后端 Request 表中指定' : '，例如 "User" "Comment[]" "Privacy-CIRCLE" 等')), false, '  ');
         case 'version':
-          if (method == 'GET' || method == 'HEAD') {
-            return '';
-          }
-          return value != null && valuesIsNotInteger ? ' ! value必须是Integer类型！' : CodeUtil.getComment('版本号' + (isValueNotEmpty ? '' : '，例如 1 2 3 等'), false, '  ');
+          return valuesIsNotInteger ? ' ! value必须是Integer类型！' : CodeUtil.getComment('版本号' + (method == 'GET' || method == 'HEAD' ? '，GET,HEAD 请求不会自动解析，仅为后续迭代可能的手动优化而预留' : (isValueNotEmpty ? '，用来使用特定版本的校验规则，由后端 Request 表中指定' : '，例如 1 2 3 等')), false, '  ');
         case 'format':
-          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('格式化: true-是 false-否', false, '  ');
+          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('格式化: true-是 false-否，将 TableName 转为 tableName, TableName[] 转为 tableNameList, Table:alias 转为 alias 等小驼峰格式', false, '  ');
         case '@schema':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间(数据库名/模式)' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" "postgres" "dbo" 等'), false, '  ');
         case '@datasource':
@@ -6114,7 +6111,7 @@ var CodeUtil = {
           var cache = CodeUtil.CACHE_TYPES[value];
           return StringUtil.isEmpty(cache) ? ' ! value必须是[' + CodeUtil.CACHE_TYPE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('缓存方式：0-全部 1-磁盘 2-内存', false, '  ');
         case '@explain':
-          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('性能分析：true-开启 false-关闭', false, '  ');
+          return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('性能分析：true-开启 false-关闭，返回执行的 SQL 及查询计划', false, '  ');
       }
     }
 
@@ -6131,7 +6128,7 @@ var CodeUtil = {
    * @param onlyTableAndColumn
    * @return {*}
    */
-  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, ignoreError, standardObj) {
+  getCommentFromDoc: function (tableList, tableName, columnName, method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, ignoreError, standardObj, isSubquery) {
     log('getCommentFromDoc  tableName = ' + tableName + '; columnName = ' + columnName
       + '; method = ' + method + '; database = ' + database + '; language = ' + language
       + '; onlyTableAndColumn = ' + onlyTableAndColumn + '; tableList = \n' + JSON.stringify(tableList));
@@ -6155,10 +6152,14 @@ var CodeUtil = {
 
     var typeOfValue = CodeUtil.getType4Request(value);
     var valuesIsNotString = typeOfValue != 'string';
-    // var valuesIsNotInteger = typeOfValue != 'integer';
-    // var valuesIsNotNumber = valuesIsNotInteger && typeOfValue != 'number';
+    var valuesIsNotInteger = typeOfValue != 'integer';
+    var valuesIsNotNumber = valuesIsNotInteger && typeOfValue != 'number';
     var valuesIsNotArray = typeOfValue != 'array';
     var valuesIsNotObject = typeOfValue != 'object';
+    var valuesIsNotStringOrObject = valuesIsNotString && valuesIsNotObject;
+    var valuesIsNotStringOrArray = valuesIsNotString && valuesIsNotArray;
+    var valuesIsNotStringOrNumber = valuesIsNotString && valuesIsNotNumber;
+    var valuesIsNotStringOrNumberOrObject = valuesIsNotStringOrNumber && valuesIsNotObject;
     var valuesIsNotStringOrArrayOrObject = valuesIsNotString && valuesIsNotArray && valuesIsNotObject;
     var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isEmpty(value, true) != true;
 
@@ -6276,6 +6277,8 @@ var CodeUtil = {
       var key;
       var logic = '';
 
+      var verifyType = isSubquery != true && value != null;
+
       if (onlyTableAndColumn) {
         key = new String(columnName);
       }
@@ -6284,29 +6287,69 @@ var CodeUtil = {
         //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
-          return '远程函数' + (isValueNotEmpty ? '' : '，例如 "isContain(praiseUserIdList,userId)"');
+          if (['GET', 'HEAD'].indexOf(method) < 0) {
+            return ' ! 远程函数只能用于 GET,HEAD 请求！！';
+          }
+
+          if (value != null && valuesIsNotString) {
+            return ' ! value必须是String类型！';
+          }
+          if (value != null) {
+            var startIndex = value.indexOf("(");
+            if (startIndex <= 0 || value.endsWith(")") == false) {
+              return ' ! value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+            }
+            var fun = value.substring(0, startIndex);
+            if (StringUtil.isName(fun) != true) {
+              return '! 函数名' + fun + '不合法！value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+            }
+          }
+
+          var priority = '';
+          if (columnName.endsWith("-()")) {
+            priority = ' < 在解析所在对象前优先执行';
+          }
+          else if (columnName.endsWith("+()")) {
+            priority = ' < 在解析所在对象后滞后执行';
+          }
+          else {
+            priority = '，执行时机在解析所在对象后，解析子对象前，可以在 () 前用 + - 设置优先级，例如 key-() 优先执行';
+          }
+
+          return '远程函数' + (isValueNotEmpty ? '，触发调用后端对应的方法/函数' + priority : '，例如 "isContain(praiseUserIdList,userId)"');
         }
 
-
+        var hasAt = false;
         if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
           // 没传 value 进来，不好解析，而且太长导致后面的字段属性被遮住
           // var lastIndex = value.lastIndexOf('/');
           // var refLastPath =
           // at = '引用赋值: ' + tableName + '.' + columnName + '=' + ;
+          hasAt = true;
 
-          at = '引用赋值' + (isValueNotEmpty ? '' : '，例如 "User/id" "[]/Moment/id" 等');
+          at = '引用赋值' + (isValueNotEmpty ? (value.startsWith('/') ? '，从对象父级开始的相对(缺省)路径' : '，从最外层开始的绝对(完整)路径') : '，例如 "User/id" "[]/Moment/id" 等');
           columnName = columnName.substring(0, columnName.length - 1);
+
+          if (value != null && valuesIsNotStringOrObject) {
+            return ' ! value必须是String或Object类型！';
+          }
+
+          verifyType = false;
         }
 
         if (columnName.endsWith("$")) {//搜索，查询时处理
-          if (value != null && valuesIsNotStringOrArrayOrObject) {
-            return ' ! value必须是String,Array或Object类型！';
-          }
+          if (verifyType && hasAt != true && valuesIsNotStringOrArray) {
+              return ' ! value必须是String或Array类型！';
+            }
 
           fun = '模糊搜索' + (isValueNotEmpty ? '' : '，例如 "%c%" "S%" "%end" 等');
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith("~")) {//匹配正则表达式，查询时处理
+          if (verifyType && hasAt != true && valuesIsNotStringOrArray) {
+            return ' ! value必须是String或Array类型！';
+          }
+
           fun = '正则匹配' + (isValueNotEmpty ? '' : '，例如 "C" "^[0-9]+$" "^[a-zA-Z]+$" 等');
           key = columnName.substring(0, columnName.length - 1);
           if (key.endsWith("*")) {
@@ -6315,26 +6358,41 @@ var CodeUtil = {
           }
         }
         else if (columnName.endsWith("%")) {//连续范围 BETWEEN AND，查询时处理
-          if (value != null && valuesIsNotStringOrArrayOrObject) {
-            return ' ! value必须是String,Array或Object类型！';
+          if (verifyType && hasAt != true && valuesIsNotStringOrArray) {
+            return ' ! value必须是String或Array类型！';
           }
+
           fun = '连续范围' + (isValueNotEmpty ? '' : '，例如 "82001,82020" "2018-01-01,2020-01-01" ["1-10", "90-100"] 等');
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith("{}")) {//被包含，或者说key对应值处于value的范围内。查询时处理
-          if (value != null && valuesIsNotStringOrArrayOrObject) {
-            return ' ! value必须是String,Array或Object类型！';
+          if (verifyType && hasAt != true && valuesIsNotStringOrArray) {
+            return ' ! value必须是String或Array类型！';
           }
+
           fun = '匹配 选项/条件' + (isValueNotEmpty ? '' : '，例如 ' + (valuesIsNotString ? '[1, 2, 3] ["%c%", "S%", "%end"] 等' : '">100" "%2=0;<=100000" 等'));
           key = columnName.substring(0, columnName.length - 2);
+
+          verifyType = false;
         }
         else if (columnName.endsWith("<>")) {//包含，或者说value处于key对应值的范围内。查询时处理
           fun = '包含选项' + (isValueNotEmpty ? '' : '，例如 1 "Test" [82001, 82002] 等');
           key = columnName.substring(0, columnName.length - 2);
+
+          verifyType = false;
         }
         else if (columnName.endsWith("}{")) {//存在，EXISTS。查询时处理
+          if (verifyType && hasAt != true && isSubquery != true) {
+            return ' ! key}{ 后面必须接 @，写成 key}{@:{} 格式！';
+          }
+          if (verifyType && valuesIsNotObject) {
+            return ' ! value必须是Object类型！';
+          }
+
           fun = '是否存在' + (isValueNotEmpty ? '' : '，例如 { "from":"Comment", "Comment":{ "@column":"userId" } }');
           key = columnName.substring(0, columnName.length - 2);
+
+          verifyType = false;
         }
         else if (columnName.endsWith("+")) {//延长，PUT查询时处理
           if (method != 'PUT') {//不为PUT就抛异常
@@ -6351,18 +6409,34 @@ var CodeUtil = {
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith(">=")) {//大于或等于
+          if (verifyType && hasAt != true && valuesIsNotStringOrNumber) {
+            return ' ! value必须是String或Number类型！';
+          }
+
           fun = '大于或等于' + (isValueNotEmpty ? '' : '，例如 1 9.9 "2020-01-01" 等');
           key = columnName.substring(0, columnName.length - 2);
         }
         else if (columnName.endsWith("<=")) {//小于或等于
+          if (verifyType && hasAt != true && valuesIsNotStringOrNumber) {
+            return ' ! value必须是String或Number类型！';
+          }
+
           fun = '小于或等于' + (isValueNotEmpty ? '' : '，例如 1 9.9 "2020-01-01" 等');
           key = columnName.substring(0, columnName.length - 2);
         }
         else if (columnName.endsWith(">")) {//大于
+          if (verifyType && hasAt != true && valuesIsNotStringOrNumber) {
+            return ' ! value必须是String或Number类型！';
+          }
+
           fun = '大于' + (isValueNotEmpty ? '' : '，例如 1 9.9 "2020-01-01" 等');
           key = columnName.substring(0, columnName.length - 1);
         }
         else if (columnName.endsWith("<")) {//小于
+          if (verifyType && hasAt != true && valuesIsNotStringOrNumber) {
+            return ' ! value必须是String或Number类型！';
+          }
+
           fun = '小于' + (isValueNotEmpty ? '' : '，例如 1 9.9 "2020-01-01" 等');
           key = columnName.substring(0, columnName.length - 1);
         }
@@ -6391,10 +6465,9 @@ var CodeUtil = {
           logic = '';
         }
 
-
         if (logic.length > 0) {
-          if (method != 'GET' && method != 'HEAD' && method != 'GETS' && method != 'HEADS') {//逻辑运算符仅供GET,HEAD方法使用
-            return ' ! 逻辑运算符 & | ! 只能用于查询(GET,HEAD,GETS,HEADS)请求！';
+          if (['GET', 'HEAD', 'GETS', 'HEADS', 'PUT', 'DELETE'].indexOf(method) < 0) {//逻辑运算符仅供GET,HEAD方法使用
+            return ' ! 逻辑运算符 & | ! 只能用于 GET,HEAD,GETS,HEADS,PUT,DELETE 请求！';
           }
           key = key.substring(0, key.length - 1);
         }
@@ -6404,7 +6477,6 @@ var CodeUtil = {
         }
 
         //功能符 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
       }
 
       columnList = item['[]'];
@@ -6437,7 +6509,19 @@ var CodeUtil = {
           );
 
         column.column_type = CodeUtil.getColumnType(column, database);
-        return (p.length <= 0 ? '' : p + key + ': ') + CodeUtil.getType4Language(language, column.column_type, true) + (column.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
+        var t = CodeUtil.getType4Language(language, column.column_type, true);
+        var c = (p.length <= 0 ? '' : p + key + ': ') + t + (column.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
+
+        var ct = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type, false);
+        if (verifyType && t != null && CodeUtil.isTypeMatch(ct, CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, typeOfValue))) {
+          // c = ' ! value必须是' + t + '类型！' + CodeUtil.getComment(c, false, '  ')
+          // if (ignoreError != true) {
+          //   throw new Error(c);
+          // }
+          return ' ! value必须是' + t + '类型！' + CodeUtil.getComment(c, false, '  ')
+        }
+
+        return c;
       }
 
       return onlyTableAndColumn ? '' : ' ! 字段 ' + key + ' 不存在！只能是 [' + columnNames.join() + '] 中的一个！';
