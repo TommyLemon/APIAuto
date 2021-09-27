@@ -804,6 +804,34 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
       sequenceDiagram : true,  // 默认不解析
     });
   }
+
+
+  function getRequest() {
+    var url = window.location.search;
+
+    var index = url == null ? -1 : url.indexOf("?")
+    if(index < 0) { //判断是否有参数
+      return null;
+    }
+
+    var theRequest = {};
+    var str = url.substring(index + 1);  //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
+    var arr = str.split("&");  //截除“&”生成一个数组
+
+    var len = arr == null ? 0 : arr.length;
+    for(var i = 0; i < len; i++) {
+      var part = arr[i];
+      var ind = part == null ? -1 : part.indexOf("=");
+      if (ind <= 0) {
+        continue
+      }
+
+      theRequest[part.substring(0, ind)] = decodeURIComponent(part.substring(ind+1));
+    }
+
+    return theRequest;
+  }
+
 </script>
 <script src="md/lib/jquery.min.js"></script>
 <script src="md/lib/marked.min.js"></script>

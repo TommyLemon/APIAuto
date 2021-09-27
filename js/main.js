@@ -5636,11 +5636,25 @@
       this.listHistory()
       this.transfer()
 
-      if (this.User != null && this.User.id != null && this.User.id > 0) {
-        setTimeout(function () {
+      setTimeout(function () {
+        var rawReq = getRequest()
+        if (rawReq != null && StringUtil.isEmpty(rawReq.json, true) == false) {
+          vType.value = StringUtil.toUpperCase(rawReq.type || App.type, true)
+          vUrl.value = StringUtil.trim(rawReq.url || App.url)
+          vUrlComment.value = ""
+          vComment.value = ""
+          vInput.value = StringUtil.trim(rawReq.json)
+          App.onChange(false)
+          App.send(false)
+
+          setTimeout(function () {
+            window.open(vUrl.value + "/" + encodeURIComponent(vInput.value))
+          }, 1000)
+        }
+        else if (App.User != null && App.User.id != null && App.User.id > 0) {
           App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
-        }, 1000)
-      }
+        }
+      }, 1000)
     }
   })
 })()
