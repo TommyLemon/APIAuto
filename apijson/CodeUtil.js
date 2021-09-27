@@ -1202,6 +1202,7 @@ var CodeUtil = {
         var combine = isTable ? value['@combine'] : null;
         var schema = isTable ? value['@schema'] : null;
         var database = isTable ? value['@database'] : null;
+        var datasource = isTable ? value['@datasource'] : null;
         var raw = isTable ? value['@raw'] : null;
         var role = isTable ? value['@role'] : null;
         var explain = isTable ? value['@explain'] : null;
@@ -1216,6 +1217,7 @@ var CodeUtil = {
           delete value['@combine'];
           delete value['@schema'];
           delete value['@database'];
+          delete value['@datasource'];
           delete value['@raw'];
           delete value['@role'];
           delete value['@explain'];
@@ -1234,6 +1236,7 @@ var CodeUtil = {
           s = combine == null ? s : s + '\n' + nextPrefix + name + '.setCombine(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, combine) + ');';
           s = schema == null ? s : s + '\n' + nextPrefix + name + '.setSchema(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, schema) + ');';
           s = database == null ? s : s + '\n' + nextPrefix + name + '.setDatabase(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, database) + ');';
+          s = datasource == null ? s : s + '\n' + nextPrefix + name + '.setDatasource(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, datasource) + ');';
           s = raw == null ? s : s + '\n' + nextPrefix + name + '.setRaw(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, raw) + ');';
           s = role == null ? s : s + '\n' + nextPrefix + name + '.setRole(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, role) + ');';
           s = explain == null ? s : s + '\n' + nextPrefix + name + '.setExplain(' + CodeUtil.getCode4Value(CodeUtil.LANGUAGE_JAVA, explain) + ');';
@@ -1337,6 +1340,9 @@ var CodeUtil = {
           }
           if (key == '@database') {
             return '\n' + parentKey + '.setDatabase(' + valStr + ');';
+          }
+          if (key == '@datasource') {
+            return '\n' + parentKey + '.setDatasource(' + valStr + ');';
           }
           if (key == '@role') {
             return '\n' + parentKey + '.setRole(' + valStr + ');';
@@ -5838,7 +5844,7 @@ var CodeUtil = {
     OWNER: '拥有者',
     ADMIN: '管理员'
   },
-  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'SQLITE'],
+  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'CLICKHOUSE', 'SQLITE'],
 
   /**获取请求JSON的注释
    * @param tableList
@@ -5910,7 +5916,7 @@ var CodeUtil = {
     }
     else if (value instanceof Object) {
       if (isRestful != true && StringUtil.isEmpty(key, true)) {
-        return ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@explain,@cache 等全局关键词键值对', false, '  ');
+        return ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
       }
 
       if (isRestful != true && key.endsWith('@')) {
@@ -6052,13 +6058,15 @@ var CodeUtil = {
         case '@combine':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('条件组合' + (isValueNotEmpty ? '' : '，例如 "name$,tag$" "!userId<,!toId" 等'), false, '  ');
         case '@schema':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" 等'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间(数据库名/模式)' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" "postgres" "dbo" 等'), false, '  ');
+        case '@datasource':
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('跨数据源' + (isValueNotEmpty ? '' : '，例如 "DRUID" "HIKARICP" 等'), false, '  ');
         case '@raw':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('原始SQL' + (isValueNotEmpty ? '' : '，例如 "@column" "id{},@having" 等'), false, '  ');
         case '@json':
           return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('转为JSON' + (isValueNotEmpty ? '' : '，例如 "request" "gets,heads" 等'), false, '  ');
         case '@database':
-          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库：例如 "MYSQL" "POSTGRESQL" "SQLSERVER" "ORACLE" 等', false, '  ');
+          return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库类型：例如 "MYSQL" "POSTGRESQL" "SQLSERVER" "ORACLE" "DB2" "CLICKHOUSE" 等', false, '  ');
         case '@role':
           var role = CodeUtil.ROLES[value];
           return StringUtil.isEmpty(role) ? ' ! value必须是[' + CodeUtil.ROLE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('来访角色：' + role, false, '  ');
@@ -6094,7 +6102,9 @@ var CodeUtil = {
         case 'format':
           return valuesIsNotBoolean ? ' ! value必须是Boolean类型！' : CodeUtil.getComment('格式化: true-是 false-否', false, '  ');
         case '@schema':
-          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" 等'), false, '  ');
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('集合空间(数据库名/模式)' + (isValueNotEmpty ? '' : '，例如 "sys" "apijson" "postgres" "dbo" 等'), false, '  ');
+        case '@datasource':
+          return valuesIsNotString ? ' ! value必须是String类型！' : CodeUtil.getComment('跨数据源' + (isValueNotEmpty ? '' : '，例如 "DRUID" "HIKARICP" 等'), false, '  ');
         case '@database':
           return CodeUtil.DATABASE_KEYS.indexOf(value) < 0 ? ' ! value必须是[' + CodeUtil.DATABASE_KEYS.join() + ']中的一种！' : CodeUtil.getComment('数据库' + (isValueNotEmpty ? '' : '，例如 "MYSQL" "POSTGRESQL" "SQLSERVER" "ORACLE" 等'), false, '  ');
         case '@role':
