@@ -5639,17 +5639,28 @@
       setTimeout(function () {
         var rawReq = getRequest()
         if (rawReq != null && StringUtil.isEmpty(rawReq.json, true) == false) {
-          vType.value = StringUtil.toUpperCase(rawReq.type || App.type, true)
-          vUrl.value = StringUtil.trim(rawReq.url || App.url)
           vUrlComment.value = ""
           vComment.value = ""
+
+          if (StringUtil.isEmpty(rawReq.url, true) == false) {
+            vType.value = StringUtil.toUpperCase(rawReq.type, true)
+          }
+
+          if (StringUtil.isEmpty(rawReq.url, true) == false) {
+            vUrl.value = StringUtil.trim(rawReq.url)
+          }
+
           vInput.value = StringUtil.trim(rawReq.json)
+
           App.onChange(false)
           App.send(false)
 
-          setTimeout(function () {
-            window.open(vUrl.value + "/" + encodeURIComponent(vInput.value))
-          }, 1000)
+          var url = vUrl.value
+          if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) ) ) {
+            setTimeout(function () {
+              window.open(vUrl.value + "/" + encodeURIComponent(vInput.value))
+            }, 1000)
+          }
         }
         else if (App.User != null && App.User.id != null && App.User.id > 0) {
           App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
