@@ -98,8 +98,7 @@
         }
 
         var method = App.getMethod();
-        var mIndex = method == null ? -1 : method.indexOf('/');
-        var isRestful = mIndex > 0 && mIndex < method.length - 1;
+        var isRestful = ! JSONObject.isAPIJSONPath(method);
 
         try {
           if (val instanceof Array) {
@@ -228,8 +227,7 @@
           var column = null
 
           var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
-          var mIndex = method == null ? -1 : method.indexOf('/');
-          var isRestful = mIndex > 0 && mIndex < method.length - 1;
+          var isRestful = ! JSONObject.isAPIJSONPath(method);
 
           if (val instanceof Object && (val instanceof Array == false)) {
 
@@ -802,6 +800,10 @@
         var url = new String(vUrl.value).trim()
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
+        index = url.indexOf("?")
+        if (index >= 0) {
+          url = url.substring(0, index)
+        }
         return url.startsWith('/') ? url.substring(1) : url
       },
       //获取请求的tag
@@ -3156,8 +3158,7 @@
 
             if (! isSingle) {
               var method = App.getMethod();  // m 已经 toUpperCase 了
-              var mIndex = method.indexOf('/');
-              var isRestful = mIndex > 0 && mIndex < method.length - 1;
+              var isRestful = ! JSONObject.isAPIJSONPath(method);
               if (isRestful != true) {
                 method = method.toUpperCase();
               }

@@ -28,6 +28,7 @@ var URL_HEADS = URL_BASE + "/heads"; // 通过POST来HEAD数据，不显示请�
 var URL_POST = URL_BASE + "/post"; // 新增(或者说插入)数据
 var URL_PUT = URL_BASE + "/put"; // 修改数据，只修改传入字段对应的值
 var URL_DELETE = URL_BASE + "/delete"; // 删除数据
+var APIJSON_METHODS = ["get", "head", "gets", "heads", "post", "put", "delete"]
 
 
 /**请求，全走HTTP POST

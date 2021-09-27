@@ -59,6 +59,32 @@ var JSONObject = {
     }
 
     return key.endsWith('[]');
+  },
+
+  isAPIJSONPath: function (method) {
+    if (method == null) {
+      return false;
+    }
+
+    if (method.startsWith("/")) {
+      method = method.substring(1);
+    }
+
+    if (method.endsWith("/")) {
+      method = method.substring(0, method.length - 1);
+    }
+
+    var mIndex = method.indexOf('/');
+    if (mIndex < 0) {
+      return true;
+    }
+
+    if (APIJSON_METHODS.indexOf(method.substring(0, mIndex)) >= 0) {
+      mIndex = method.substring(mIndex + 1).indexOf("/");
+      return mIndex < 0;
+    }
+
+    return false;
   }
 
 }

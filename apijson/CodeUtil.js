@@ -55,9 +55,39 @@ var CodeUtil = {
     if (StringUtil.isEmpty(reqStr)) {
       return '';
     }
-    method = method == null ? 'GET' : method;
+    method = method || 'get';
+    var isRestful = true;
+
+    if (method.startsWith("/")) {
+      method = method.substring(1);
+    }
+
+    if (method.endsWith("/")) {
+      method = method.substring(0, method.length - 1);
+    }
+
+    var startName = null;
+
     var mIndex = method.indexOf('/');
-    var isRestful = mIndex > 0 && mIndex < method.length - 1;
+    if (mIndex < 0) {
+      isRestful = false;
+    }
+    else if (APIJSON_METHODS.indexOf(method.substring(0, mIndex)) >= 0) {
+      var suffix = method.substring(mIndex + 1);
+      method = method.substring(0, mIndex);
+
+      mIndex = suffix.indexOf("/");
+      isRestful = mIndex >= 0;
+
+      if (isReq && ! isRestful) {
+        var tag = suffix.substring(mIndex + 1)
+        var tbl = tag.endsWith("[]") ? tag.substring(0, tag.length - 2) : tag;
+        if (JSONObject.isTableKey(tbl)) {
+          startName = method == 'put' || method == 'delete' ? tbl : tag;
+        }
+      }
+    }
+
     if (isRestful != true) {
       method = method.toUpperCase();
     }
@@ -65,8 +95,8 @@ var CodeUtil = {
     var lines = reqStr.split('\n');
     var line;
 
-    var depth = 0;
-    var names = [];
+    var depth = startName == null ? 0 : 1;
+    var names =  startName == null ? [] : [startName];
     var isInSubquery = false;
 
     var index;
@@ -76,12 +106,12 @@ var CodeUtil = {
     var hintComment;
 
     for (var i = 0; i < lines.length; i ++) {
-      line = lines[i].trim();
+      line = lines[i].trim() || '';
 
       //每一种都要提取:左边的key
-      index = line == null ? -1 : line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
-      key = index < 0 ? '' : line.substring(1, index - 1);
-      var cIndex = line == null ? -1 : line.indexOf('  //');
+      index = line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
+      key = index < 0 ? (depth <= 1 && startName != null ? startName : '') : line.substring(1, index - 1);
+      var cIndex = line.indexOf('  //');
 
       comment = '';
       if (cIndex >= 0) {
