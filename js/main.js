@@ -5811,16 +5811,6 @@
                 })
               }
 
-              if (setting.isRandomShow && setting.isRandomListShow) {
-                delayTime += 2000
-                App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
-              }
-
-              if (setting.isTestCaseShow) {
-                delayTime += 2000
-                App.showTestCase(true, setting.isLocalShow)
-              }
-
               for (var k in setting) {
                 var v = k == null ? null : setting[k]
                 if (v == null) {
@@ -5831,6 +5821,16 @@
                 if (save) {
                   App.saveCache('', k, v)
                 }
+              }
+
+              if (setting.isRandomShow && setting.isRandomListShow) {
+                delayTime += 2000
+                App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
+              }
+
+              if (setting.isTestCaseShow) {
+                delayTime += 2000
+                App.showTestCase(true, setting.isLocalShow)
               }
             } catch (e) {
               log(e)
