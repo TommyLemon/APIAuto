@@ -903,15 +903,57 @@
               try {
                 reqStr = JSON.stringify(encode(JSON.parse(vInput.value)))
               } catch (e){  // 可能包含注释
+                log(e)
                 reqStr = encode(StringUtil.trim(vInput.value))
               }
 
+              // URL 太长导致打不开标签
+              var settingStr = null
+              try {
+                settingStr = JSON.stringify({
+                  requestVersion: App.requestVersion,
+                  requestCount: App.requestCount,
+                  isTestCaseShow: App.isTestCaseShow,
+                  // isHeaderShow: App.isHeaderShow,
+                  // isRandomShow: App.isRandomShow,
+                  isRandomListShow: App.isRandomShow ? App.isRandomListShow : undefined,
+                  isRandomSubListShow: App.isRandomListShow ? App.isRandomSubListShow : undefined,
+                  // isRandomEditable: App.isRandomEditable,
+                  isCrossEnabled: App.isCrossEnabled,
+                  isMLEnabled: App.isMLEnabled,
+                  isDelegateEnabled: App.isDelegateEnabled,
+                  isPreviewEnabled: App.isPreviewEnabled,
+                  isEncodeEnabled: App.isEncodeEnabled,
+                  isEditResponse: App.isEditResponse,
+                  isLocalShow: App.isTestCaseShow ? App.isLocalShow : undefined,
+                  page: App.page,
+                  count: App.count,
+                  testCasePage: App.testCasePage,
+                  testCaseCount: App.testCaseCount,
+                  randomPage: App.randomPage,
+                  randomCount: App.randomCount,
+                  randomSubPage: App.randomSubPage,
+                  randomSubCount: App.randomSubCount,
+                  host: StringUtil.isEmpty(App.host, true) ? undefined : encodeURIComponent(App.host),
+                  search: StringUtil.isEmpty(App.search, true) ? undefined : encodeURIComponent(App.search),
+                  testCaseSearch: StringUtil.isEmpty(App.testCaseSearch, true) ? undefined : App.testCaseSearch,
+                  randomSearch: StringUtil.isEmpty(App.randomSearch, true) ? undefined : encodeURIComponent(App.randomSearch),
+                  randomSubSearch: StringUtil.isEmpty(App.randomSubSearch, true) ? undefined : encodeURIComponent(App.randomSubSearch)
+                })
+              } catch (e){
+                log(e)
+              }
+
+              // 实测 561059 长度的 URL 都支持，只是输入框显示长度约为 2000
               window.open((ind < 0 ? href : href.substring(0, ind))
-                + "?type=" + StringUtil.trim(App.type)
+                + (App.view == 'code' ? "?send=true" : "?send=false")
+                + "&type=" + StringUtil.trim(App.type)
                 + "&url=" + encodeURIComponent(StringUtil.trim(vUrl.value))
-                 + (StringUtil.isEmpty(vHeader.value, true) ? '' : "&header=" + encodeURIComponent(StringUtil.trim(vHeader.value)))
                 + "&json=" + reqStr
-                + (StringUtil.isEmpty(vRandom.value, true) ? '' : "&random=" + encodeURIComponent(StringUtil.trim(vRandom.value))))
+                 + (StringUtil.isEmpty(vHeader.value, true) ? '' : "&header=" + encodeURIComponent(StringUtil.trim(vHeader.value)))
+                + (StringUtil.isEmpty(vRandom.value, true) ? '' : "&random=" + encodeURIComponent(StringUtil.trim(vRandom.value)))
+                + (StringUtil.isEmpty(settingStr, true) ? '' : "&setting=" + settingStr)
+              )
             }, 1000)
 
             if (App.view == 'error') {  // App.view != 'code') {
@@ -2760,7 +2802,7 @@
         cache[key] = value
         localStorage.setItem('APIAuto:' + url, JSON.stringify(cache))
       },
-      getCache: function (url, key) {
+      getCache: function (url, key, defaultValue) {
         var cache = localStorage.getItem('APIAuto:' + url)
         try {
           cache = JSON.parse(cache)
@@ -2768,7 +2810,8 @@
           App.log('login  App.send >> try { cache = JSON.parse(cache) } catch(e) {\n' + e.message)
         }
         cache = cache || {}
-        return key == null ? cache : cache[key]
+        var val = key == null ? cache : cache[key]
+        return val == null && defaultValue != null ? defaultValue : val
       },
 
       /**登录确认
@@ -5483,7 +5526,7 @@
                 item.TestRecord = testRecord
 
 
-                //
+
                 // if (! isNewRandom) {
                 //   if (isRandom) {
                 //     App.showRandomList(true, App.currentRemoteItem)
@@ -5594,7 +5637,7 @@
         }
         var types = this.getCache('', 'types')
         if (types != null && types.length > 0) {
-          this.types = types
+          this.types = types instanceof Array ? types : StringUtil.split(types)
         }
         var server = this.getCache('', 'server')
         if (StringUtil.isEmpty(server, true) == false) {
@@ -5605,13 +5648,13 @@
           this.thirdParty = thirdParty
         }
 
-        this.locals = this.getCache('', 'locals') || []
+        this.locals = this.getCache('', 'locals', [])
 
-        this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled') || this.isDelegateEnabled
-        this.isEncodeEnabled = this.getCache('', 'isEncodeEnabled') || this.isEncodeEnabled
-        //预览了就不能编辑了，点开看会懵 this.isPreviewEnabled = this.getCache('', 'isPreviewEnabled') || this.isPreviewEnabled
-        this.isHeaderShow = this.getCache('', 'isHeaderShow') || this.isHeaderShow
-        this.isRandomShow = this.getCache('', 'isRandomShow') || this.isRandomShow
+        this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled', this.isDelegateEnabled)
+        this.isEncodeEnabled = this.getCache('', 'isEncodeEnabled', this.isEncodeEnabled)
+        //预览了就不能编辑了，点开看会懵 this.isPreviewEnabled = this.getCache('', 'isPreviewEnabled', this.isPreviewEnabled)
+        this.isHeaderShow = this.getCache('', 'isHeaderShow', this.isHeaderShow)
+        this.isRandomShow = this.getCache('', 'isRandomShow', this.isRandomShow)
       } catch (e) {
         console.log('created  try { ' +
           '\nvar url = this.getCache(, url) ...' +
@@ -5630,25 +5673,25 @@
       }
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
-        this.User = this.getCache(this.server, 'User') || {}
-        this.isCrossEnabled = this.getCache(this.server, 'isCrossEnabled') || this.isCrossEnabled
-        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled') || this.isMLEnabled
+        this.User = this.getCache(this.server, 'User', {})
+        this.isCrossEnabled = this.getCache(this.server, 'isCrossEnabled', this.isCrossEnabled)
+        this.isMLEnabled = this.getCache(this.server, 'isMLEnabled', this.isMLEnabled)
         this.crossProcess = this.isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭'
         this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
         // this.host = this.getBaseUrl()
-        this.page = this.getCache(this.server, 'page') || this.page
-        this.count = this.getCache(this.server, 'count') || this.count
-        this.testCasePage = this.getCache(this.server, 'testCasePage') || this.testCasePage
-        this.testCaseCount = this.getCache(this.server, 'testCaseCount') || this.testCaseCount
-        this.randomPage = this.getCache(this.server, 'randomPage') || this.randomPage
-        this.randomCount = this.getCache(this.server, 'randomCount') || this.randomCount
-        this.randomSubPage = this.getCache(this.server, 'randomSubPage') || this.randomSubPage
-        this.randomSubCount = this.getCache(this.server, 'randomSubCount') || this.randomSubCount
+        this.page = this.getCache(this.server, 'page', this.page)
+        this.count = this.getCache(this.server, 'count', this.count)
+        this.testCasePage = this.getCache(this.server, 'testCasePage', this.testCasePage)
+        this.testCaseCount = this.getCache(this.server, 'testCaseCount', this.testCaseCount)
+        this.randomPage = this.getCache(this.server, 'randomPage', this.randomPage)
+        this.randomCount = this.getCache(this.server, 'randomCount', this.randomCount)
+        this.randomSubPage = this.getCache(this.server, 'randomSubPage', this.randomSubPage)
+        this.randomSubCount = this.getCache(this.server, 'randomSubCount', this.randomSubCount)
 
         CodeUtil.thirdPartyApiMap = this.getCache(this.thirdParty, 'thirdPartyApiMap')
       } catch (e) {
         console.log('created  try { ' +
-          '\nthis.User = this.getCache(this.server, User) || {}' +
+          '\nthis.User = this.getCache(this.server, User, {})' +
           '\n} catch (e) {\n' + e.message)
       }
 
@@ -5687,14 +5730,38 @@
 
           vInput.value = StringUtil.trim(rawReq.json)
 
-          App.onChange(false)
-          App.send(false)
 
-          var url = vUrl.value || ''
-          if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) ) ) {
-            setTimeout(function () {
-              window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
-            }, 1000)
+          // URL 太长导致截断和乱码
+          if (StringUtil.isEmpty(rawReq.setting, true) == false) {
+            var save = rawReq.save == 'true'
+            try {
+              var setting = JSON.parse(StringUtil.trim(rawReq.setting, true))
+              for (var k in setting) {
+                var v = k == null ? null : setting[k]
+                if (v == null) {
+                  continue
+                }
+                App[k] = v  // App.$data[k] = app[k]
+
+                if (save) {
+                  App.saveCache('', k, v)
+                }
+              }
+            } catch (e) {
+              log(e)
+            }
+          }
+
+          App.onChange(false)
+          if (rawReq.send != "false") {
+            App.send(false)
+
+            var url = vUrl.value || ''
+            if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) )) {
+              setTimeout(function () {
+                window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
+              }, 1000)
+            }
           }
         }
         else if (App.User != null && App.User.id != null && App.User.id > 0) {
