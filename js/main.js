@@ -908,6 +908,7 @@
             count: App.count,
             testCasePage: App.testCasePage,
             testCaseCount: App.testCaseCount,
+            testRandomCount: App.testRandomCount,
             randomPage: App.randomPage,
             randomCount: App.randomCount,
             randomSubPage: App.randomSubPage,
