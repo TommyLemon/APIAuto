@@ -363,6 +363,36 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+
+  function getRequestFromURL() {
+    var url = window.location.search;
+
+    var index = url == null ? -1 : url.indexOf("?")
+    if(index < 0) { //判断是否有参数
+      return null;
+    }
+
+    var theRequest = null;
+    var str = url.substring(index + 1);  //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
+    var arr = str.split("&");  //截除“&”生成一个数组
+
+    var len = arr == null ? 0 : arr.length;
+    for(var i = 0; i < len; i++) {
+      var part = arr[i];
+      var ind = part == null ? -1 : part.indexOf("=");
+      if (ind <= 0) {
+        continue
+      }
+
+      if (theRequest == null) {
+        theRequest = {};
+      }
+      theRequest[part.substring(0, ind)] = decodeURIComponent(part.substring(ind+1));
+    }
+
+    return theRequest;
+  }
+
   var PLATFORM_POSTMAN = 'POSTMAN'
   var PLATFORM_SWAGGER = 'SWAGGER'
   var PLATFORM_YAPI = 'YAPI'
@@ -3887,7 +3917,7 @@
         var page = this.page || 0
 
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
-        App.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
+        this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
           '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
           // '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema,
@@ -5719,14 +5749,21 @@
           '\n} catch (e) {\n' + e.message)
       }
 
-
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
-      this.listHistory()
-      this.transfer()
 
-      setTimeout(function () {
-        var rawReq = getRequestFromURL()
-        if (rawReq != null) {
+      this.listHistory()
+
+      var rawReq = getRequestFromURL()
+      if (rawReq == null || StringUtil.isEmpty(rawReq.type, true)) {
+        this.transfer()
+
+        if (this.User != null && this.User.id != null && this.User.id > 0) {
+          this.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
+        }
+      }
+      else {
+        setTimeout(function () {
+          isSingle = ! isSingle
 
           var hasTestArg = false  // 避免 http://localhost:63342/APIAuto/index.html?_ijt=fh8di51h7qip2d1s3r3bqn73nt 这种无意义参数
           if (StringUtil.isEmpty(rawReq.type, true) == false) {
@@ -5760,12 +5797,30 @@
             App.isRandomListShow = false
           }
 
-
           // URL 太长导致截断和乱码
           if (StringUtil.isEmpty(rawReq.setting, true) == false) {
             var save = rawReq.save == 'true'
             try {
-              var setting = JSON.parse(StringUtil.trim(rawReq.setting, true))
+              var setting = JSON.parse(StringUtil.trim(rawReq.setting, true)) || {}
+
+              var delayTime = 0
+              if (setting.count != App.count || setting.page != App.page || setting.search != App.search) {
+                delayTime += 2000
+                App.getDoc(function (d) {
+                  App.setDoc(d);
+                })
+              }
+
+              if (setting.isRandomShow && setting.isRandomListShow) {
+                delayTime += 2000
+                App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
+              }
+
+              if (setting.isTestCaseShow) {
+                delayTime += 2000
+                App.showTestCase(true, setting.isLocalShow)
+              }
+
               for (var k in setting) {
                 var v = k == null ? null : setting[k]
                 if (v == null) {
@@ -5790,26 +5845,31 @@
           App.onChange(false)
 
           if (hasTestArg && rawReq.send != "false" && rawReq.send != "null") {
-            if (rawReq.send == 'random') {
-              App.onClickTestRandom()
-            } else if (App.isTestCaseShow) {
-              App.onClickTest()
-            } else {
-              App.send(false)
-            }
+            setTimeout(function () {
+              if (rawReq.send == 'random') {
+                App.onClickTestRandom()
+              } else if (App.isTestCaseShow) {
+                App.onClickTest()
+              } else {
+                App.send(false)
+              }
 
-            var url = vUrl.value || ''
-            if (rawReq.jump == "true" || rawReq.jump == "null" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) )) {
-              setTimeout(function () {
-                window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
-              }, App.isTestCaseShow || rawReq.send == 'random' ? 5000 : 2000)
-            }
+              var url = vUrl.value || ''
+              if (rawReq.jump == "true" || rawReq.jump == "null"
+                || (rawReq.jump != "false" && App.isTestCaseShow != true && rawReq.send != 'random'
+                  && (url.endsWith("/get") || url.endsWith("/head"))
+                )
+              ) {
+                setTimeout(function () {
+                  window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
+                }, 2000)
+              }
+            }, delayTime)
           }
-        }
-        else if (App.User != null && App.User.id != null && App.User.id > 0) {
-          App.showTestCase(true, false)  // 本地历史仍然要求登录  App.User == null || App.User.id == null)
-        }
-      }, 1000)
+        }, 1000)
+
+      }
+
     }
   })
 })()
