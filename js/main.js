@@ -895,6 +895,25 @@
               alert('请先输入请求内容！')
               return
             }
+
+            setTimeout(function () {
+              var href = window.location.href || 'http://apijson.cn/api'
+              var ind = href == null ? -1 : href.indexOf('?')  // url 后带参数只能 encodeURIComponent
+              var reqStr
+              try {
+                reqStr = JSON.stringify(encode(JSON.parse(vInput.value)))
+              } catch (e){  // 可能包含注释
+                reqStr = encode(StringUtil.trim(vInput.value))
+              }
+
+              window.open((ind < 0 ? href : href.substring(0, ind))
+                + "?type=" + StringUtil.trim(App.type)
+                + "&url=" + encodeURIComponent(StringUtil.trim(vUrl.value))
+                 + (StringUtil.isEmpty(vHeader.value, true) ? '' : "&header=" + encodeURIComponent(StringUtil.trim(vHeader.value)))
+                + "&json=" + reqStr
+                + (StringUtil.isEmpty(vRandom.value, true) ? '' : "&random=" + encodeURIComponent(StringUtil.trim(vRandom.value))))
+            }, 1000)
+
             if (App.view == 'error') {  // App.view != 'code') {
               alert('发现错误，请输入正确的内容！')  // alert('请先测试请求，确保是正确可用的！')
               return
@@ -5644,12 +5663,26 @@
           vUrlComment.value = ""
           vComment.value = ""
 
-          if (StringUtil.isEmpty(rawReq.url, true) == false) {
-            vType.value = StringUtil.toUpperCase(rawReq.type, true)
+          if (StringUtil.isEmpty(rawReq.type, true) == false) {
+            App.type = StringUtil.toUpperCase(rawReq.type, true)
+            if (App.types != null && App.types.indexOf(App.type) < 0) {
+              App.types.push(App.type)
+            }
           }
 
           if (StringUtil.isEmpty(rawReq.url, true) == false) {
             vUrl.value = StringUtil.trim(rawReq.url)
+          }
+
+          if (StringUtil.isEmpty(rawReq.header, true) == false) {
+            vHeader.value = StringUtil.trim(rawReq.header, true)
+            App.isHeaderShow = true
+          }
+
+          if (StringUtil.isEmpty(rawReq.random, true) == false) {
+            vRandom.value = StringUtil.trim(rawReq.random, true)
+            App.isRandomShow = true
+            App.isRandomListShow = false
           }
 
           vInput.value = StringUtil.trim(rawReq.json)
@@ -5657,7 +5690,7 @@
           App.onChange(false)
           App.send(false)
 
-          var url = vUrl.value
+          var url = vUrl.value || ''
           if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) ) ) {
             setTimeout(function () {
               window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
