@@ -139,7 +139,7 @@
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
                 <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
             </div>
-            <button class="send" id="vSend" @click="send(false)">{{ isEditResponse ? '模拟返回' : '发送请求' }}</button>
+            <button class="send" id="vSend" @click="onClickSend()">{{ isEditResponse ? '模拟返回' : '发送请求' }}</button>
         </div>
         <div v-show="isTestCaseShow" class="left-bar">
             <!--<svg class="icon" style="margin-left: 10px">-->
@@ -150,7 +150,7 @@
 
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableCross(! isCrossEnabled)">{{ crossProcess }}</a>
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
-            <a v-show="! isLocalShow" class="hint--top @cli-tool" data-hint="回归测试" href="javascript:void(0)" @click="test(false, isCrossEnabled ? -1 : currentAccountIndex)">
+            <a v-show="! isLocalShow" class="hint--top @cli-tool" data-hint="回归测试" href="javascript:void(0)" @click="onClickTest()">
                 <img class="icon" src="img/refresh.png"/>
             </a>
             <a v-show="isLocalShow" class="hint--top @cli-tool" data-hint="清空" href="javascript:void(0)" @click="clearLocal()">
@@ -814,7 +814,7 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
       return null;
     }
 
-    var theRequest = {};
+    var theRequest = null;
     var str = url.substring(index + 1);  //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
     var arr = str.split("&");  //截除“&”生成一个数组
 
@@ -826,6 +826,9 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
         continue
       }
 
+      if (theRequest == null) {
+        theRequest = {};
+      }
       theRequest[part.substring(0, ind)] = decodeURIComponent(part.substring(ind+1));
     }
 

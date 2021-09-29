@@ -528,6 +528,7 @@
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
+      isRandomTest: false,
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
@@ -872,6 +873,73 @@
         return header
       },
 
+      // 分享 APIAuto 特有链接，打开即可还原分享人的 JSON 参数、设置项、搜索关键词、分页数量及页码等配置
+      shareLink: function (isRandom) {
+        var jsonStr = null
+        if (App.isTestCaseShow != true) {
+          try {
+            jsonStr = JSON.stringify(encode(JSON.parse(vInput.value)))
+          } catch (e) {  // 可能包含注释
+            log(e)
+            jsonStr = encode(StringUtil.trim(vInput.value))
+          }
+        }
+
+        // URL 太长导致打不开标签
+        var settingStr = null
+        try {
+          settingStr = JSON.stringify({
+            requestVersion: App.requestVersion,
+            requestCount: App.requestCount,
+            isTestCaseShow: App.isTestCaseShow,
+            // isHeaderShow: App.isHeaderShow,
+            // isRandomShow: App.isRandomShow,
+            isRandomListShow: App.isRandomShow ? App.isRandomListShow : undefined,
+            isRandomSubListShow: App.isRandomListShow ? App.isRandomSubListShow : undefined,
+            // isRandomEditable: App.isRandomEditable,
+            isCrossEnabled: App.isCrossEnabled,
+            isMLEnabled: App.isMLEnabled,
+            isDelegateEnabled: App.isDelegateEnabled,
+            isPreviewEnabled: App.isPreviewEnabled,
+            isEncodeEnabled: App.isEncodeEnabled,
+            isEditResponse: App.isEditResponse,
+            isLocalShow: App.isTestCaseShow ? App.isLocalShow : undefined,
+            page: App.page,
+            count: App.count,
+            testCasePage: App.testCasePage,
+            testCaseCount: App.testCaseCount,
+            randomPage: App.randomPage,
+            randomCount: App.randomCount,
+            randomSubPage: App.randomSubPage,
+            randomSubCount: App.randomSubCount,
+            host: StringUtil.isEmpty(App.host, true) ? undefined : encodeURIComponent(App.host),
+            search: StringUtil.isEmpty(App.search, true) ? undefined : encodeURIComponent(App.search),
+            testCaseSearch: StringUtil.isEmpty(App.testCaseSearch, true) ? undefined : App.testCaseSearch,
+            randomSearch: StringUtil.isEmpty(App.randomSearch, true) ? undefined : encodeURIComponent(App.randomSearch),
+            randomSubSearch: StringUtil.isEmpty(App.randomSubSearch, true) ? undefined : encodeURIComponent(App.randomSubSearch)
+          })
+        } catch (e){
+          log(e)
+        }
+
+        var headerStr = App.isTestCaseShow || StringUtil.isEmpty(vHeader.value, true) ? null : encodeURIComponent(StringUtil.trim(vHeader.value))
+        var randomStr = App.isTestCaseShow || StringUtil.isEmpty(vRandom.value, true) ? null : encodeURIComponent(StringUtil.trim(vRandom.value))
+
+        var href = window.location.href || 'http://apijson.cn/api'
+        var ind = href == null ? -1 : href.indexOf('?')  // url 后带参数只能 encodeURIComponent
+
+        // 实测 561059 长度的 URL 都支持，只是输入框显示长度约为 2000
+        window.open((ind < 0 ? href : href.substring(0, ind))
+          + (App.view != 'code' ? "?send=false" : (isRandom ? "?send=random" : "?send=true"))
+          + "&type=" + StringUtil.trim(App.type)
+          + "&url=" + encodeURIComponent(StringUtil.trim(vUrl.value))
+          + (StringUtil.isEmpty(jsonStr, true) ? '' : "&json=" + jsonStr)
+          + (StringUtil.isEmpty(headerStr, true) ? '' : "&header=" + headerStr)
+          + (StringUtil.isEmpty(randomStr, true) ? '' : "&random=" + randomStr)
+          + (StringUtil.isEmpty(settingStr, true) ? '' : "&setting=" + settingStr)
+        )
+      },
+
       // 显示保存弹窗
       showSave: function (show) {
         if (show) {
@@ -891,70 +959,17 @@
         if (show) {
           if (isRemote) { //共享测试用例
             App.isExportRandom = isRandom
+
+            if (isRandom != true) {
+              setTimeout(function () {
+                App.shareLink(App.isRandomTest)
+              }, 1000)
+            }
+            
             if (App.isTestCaseShow) {
               alert('请先输入请求内容！')
               return
             }
-
-            setTimeout(function () {
-              var href = window.location.href || 'http://apijson.cn/api'
-              var ind = href == null ? -1 : href.indexOf('?')  // url 后带参数只能 encodeURIComponent
-              var reqStr
-              try {
-                reqStr = JSON.stringify(encode(JSON.parse(vInput.value)))
-              } catch (e){  // 可能包含注释
-                log(e)
-                reqStr = encode(StringUtil.trim(vInput.value))
-              }
-
-              // URL 太长导致打不开标签
-              var settingStr = null
-              try {
-                settingStr = JSON.stringify({
-                  requestVersion: App.requestVersion,
-                  requestCount: App.requestCount,
-                  isTestCaseShow: App.isTestCaseShow,
-                  // isHeaderShow: App.isHeaderShow,
-                  // isRandomShow: App.isRandomShow,
-                  isRandomListShow: App.isRandomShow ? App.isRandomListShow : undefined,
-                  isRandomSubListShow: App.isRandomListShow ? App.isRandomSubListShow : undefined,
-                  // isRandomEditable: App.isRandomEditable,
-                  isCrossEnabled: App.isCrossEnabled,
-                  isMLEnabled: App.isMLEnabled,
-                  isDelegateEnabled: App.isDelegateEnabled,
-                  isPreviewEnabled: App.isPreviewEnabled,
-                  isEncodeEnabled: App.isEncodeEnabled,
-                  isEditResponse: App.isEditResponse,
-                  isLocalShow: App.isTestCaseShow ? App.isLocalShow : undefined,
-                  page: App.page,
-                  count: App.count,
-                  testCasePage: App.testCasePage,
-                  testCaseCount: App.testCaseCount,
-                  randomPage: App.randomPage,
-                  randomCount: App.randomCount,
-                  randomSubPage: App.randomSubPage,
-                  randomSubCount: App.randomSubCount,
-                  host: StringUtil.isEmpty(App.host, true) ? undefined : encodeURIComponent(App.host),
-                  search: StringUtil.isEmpty(App.search, true) ? undefined : encodeURIComponent(App.search),
-                  testCaseSearch: StringUtil.isEmpty(App.testCaseSearch, true) ? undefined : App.testCaseSearch,
-                  randomSearch: StringUtil.isEmpty(App.randomSearch, true) ? undefined : encodeURIComponent(App.randomSearch),
-                  randomSubSearch: StringUtil.isEmpty(App.randomSubSearch, true) ? undefined : encodeURIComponent(App.randomSubSearch)
-                })
-              } catch (e){
-                log(e)
-              }
-
-              // 实测 561059 长度的 URL 都支持，只是输入框显示长度约为 2000
-              window.open((ind < 0 ? href : href.substring(0, ind))
-                + (App.view == 'code' ? "?send=true" : "?send=false")
-                + "&type=" + StringUtil.trim(App.type)
-                + "&url=" + encodeURIComponent(StringUtil.trim(vUrl.value))
-                + "&json=" + reqStr
-                 + (StringUtil.isEmpty(vHeader.value, true) ? '' : "&header=" + encodeURIComponent(StringUtil.trim(vHeader.value)))
-                + (StringUtil.isEmpty(vRandom.value, true) ? '' : "&random=" + encodeURIComponent(StringUtil.trim(vRandom.value)))
-                + (StringUtil.isEmpty(settingStr, true) ? '' : "&setting=" + settingStr)
-              )
-            }, 1000)
 
             if (App.view == 'error') {  // App.view != 'code') {
               alert('发现错误，请输入正确的内容！')  // alert('请先测试请求，确保是正确可用的！')
@@ -4360,6 +4375,7 @@
        * @param show
        */
       onClickTestRandom: function () {
+        this.isRandomTest = true
         this.testRandom(! this.isRandomListShow && ! this.isRandomSubListShow, this.isRandomListShow, this.isRandomSubListShow)
       },
       testRandom: function (show, testList, testSubList, limit) {
@@ -4886,7 +4902,14 @@
 
       },
 
-
+      onClickSend: function () {
+        this.isRandomTest = false
+        this.send(false)
+      },
+      onClickTest: function () {
+        this.isRandomTest = false
+        this.test(false, this.isCrossEnabled ? -1 : currentAccountIndex)
+      },
       /**回归测试
        * 原理：
        1.遍历所有上传过的测试用例（URL+请求JSON）
@@ -5702,7 +5725,7 @@
 
       setTimeout(function () {
         var rawReq = getRequestFromURL()
-        if (rawReq != null && StringUtil.isEmpty(rawReq.json, true) == false) {
+        if (rawReq != null) {
           vUrlComment.value = ""
           vComment.value = ""
 
@@ -5717,6 +5740,10 @@
             vUrl.value = StringUtil.trim(rawReq.url)
           }
 
+          if (StringUtil.isEmpty(rawReq.json, true) == false) {
+            vInput.value = StringUtil.trim(rawReq.json)
+          }
+
           if (StringUtil.isEmpty(rawReq.header, true) == false) {
             vHeader.value = StringUtil.trim(rawReq.header, true)
             App.isHeaderShow = true
@@ -5727,8 +5754,6 @@
             App.isRandomShow = true
             App.isRandomListShow = false
           }
-
-          vInput.value = StringUtil.trim(rawReq.json)
 
 
           // URL 太长导致截断和乱码
@@ -5753,11 +5778,18 @@
           }
 
           App.onChange(false)
-          if (rawReq.send != "false") {
-            App.send(false)
+
+          if (rawReq.send != "false" && rawReq.send != "null") {
+            if (rawReq.send == 'random') {
+              App.onClickTestRandom()
+            } else if (App.isTestCaseShow) {
+              App.onClickTest()
+            } else {
+              App.send(false)
+            }
 
             var url = vUrl.value || ''
-            if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) )) {
+            if (rawReq.jump == "true" || rawReq.jump == "null" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) )) {
               setTimeout(function () {
                 window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
               }, 1000)
