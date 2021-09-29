@@ -961,7 +961,7 @@
           if (isRemote) { //共享测试用例
             App.isExportRandom = isRandom
 
-            if (isRandom != true) {
+            if (isRandom != true) {  // 分享搜索关键词和分页信息也挺好 } && App.isTestCaseShow != true) {  // 没有拿到列表，没用
               setTimeout(function () {
                 App.shareLink(App.isRandomTest)
               }, 1000)
@@ -4909,7 +4909,7 @@
       },
       onClickTest: function () {
         this.isRandomTest = false
-        this.test(false, this.isCrossEnabled ? -1 : currentAccountIndex)
+        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex)
       },
       /**回归测试
        * 原理：
@@ -5727,10 +5727,10 @@
       setTimeout(function () {
         var rawReq = getRequestFromURL()
         if (rawReq != null) {
-          vUrlComment.value = ""
-          vComment.value = ""
 
+          var hasTestArg = false  // 避免 http://localhost:63342/APIAuto/index.html?_ijt=fh8di51h7qip2d1s3r3bqn73nt 这种无意义参数
           if (StringUtil.isEmpty(rawReq.type, true) == false) {
+            hasTestArg = true
             App.type = StringUtil.toUpperCase(rawReq.type, true)
             if (App.types != null && App.types.indexOf(App.type) < 0) {
               App.types.push(App.type)
@@ -5738,19 +5738,23 @@
           }
 
           if (StringUtil.isEmpty(rawReq.url, true) == false) {
+            hasTestArg = true
             vUrl.value = StringUtil.trim(rawReq.url)
           }
 
           if (StringUtil.isEmpty(rawReq.json, true) == false) {
+            hasTestArg = true
             vInput.value = StringUtil.trim(rawReq.json)
           }
 
           if (StringUtil.isEmpty(rawReq.header, true) == false) {
+            hasTestArg = true
             vHeader.value = StringUtil.trim(rawReq.header, true)
             App.isHeaderShow = true
           }
 
           if (StringUtil.isEmpty(rawReq.random, true) == false) {
+            hasTestArg = true
             vRandom.value = StringUtil.trim(rawReq.random, true)
             App.isRandomShow = true
             App.isRandomListShow = false
@@ -5778,9 +5782,14 @@
             }
           }
 
+          if (hasTestArg) {
+            vUrlComment.value = ""
+            vComment.value = ""
+          }
+
           App.onChange(false)
 
-          if (rawReq.send != "false" && rawReq.send != "null") {
+          if (hasTestArg && rawReq.send != "false" && rawReq.send != "null") {
             if (rawReq.send == 'random') {
               App.onClickTestRandom()
             } else if (App.isTestCaseShow) {
@@ -5793,7 +5802,7 @@
             if (rawReq.jump == "true" || rawReq.jump == "null" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) )) {
               setTimeout(function () {
                 window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
-              }, 1000)
+              }, App.isTestCaseShow || rawReq.send == 'random' ? 5000 : 2000)
             }
           }
         }
