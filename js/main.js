@@ -5639,7 +5639,7 @@
       this.transfer()
 
       setTimeout(function () {
-        var rawReq = getRequest()
+        var rawReq = getRequestFromURL()
         if (rawReq != null && StringUtil.isEmpty(rawReq.json, true) == false) {
           vUrlComment.value = ""
           vComment.value = ""
@@ -5660,7 +5660,7 @@
           var url = vUrl.value
           if (rawReq.jump == "true" || (rawReq.jump != "false" && (url.endsWith("/get") || url.endsWith("/head")) ) ) {
             setTimeout(function () {
-              window.open(vUrl.value + "/" + encodeURIComponent(vInput.value))
+              window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
             }, 1000)
           }
         }
