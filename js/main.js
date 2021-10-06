@@ -5832,12 +5832,12 @@
               }
 
               if (setting.isRandomShow && setting.isRandomListShow) {
-                delayTime += Math.min(5000, 20*(setting.randomCount || App.randomCount) + 1000)
+                delayTime += Math.min(5000, (App.isMLEnabled ? 60 : 20)*(setting.randomCount || App.randomCount) + 1000)
                 App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
               }
 
               if (setting.isTestCaseShow) {
-                delayTime += Math.min(5000, 10*(setting.testCaseCount || App.testCaseCount) + 1000)
+                delayTime += Math.min(5000, (App.isMLEnabled ? 30 : 10)*(setting.testCaseCount || App.testCaseCount) + 1000)
                 App.showTestCase(true, setting.isLocalShow)
               }
             } catch (e) {
