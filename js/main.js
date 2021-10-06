@@ -3919,8 +3919,8 @@
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
-          '@database': StringUtil.isEmpty(App.database, true) ? undefined : App.database,
-          // '@schema': StringUtil.isEmpty(App.schema, true) ? undefined : App.schema,
+          '@database': StringUtil.isEmpty(this.database, true) ? undefined : this.database,
+          // '@schema': StringUtil.isEmpty(this.schema, true) ? undefined : this.schema,
           'sql@': {
             'from': 'Access',
             'Access': {
@@ -5866,7 +5866,7 @@
               }
             }, delayTime)
           }
-        }, 1000)
+        }, 2000)
 
       }
 
