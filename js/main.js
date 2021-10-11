@@ -3508,10 +3508,10 @@
         type = type || REQUEST_TYPE_JSON
         url = StringUtil.noBlank(url)
 
-        var isDelegateEnabled = this.isDelegateEnabled || url.indexOf('://apijson.cn') > 0
+        var isDelegate = (isAdminOperation == false && this.isDelegateEnabled) || (isAdminOperation && url.indexOf('://apijson.cn') > 0)
 
         if (header != null && header.Cookie != null) {
-          if (isDelegateEnabled) {
+          if (isDelegate) {
             header['Set-Cookie'] = header.Cookie
             delete header.Cookie
           }
@@ -3520,7 +3520,7 @@
           }
         }
 
-        if (isDelegateEnabled && this.delegateId != null && (header == null || header['APIJSON-DELEGATE-ID'] == null)) {
+        if (isDelegate && this.delegateId != null && (header == null || header['APIJSON-DELEGATE-ID'] == null)) {
           if (header == null) {
             header = {};
           }
@@ -3530,7 +3530,7 @@
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isAdminOperation == false && isDelegateEnabled
+          url: (isDelegate
               ? (
                 this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
                 + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
@@ -3547,7 +3547,7 @@
           .then(function (res) {
             res = res || {}
 
-            if (isDelegateEnabled) {
+            if (isDelegate) {
               var hs = res.headers || {}
               var delegateId = hs['APIJSON-DELEGATE-ID'] || hs['apijson-delegate-id']
               if (delegateId != null && delegateId != App.delegateId) {
