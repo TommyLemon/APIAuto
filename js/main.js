@@ -3507,8 +3507,10 @@
       request: function (isAdminOperation, type, url, req, header, callback) {
         type = type || REQUEST_TYPE_JSON
 
+        var isDelegateEnabled = this.isDelegateEnabled
+
         if (header != null && header.Cookie != null) {
-          if (this.isDelegateEnabled) {
+          if (isDelegateEnabled) {
             header['Set-Cookie'] = header.Cookie
             delete header.Cookie
           }
@@ -3517,10 +3519,18 @@
           }
         }
 
+        if (isDelegateEnabled && this.delegateId != null && (header == null || header['APIJSON-DELEGATE-ID'] == null)) {
+          if (header == null) {
+            header = {};
+          }
+          header['APIJSON-DELEGATE-ID'] = this.delegateId
+        }
+
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isAdminOperation == false && this.isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '') + '$_delegate_url=') : '' )
+          url: (isAdminOperation == false && isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
+          + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=') : '' )
           + (this.isEncodeEnabled ? encodeURI(StringUtil.noBlank(url)) : StringUtil.noBlank(url)),
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
@@ -3530,6 +3540,16 @@
         })
           .then(function (res) {
             res = res || {}
+
+            if (isDelegateEnabled) {
+              var hs = res.headers || {}
+              var delegateId = hs['APIJSON-DELEGATE-ID'] || hs['apijson-delegate-id']
+              if (delegateId != null && delegateId != App.delegateId) {
+                App.delegateId = delegateId;
+                App.saveCache(App.server, 'delegateId', delegateId)
+              }
+            }
+
 	    //any one of then callback throw error will cause it calls then(null)
             // if ((res.config || {}).method == 'options') {
             //   return
@@ -5745,6 +5765,7 @@
         this.randomCount = this.getCache(this.server, 'randomCount', this.randomCount)
         this.randomSubPage = this.getCache(this.server, 'randomSubPage', this.randomSubPage)
         this.randomSubCount = this.getCache(this.server, 'randomSubCount', this.randomSubCount)
+        this.delegateId = this.getCache(this.server, 'delegateId', this.delegateId)
 
         CodeUtil.thirdPartyApiMap = this.getCache(this.thirdParty, 'thirdPartyApiMap')
       } catch (e) {
