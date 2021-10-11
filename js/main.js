@@ -3506,8 +3506,9 @@
       //请求
       request: function (isAdminOperation, type, url, req, header, callback) {
         type = type || REQUEST_TYPE_JSON
+        url = StringUtil.noBlank(url)
 
-        var isDelegateEnabled = this.isDelegateEnabled || (url != null && url.indexOf('://apijson.cn') > 0)
+        var isDelegateEnabled = this.isDelegateEnabled || url.indexOf('://apijson.cn') > 0
 
         if (header != null && header.Cookie != null) {
           if (isDelegateEnabled) {
@@ -3529,9 +3530,14 @@
         // axios.defaults.withcredentials = true
         axios({
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isAdminOperation == false && isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
-          + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=') : '' )
-          + ((isAdminOperation == false && isDelegateEnabled) || this.isEncodeEnabled ? encodeURIComponent(StringUtil.noBlank(url)) : StringUtil.noBlank(url)),
+          url: (isAdminOperation == false && isDelegateEnabled
+              ? (
+                this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
+                + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
+              ) : (
+                this.isEncodeEnabled ? encodeURI(url) : url
+              )
+          ),
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
