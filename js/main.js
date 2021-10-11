@@ -3100,6 +3100,9 @@
 
         if (isAdminOperation) {
           // alert('logout  isAdminOperation  this.saveCache(this.server, User, {})')
+          this.delegateId = null
+          this.saveCache(this.server, 'delegateId', null)
+
           this.saveCache(this.server, 'User', {})
         }
 
@@ -3157,7 +3160,9 @@
         this.User.id = 0
         this.Privacy = {}
         this.remotes = []
+        // 导致刚登录成功就马上退出 this.delegateId = null
         this.saveCache(this.server, 'User', this.User) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
+        // this.saveCache(this.server, 'delegateId', this.delegateId) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
       },
 
       /**计时回调
@@ -3508,7 +3513,7 @@
         type = type || REQUEST_TYPE_JSON
         url = StringUtil.noBlank(url)
 
-        var isDelegate = (isAdminOperation == false && this.isDelegateEnabled) || (isAdminOperation && url.indexOf('://apijson.cn') > 0)
+        var isDelegate = (isAdminOperation == false && this.isDelegateEnabled) || (isAdminOperation && url.indexOf('://apijson.cn:9090') > 0)
 
         if (header != null && header.Cookie != null) {
           if (isDelegate) {
@@ -3551,7 +3556,7 @@
               var hs = res.headers || {}
               var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
               if (delegateId != null && delegateId != App.delegateId) {
-                App.delegateId = delegateId;
+                App.delegateId = delegateId
                 App.saveCache(App.server, 'delegateId', delegateId)
               }
             }
@@ -3587,6 +3592,10 @@
           })
           .catch(function (err) {
             log('send >> error:\n' + err)
+            if (isAdminOperation) {
+              App.delegateId = null
+            }
+
             if (callback != null) {
               callback(url, {}, err)
               return
