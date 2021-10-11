@@ -3531,7 +3531,7 @@
           method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
           url: (isAdminOperation == false && isDelegateEnabled ? (this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
           + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=') : '' )
-          + (isDelegateEnabled || this.isEncodeEnabled ? encodeURIComponent(StringUtil.noBlank(url)) : StringUtil.noBlank(url)),
+          + ((isAdminOperation == false && isDelegateEnabled) || this.isEncodeEnabled ? encodeURIComponent(StringUtil.noBlank(url)) : StringUtil.noBlank(url)),
           params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
           data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
           headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
