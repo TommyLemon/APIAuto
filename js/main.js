@@ -3520,11 +3520,11 @@
           }
         }
 
-        if (isDelegate && this.delegateId != null && (header == null || header['APIJSON-DELEGATE-ID'] == null)) {
+        if (isDelegate && this.delegateId != null && (header == null || header['Apijson-Delegate-Id'] == null)) {
           if (header == null) {
             header = {};
           }
-          header['APIJSON-DELEGATE-ID'] = this.delegateId
+          header['Apijson-Delegate-Id'] = this.delegateId
         }
 
         // axios.defaults.withcredentials = true
@@ -3549,7 +3549,7 @@
 
             if (isDelegate) {
               var hs = res.headers || {}
-              var delegateId = hs['APIJSON-DELEGATE-ID'] || hs['apijson-delegate-id']
+              var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
               if (delegateId != null && delegateId != App.delegateId) {
                 App.delegateId = delegateId;
                 App.saveCache(App.server, 'delegateId', delegateId)
