@@ -159,7 +159,7 @@
                 </svg>
             </a>
         </div>
-        <div v-show="isTestCaseShow" style="bottom: 4px; padding: 4px 13px 0px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+        <div v-show="isTestCaseShow && ! isLocalShow" style="bottom: 4px; padding: 4px 13px 0px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
             <a >搜索</a>
             <input id="vTestCaseSearch" v-model="testCaseSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" />
             <button @click="pageDown('testCase')">上一页</button>
@@ -193,7 +193,68 @@
                 <div v-show="! isPreviewEnabled" style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
                     <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
                     </textarea>
-                    <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" >
+                    <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{  // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
+  '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
+    'count': 5,  // 每页数量
+    'page': 0,  // 分页页码
+    'join': '</User/id@',  // 多表连接：LEFT JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
+    'Moment': {  // 动态
+      '@order': 'date+',  // 排序方式：+升序，-降序
+      '@column': 'id,userId;date_format(date,%Y-%m-%d %H:%m)',  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+      '@explain': true,  // 性能分析：true-开启 false-关闭，返回执行的 SQL 及查询计划
+      'content~': 'o',  // 正则匹配 < content: String(300)? 内容
+      'userId!': 82001,  // 都不符合 < userId: Int(15), 用户id
+      '@combine': 'userId!,content~'  // 条件组合，| 可省略。合并同类，外层按照 & | ! 顺序，内层按传参顺序组合成 (key0 & key1 & key6 & 其它key) & (key2 | key3 | key7) & !(key4 | key5)
+    },
+    'User': {  // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
+      'id@': '/Moment/userId',  // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
+      '@column': 'id,name,head'  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+    },
+    '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
+      'count': 6,  // 每页数量
+      'join': '@/User/id@',  // 多表连接：APP JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
+      'Comment': {  // 评论
+        '@order': 'date-',  // 排序方式：+升序，-降序
+        'momentId@': '[]/Moment/id'  // 引用赋值，从最外层开始的绝对(完整)路径 < momentId: Int(15), 动态id
+      },
+      'User': {  // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
+        'id@': '/Comment/userId',  // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
+        '@column': 'DISTINCT id,name;concat(%,name,%):concat'  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+      }
+    }
+  }
+}
+
+
+/*
+  JSON 下方可以写段注释，
+  可以是普通文本或 Markdown 格式文本。
+
+  ### 例如一个表格
+  开发流程 | 传统方式 | APIJSON
+     ---  |   ---   |  ---
+  实现接口 | 写代码 + 写文档 | 都不用写
+  兼容旧版 | v2, v3.. 接口  | 都不用写
+
+  ### 例如一段代码
+  ```js
+  // 前端解析并打印 Response JSON
+  var list = data['[]'] || []
+  for (var i = 0; i < list.length; i ++) {
+     console.log('[]/' + i + '=' + JSON.stringify(list[i]))
+  }
+  ```
+
+  ### 例如一张图片
+  ![](http://apijson.cn/images/logo-big.png)
+
+  #### 右上角设置项 > 预览请求输入框，显示对应的预览效果
+
+*/
+
+
+
+" >
 {
     "User": {
         "id": 82001
@@ -204,6 +265,14 @@
         }
     }
 }
+
+/*
+  注释可省略，但如果未省略则前面两个空格必须；
+  清空文本内容可查看规则。
+*/
+
+
+
                     </textarea>
                 </div>
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>

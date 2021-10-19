@@ -3189,30 +3189,37 @@
             throw new Error(e2.message)
           }
 
-          before = this.toDoubleJSON(StringUtil.trim(before));
-          log('onHandle  before = \n' + before);
+          before = StringUtil.trim(before);
 
           var afterObj;
           var after;
-          try {
-            afterObj = jsonlint.parse(before);
-            after = JSON.stringify(afterObj, null, "    ");
-            before = after;
-          }
-          catch (e) {
-            log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
-            log('main.onHandle', 'return jsonlint.parse(this.removeComment(before));')
+          var code = '';
+
+          if (StringUtil.isEmpty(before)) {
+            afterObj = {};
+            after = '';
+          } else {
+            before = this.toDoubleJSON(StringUtil.trim(before));
+            log('onHandle  before = \n' + before);
 
             try {
-              afterObj = jsonlint.parse(this.removeComment(before));
+              afterObj = jsonlint.parse(before);
               after = JSON.stringify(afterObj, null, "    ");
-            } catch (e2) {
-              throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+              before = after;
             }
-          }
+            catch (e) {
+              log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
+              log('main.onHandle', 'return jsonlint.parse(this.removeComment(before));')
+
+              try {
+                afterObj = jsonlint.parse(this.removeComment(before));
+                after = JSON.stringify(afterObj, null, "    ");
+              } catch (e2) {
+                throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+              }
+            }
 
           //关键词let在IE和Safari上不兼容
-          var code = '';
           if (this.isEditResponse != true) {
             try {
               code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
@@ -3222,20 +3229,22 @@
             }
           }
 
-          if (isSingle) {
-            if (before.indexOf('"') >= 0) {
-              before = before.replace(/"/g, "'");
+            if (isSingle) {
+              if (before.indexOf('"') >= 0) {
+                before = before.replace(/"/g, "'");
+              }
             }
-          }
-          else {
-            if (before.indexOf("'") >= 0) {
-              before = before.replace(/'/g, '"');
+            else {
+              if (before.indexOf("'") >= 0) {
+                before = before.replace(/'/g, '"');
+              }
             }
+
+            vInput.value = before
+              + '\n\n\n                                                                                                       '
+              + '                                                                                                       \n';  //解决遮挡
           }
 
-          vInput.value = StringUtil.trim(before)
-            + '\n                                                                                                       '
-            + '                                                                                                       \n';  //解决遮挡
           vSend.disabled = false;
 
           if (this.isEditResponse != true) {
@@ -5798,7 +5807,9 @@
         this.transfer()
 
         if (this.User != null && this.User.id != null && this.User.id > 0) {
-          this.showTestCase(true, false)  // 本地历史仍然要求登录  this.User == null || this.User.id == null)
+          setTimeout(function () {
+            App.showTestCase(true, false)  // 本地历史仍然要求登录  this.User == null || this.User.id == null)
+          }, 1000)
         }
       }
       else {
