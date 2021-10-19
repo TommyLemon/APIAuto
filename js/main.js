@@ -3262,9 +3262,7 @@
             }
 
             var m = this.getMethod();
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj))
-              + '\n                                                                                                       '
-              + '                                                                                                       \n';  //解决遮挡
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj));
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
 
             if (isSingle != true && afterObj.tag == null) {
@@ -3274,6 +3272,9 @@
               }
             }
             vComment.value = c
+              + '\n\n\n                                                                                                       '
+              + '                                                                                                       \n';  //解决遮挡
+
             vUrlComment.value = isSingle || StringUtil.isEmpty(this.urlComment, true)
               ? '' : vUrl.value + CodeUtil.getComment(this.urlComment, false, '  ')
               + ' - ' + (this.requestVersion > 0 ? 'V' + this.requestVersion : 'V*');
