@@ -5906,11 +5906,39 @@ var CodeUtil = {
       }
     }
 
+    if (isRestful != true || isReq != true) {  // 解决 APIJSON 批量 POST/PUT "Table[]": [{ key:value }] 中 {} 及 key:value 不显示注释
+      if (StringUtil.isEmpty(key, true)) {
+        // 这里处理将不显示表名，且空格少一个不能让注释和下方 key 对齐
+        // if ((method == 'POST' || method == 'PUT') && names != null && names.length >= 1 && JSONObject.isArrayKey(name)) {
+        //   var aliaIndex = name.indexOf(':');
+        //   var objName = name.substring(0, aliaIndex >= 0 ? aliaIndex : name.length - 2);
+        //
+        //   if (JSONObject.isTableKey(objName)) {
+        //     key = objName;
+        //   }
+        // }
+      }
+      else if (StringUtil.isEmpty(name, true) && (isReq != true || method == 'POST' || method == 'PUT')
+        && names != null && names.length >= 2 && names[names.length - 1] == name) {
+
+        var arrName = names[names.length - 2];
+
+        if (JSONObject.isArrayKey(arrName)) {
+          var aliaIndex = arrName.indexOf(':');
+          var objName = arrName.substring(0, aliaIndex >= 0 ? aliaIndex : arrName.length - 2);
+
+          if (JSONObject.isTableKey(objName)) {
+            name = objName;
+          }
+        }
+      }
+    }
+
     // if (value == null) {
     //  return ' ! key:value 中 key 或 value 任何一个为 null 时，该 key:value 都无效！'
     // }
     if (value instanceof Array) {
-      if ((method == 'POST' || method == 'PUT') && JSONObject.isArrayKey(key)) {
+      if ((isReq != true || method == 'POST' || method == 'PUT') && JSONObject.isArrayKey(key)) {
         var aliaIndex = key.indexOf(':');
         var objName = key.substring(0, aliaIndex >= 0 ? aliaIndex : key.length - 2);
 
@@ -5924,11 +5952,29 @@ var CodeUtil = {
         }
       }
 
-      return '';
+      if (isReq == true && isRestful != true && method != 'POST' && method != 'PUT') {
+        return '';
+      }
     }
     else if (value instanceof Object) {
-      if (isRestful != true && StringUtil.isEmpty(key, true) && (names == null || names.length <= 0)) {
-        return isWarning ? '' : ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
+      if ((isReq != true || isRestful != true) && StringUtil.isEmpty(key, true)) {
+        if (names == null || names.length <= 0) {
+          return isWarning ? '' : ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
+        }
+
+        // 解决 APIJSON 批量 POST/PUT "Table[]": [{ key:value }] 中 {} 不显示注释
+        if ((isReq != true || method == 'POST' || method == 'PUT') && JSONObject.isArrayKey(name)) {
+          var aliaIndex = name.indexOf(':');
+          var objName = name.substring(0, aliaIndex >= 0 ? aliaIndex : name.length - 2);
+
+          if (JSONObject.isTableKey(objName)) {
+            var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
+            if (c.startsWith(' ! ')) {
+              return c;
+            }
+            return StringUtil.isEmpty(c) ? ' ! 表 ' + objName + ' 不存在！' : (isWarning ? '' : ' ' + CodeUtil.getComment(objName + ': ' + c, false, '  '));
+          }
+        }
       }
 
       if (isRestful != true && key.endsWith('@')) {
