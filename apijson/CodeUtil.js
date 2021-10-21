@@ -5927,7 +5927,7 @@ var CodeUtil = {
       return '';
     }
     else if (value instanceof Object) {
-      if (isRestful != true && StringUtil.isEmpty(key, true)) {
+      if (isRestful != true && StringUtil.isEmpty(key, true) && (names == null || names.length <= 0)) {
         return isWarning ? '' : ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
       }
 
