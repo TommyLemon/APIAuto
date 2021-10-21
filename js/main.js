@@ -3245,7 +3245,7 @@
             }
           }
 
-            if (isSingle) {
+            if (isSingle) {  // TODO FIXME 逐个字符处理，' 转为 "，" 转为 '
               if (before.indexOf('"') >= 0) {
                 before = before.replace(/"/g, "'");
               }
@@ -3256,9 +3256,15 @@
               }
             }
 
+            var selectionStart = vInput.selectionStart
+            var selectionEnd = vInput.selectionEnd
             vInput.value = before
               + '\n\n\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
+
+            vInput.selectionStart = selectionStart
+            vInput.selectionEnd = selectionEnd
+            vInput.setSelectionRange(selectionStart, selectionEnd)
           }
 
           vSend.disabled = false;
