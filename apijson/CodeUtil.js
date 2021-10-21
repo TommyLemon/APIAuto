@@ -6257,7 +6257,7 @@ var CodeUtil = {
         var api = apiMap[(method.startsWith('/') ? '' : '/') + method];
         var doc = api == null ? null : (isReq ? (api.request || api.parameters) : api.response);
         if (doc != null) {
-          var parentDoc = null;
+          var parentDoc = api;
 
           if (pathKeys != null && pathKeys.length > 0) {
             for (var i = 0; i < pathKeys.length; i++) {
@@ -6276,12 +6276,11 @@ var CodeUtil = {
                 }
 
                 if (find == false) {
-                  // parentDoc = doc;
                   doc = null;
                 }
               }
               else if (doc instanceof Object) {
-                if (doc.type == 'object') {
+                if ((doc.type == 'object' || doc.type == null) && JSONResponse.getType(doc) == 'object') {
                   parentDoc = doc;
                   doc = doc.properties || parentDoc.parameters;
                 }
@@ -6315,9 +6314,9 @@ var CodeUtil = {
             doc = null;
           }
 
-          if (doc == null) {
-            var properties = parentDoc == null ? null : (parentDoc.properties || parentDoc.parameters);
-            var required = parentDoc == null ? null : parentDoc.required;
+          if (doc == null && parentDoc != null) {
+            var properties = parentDoc.properties || parentDoc.parameters;
+            var required = parentDoc.required;
 
             var cols = '';
             if (properties instanceof Array) {
