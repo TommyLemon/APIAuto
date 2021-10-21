@@ -157,7 +157,11 @@ var CodeUtil = {
           }
           else {
             depth --;
-            names = names.slice(0, depth)
+            names = names.slice(0, depth);
+
+            if (i > 0 && i < lines.length - 1) {
+              lines[i] = '';  // 节约性能，收尾不能为空，否则外面 trim 一下格式就变了对不上原文本。奇怪的是右大括号 } 总是不走这里
+            }
             continue;
           }
         }
@@ -194,7 +198,11 @@ var CodeUtil = {
               }
               else {
                 depth --;
-                names = names.slice(0, depth)
+                names = names.slice(0, depth);
+
+                if (i > 0 && i < lines.length - 1) {
+                  lines[i] = '';  // 节约性能，收尾不能为空，否则外面 trim 一下格式就变了对不上原文本。奇怪的是右大括号 } 总是不走这里
+                }
                 continue;
               }
             }
@@ -6247,8 +6255,10 @@ var CodeUtil = {
       }
       else {
         var api = apiMap[(method.startsWith('/') ? '' : '/') + method];
-        var doc = api == null ? null : (isReq ? api.request : api.response);
+        var doc = api == null ? null : (isReq ? (api.request || api.parameters) : api.response);
         if (doc != null) {
+          var parentDoc = null;
+
           if (pathKeys != null && pathKeys.length > 0) {
             for (var i = 0; i < pathKeys.length; i++) {
               var p = pathKeys[i];
@@ -6258,6 +6268,7 @@ var CodeUtil = {
                 for (var j = 0; j < doc.length; j++) {
                   var d = doc[j];
                   if (d != null && d.name == p) {
+                    // parentDoc = doc;
                     doc = d;
                     find = true;
                     break;
@@ -6265,14 +6276,17 @@ var CodeUtil = {
                 }
 
                 if (find == false) {
+                  // parentDoc = doc;
                   doc = null;
                 }
               }
               else if (doc instanceof Object) {
                 if (doc.type == 'object') {
-                  doc = doc.properties;
+                  parentDoc = doc;
+                  doc = doc.properties || parentDoc.parameters;
                 }
                 else if (doc.type == 'array') {
+                  parentDoc = doc;
                   doc = doc.items;
 
                   try {
@@ -6285,12 +6299,47 @@ var CodeUtil = {
                   continue;
                 }
 
-                doc = doc[p];
+                if (doc.type != 'object') {
+                  parentDoc = doc;
+                }
+
+                if (doc instanceof Array) {
+                }
+                else if (properties instanceof Object) {
+                  doc = doc[p];
+                }
               }
             }
           }
           else if (doc instanceof Array) {
             doc = null;
+          }
+
+          if (doc == null) {
+            var properties = parentDoc == null ? null : (parentDoc.properties || parentDoc.parameters);
+            var required = parentDoc == null ? null : parentDoc.required;
+
+            var cols = '';
+            if (properties instanceof Array) {
+              var first = true;
+              for (var i = 0; i < properties.length; i ++) {
+
+                var para = properties[i];
+                var pn = para == null ? null : para.name;
+
+                if (StringUtil.isEmpty(pn, true) == false) {
+                  cols += (first ? '' : ',') + pn;
+                  first = false;
+                }
+              }
+            }
+            else if (properties instanceof Object) {
+              cols = Object.keys(properties).join();
+            }
+
+            var musts = required == null ? '' : required.join();
+
+            return ' ! 字段 ' + columnName + ' 不存在！只能是 [' + cols + '] 中的一个！' + (StringUtil.isEmpty(musts, true) ? '' : '其中 [' + musts + '] 必传！');
           }
 
           var t = doc == null ? null : doc.type;

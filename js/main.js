@@ -1123,7 +1123,10 @@
                 try {
                   this.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
                     CodeUtil.thirdParty = platform
-                    if (err != null || ((res || {}).data || {}).errCode != 0) {
+                    var data = err != null ? null : (res || {}).data;
+                    var code = data == null ? null : data.errCode || data.errcode || data.err_code
+
+                    if (err != null || (code != null && code != 0)) {
                       App.isHeaderShow = true
                       App.isRandomShow = false
                       alert('请把 YApi/Rap/Swagger 等网站的有效 Cookie 粘贴到请求头 Request Header 输入框后再试！')
@@ -1140,6 +1143,14 @@
                       return true
                     }
                     else if (platform == PLATFORM_SWAGGER) {
+                      var apis = data == null ? null : data.paths
+                      if (apis != null) {
+                        // var i = 0
+                        for (var url in apis) {
+                          var item = apis[url]
+                          apiMap[url] = item.post || item.get || item.put || item.delete
+                        }
+                      }
                     }
                     else if (platform == PLATFORM_RAP) {
                     }
@@ -2090,8 +2101,12 @@
             }
             else {
               App.request(false, REQUEST_TYPE_PARAM, docUrl, {}, header, function (url_, res, err) {
-                if (listCallback != null) {
-                  listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)
+                if (listCallback != null && listCallback(platform, docUrl, listUrl, itemUrl, url_, res, err)) {
+                  return
+                }
+
+                if (itemCallback != null) {
+                  itemCallback(platform, docUrl, listUrl, itemUrl, itemUrl, res, err)
                 }
               })
             }
