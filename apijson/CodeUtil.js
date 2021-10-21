@@ -5891,7 +5891,7 @@ var CodeUtil = {
       // }
 
       try {
-        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, isRestful, isReq, pathKeys, isRestful, value == null ? {} : value, true, standardObj, null, isWarning);
+        var c = CodeUtil.getCommentFromDoc(tableList, name, key, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value == null ? {} : value, true, standardObj, null, isWarning);
         if (isRestful == true || StringUtil.isEmpty(c) == false) {  // TODO 最好都放行，查不到都去数据库查表和字段属性
           if (c.startsWith(' ! ')) {
             return c;
@@ -5943,7 +5943,7 @@ var CodeUtil = {
         var objName = key.substring(0, aliaIndex >= 0 ? aliaIndex : key.length - 2);
 
         if (JSONObject.isTableKey(objName)) {
-          var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
+          var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
           if (c.startsWith(' ! ')) {
             return c;
           }
@@ -5959,7 +5959,7 @@ var CodeUtil = {
     else if (value instanceof Object) {
       if ((isReq != true || isRestful != true) && StringUtil.isEmpty(key, true)) {
         if (names == null || names.length <= 0) {
-          return isWarning ? '' : ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
+          return isReq != true || isWarning ? '' : ' ' + CodeUtil.getComment('根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, '  ');
         }
 
         // 解决 APIJSON 批量 POST/PUT "Table[]": [{ key:value }] 中 {} 不显示注释
@@ -5968,7 +5968,7 @@ var CodeUtil = {
           var objName = name.substring(0, aliaIndex >= 0 ? aliaIndex : name.length - 2);
 
           if (JSONObject.isTableKey(objName)) {
-            var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
+            var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
             if (c.startsWith(' ! ')) {
               return c;
             }
@@ -5989,7 +5989,7 @@ var CodeUtil = {
         var aliaIndex = name == null ? -1 : name.indexOf(':');
         var objName = aliaIndex < 0 ? name : name.substring(0, aliaIndex);
         if (JSONObject.isTableKey(objName)) {
-          return CodeUtil.getComment('子查询，里面必须有 "from":Table, Table:{} < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, true, isWarning), false, '  ');
+          return CodeUtil.getComment('子查询，里面必须有 "from":Table, Table:{} < ' + CodeUtil.getCommentFromDoc(tableList, objName, key.substring(0, key.length - 1), method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, true, isWarning), false, '  ');
         }
         return CodeUtil.getComment('子查询，可在内部加 from,range 或 数组关键词 等键值对，需要被下面的表字段相关 key 引用赋值', false, '  ');
       }
@@ -6020,7 +6020,7 @@ var CodeUtil = {
 
       var isTableKey = JSONObject.isTableKey(objName)
       if (isRestful == true || isTableKey) {
-        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
+        var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
         if (c.startsWith(' ! ')) {
           return c;
         }
@@ -6155,7 +6155,7 @@ var CodeUtil = {
         }
         return '';
       }
-      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database, language, isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
+      var c = CodeUtil.getCommentFromDoc(tableList, objName, key, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
       if (c.startsWith(' ! ')) {
         return c;
       }

@@ -3308,7 +3308,7 @@
           try {
             // 去掉前面的 JSON
             var it = StringUtil.trim(vInput.value);
-            var ct = StringUtil.trim(vComment.value);
+            var ct = isSingle ? it : StringUtil.trim(vComment.value);
 
             var raw = (it.lastIndexOf('\n\/*') < 0 || it.lastIndexOf('\n*\/') < 0 ? ct : it) || '';
             var start = raw.lastIndexOf('\n\/*')
