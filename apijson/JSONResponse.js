@@ -484,7 +484,7 @@ var JSONResponse = {
     if (type != typeof real) { //类型改变
       return {
         code: JSONResponse.COMPARE_TYPE_CHANGE,
-        msg: '值改变',
+        msg: '值类型改变',
         path: folder,
         value: real
       };
@@ -1037,7 +1037,7 @@ var JSONResponse = {
         // log('updateStandard for k2 in values[0] = ' + k2 + ' >>');
         if (realKeys.indexOf(k2) < 0) {
           // log('updateStandard Object.keys(real).indexOf(k2) < 0 >> real[k2] = null;');
-          real[k2] = null;  //TODO delete real[k2] ? 避免多出来 key: null 这种
+          delete real[k2];  // real[k2] = null;  //TODO delete real[k2] ? 避免多出来 key: null 这种
         }
       }
 
