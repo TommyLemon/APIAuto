@@ -193,6 +193,8 @@
                 <div v-show="! isPreviewEnabled" style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
                     <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
                     </textarea>
+                    <textarea v-show="! isEditResponse" id="vWarning" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: orangered; background-color: #0000;" wrap="off" disabled>
+                    </textarea>
                     <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{  // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
   '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
     'count': 5,  // 每页数量
@@ -805,6 +807,7 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
   var vSend = document.getElementById("vSend");
 
   var vInput = document.getElementById("vInput");
+  var vWarning = document.getElementById("vWarning");
   var vComment = document.getElementById("vComment");
   var vHeader = document.getElementById("vHeader");
   var vRandom = document.getElementById("vRandom");
@@ -836,6 +839,8 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
   function onScrollChanged() {
     $(vComment).scrollLeft(vInput.scrollLeft);
     $(vComment).scrollTop(vInput.scrollTop);
+    $(vWarning).scrollLeft(vInput.scrollLeft);
+    $(vWarning).scrollTop(vInput.scrollTop);
   }
 
   //vComment跟随vInput滚动，避免JSON重叠"露馅"

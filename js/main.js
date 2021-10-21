@@ -3176,6 +3176,7 @@
 
         this.view = 'output';
         vComment.value = '';
+        vWarning.value = '';
         // vUrlComment.value = '';
         vOutput.value = 'resolving...';
 
@@ -3262,15 +3263,19 @@
             }
 
             var m = this.getMethod();
+            var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true));
             var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj));
-            //TODO 统计行数，补全到一致 vInput.value.lineNumbers
 
+            //TODO 统计行数，补全到一致 vInput.value.lineNumbers
             if (isSingle != true && afterObj.tag == null) {
               m = m == null ? 'GET' : m.toUpperCase()
               if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
-                c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+                w += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
               }
             }
+            vWarning.value = w
+              + '\n\n\n                                                                                                       '
+              + '                                                                                                       \n';  //解决遮挡
             vComment.value = c
               + '\n\n\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
@@ -3338,6 +3343,7 @@
         this.setBaseUrl();
         inputted = new String(vInput.value);
         vComment.value = '';
+        vWarning.value = '';
         // vUrlComment.value = '';
 
         clearTimeout(handler);
@@ -5896,6 +5902,7 @@
           if (hasTestArg) {
             vUrlComment.value = ""
             vComment.value = ""
+            vWarning.value = ""
           }
 
           App.onChange(false)
