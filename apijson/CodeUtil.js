@@ -159,7 +159,7 @@ var CodeUtil = {
             depth --;
             names = names.slice(0, depth);
 
-            if (i > 0 && i < lines.length - 1) {
+            if (isWarning && i > 0 && i < lines.length - 1) {
               lines[i] = '';  // 节约性能，收尾不能为空，否则外面 trim 一下格式就变了对不上原文本。奇怪的是右大括号 } 总是不走这里
             }
             continue;
@@ -200,7 +200,7 @@ var CodeUtil = {
                 depth --;
                 names = names.slice(0, depth);
 
-                if (i > 0 && i < lines.length - 1) {
+                if (isWarning && i > 0 && i < lines.length - 1) {
                   lines[i] = '';  // 节约性能，收尾不能为空，否则外面 trim 一下格式就变了对不上原文本。奇怪的是右大括号 } 总是不走这里
                 }
                 continue;
@@ -230,7 +230,8 @@ var CodeUtil = {
         }
       }
 
-      if (i > 0 && i < lines.length - 1 && StringUtil.isEmpty(hintComment, true)) {
+      // 普通注释需要完整保留原 JSON，以防预览请求不显示部分 JSON 内容
+      if (isWarning && i > 0 && i < lines.length - 1 && StringUtil.isEmpty(hintComment, true)) {
         lines[i] = '';  // 节约性能，收尾不能为空，否则外面 trim 一下格式就变了对不上原文本。奇怪的是右大括号 } 总是不走这里
       }
       else {

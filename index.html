@@ -271,6 +271,8 @@
 /*
   注释可省略，但如果未省略则前面两个空格必须；
   清空文本内容可查看规则。
+
+  快捷键 Ctrl + I 或 Command + I 格式化 JSON。
 */
 
 
@@ -794,6 +796,7 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONResponse.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/CodeUtil.js" ></script>
 <!-- 必须在main.js前 TODO 可能有冲突，代码写入vue文件？ >>>>>>>>>>>>>>>> -->
+<script src="https://unpkg.com/json5@^2.0.0/dist/index.min.js"></script>
 
 
 <script src="js/main.js"></script>
@@ -853,7 +856,6 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
 
   //vURLComment跟随vUrl滚动，避免JSON重叠"露馅"
   $(vUrl).on('scroll', onURLScrollChanged);
-
 
 
   function markdownToHTML(md, isRequest) {

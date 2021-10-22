@@ -848,8 +848,8 @@
         return req == null ? null : req.tag
       },
 
-      getRequest: function (json, defaultValue) {
-        var s = this.toDoubleJSON(json, defaultValue);
+      getRequest: function (json, defaultValue, isRaw) {  // JSON5 兜底，减少修改范围  , isSingle) {
+        var s = isRaw != true && isSingle ? this.switchQuote(json) : json; // this.toDoubleJSON(json, defaultValue);
         if (StringUtil.isEmpty(s, true)) {
           return defaultValue
         }
@@ -857,9 +857,9 @@
           return jsonlint.parse(s);
         }
         catch (e) {
-          log('main.getRequest', 'try { return jsonlint.parse(s); \n } catch (e) {\n' + e.message)
+          log('main.getRequest', 'try { return jsonlint.parse(s); \n } catch (e2) {\n' + e.message)
           log('main.getRequest', 'return jsonlint.parse(this.removeComment(s));')
-          return jsonlint.parse(this.removeComment(s));
+          return JSON5.parse(s);  // jsonlint.parse(this.removeComment(s));
         }
       },
       getHeader: function (text) {
@@ -1632,7 +1632,7 @@
           var currentAccountId = this.getCurrentAccountId()
           var currentResponse = this.view != 'code' || StringUtil.isEmpty(this.jsoncon, true) ? {} : this.removeDebugInfo(JSON.parse(this.jsoncon));
 
-          var after = this.toDoubleJSON(inputted);
+          var after = isSingle ? this.switchQuote(inputted) : inputted;  // this.toDoubleJSON(inputted);
           var inputObj = this.getRequest(after, {});
 
           var commentObj = null;
@@ -3215,20 +3215,21 @@
             afterObj = {};
             after = '';
           } else {
-            before = this.toDoubleJSON(StringUtil.trim(before));
+            before = StringUtil.trim(before); // this.toDoubleJSON(StringUtil.trim(before));
             log('onHandle  before = \n' + before);
 
+            var json = isSingle ? this.switchQuote(before) : before;
             try {
-              afterObj = jsonlint.parse(before);
+              afterObj = jsonlint.parse(json);
               after = JSON.stringify(afterObj, null, "    ");
-              before = after;
+              before = isSingle ? this.switchQuote(after) : after;
             }
             catch (e) {
               log('main.onHandle', 'try { return jsonlint.parse(before); \n } catch (e) {\n' + e.message)
               log('main.onHandle', 'return jsonlint.parse(this.removeComment(before));')
 
               try {
-                afterObj = jsonlint.parse(this.removeComment(before));
+                afterObj = JSON5.parse(json);  // jsonlint.parse(this.removeComment(before));
                 after = JSON.stringify(afterObj, null, "    ");
               } catch (e2) {
                 throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
@@ -3245,16 +3246,18 @@
             }
           }
 
-            if (isSingle) {  // TODO FIXME 逐个字符处理，' 转为 "，" 转为 '
-              if (before.indexOf('"') >= 0) {
-                before = before.replace(/"/g, "'");
-              }
-            }
-            else {
-              if (before.indexOf("'") >= 0) {
-                before = before.replace(/'/g, '"');
-              }
-            }
+            // if (isSingle) {  // TODO FIXME 逐个字符处理，' 转为 "，" 转为 '
+            //   if (before.indexOf('"') >= 0) {
+            //     before = before.replace(/"/g, "'");
+            //   }
+            // }
+            // else {
+            //   if (before.indexOf("'") >= 0) {
+            //     before = before.replace(/'/g, '"');
+            //   }
+            // }
+
+
 
             var selectionStart = vInput.selectionStart
             var selectionEnd = vInput.selectionEnd
@@ -3384,6 +3387,8 @@
        */
       transfer: function () {
         isSingle = ! isSingle;
+
+        vInput.value = this.switchQuote(vInput.value);
 
         this.isTestCaseShow = false
 
@@ -4316,14 +4321,35 @@
 
       },
 
-      toDoubleJSON: function (json, defaultValue) {
-        if (StringUtil.isEmpty(json)) {
-          return defaultValue == null ? '{}' : JSON.stringify(defaultValue)
+      // toDoubleJSON: function (json, defaultValue) {
+      //   if (StringUtil.isEmpty(json)) {
+      //     return defaultValue == null ? '{}' : JSON.stringify(defaultValue)
+      //   }
+      //   else if (json.indexOf("'") >= 0) {
+      //     json = json.replace(/'/g, '"');
+      //   }
+      //   return json;
+      // },
+
+      switchQuote: function (before) {
+        if (before == null) {
+          return before;
         }
-        else if (json.indexOf("'") >= 0) {
-          json = json.replace(/'/g, '"');
+
+        var newBefore = '';
+        for (var i = 0; i < before.length; i++) {
+          var chr = before.substring(i, i + 1); // .charAt(i);
+          if (chr == '"') {
+            newBefore += "'"; // chr = "'";
+          }
+          else if (chr == "'") {
+            newBefore += '"'; // chr = '"';
+          }
+          else {
+            newBefore += chr;
+          }
         }
-        return json;
+        return newBefore;
       },
 
       /**转为Markdown格式
@@ -4521,7 +4547,7 @@
             this.resetCount(this.currentRandomItem)
           }
 
-          var json = this.getRequest(vInput.value) || {}
+          var json = this.getRequest(vInput.value, {})
           var url = this.getUrl()
           var header = this.getHeader(vHeader.value)
 
@@ -4678,7 +4704,7 @@
                 config: vRandom.value
               }
             },
-            this.type, this.getUrl(), this.getRequest(vInput.value), this.getHeader(vHeader.value), callback
+            this.type, this.getUrl(), this.getRequest(vInput.value, {}), this.getHeader(vHeader.value), callback
           )
         }
         catch (e) {
@@ -5117,7 +5143,7 @@
             this.log('test  for ' + i + ' >> try { header = this.getHeader(document.header) } catch (e) { \n' + e.message)
           }
 
-          this.request(false, document.type, baseUrl + document.url, this.getRequest(document.request), header, function (url, res, err) {
+          this.request(false, document.type, baseUrl + document.url, this.getRequest(document.request, null, true), header, function (url, res, err) {
 
             try {
               App.onResponse(url, res, err)
@@ -5715,7 +5741,7 @@
           this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'][index].setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
         }
         else {
-          this.$refs['testCaseTexts'][index].setAttribute('data-hint', JSON.stringify(this.getRequest(d.request), null, ' '));
+          this.$refs['testCaseTexts'][index].setAttribute('data-hint', StringUtil.isEmpty(d.request, true) ? '' : JSON.stringify(this.getRequest(d.request, {}, true), null, ' '));
         }
       },
 
@@ -5953,6 +5979,21 @@
         }, 2000)
 
       }
+
+
+      // 快捷键 CTRL + I 格式化 JSON
+      document.addEventListener('keydown',function(event) {
+        // alert(event.key) 小写字母 i 而不是 KeyI
+        // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
+        if (event.keyCode === 73 && (event.ctrlKey || event.metaKey)) {
+          try {
+            var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
+            vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
+          } catch (e) {
+            log(e)
+          }
+        }
+      })
 
     }
   })
