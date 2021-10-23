@@ -3350,9 +3350,10 @@
               var raw = StringUtil.trim(isSingle ? vInput.value : vComment.value);
               var start = raw.lastIndexOf('\n\/*')
               var end = raw.lastIndexOf('\n*\/')
+              var ct = start < 0 || end <= start ? '' : StringUtil.trim(raw.substring(start + '\n\/*'.length, end))
 
               markdownToHTML('```js\n' + (start < 0 || end <= start ? raw : raw.substring(0, start)) + '\n```\n'
-                + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+                + (StringUtil.isEmpty(ct, true) ? '' : ct + '\n\n```js\n' + ct + '\n```\n'), true);
             } catch (e3) {
               log(e3)
             }
