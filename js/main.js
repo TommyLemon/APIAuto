@@ -862,6 +862,15 @@
           return JSON5.parse(s);  // jsonlint.parse(this.removeComment(s));
         }
       },
+      getExtraComment: function(json) {
+        var it = json != null ? json : StringUtil.trim(vInput.value);
+
+        var start = it.lastIndexOf('\n\/*');
+        var end = it.lastIndexOf('\n*\/');
+
+        return start < 0 || end <= start ? null : it.substring(start + '\n\/*'.length, end);
+      },
+
       getHeader: function (text) {
         var header = {}
         var hs = StringUtil.isEmpty(text, true) ? null : StringUtil.split(text, '\n')
@@ -1613,6 +1622,7 @@
           }
 
           var isExportRandom = this.isExportRandom
+          var isEditResponse = this.isEditResponse
 
           if (isExportRandom != true && StringUtil.isEmpty(this.exTxt.name, true)) {
             alert('请输入接口名！')
@@ -1640,7 +1650,7 @@
             var m = this.getMethod();
             var commentStddObj = null
             try {
-              commentStddObj = JSON.parse(this.isEditResponse ? tr.standard : doc.standard);
+              commentStddObj = JSON.parse(isEditResponse ? tr.standard : doc.standard);
             }
             catch(e) {
               log(e)
@@ -1666,7 +1676,7 @@
           currentResponse.code = code;
           currentResponse.throw = thrw;
 
-          var url = this.server + (isExportRandom || this.isEditResponse || did == null ? '/post' : '/put')
+          var url = this.server + (isExportRandom || isEditResponse || did == null ? '/post' : '/put')
           var req = isExportRandom ? {
             format: false,
             'Random': {
@@ -1683,7 +1693,7 @@
             'tag': 'Random'
           } : {
             format: false,
-            'Document': this.isEditResponse ? null : {
+            'Document': isEditResponse ? null : {
               'id': did == null ? undefined : did,
               'testAccountId': currentAccountId,
               'name': this.exTxt.name,
@@ -1691,17 +1701,19 @@
               'url': '/' + this.getMethod(),
               'request': JSON.stringify(inputObj, null, '    '),
               'standard': JSON.stringify(commentObj, null, '    '),
-              'header': vHeader.value
+              'header': vHeader.value,
+              'detail': this.getExtraComment() || ((this.currentRemoteItem || {}).Document || {}).detail,
             },
-            'TestRecord': this.isEditResponse != true && did != null ? null : {
-              'documentId': this.isEditResponse ? did : undefined,
+            'TestRecord': isEditResponse != true && did != null ? null : {
+              'documentId': isEditResponse ? did : undefined,
               'randomId': 0,
               'host': this.getBaseUrl(),
               'testAccountId': currentAccountId,
-              'response': JSON.stringify(this.isEditResponse ? inputObj : currentResponse),
-              'standard': isML || this.isEditResponse ? JSON.stringify(this.isEditResponse ? commentObj : stddObj) : undefined
+              'response': JSON.stringify(isEditResponse ? inputObj : currentResponse),
+              'standard': isML || isEditResponse ? JSON.stringify(isEditResponse ? commentObj : stddObj) : undefined,
+              // 没必要，直接都在请求中说明，查看也方便 'detail': (isEditResponse ? this.getExtraComment() : null) || ((this.currentRemoteItem || {}).TestRecord || {}).detail,
             },
-            'tag': this.isEditResponse ? 'TestRecord' : 'Document'
+            'tag': isEditResponse ? 'TestRecord' : 'Document'
           }
 
           this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
@@ -3232,32 +3244,19 @@
                 afterObj = JSON5.parse(json);  // jsonlint.parse(this.removeComment(before));
                 after = JSON.stringify(afterObj, null, "    ");
               } catch (e2) {
-                throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e2.message)
+                throw new Error('请求 JSON 格式错误！请检查并编辑请求！\n\n如果JSON中有注释，请 手动删除 或 点击左边的 \'/" 按钮 来去掉。\n\n' + e.message + '\n\n' + e2.message)
               }
             }
 
-          //关键词let在IE和Safari上不兼容
-          if (this.isEditResponse != true) {
-            try {
-              code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
-            } catch (e) {
-              code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
-                + '\nError:\n' + e.message + '\n\n\n';
+            //关键词let在IE和Safari上不兼容
+            if (this.isEditResponse != true) {
+              try {
+                code = this.getCode(after); //必须在before还是用 " 时使用，后面用会因为解析 ' 导致失败
+              } catch (e) {
+                code = '\n\n\n建议:\n使用其它浏览器，例如 谷歌Chrome、火狐FireFox 或者 微软Edge， 因为这样能自动生成请求代码.'
+                  + '\nError:\n' + e.message + '\n\n\n';
+              }
             }
-          }
-
-            // if (isSingle) {  // TODO FIXME 逐个字符处理，' 转为 "，" 转为 '
-            //   if (before.indexOf('"') >= 0) {
-            //     before = before.replace(/"/g, "'");
-            //   }
-            // }
-            // else {
-            //   if (before.indexOf("'") >= 0) {
-            //     before = before.replace(/'/g, '"');
-            //   }
-            // }
-
-
 
             var selectionStart = vInput.selectionStart
             var selectionEnd = vInput.selectionEnd
@@ -3278,10 +3277,14 @@
             this.showDoc()
           }
 
+          var docKey = this.isEditResponse ? 'TestRecord' : 'Document';
+          var detail = ((this.currentRemoteItem || {})[docKey] || {}).detail;
+          var extraComment = this.getExtraComment()
+
           try {
             var standardObj = null;
             try {
-              standardObj = JSON.parse(((this.currentRemoteItem || {})[this.isEditResponse ? 'TestRecord' : 'Document'] || {}).standard);
+              standardObj = JSON.parse(((this.currentRemoteItem || {})[docKey] || {}).standard);
             } catch (e3) {
               log(e3)
             }
@@ -3290,13 +3293,25 @@
             var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true));
             var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj));
 
+
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
-            if (isSingle != true && afterObj.tag == null) {
-              m = m == null ? 'GET' : m.toUpperCase()
-              if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
-                w += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+            if (isSingle != true) {
+              if (afterObj.tag == null) {
+                m = m == null ? 'GET' : m.toUpperCase()
+                if (['GETS', 'HEADS', 'POST', 'PUT', 'DELETE'].indexOf(m) >= 0) {
+                  w += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+                  c += ' ! 非开放请求必须设置 tag ！例如 "tag": "User"'
+                }
+              }
+
+              if (StringUtil.isEmpty(detail, true)) {
+                c += extraComment == null ? '' : ('\n\n/*' + extraComment + '\n*/');
+              } else {
+                c += '\n\n/*' + (extraComment == null ? '' : extraComment + '\n\n') + detail + '\n*/';
               }
             }
+
+
             vWarning.value = w
               + '\n\n\n                                                                                                       '
               + '                                                                                                       \n';  //解决遮挡
@@ -3329,19 +3344,18 @@
             log('onHandle   try { vComment.value = CodeUtil.parseComment >> } catch (e) {\n' + e.message);
           }
 
-          try {
-            // 去掉前面的 JSON
-            var it = StringUtil.trim(vInput.value);
-            var ct = isSingle ? it : StringUtil.trim(vComment.value);
+          if (this.isPreviewEnabled) {
+            try {
+              // 去掉前面的 JSON
+              var raw = StringUtil.trim(isSingle ? vInput.value : vComment.value);
+              var start = raw.lastIndexOf('\n\/*')
+              var end = raw.lastIndexOf('\n*\/')
 
-            var raw = (it.lastIndexOf('\n\/*') < 0 || it.lastIndexOf('\n*\/') < 0 ? ct : it) || '';
-            var start = raw.lastIndexOf('\n\/*')
-            var end = raw.lastIndexOf('\n*\/')
-            markdownToHTML('```js\n' + (StringUtil.isEmpty(ct) ? (start < 0 || end <= start ? raw.substring(0, start) : '') : ct) + '\n```\n'
-              // + this.toMD(start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-              + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
-          } catch (e3) {
-            log(e3)
+              markdownToHTML('```js\n' + (start < 0 || end <= start ? raw : raw.substring(0, start)) + '\n```\n'
+                + (start < 0 || end <= start ? '' : raw.substring(start + '\n\/*'.length, end) ), true);
+            } catch (e3) {
+              log(e3)
+            }
           }
 
           if (this.isEditResponse) {

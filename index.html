@@ -269,10 +269,10 @@
 }
 
 /*
-  注释可省略，但如果未省略则前面两个空格必须；
-  清空文本内容可查看规则。
+注释可省略。行注释前必须有两个空格；段注释必须在 JSON 下方。
+清空文本内容可查看规则。
 
-  快捷键 Ctrl + I 或 Command + I 格式化 JSON。
+快捷键 Ctrl + I 或 Command + I 格式化 JSON。
 */
 
 
@@ -859,6 +859,10 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
 
 
   function markdownToHTML(md, isRequest) {
+    if (editormd == null) {
+      return;
+    }
+
     if (isRequest) {
       vRequestMarkdown.innerHTML = '';
     }
