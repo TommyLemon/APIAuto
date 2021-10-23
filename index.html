@@ -401,7 +401,7 @@ ORDER_DB(min:Integer, max:Integer, table:String, column:String)  // 从数据库
 其中 RANDOM 开头的是随机函数；ORDER 开头的是顺序函数，可以使用 + - 升降序 和 step 跨步，例如 ORDER_IN-(1, 2, 3) 降序取值，ORDER_INT+3(0, 100) 间隔 step = 3 位来升序取整数。
 # 模板：
 format: ORDER_IN(true, false, null, undefined)  // 从选项中顺序取值
-User/id id>: RANDOM_DB()  // 用 id> 替换 User 内的 id，从数据库随机取值
+User/id: RANDOM_DB()  // 从数据库随机取值，等价于 User/id: RANDOM_DB(null, null, 'User', 'id')
 []/page: Math.round(100*Math.random())  // 通过 JavaScript 代码来自定义 [] 内的 page
 ">
 User/id: RANDOM_INT(82001, 82020)  // 随机整数
