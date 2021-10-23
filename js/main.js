@@ -1659,7 +1659,7 @@
             inputObj.code = null  // delete inputObj.code
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
-            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, true, commentObj, true);
+            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, isEditResponse != true, commentObj, true);
 
             inputObj.code = code_
           }
