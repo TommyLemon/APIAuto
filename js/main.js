@@ -4900,22 +4900,37 @@
             vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
 
             const args = StringUtil.split(value.substring(start + 1, end)) || [];
-            const min = StringUtil.isEmpty(args[0], true) ? null : +args[0];
-            const max = StringUtil.isEmpty(args[1], true) ? null : +args[1]
+            var min = StringUtil.trim(args[0]);
+            var max = StringUtil.trim(args[1]);
+            var table = StringUtil.trim(args[2]) || '';
+            var column = StringUtil.trim(args[3]) || '';
+
+            min = min == '' || min == 'null' || min == 'undefined' ? null : +min;
+            max = max == '' || max == 'null' || max == 'undefined' ? null : +max;
+
+            if ((table.startsWith('"') && table.endsWith('"')) || (table.startsWith("'") && table.endsWith("'"))) {
+              table = table.substring(1, table.length - 1);
+            }
+            if ((column.startsWith('"') && column.endsWith('"')) || (column.startsWith("'") && column.endsWith("'"))) {
+              column = column.substring(1, column.length - 1);
+            }
+
+            const finalTableName = StringUtil.isEmpty(table, true) ? tableName : table;
+            const finalColumnName = StringUtil.isEmpty(column, true) ? lastKeyInPath : column;
 
             const tableReq = {
-              '@column': lastKeyInPath,
-              '@order': isRandom ? 'rand()' : (lastKeyInPath + (isDesc ? '-' : '+'))
+              '@column': isRandom ? finalColumnName : ('DISTINCT ' + finalColumnName),
+              '@order': isRandom ? 'rand()' : (finalColumnName + (isDesc ? '-' : '+'))
             };
-            tableReq[lastKeyInPath + '>='] = min;
-            tableReq[lastKeyInPath + '<='] = max;
+            tableReq[finalColumnName + '>='] = min;
+            tableReq[finalColumnName + '<='] = max;
 
             const req = {};
-            const listName = isRandom ? null : tableName + '-' + lastKeyInPath + '[]';
+            const listName = isRandom ? null : finalTableName + '-' + finalColumnName + '[]';
             const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
 
             if (isRandom) {
-              req[tableName] = tableReq;
+              req[finalTableName] = tableReq;
             }
             else {
               // 从数据库获取时不考虑边界，不会在越界后自动循环
@@ -4923,7 +4938,7 @@
                 count: 1, // count <= 100 ? count : 0,
                 page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，lastKeyInPath 未必是 id
               };
-              listReq[tableName] = tableReq;
+              listReq[finalTableName] = tableReq;
               req[listName] = listReq;
             }
 
@@ -4944,7 +4959,7 @@
               }
 
               if (isRandom) {
-                invoke((data[tableName] || {})[lastKeyInPath], which, p_k, pathKeys, key, lastKeyInPath);
+                invoke((data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath);
               }
               else {
                 var val = (data[listName] || [])[0];
