@@ -1403,6 +1403,7 @@
         } else {
           if (this.isLocalShow) {
             this.locals.splice(index, 1)
+            this.saveCache('', 'locals', this.locals)
             return
           }
 

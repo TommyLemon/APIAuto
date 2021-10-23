@@ -458,7 +458,7 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
                   <use xlink:href="svg/icon.svg#save"></use>
                 </svg>
               </a>
-              <ul class="historys pop" style="width: 240px">
+              <ul class="historys pop" style="width: 304px"> <!-- 没必要太长，遮挡范围过大 // 490 刚好与 URL 输入框左对齐 -->
                   <li v-for="(his, index) in historys">
                     <a href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
 
