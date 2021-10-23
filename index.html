@@ -302,7 +302,7 @@ Ctrl + I 或 Command + I 格式化 JSON
                             </a>
                             <a v-show="(currentRemoteItem || {}).Document != null" class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;"
                                href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
-                            <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="共享"  @click="showExport(true, true)">
+                            <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/共享"  @click="showExport(true, true)">
                                 <svg class="icon">
                                     <use xlink:href="svg/icon.svg#share"></use>
                                 </svg>
@@ -501,7 +501,7 @@ My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际�
                         </svg>
                     </a>
 
-                    <a href="javascript:void(0)" class="hint--top"  data-hint="共享"   @click="showExport(true, true)">
+                    <a href="javascript:void(0)" class="hint--top"  data-hint="上传/共享"   @click="showExport(true, true)">
                         <svg class="icon">
                             <use xlink:href="svg/icon.svg#share"></use>
                         </svg>
