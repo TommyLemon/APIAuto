@@ -227,31 +227,33 @@
   }
 }
 
-
 /*
-  JSON 下方可以写段注释，
-  可以是普通文本或 Markdown 格式文本。
+JSON 右侧可以写行注释，两个空格加两个斜杆 ' //' 开头；
+JSON 下方可以写段注释，'/*' 开头 '*/' 结尾，都在每行最前，
+段注释可以是普通文本或 Markdown 格式文本，一般用于枚举值等额外说明。
 
-  ### 例如一个表格
-  开发流程 | 传统方式 | APIJSON
-     ---  |   ---   |  ---
-  实现接口 | 写代码 + 写文档 | 都不用写
-  兼容旧版 | v2, v3.. 接口  | 都不用写
+### 例如一个表格
+开发流程 | 传统方式 | APIJSON
+   ---  |   ---   |  ---
+实现接口 | 写代码 + 写文档 | 都不用写
+兼容旧版 | v2, v3.. 接口  | 都不用写
 
-  ### 例如一段代码
-  ```js
-  // 前端解析并打印 Response JSON
-  var list = data['[]'] || []
-  for (var i = 0; i < list.length; i ++) {
-     console.log('[]/' + i + '=' + JSON.stringify(list[i]))
-  }
-  ```
+### 例如一段代码
+```js
+// 前端解析并打印 Response JSON
+var list = data['[]'] || []
+for (var i = 0; i < list.length; i ++) {
+   console.log('[]/' + i + '=' + JSON.stringify(list[i]))
+}
+```
 
-  ### 例如一张图片
-  ![](http://apijson.cn/images/logo-big.png)
+### 例如一张图片
+![](http://apijson.cn/images/logo-big.png)
 
-  #### 右上角设置项 > 预览请求输入框，显示对应的预览效果
+## 快捷键
+Ctrl + I 或 Command + I 格式化 JSON
 
+#### 右上角设置项 > 预览请求输入框，显示对应的预览效果
 */
 
 
@@ -269,10 +271,13 @@
 }
 
 /*
+以上 JSON 文本支持 JSON5 格式。清空文本内容可查看规则。
 注释可省略。行注释前必须有两个空格；段注释必须在 JSON 下方。
-清空文本内容可查看规则。
 
-快捷键 Ctrl + I 或 Command + I 格式化 JSON。
+## 快捷键
+Ctrl + I 或 Command + I 格式化 JSON
+
+#### 右上角设置项 > 预览请求输入框，显示对应的预览效果
 */
 
 
