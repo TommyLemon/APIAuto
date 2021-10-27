@@ -177,9 +177,6 @@ https://github.com/TommyLemon/APIAuto
 [apijson-learn](https://github.com/rainboy-learn/apijson-learn) APIJSON 学习笔记和源码解析
 
 
-感谢热心的作者们的贡献，点 ⭐Star 支持下他们吧。
-
-
 ### 持续更新
 https://github.com/TommyLemon/APIAuto/commits/master
 
