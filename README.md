@@ -128,6 +128,7 @@ https://github.com/TommyLemon/APIAuto/issues/12
 管理后台网页改用 http://apijson.cn/api ，托管服务地址改为 http://47.74.39.68:9090  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
 
+**本网页工具基本每个按钮/输入框等 UI 组件都有对应的注释或悬浮文档等形式的操作提示，很多问题都可以通过简单尝试来解决**
 
 更多常见问题 <br />
 https://github.com/TommyLemon/APIAuto
