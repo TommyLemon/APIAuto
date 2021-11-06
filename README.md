@@ -112,6 +112,10 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 ### 常见问题
+
+**注：本网页工具基本每个按钮/输入框等 UI 组件都有对应的注释或悬浮文档等形式的操作提示，<br />
+很多问题都不需要看文档/视频，可以直接通过把光标放上去等简单尝试来得到解答**
+
 #### 1.无法访问接口
 Chrome 90+ 对 CORS 请求禁止携带 Cookie 或 Chrome 80-89 强制 same-site Cookie 的策略导致 <br />
 https://github.com/TommyLemon/APIAuto/issues/9
@@ -127,9 +131,6 @@ https://github.com/TommyLemon/APIAuto/issues/12
 #### 4.apijson.org 访问不了
 管理后台网页改用 http://apijson.cn/api ，托管服务地址改为 http://47.74.39.68:9090  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
-
-**本网页工具基本每个按钮/输入框等 UI 组件都有对应的注释或悬浮文档等形式的操作提示，<br />
-很多问题都不需要看文档/视频，可以直接通过把光标放上去等简单尝试来得到解答**
 
 更多常见问题 <br />
 https://github.com/TommyLemon/APIAuto
