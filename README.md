@@ -113,7 +113,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 ### 常见问题
 
-**本网页工具基本每个按钮/输入框等 UI 组件都有对应的注释或悬浮文档等形式的操作提示，<br />
+**本网页工具基本每个按钮/输入框等 UI 组件都有注释或悬浮文档等形式的操作提示，<br />
 很多问题都不需要看文档/视频，可以直接通过把光标放上去等简单尝试来得到解答**
 
 #### 1.无法访问接口
@@ -153,7 +153,6 @@ https://github.com/TommyLemon/APIAuto
 如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
 <br />
 <br />
-
 
 
 ### 其它项目
