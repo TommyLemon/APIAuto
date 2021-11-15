@@ -1008,11 +1008,11 @@
           if (isRemote) { //共享测试用例
             this.isExportRandom = isRandom
 
-            if (isRandom != true) {  // 分享搜索关键词和分页信息也挺好 } && this.isTestCaseShow != true) {  // 没有拿到列表，没用
-              setTimeout(function () {
-                App.shareLink(App.isRandomTest)
-              }, 1000)
-            }
+            // if (isRandom != true) {  // 分享搜索关键词和分页信息也挺好 } && this.isTestCaseShow != true) {  // 没有拿到列表，没用
+            //   setTimeout(function () {
+            //     App.shareLink(App.isRandomTest)
+            //   }, 1000)
+            // }
 
             if (this.isTestCaseShow) {
               alert('请先输入请求内容！')
@@ -5197,7 +5197,7 @@
 
       },
 
-      compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err) {
+      compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend) {
         var it = item || {} //请求异步
         var d = (isRandom ? this.currentRemoteItem.Document : it.Document) || {} //请求异步
         var r = isRandom ? it.Random : null //请求异步
@@ -5235,7 +5235,7 @@
         else {
           var standardKey = this.isMLEnabled != true ? 'response' : 'standard'
           var standard = StringUtil.isEmpty(tr[standardKey], true) ? null : JSON.parse(tr[standardKey])
-          tr.compare = JSONResponse.compareResponse(standard, this.removeDebugInfo(response) || {}, '', this.isMLEnabled) || {}
+          tr.compare = JSONResponse.compareResponse(standard, this.removeDebugInfo(response) || {}, '', this.isMLEnabled, null, null, ignoreTrend) || {}
           tr.compare.duration = it.durationHint
         }
 
@@ -5721,7 +5721,6 @@
                 item.TestRecord = testRecord
 
 
-
                 // if (! isNewRandom) {
                 //   if (isRandom) {
                 //     App.showRandomList(true, App.currentRemoteItem)
@@ -5731,7 +5730,7 @@
                 //   }
                 // }
 
-                App.updateTestRecord(0, list, index, item, currentResponse, isRandom)
+                App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true)
               }
 
             })
@@ -5740,7 +5739,7 @@
         }
       },
 
-      updateTestRecord: function (allCount, list, index, item, response, isRandom) {
+      updateTestRecord: function (allCount, list, index, item, response, isRandom, ignoreTrend) {
         item = item || {}
         var doc = (isRandom ? item.Random : item.Document) || {}
 
@@ -5764,7 +5763,7 @@
           }
 
           item.TestRecord = data.TestRecord
-          App.compareResponse(allCount, list, index, item, response, isRandom, App.currentAccountIndex, true, err);
+          App.compareResponse(allCount, list, index, item, response, isRandom, App.currentAccountIndex, true, err, ignoreTrend);
         })
       },
 

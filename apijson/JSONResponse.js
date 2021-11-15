@@ -339,7 +339,7 @@ var JSONResponse = {
    3-对象缺少字段/整数变小数，黄色；
    4-code/值类型 改变，红色；
    */
-  compareResponse: function(target, real, folder, isMachineLearning, codeName, exceptKeys) {
+  compareResponse: function(target, real, folder, isMachineLearning, codeName, exceptKeys, ignoreTrend) {
     codeName = StringUtil.isEmpty(codeName, true) ? 'code' : codeName;
     var tCode = (target || {})[codeName];
     var rCode = (real || {})[codeName];
@@ -432,7 +432,7 @@ var JSONResponse = {
     var result = null
     try {
        result = isMachineLearning == true
-        ? JSONResponse.compareWithStandard(target, real, folder, exceptKeys)
+        ? JSONResponse.compareWithStandard(target, real, folder, exceptKeys, ignoreTrend)
         : JSONResponse.compareWithBefore(target, real, folder, exceptKeys);
     } finally {
       target[codeName] = tCode;
@@ -623,7 +623,7 @@ var JSONResponse = {
    3-缺少字段/整数变小数，黄色；
    4-类型/code 改变，红色；
    */
-  compareWithStandard: function(target, real, folder, exceptKeys) {
+  compareWithStandard: function(target, real, folder, exceptKeys, ignoreTrend) {
     folder = folder == null ? '' : folder;
 
     if (target == null) {
@@ -781,14 +781,14 @@ var JSONResponse = {
         max.path = folder;
         max.value = real;
 
-        if (target.valueLevel != 1 || target.type != 'number') {
+        if (target.valueLevel != 1 || CodeUtil.isTypeMatch('number', target.type) != true) {
           max.msg = '值超出范围';
         }
         else if (valueCompare == JSONResponse.COMPARE_VALUE_MORE) {
           max.msg = '值是新增的';
         }
-        else {
-          var select = (target.trend || {}).select;
+        else {  // 刚上传完是不是不应该对比？还是 ignoreTrend = ">,<,!" 忽略特定的对比？因为很可能是原来的
+          var select = ignoreTrend ? null : (target.trend || {}).select;
           var maxVal = values == null || values.length <= 0 ? null : values[0];
           var minVal = values == null || values.length <= 0 ? null : values[values.length - 1];
 
@@ -942,7 +942,7 @@ var JSONResponse = {
 
   /**更新测试标准，通过原来的标准与最新的数据合并来实现
    */
-  updateStandard: function(target, real, exceptKeys) {
+  updateStandard: function(target, real, exceptKeys, ignoreTrend) {
     if (target instanceof Array) { // JSONArray
       throw new Error("Standard 语法错误，不应该有 array！");
     }
@@ -970,10 +970,11 @@ var JSONResponse = {
     }
 
     var type = target.type;
+    var rtype = JSONResponse.getType(real);
     log('updateStandard  type = target.type = ' + type + ' >>');
-    // if (type == null) { //强制用real的类型替代
-    type = target.type = JSONResponse.getType(real);
-    // }
+    if (type == null || CodeUtil.isTypeMatch(target.type, rtype) != true) { //强制用real的类型替代
+      type = target.type = rtype;
+    }
     log('updateStandard  type = target.type = getType(real) = ' + type + ' >>');
 
 
@@ -1009,7 +1010,7 @@ var JSONResponse = {
         log('updateStandard for i = ' + i + '; child = '
           + JSON.stringify(child, null, '    ') + ';\n real[i] = '  + JSON.stringify(real[i], null, '    ') + ' >>');
 
-        child = JSONResponse.updateStandard(child, real[i], exceptKeys);
+        child = JSONResponse.updateStandard(child, real[i], exceptKeys, true);  //FIXME ignoreTrend 固定取 true 导致批量创建后多个 id [1,2,3] -> [3,4,5] 漏报趋势异常
       }
       if (child == null) {
         log('updateStandard  child == null >> child = {}');
@@ -1017,8 +1018,8 @@ var JSONResponse = {
       }
 
       values = [child];
-      target = JSONResponse.setValue(target, real.length, lengthLevel == null ? 1 : lengthLevel, lengths, true);
-      target = JSONResponse.setValue(target, null, valueLevel, values, false);
+      target = JSONResponse.setValue(target, real.length, lengthLevel == null ? 1 : lengthLevel, lengths, true, true);
+      target = JSONResponse.setValue(target, null, valueLevel, values, false, ignoreTrend);
     }
     else if (type == 'object') {
       log('updateStandard  type == object >> ');
@@ -1037,7 +1038,14 @@ var JSONResponse = {
         // log('updateStandard for k2 in values[0] = ' + k2 + ' >>');
         if (realKeys.indexOf(k2) < 0) {
           // log('updateStandard Object.keys(real).indexOf(k2) < 0 >> real[k2] = null;');
-          delete real[k2];  // real[k2] = null;  //TODO delete real[k2] ? 避免多出来 key: null 这种
+          // 解决总是报错缺少字段  delete real[k2];  // 解决总是多出来 key: null    real[k2] = null;
+
+          if (values[0][k2] == null) {
+            values[0][k2] = { notnull: false };
+          }
+          else {
+            values[0][k2].notnull = false;
+          }
         }
       }
 
@@ -1048,7 +1056,7 @@ var JSONResponse = {
 
         log('updateStandard for k in real = ' + k + '; values[0][k] = '
           + JSON.stringify(values[0][k], null, '    ') + ';\n real[k] = '  + JSON.stringify(real[k], null, '    ') + ' >>');
-        values[0][k] = JSONResponse.updateStandard(values[0][k], real[k], exceptKeys);
+        values[0][k] = JSONResponse.updateStandard(values[0][k], real[k], exceptKeys, ignoreTrend);
       }
 
       target.values = values;
@@ -1064,8 +1072,8 @@ var JSONResponse = {
       }
       target.values = values;
 
-      target = JSONResponse.setValue(target, JSONResponse.getLength(real), lengthLevel == null ? 1 : lengthLevel, lengths, true);
-      target = JSONResponse.setValue(target, real, valueLevel, values, false);
+      target = JSONResponse.setValue(target, JSONResponse.getLength(real), lengthLevel == null ? 1 : lengthLevel, lengths, true, true);
+      target = JSONResponse.setValue(target, real, valueLevel, values, false, ignoreTrend);
     }
 
     log('\nupdateStandard >> return target = ' + JSON.stringify(target, null, '    ') + '\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n\n\n\n');
@@ -1177,7 +1185,7 @@ var JSONResponse = {
         var child = tgt.values[0];
         if (child == null) {
           child = {};
-          child.type = typeof k == 'number' ? 'array' : 'number';
+          child.type = typeof k == 'number' ? 'array' : 'number';  // TODO 没看懂为啥是 array
           child.notnull = false;
           tgt.values[0] = child;
         }
@@ -1218,8 +1226,8 @@ var JSONResponse = {
       return null;
     }
 
-    if (type == 'number') {
-      log('getLength  type == number >> ');
+    if (CodeUtil.isTypeMatch('number', type)) {
+      log('getLength  CodeUtil.isTypeMatch(number, type) >> ');
 
       var rs = String(value);
 
@@ -1246,11 +1254,13 @@ var JSONResponse = {
   /**
    * @param target
    * @param value
-   * @param lengthLevel 0 - [] , 1 - min-max, 2 - "conditions", 3 - 任何值都行
-   * @param originLength
+   * @param level 0 - [] , 1 - min-max, 2 - "conditions", 3 - 任何值都行
+   * @param origin
+   * @param isLength
+   * @param ignoreTrend  解决在一次结果中多个值会自己与自己比较分析趋势，导致一直误报违背趋势
    * @return {*}
    */
-  setValue: function(target, real, level, origin, isLength) {
+  setValue: function(target, real, level, origin, isLength, ignoreTrend) {
     log('setValue  level = ' + level + '; isLength = ' + isLength
       + ' ;\n target = ' + JSON.stringify(target, null, '    ')
       + ' ;\n real = ' + JSON.stringify(real, null, '    ')
@@ -1299,7 +1309,7 @@ var JSONResponse = {
 
         if (real != null) {
           //趋势分析，新值落在五个区域之一的次数，"trend":{ "select": ">", "above": 5, "top":4, "center":3, "bottom":2, "below":1 }
-          if (isLength != true && origin.length > 0 && type == 'number') {
+          if (ignoreTrend != true && isLength != true && origin.length > 0 && CodeUtil.isTypeMatch('number', type)) {
             log('setValue  isLength != true && origin.length > 0  >> ');
 
             var trend = target.trend || {};
@@ -1387,7 +1397,7 @@ var JSONResponse = {
         }
       }
 
-      if (vals.length > 1 && (isLength || type == 'number')) {
+      if (vals.length > 1 && (isLength || CodeUtil.isTypeMatch('number', type))) {
         vals = vals.sort(function (x, y) { //倒序排列，一般都是用最大长度(数据count，字符串长度等)
           if (x < y) {
             return 1;
@@ -1405,7 +1415,7 @@ var JSONResponse = {
       switch (level) {
         case 0:
         case 1:
-          var realIsNum = typeof real == 'number'
+          var realIsNum = CodeUtil.isTypeMatch('number', typeof real)
           //当 离散区间模型 可取值超过最大数量时自动转为 连续区间模型
           var maxCount = isLength ? 3 : JSONResponse.getMaxValueCount(type);
           var extraCount = maxCount <= 0 ? 0 : vals.length - maxCount;

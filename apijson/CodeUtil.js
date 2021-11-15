@@ -6220,7 +6220,7 @@ var CodeUtil = {
       var t = targetObj == null ? null : targetObj.type;
       var targetComment = targetObj == null ? null : targetObj.comment;
       var c = targetObj == null ? null : CodeUtil.getType4Language(language, t, true) + (targetObj.notnull ? ', ' : '? ') + StringUtil.trim(targetComment);
-      if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value))) {
+      if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value)) != true) {
         c = ' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + (isWarning ? ' ' : CodeUtil.getComment(c, false, '  '));
         if (ignoreError != true) {
           throw new Error(c);
@@ -6354,7 +6354,7 @@ var CodeUtil = {
             t = 'number';
           }
 
-          if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value))) {
+          if (CodeUtil.isTypeMatch(t, CodeUtil.getType4Request(value)) != true) {
             c = ' ! value必须是' + CodeUtil.getType4Language(language, t) + '类型！' + (isWarning ? ' ' : CodeUtil.getComment(c, false, '  '))
             if (ignoreError != true) {
               throw new Error(c);
@@ -6648,7 +6648,7 @@ var CodeUtil = {
         var c = (p.length <= 0 ? '' : p + key + ': ') + t + (column.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
 
         var ct = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type, false);
-        if (verifyType && t != null && CodeUtil.isTypeMatch(ct, CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, typeOfValue))) {
+        if (verifyType && t != null && CodeUtil.isTypeMatch(ct, CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, typeOfValue)) != true) {
           // c = ' ! value必须是' + t + '类型！' + CodeUtil.getComment(c, false, '  ')
           // if (ignoreError != true) {
           //   throw new Error(c);
@@ -6676,8 +6676,11 @@ var CodeUtil = {
     return typeof value;
   },
 
-  isTypeMatch(targetType, realType) {
-    return StringUtil.isEmpty(targetType, true) == false && targetType != realType && (targetType != 'number' || realType != 'integer');
+  isTypeMatch: function(targetType, realType) {
+    if (targetType == null || targetType == realType) {
+      return true;
+    }
+    return (targetType == 'number' && realType == 'integer') || (targetType == 'string' && ['date', 'time', 'datetime'].indexOf(realType) >= 0);
   }
 
 }
