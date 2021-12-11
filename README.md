@@ -23,8 +23,6 @@
 
 #### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
 零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br />
-https://www.bilibili.com/video/BV1yv411p7Y4
-
 <img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
 
 <img width="390" src="https://user-images.githubusercontent.com/5738175/125167121-86bed580-e1d1-11eb-9dc6-2ea190146fe6.png">
