@@ -5376,10 +5376,12 @@
        */
       removeDebugInfo: function (obj) {
         if (obj != null) {
-          delete obj["trace"]
+          delete obj["debug:info|help"]
           delete obj["sql:generate|cache|execute|maxExecute"]
           delete obj["depth:count|max"]
           delete obj["time:start|duration|end"]
+          // 保留 delete obj["trace:throw"]
+          delete obj["trace:stack"]
         }
         return obj
       },
