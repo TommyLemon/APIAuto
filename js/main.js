@@ -364,8 +364,8 @@
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-  function getRequestFromURL() {
-    var url = window.location.search;
+  function getRequestFromURL(url_) {
+    var url = url_ || window.location.search;
 
     var index = url == null ? -1 : url.indexOf("?")
     if(index < 0) { //判断是否有参数
@@ -411,6 +411,16 @@
     'JSON': 'application/json',
     'GRPC': 'application/json',
   }
+  var CONTENT_VALUE_TYPE_MAP = {
+    'plain/text': 'JSON',
+    'x-www-form-urlencoded': 'FORM',
+    'form-data': 'DATA',
+    'application/json': 'JSON'
+  }
+
+  var IGNORE_HEADERS = ['status code', 'remote address', 'referrer policy', 'connection', 'content-length'
+    , 'content-type', 'date', 'keep-alive', 'proxy-connection', 'set-cookie', 'vary', 'accept', 'cache-control', 'dnt'
+    , 'host', 'origin', 'pragma', 'referer', 'user-agent']
 
   var RANDOM_DB = 'RANDOM_DB'
   var RANDOM_IN = 'RANDOM_IN'
@@ -3790,7 +3800,86 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if ((selectionStart <= 0 && selectionEnd >= StringUtil.get(target.value).length) || StringUtil.isEmpty(target.value, true)) {
           if (target == vUrl) {  //TODO 把 Chrome 或 Charles 等抓到的 Header 和 Content 自动粘贴到 vUrl, vHeader
+            try {
+              var contentStart = 0;
+              var lines = StringUtil.split(paste, '\n');
+              var header = '';
 
+              for (var i = 0; i < lines.length; i ++) {
+                var l = StringUtil.trim(lines[i]);
+                ind = l.indexOf(':');
+                var left = ind < 0 ? '' : StringUtil.trim(l.substring(0, ind));
+
+                if (/^[a-zA-Z0-9\- ]+$/g.test(left)) {
+                  var lowerKey = left.toLowerCase();
+                  var value = l.substring(ind + 1);
+
+                  if (lowerKey == 'request method') {
+                    value = StringUtil.trim(value).toUpperCase();
+                    this.type = value == 'GET' ? 'PARAM' : (value == 'POST' ? 'JSON' : value);
+                    event.preventDefault();
+                  }
+                  else if (lowerKey == 'content-type') {
+                    var type = vType.value != 'JSON' ? null : CONTENT_VALUE_TYPE_MAP[StringUtil.trim(value)];
+                    if (StringUtil.isEmpty(type, true) != true) {
+                      this.type = type;
+                      event.preventDefault();
+                    }
+                  }
+                  else if (lowerKey == 'request url') {
+                    vUrl.value = StringUtil.trim(value);
+                    event.preventDefault();
+                  }
+                  else if (StringUtil.isEmpty(lowerKey, true) || lowerKey.startsWith('accept-')
+                    || lowerKey.startsWith('access-control-') || IGNORE_HEADERS.indexOf(lowerKey) >= 0) {
+                    // 忽略
+                  }
+                  else {
+                    header += '\n' + left + ': ' +  StringUtil.trim(l.substring(ind + 1));
+                  }
+                  
+                  contentStart += lines[i].length + 1;
+                }
+                else {
+                  if (l.startsWith('HTTP/') || l.startsWith('HTTPS/')) {  // HTTP/1.1 200
+                    contentStart += lines[i].length + 1;
+                    continue;
+                  }
+
+                  var ind = l.indexOf(' ');
+                  var m = ind < 0 ? '' :  StringUtil.trim(l.substring(0, ind));
+                  if (APIJSON_METHODS.indexOf(m.toLowerCase()) >= 0) {  // POST /gets HTTP/1.1
+                    contentStart += lines[i].length + 1;
+                    continue;
+                  }
+
+                  var content = StringUtil.trim(paste.substring(contentStart));
+                  var json = null;
+                  try {
+                    json = JSON5.parse(content);  // { "a":1, "b": "c" }
+                  } catch (e) {
+                    log(e)
+                    try {
+                      json = getRequestFromURL(content);  // a=1&b=c
+                    } catch (e2) {
+                      log(e2)
+                    }
+                  }
+
+                  vInput.value = json == null || Object.keys(json).length < 0 ? '' : JSON.stringify(json, null, '    ');
+                  event.preventDefault();
+                  break;
+                }
+
+              }
+
+              if (StringUtil.isEmpty(header, true) != true) {
+                vHeader.value = StringUtil.trim(header);
+                event.preventDefault();
+              }
+            } catch (e) {
+              log(e)
+            }
           }
           else if (target == vHeader || target == vRandom) {  // { "key": value } 转 key: value
             try {
