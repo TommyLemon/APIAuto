@@ -6036,8 +6036,38 @@
 
           if (event.keyCode === 73) {
             try {
-              var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
-              vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
+              if (target == vInput) {
+                var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
+                vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
+              }
+              else {
+                var lines = StringUtil.split(target.value, '\n');
+                var newStr = '';
+
+                for (var i = 0; i < lines.length; i ++) {
+                  var l = StringUtil.trim(lines[i]) || '';
+                  if (l.startsWith('//')) {
+                   continue;
+                  }
+
+                  var ind = l.lastIndexOf('  //');
+                  l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
+
+                  if (target == vHeader || target == vRandom) {
+                    ind = l.indexOf(':');
+                    if (ind >= 0) {
+                      var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
+                      l = left + ': ' + StringUtil.trim(l.substring(ind + 1));
+                    }
+                  }
+
+                  if (l.length > 0) {
+                    newStr += '\n' + l;
+                  }
+                }
+
+                target.value = StringUtil.trim(newStr);
+              }
             } catch (e) {
               log(e)
             }
@@ -6056,12 +6086,12 @@
               var selection = json.substring(start, end);
               var lines = StringUtil.split(selection, '\n');
 
-              var newJson = json.substring(0, start);
+              var newStr = json.substring(0, start);
 
               for (var i = 0; i < lines.length; i ++) {
                 var l = lines[i] || '';
                 if (i > 0) {
-                  newJson += '\n';
+                  newStr += '\n';
                 }
 
                 if (StringUtil.trim(l).startsWith('//')) {
@@ -6072,19 +6102,21 @@
                     selectionEnd -= 2;
                   }
 
-                  newJson += StringUtil.get(l.substring(0, ind)) + StringUtil.get(suffix)
+                  newStr += StringUtil.get(l.substring(0, ind)) + StringUtil.get(suffix)
                   selectionEnd -= 2;
                 }
                 else {
-                  newJson += '//  ' + l;
+                  newStr += '//  ' + l;
                   selectionEnd += 4;
                 }
               }
 
-              newJson += json.substring(end);
+              newStr += json.substring(end);
 
-              target.value = inputted = isSingle ? App.switchQuote(newJson) : newJson;
-
+              target.value = newStr;
+              if (target == vInput) {
+                inputted = newStr;
+              }
             } catch (e) {
               log(e)
             }
