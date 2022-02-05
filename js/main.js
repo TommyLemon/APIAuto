@@ -6028,16 +6028,71 @@
 
 
       // 快捷键 CTRL + I 格式化 JSON
-      document.addEventListener('keydown',function(event) {
+      document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
         // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
-        if (event.keyCode === 73 && (event.ctrlKey || event.metaKey)) {
-          try {
-            var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
-            vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
-          } catch (e) {
-            log(e)
+        if (event.ctrlKey || event.metaKey) {
+          var selectionStart = vInput.selectionStart;
+          var selectionEnd = vInput.selectionEnd;
+
+          if (event.keyCode === 73) {
+            try {
+              var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
+              vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
+            } catch (e) {
+              log(e)
+            }
           }
+          else if (event.keyCode === 191) {  // 注释与取消注释
+            try {
+              var json = StringUtil.get(vInput.value);
+              var before = json.substring(0, selectionStart);
+              var after = json.substring(selectionEnd);
+
+              var ind = before.lastIndexOf('\n');
+              var start = ind < 0 ? 0 : ind + 1;
+              ind = after.indexOf('\n');
+              var end = ind < 0 ? json.length : selectionEnd + ind - 1;
+
+              var selection = json.substring(start, end);
+              var lines = StringUtil.split(selection, '\n');
+
+              var newJson = json.substring(0, start);
+
+              for (var i = 0; i < lines.length; i ++) {
+                var l = lines[i] || '';
+                if (i > 0) {
+                  newJson += '\n';
+                }
+
+                if (StringUtil.trim(l).startsWith('//')) {
+                  var ind = l.indexOf('//');
+                  var suffix = l.substring(ind + 2);
+                  if (suffix.startsWith('  ')) {
+                    suffix = suffix.substring(2);
+                    selectionEnd -= 2;
+                  }
+
+                  newJson += StringUtil.get(l.substring(0, ind)) + StringUtil.get(suffix)
+                  selectionEnd -= 2;
+                }
+                else {
+                  newJson += '//  ' + l;
+                  selectionEnd += 4;
+                }
+              }
+
+              newJson += json.substring(end);
+
+              vInput.value = inputted = isSingle ? App.switchQuote(newJson) : newJson;
+
+            } catch (e) {
+              log(e)
+            }
+          }
+
+          vInput.selectionStart = selectionStart;
+          vInput.selectionEnd = selectionEnd;
         }
       })
 
