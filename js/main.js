@@ -886,8 +886,10 @@
         if (hs != null && hs.length > 0) {
           var item
           for (var i = 0; i < hs.length; i++) {
-            item = hs[i]
-            var index = item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            item = hs[i] || ''
+
+            // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
+            var index = StringUtil.trim(item).startsWith('//') ? 0 : item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -3281,7 +3283,7 @@
           vSend.disabled = false;
 
           if (this.isEditResponse != true) {
-            vOutput.value = output = 'OK，请点击 [发送请求] 按钮来测试。[点击这里查看视频教程](https://i.youku.com/i/UNTg1NzI1MjQ4MA==/videos?spm=a2hzp.8244740.0.0)' + code;
+            vOutput.value = output = '登录后点 ↑ 上方左侧最后图标按钮可查看用例列表，点上方右侧中间图标按钮可上传用例并且添加到列表中 ↑ \nOK，请点左上方 [发送请求] 按钮来测试。[点击这里查看视频教程](https://i.youku.com/i/UNTg1NzI1MjQ4MA==/videos?spm=a2hzp.8244740.0.0)' + code;
 
             this.showDoc()
           }
@@ -3971,13 +3973,13 @@
           s += '\n\n#### 开放源码 '
             + '\nAPIJSON 接口测试: https://github.com/TommyLemon/APIAuto '
             + '\nAPIJSON 单元测试: https://github.com/TommyLemon/UnitAuto '
-            + '\nAPIJSON 官方文档: https://github.com/vincentCheng/apijson-doc '
+            + '\nAPIJSON 中文文档: https://github.com/vincentCheng/apijson-doc '
             + '\nAPIJSON 英文文档: https://github.com/ruoranw/APIJSONdocs '
-            + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.org '
+            + '\nAPIJSON 官方网站: https://github.com/APIJSON/apijson.cn '
             + '\nAPIJSON -Java版: https://github.com/Tencent/APIJSON '
-            + '\nAPIJSON - Go 版: https://gitee.com/tiangao/apijson-go '
             + '\nAPIJSON - C# 版: https://github.com/liaozb/APIJSON.NET '
-            + '\nAPIJSON - PHP版: https://github.com/xianglong111/APIJSON-php '
+            + '\nAPIJSON - Go 版: https://github.com/j2go/apijson-go '
+            + '\nAPIJSON - PHP版: https://github.com/kvnZero/hyperf-APIJSON '
             + '\nAPIJSON -Node版: https://github.com/kevinaskin/apijson-node '
             + '\nAPIJSON -Python: https://github.com/zhangchunlin/uliweb-apijson '
             + '\n感谢热心的作者们的贡献，GitHub 右上角点 ⭐Star 支持下他们吧 ^_^';
@@ -4777,12 +4779,12 @@
 
         // alert('< json = ' + JSON.stringify(json, null, '    '))
 
-        for (let i = 0; i < reqCount; i ++) {
+        for (let i = 0; i < lines.length; i ++) {
           const which = i;
           const lineItem = lines[i] || '';
 
-          // remove comment
-          const commentIndex = lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
+          // remove comment   // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
+          const commentIndex = StringUtil.trim(lineItem).startsWith('//') ? 0 : lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
           const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
 
           if (line.length <= 0) {
@@ -5206,9 +5208,10 @@
         var bdt = tr.duration || 0
         it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? (bdt/1000).toFixed(1) + 's' : (bdt <= 1000*60*60 ? (bdt/1000/60).toFixed(1) + 'm' : '>1h')))
         try {
-          var durationInfo = response['time:start|duration|end']
+          var durationInfo = response['time:start|duration|end|parse|sql']
           it.durationInfo = durationInfo
-          it.duration = durationInfo.substring(durationInfo.indexOf('\|') + 1, durationInfo.lastIndexOf('\|') || durationInfo.length) || 0
+          var di = durationInfo.substring(durationInfo.indexOf('\|') + 1)
+          it.duration = di.substring(0, di.indexOf('\|') || di.length) || 0
           var dt = + it.duration
           it.duration = dt
           it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60).toFixed(1) + 'm' : '>1h')))
@@ -5222,7 +5225,7 @@
         catch (e) {
           log(e)
           it.durationShowStr = it.durationShowStr || it.duration
-          it.durationHint = it.durationHint || '最外层缺少字段 "time:start|duration|end": "1613039123780|10|1613039123790"，无法对比耗时'
+          it.durationHint = it.durationHint || '最外层缺少字段 "time:start|duration|end|parse|sql": "1613039123780|10|1613039123790|1|9"，无法对比耗时'
         }
 
         if (err != null) {
@@ -5380,8 +5383,11 @@
           delete obj["sql:generate|cache|execute|maxExecute"]
           delete obj["depth:count|max"]
           delete obj["time:start|duration|end"]
+          delete obj["time:start|duration|end|parse|sql"]
+          // 保留 delete obj["throw"]
           // 保留 delete obj["trace:throw"]
           delete obj["trace:stack"]
+          delete obj["stack"]
         }
         return obj
       },
@@ -5549,7 +5555,7 @@
             var maxDuration = testRecord.maxDuration
             if (isDuration) {
               if (item.duration == null) {  // 没有获取到
-                alert('最外层缺少字段 "time:start|duration|end": "1613039123780|10|1613039123790"，无法对比耗时！')
+                alert('最外层缺少字段 "time:start|duration|end|parse|sql": "1613039123780|10|1613039123790|1|9"，无法对比耗时！')
                 return
               }
               else if (maxDuration == null && minDuration == null) {
