@@ -5799,8 +5799,6 @@
         this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
       },
 
-// APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
     },
     watch: {
       jsoncon: function () {
@@ -6032,8 +6030,9 @@
         // alert(event.key) 小写字母 i 而不是 KeyI
         // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
         if (event.ctrlKey || event.metaKey) {
-          var selectionStart = vInput.selectionStart;
-          var selectionEnd = vInput.selectionEnd;
+          var target = event.target;
+          var selectionStart = target.selectionStart;
+          var selectionEnd = target.selectionEnd;
 
           if (event.keyCode === 73) {
             try {
@@ -6045,7 +6044,7 @@
           }
           else if (event.keyCode === 191) {  // 注释与取消注释
             try {
-              var json = StringUtil.get(vInput.value);
+              var json = StringUtil.get(target.value);
               var before = json.substring(0, selectionStart);
               var after = json.substring(selectionEnd);
 
@@ -6084,18 +6083,21 @@
 
               newJson += json.substring(end);
 
-              vInput.value = inputted = isSingle ? App.switchQuote(newJson) : newJson;
+              target.value = inputted = isSingle ? App.switchQuote(newJson) : newJson;
 
             } catch (e) {
               log(e)
             }
           }
 
-          vInput.selectionStart = selectionStart;
-          vInput.selectionEnd = selectionEnd;
+          target.selectionStart = selectionStart;
+          target.selectionEnd = selectionEnd;
         }
       })
 
     }
   })
 })()
+
+// APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
