@@ -55,11 +55,7 @@ var StringUtil = {
     if (trim) {
       s = s.trim();
     }
-    if (s == '') {
-      return true;
-    }
-
-    return false;
+    return s.length <= 0;
   },
 
   /**判断是否为代码名称，只能包含字母，数字或下划线

@@ -404,6 +404,14 @@
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
   var REQUEST_TYPE_GRPC = 'GRPC'  // POST application/json
 
+  var CONTENT_TYPE_MAP = {
+    // 'PARAM': 'plain/text',
+    'FORM': 'x-www-form-urlencoded',
+    'DATA': 'form-data',
+    'JSON': 'application/json',
+    'GRPC': 'application/json',
+  }
+
   var RANDOM_DB = 'RANDOM_DB'
   var RANDOM_IN = 'RANDOM_IN'
   var RANDOM_INT = 'RANDOM_INT'
@@ -3704,6 +3712,136 @@
       },
 
 
+      /**处理复制事件
+       * @param event
+       */
+      doOnCopy: function(event) {
+        var target = event.target;
+        var selectionStart = target.selectionStart;
+        var selectionEnd = target.selectionEnd;
+
+        if (target == vUrl) {
+          try {
+            var contentType = CONTENT_TYPE_MAP[this.type];
+            var json = this.getRequest(vInput.value)
+            var header = this.getHeader(vHeader.value);
+            var headerStr = '';
+            if (header != null) {
+              for (var k in header) {
+                var v = header[k];
+                headerStr += '\n' + k + ': ' + StringUtil.get(v);
+              }
+            }
+
+            console.log('复制时自动转换:\n'
+            + `Request URL: ` + vUrl.value + `
+Request Method: ` + (this.type == REQUEST_TYPE_PARAM ? 'GET' : 'POST') + (StringUtil.isEmpty(contentType, true) ? '' : `
+Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : headerStr)
+              + '\n\n' + JSON.stringify(json));
+          } catch (e) {
+            log(e)
+          }
+        }
+        else if (target == vHeader || target == vRandom) {  // key: value 转 { "key": value }
+          if (selectionStart < 0 || selectionStart <= selectionEnd) {
+            try {
+              var selection = selectionStart < 0 ? target.value : StringUtil.get(target.value).substring(selectionStart, selectionEnd);
+              var lines = StringUtil.split(selection, '\n');
+              var json = {};
+
+              for (var i = 0; i < lines.length; i ++) {
+                var l = StringUtil.trim(lines[i]) || '';
+                if (l.startsWith('//')) {
+                  continue;
+                }
+
+                var ind = l.lastIndexOf('  //');
+                l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
+
+                ind = l.indexOf(':');
+                if (ind >= 0) {
+                  var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
+                  json[left] = StringUtil.trim(l.substring(ind + 1));
+                }
+              }
+
+              if (Object.keys(json).length > 0) {
+                var txt = JSON.stringify(json)
+                console.log('复制时自动转换:\n' +  txt)
+                navigator.clipboard.writeText(selection + '\n\n' + txt);
+                alert('复制内容最后拼接了，控制台 Console 也打印了：\n' + txt);
+              }
+            } catch (e) {
+              log(e)
+            }
+          }
+        }
+
+      },
+
+      /**处理粘贴事件
+       * @param event
+       */
+      doOnPaste: function(event) {
+        var paste = (event.clipboardData || window.clipboardData || navigator.clipboard).getData('text');
+        var target = event.target;
+        var selectionStart = target.selectionStart;
+        var selectionEnd = target.selectionEnd;
+
+        if ((selectionStart <= 0 && selectionEnd >= StringUtil.get(target.value).length) || StringUtil.isEmpty(target.value, true)) {
+          if (target == vUrl) {  //TODO 把 Chrome 或 Charles 等抓到的 Header 和 Content 自动粘贴到 vUrl, vHeader
+
+          }
+          else if (target == vHeader || target == vRandom) {  // { "key": value } 转 key: value
+            try {
+              var json = JSON5.parse(paste);
+              var newStr = '';
+              for (var k in json) {
+                var v = json[k];
+                if (v instanceof Object || v instanceof Array) {
+                  v = JSON.stringify(v);
+                }
+                newStr += '\n' + k + ': ' + (target != vHeader && typeof v == 'string' ? "'" + v.replaceAll("'", "\\'") + "'" : StringUtil.get(v));
+              }
+              target.value = StringUtil.trim(newStr);
+              event.preventDefault();
+            } catch (e) {
+              log(e)
+            }
+          }
+          else if (target == vInput) {  // key: value 转 { "key": value }
+            try {
+              var lines = StringUtil.split(paste, '\n');
+              var json = {};
+
+              for (var i = 0; i < lines.length; i ++) {
+                var l = StringUtil.trim(lines[i]) || '';
+                if (l.startsWith('//')) {
+                  continue;
+                }
+
+                var ind = l.lastIndexOf('  //');
+                l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
+
+                ind = l.indexOf(':');
+                if (ind >= 0) {
+                  var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
+                  json[left] = StringUtil.trim(l.substring(ind + 1));
+                }
+              }
+
+              if (Object.keys(json).length > 0) {
+                vInput.value = JSON.stringify(json, null, '    ');
+                event.preventDefault();
+              }
+            } catch (e) {
+              log(e)
+            }
+          }
+        }
+
+      },
+
       /**处理按键事件
        * @param event
        */
@@ -5776,7 +5914,7 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
-      setRequestHint(index, item, isRandom) {
+      setRequestHint: function(index, item, isRandom) {
         item = item || {}
         var d = isRandom ? item.Random : item.Document;
         // var r = d == null ? null : (isRandom ? d.config : d.request);
@@ -5792,12 +5930,12 @@
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
-      setTestHint(index, item, isRandom, isDuration) {
+      setTestHint: function(index, item, isRandom, isDuration) {
         item = item || {};
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
         var h = isDuration ? item.durationHint : item.hintMessage;
         this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
-      },
+      }
 
     },
     watch: {
@@ -6034,7 +6172,9 @@
           var selectionStart = target.selectionStart;
           var selectionEnd = target.selectionEnd;
 
-          if (event.keyCode === 73) {
+          // 这里拿不到 clipboardData  if (event.keyCode === 86) {
+
+          if (event.keyCode === 73) {  // Ctrl + 'I'  格式化
             try {
               if (target == vInput) {
                 var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
@@ -6072,7 +6212,7 @@
               log(e)
             }
           }
-          else if (event.keyCode === 191) {  // 注释与取消注释
+          else if (event.keyCode === 191) {  // Ctrl + '/' 注释与取消注释
             try {
               var json = StringUtil.get(target.value);
               var before = json.substring(0, selectionStart);

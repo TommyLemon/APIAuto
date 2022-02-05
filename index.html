@@ -137,7 +137,7 @@
             <button v-show="types != null && types.length > 1" class="transfer" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type) }}</button>
             <div style="height: 100%;display: flex;flex-grow: 1">
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
-                <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
+                <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
             </div>
             <button class="send" id="vSend" @click="onClickSend()">{{ isEditResponse ? '模拟返回' : '发送请求' }}</button>
         </div>
@@ -195,7 +195,7 @@
                     </textarea>
                     <textarea v-show="! isEditResponse" id="vWarning" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: orangered; background-color: #0000;" wrap="off" disabled>
                     </textarea>
-                    <textarea id="vInput" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{  // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
+                    <textarea id="vInput" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{  // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
   '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
     'count': 5,  // 每页数量
     'page': 0,  // 分页页码
@@ -390,7 +390,7 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
                             <a >条</a>
                         </div>
 
-                        <textarea id="vRandom" style="width: 100%;height: 100%;" wrap="off"
+                        <textarea id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%;" wrap="off"
                                   placeholder="# 常用：
 RANDOM_IN(val0:Any, val1:Any ...)  // 从选项内随机取值
 RANDOM_INT(min:Integer, max:Integer)  // 从范围内随机取整数
@@ -430,7 +430,7 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
                                 </svg>
                             </a>
                         </div>
-                        <textarea id="vHeader" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4=  // 示例，支持单行注释
+                        <textarea id="vHeader" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4=  // 示例，支持单行注释
 My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际值，值为 fun(arg0, arg1..) 等包含函数名与括号的格式
   // ## 快捷键
   // Ctrl + I 或 Command + I 格式化文本，清除所有注释和无效空格、换行等；
