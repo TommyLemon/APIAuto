@@ -58,6 +58,10 @@ var StringUtil = {
     return s.length <= 0;
   },
 
+  isNotEmpty: function(s, trim) {
+    return ! this.isEmpty(s, trim);
+  },
+
   /**判断是否为代码名称，只能包含字母，数字或下划线
    * @param s
    * @return

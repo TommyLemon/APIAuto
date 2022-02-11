@@ -387,7 +387,14 @@
       if (theRequest == null) {
         theRequest = {};
       }
-      theRequest[part.substring(0, ind)] = decodeURIComponent(part.substring(ind+1));
+
+      var v = decodeURIComponent(part.substring(ind+1));
+      try {
+        v = JSON.parse(v)
+      }
+      catch (e) {}
+
+      theRequest[part.substring(0, ind)] = v;
     }
 
     return theRequest;
@@ -3472,33 +3479,27 @@
         var url = StringUtil.get(vUrl.value)
         var index = url.indexOf('?')
         if (index >= 0) {
-          var params = StringUtil.split(url.substring(index + 1), '&')
-
-          var paramObj = {}
-          var p
-          var v
-          var ind
-          if (params != null) {
-            for (var i = 0; i < params.length; i++) {
-              p = params[i]
-              ind = p == null ? -1 : p.indexOf('=')
-              if (ind < 0) {
-                continue
-              }
-
-              v = p.substring(ind + 1)
-              try {
-                v = JSON.parse(v)
-              }
-              catch (e) {}
-
-              paramObj[p.substring(0, ind)] = v
-            }
-          }
-
+          var paramObj = getRequestFromURL(url.substring(index))
           vUrl.value = url.substring(0, index)
-          if ($.isEmptyObject(paramObj) == false) {
-            vInput.value = '// TODO 从 URL 上的参数转换过来：\n' +  JSON.stringify(paramObj, null, '    ') + '\n// FIXME 需要与下面原来的字段合并为一个 JSON：\n' + StringUtil.get(vInput.value)
+          if (paramObj != null && $.isEmptyObject(paramObj) == false) {
+            var originVal = this.getRequest(vInput.value, {});
+            var isConflict = false;
+
+            if ($.isEmptyObject(originVal) == false) {
+              for (var k in paramObj) {
+                if (originVal.hasOwnProperty(k)) {
+                  isConflict = true;
+                  break;
+                }
+              }
+            }
+
+            if (isConflict) {
+              vInput.value = JSON.stringify(paramObj, null, '    ') + '\n\n// FIXME 从 URL 上的参数转换过来，需要与下面原来的字段合并为一个 JSON：\n\n' + StringUtil.get(vInput.value)
+            }
+            else {
+              vInput.value = JSON.stringify(Object.assign(originVal, paramObj), null, '    ')
+            }
           }
           clearTimeout(handler)  //解决 vUrl.value 和 vInput.value 变化导致刷新，而且会把 vInput.value 重置，加上下面 onChange 再刷新就卡死了
         }
@@ -3798,86 +3799,106 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var selectionStart = target.selectionStart;
         var selectionEnd = target.selectionEnd;
 
-        if ((selectionStart <= 0 && selectionEnd >= StringUtil.get(target.value).length) || StringUtil.isEmpty(target.value, true)) {
-          if (target == vUrl) {  //TODO 把 Chrome 或 Charles 等抓到的 Header 和 Content 自动粘贴到 vUrl, vHeader
+        if (StringUtil.isNotEmpty(paste, true) && (StringUtil.isEmpty(target.value, true)
+          || selectionStart <= 0 && selectionEnd >= StringUtil.get(target.value).length)) {
+          if (target == vUrl) {  // TODO 把 Chrome 或 Charles 等抓到的 Response Header 和 Content 自动粘贴到 vUrl, vHeader
             try {
-              var contentStart = 0;
-              var lines = StringUtil.split(paste, '\n');
-              var header = '';
+              if (paste.trim().indexOf('\n') > 0) {  // 解决正常的 URL 都粘贴不了
+                var contentStart = 0;
+                var lines = StringUtil.split(paste, '\n');
+                var header = '';
 
-              for (var i = 0; i < lines.length; i ++) {
-                var l = StringUtil.trim(lines[i]);
-                ind = l.indexOf(':');
-                var left = ind < 0 ? '' : StringUtil.trim(l.substring(0, ind));
+                for (var i = 0; i < lines.length; i++) {
+                  var l = StringUtil.trim(lines[i]);
+                  var ind = l.indexOf(':');
+                  var left = ind < 0 ? '' : StringUtil.trim(l.substring(0, ind));
 
-                if (/^[a-zA-Z0-9\- ]+$/g.test(left)) {
-                  var lowerKey = left.toLowerCase();
-                  var value = l.substring(ind + 1);
+                  if (/^[a-zA-Z0-9\- ]+$/g.test(left)) {
+                    var lowerKey = left.toLowerCase();
+                    var value = l.substring(ind + 1).trim();
 
-                  if (lowerKey == 'request method') {
-                    value = StringUtil.trim(value).toUpperCase();
-                    this.type = value == 'GET' ? 'PARAM' : (value == 'POST' ? 'JSON' : value);
-                    event.preventDefault();
-                  }
-                  else if (lowerKey == 'content-type') {
-                    var type = vType.value != 'JSON' ? null : CONTENT_VALUE_TYPE_MAP[StringUtil.trim(value)];
-                    if (StringUtil.isEmpty(type, true) != true) {
-                      this.type = type;
+                    if (lowerKey == 'host') {
+                      this.setBaseUrl(value.endsWith(':443') ? 'https://' + value.substring(0, value.length - ':443'.length) : 'http://' + value);
                       event.preventDefault();
                     }
-                  }
-                  else if (lowerKey == 'request url') {
-                    vUrl.value = StringUtil.trim(value);
-                    event.preventDefault();
-                  }
-                  else if (StringUtil.isEmpty(lowerKey, true) || lowerKey.startsWith('accept-')
-                    || lowerKey.startsWith('access-control-') || IGNORE_HEADERS.indexOf(lowerKey) >= 0) {
-                    // 忽略
+                    else if (lowerKey == 'request method') {
+                      value = value.toUpperCase();
+                      this.type = value == 'GET' ? 'PARAM' : (value == 'POST' ? 'JSON' : value);
+                      event.preventDefault();
+                    }
+                    else if (lowerKey == 'content-type') {
+                      var type = vType.value != 'JSON' ? null : CONTENT_VALUE_TYPE_MAP[value];
+                      if (StringUtil.isEmpty(type, true) != true) {
+                        this.type = type;
+                        event.preventDefault();
+                      }
+                    }
+                    else if (lowerKey == 'request url') {
+                      vUrl.value = value;
+                      event.preventDefault();
+                    }
+                    else if (StringUtil.isEmpty(lowerKey, true) || lowerKey.startsWith('accept-')
+                      || lowerKey.startsWith('access-control-') || IGNORE_HEADERS.indexOf(lowerKey) >= 0) {
+                      // 忽略
+                    }
+                    else {
+                      header += '\n' + left + ': ' + StringUtil.trim(l.substring(ind + 1));
+                    }
+
+                    contentStart += lines[i].length + 1;
                   }
                   else {
-                    header += '\n' + left + ': ' +  StringUtil.trim(l.substring(ind + 1));
-                  }
-                  
-                  contentStart += lines[i].length + 1;
-                }
-                else {
-                  if (l.startsWith('HTTP/') || l.startsWith('HTTPS/')) {  // HTTP/1.1 200
-                    contentStart += lines[i].length + 1;
-                    continue;
-                  }
-
-                  var ind = l.indexOf(' ');
-                  var m = ind < 0 ? '' :  StringUtil.trim(l.substring(0, ind));
-                  if (APIJSON_METHODS.indexOf(m.toLowerCase()) >= 0) {  // POST /gets HTTP/1.1
-                    contentStart += lines[i].length + 1;
-                    continue;
-                  }
-
-                  var content = StringUtil.trim(paste.substring(contentStart));
-                  var json = null;
-                  try {
-                    json = JSON5.parse(content);  // { "a":1, "b": "c" }
-                  } catch (e) {
-                    log(e)
-                    try {
-                      json = getRequestFromURL(content);  // a=1&b=c
-                    } catch (e2) {
-                      log(e2)
+                    if (ind <= 0 || StringUtil.isEmpty(l) || l.startsWith('HTTP/') || l.startsWith('HTTPS/')) {  // HTTP/1.1 200
+                      contentStart += lines[i].length + 1;
+                      continue;
                     }
+
+                    var ind = l.indexOf(' ');
+                    var m = ind < 0 ? '' : StringUtil.trim(l.substring(0, ind));
+                    if (APIJSON_METHODS.indexOf(m.toLowerCase()) >= 0) {  // POST /gets HTTP/1.1
+                      contentStart += lines[i].length + 1;
+                      var t = m.toUpperCase()
+                      this.type = t == 'GET' ? 'PARAM' : (t == 'POST' ? 'JSON' : t);
+
+                      l = l.substring(ind).trim();
+                      ind = l.indexOf(' ');
+                      var url = ind < 0 ? l : l.substring(0, ind);
+                      if (url.length > 0 && url != '/') {
+                        vUrl.value = this.getBaseUrl() + (url.startsWith('/') ? url : '/' + url);
+                      }
+
+                      event.preventDefault();
+                      continue;
+                    }
+
+                    var content = StringUtil.trim(paste.substring(contentStart));
+                    var json = null;
+                    try {
+                      json = JSON5.parse(content);  // { "a":1, "b": "c" }
+                    }
+                    catch (e) {
+                      log(e)
+                      try {
+                        json = getRequestFromURL('?' + content);  // a=1&b=c
+                      } catch (e2) {
+                        log(e2)
+                      }
+                    }
+
+                    vInput.value = json == null || Object.keys(json).length < 0 ? '' : JSON.stringify(json, null, '    ');
+                    event.preventDefault();
+                    break;
                   }
 
-                  vInput.value = json == null || Object.keys(json).length < 0 ? '' : JSON.stringify(json, null, '    ');
-                  event.preventDefault();
-                  break;
                 }
 
+                if (StringUtil.isEmpty(header, true) != true) {
+                  vHeader.value = StringUtil.trim(header);
+                  event.preventDefault();
+                }
               }
-
-              if (StringUtil.isEmpty(header, true) != true) {
-                vHeader.value = StringUtil.trim(header);
-                event.preventDefault();
-              }
-            } catch (e) {
+            }
+            catch (e) {
               log(e)
             }
           }
@@ -3894,36 +3915,58 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
               target.value = StringUtil.trim(newStr);
               event.preventDefault();
-            } catch (e) {
+            }
+            catch (e) {
               log(e)
             }
           }
           else if (target == vInput) {  // key: value 转 { "key": value }
             try {
-              var lines = StringUtil.split(paste, '\n');
-              var json = {};
+              try {
+                JSON5.parse(paste);  // 正常的 JSON 就不用转了
+              }
+              catch (e) {
+                var lines = StringUtil.split(paste, '\n');
+                var json = {};
 
-              for (var i = 0; i < lines.length; i ++) {
-                var l = StringUtil.trim(lines[i]) || '';
-                if (l.startsWith('//')) {
-                  continue;
+                for (var i = 0; i < lines.length; i++) {
+                  var l = StringUtil.trim(lines[i]) || '';
+                  if (l.startsWith('//')) {
+                    continue;
+                  }
+
+                  var ind = l.lastIndexOf('  //');
+                  l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
+
+                  ind = l.indexOf(':');
+                  if (ind >= 0) {
+                    var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
+                    if (left.indexOf('=') >= 0 || left.indexOf('&') >= 0) {
+                      try {
+                        json = getRequestFromURL('?' + paste);
+                        if (Object.keys(json).length > 0) {
+                          break;
+                        }
+                      } catch (e2) {
+                        log(e)
+                      }
+                    }
+
+                    json[left] = StringUtil.trim(l.substring(ind + 1));
+                  }
                 }
 
-                var ind = l.lastIndexOf('  //');
-                l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
+                if (Object.keys(json).length <= 0) {
+                  json = getRequestFromURL('?' + paste);
+                }
 
-                ind = l.indexOf(':');
-                if (ind >= 0) {
-                  var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
-                  json[left] = StringUtil.trim(l.substring(ind + 1));
+                if (Object.keys(json).length > 0) {
+                  vInput.value = JSON.stringify(json, null, '    ');
+                  event.preventDefault();
                 }
               }
-
-              if (Object.keys(json).length > 0) {
-                vInput.value = JSON.stringify(json, null, '    ');
-                event.preventDefault();
-              }
-            } catch (e) {
+            }
+            catch (e) {
               log(e)
             }
           }
