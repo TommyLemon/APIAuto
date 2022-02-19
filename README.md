@@ -87,14 +87,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 腾讯 AI 测试圈子演讲(部分)
 </h3>
 
-![](https://oscimg.oschina.net/oscnet/up-88c1699d9e1cd17d67705cb8b0271030daf.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-9cfe7bf3ed3d7f0b5053694f5042b4d36ed.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-520f379b2d0e9be7415963a69e940d0fc4c.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-9ae302efd6c74c20c393ad7ead39be8adba.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-fd316d5b63060f75ec1790a657497ad6286.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-6ffb15bdcc7d54fedb55d2368c1e0ba72f3.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-d3075ac2a481ddd89e28818b461ecc3f66c.JPEG) 
-![](https://oscimg.oschina.net/oscnet/up-442dd6c67edf259327f34b25e4d7e7c5b15.JPEG) 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
 
 
 <br />
