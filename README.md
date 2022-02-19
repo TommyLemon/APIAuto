@@ -32,6 +32,10 @@
 https://www.bilibili.com/video/BV1yv411p7Y4
 <br />
 
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_mltesting.gif)
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_mltest_check_result.gif)
+
+
 #### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
