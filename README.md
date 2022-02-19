@@ -29,10 +29,15 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
 
 
-<br />
+#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
+* APIAuto-机器学习 HTTP 接口工具
+* 零代码测试工具与实践(API•单元•UI)
+* 零代码开发和测试(API测试•单元测试•API开发)
+* 零代码开发和测试(API测试•单元测试•API开发)
+
 
 #### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
-零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br />
+零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br /><br />
 <img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
 
 <img width="390" src="https://user-images.githubusercontent.com/5738175/125167121-86bed580-e1d1-11eb-9dc6-2ea190146fe6.png">
@@ -44,12 +49,6 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_mltesting.gif)
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_mltest_check_result.gif)
 
-
-#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
-* APIAuto-机器学习 HTTP 接口工具
-* 零代码测试工具与实践(API•单元•UI)
-* 零代码开发和测试(API测试•单元测试•API开发)
-* 零代码开发和测试(API测试•单元测试•API开发)
 
 ![image](https://user-images.githubusercontent.com/5738175/145665614-f9208e35-9dc2-4a02-a8c9-0d7c9f4a87bc.png)
 ![APIJSON 和 APIAuto - 零代码开发和测试-QECon 大会-图像 008](https://user-images.githubusercontent.com/5738175/145665488-42b04a4b-1f74-4fb8-8a62-db3535f4256c.jpeg)
@@ -79,6 +78,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 ![APIJSON 和 APIAuto - 零代码开发和测试-QECon 大会-图像 037](https://user-images.githubusercontent.com/5738175/145665553-68403dcb-4cdd-42d4-9ffc-e32657e16b2b.jpeg)
 
 
+<br /><br />
 
 ### 特点功能
 
@@ -90,16 +90,9 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 * 自动给请求JSON加注释，一键切换
 * 自动保存历史请求记录，一键恢复
 
-<br />
-
-
-
 以上是简略图，机器学习测试、自动生成代码、自动静态检查、自动生成注释 等详细的功能介绍见 <br />
 
 [https://github.com/TommyLemon/APIAuto/blob/master/apijson/README.md](https://github.com/TommyLemon/APIAuto/blob/master/apijson/README.md)
-
-<br />
-<br />
 
 ### 演讲稿件
 [APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share) <br />
