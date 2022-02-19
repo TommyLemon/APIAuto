@@ -22,6 +22,15 @@
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
 腾讯内部用户包括 互动娱乐、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
 
+<h3 align="center" style="text-align:center;">
+腾讯 AI 测试圈子演讲(部分)
+</h3>
+
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
+
+
+<br />
+
 #### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
 零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br />
 <img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
@@ -83,14 +92,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 
 <br />
 
-<h3 align="center" style="text-align:center;">
-腾讯 AI 测试圈子演讲(部分)
-</h3>
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
-
-
-<br />
 
 以上是简略图，机器学习测试、自动生成代码、自动静态检查、自动生成注释 等详细的功能介绍见 <br />
 
@@ -100,12 +102,12 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 <br />
 
 ### 演讲稿件
-
-[APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share)
+[APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share) <br />
+[QECon 大会-腾讯 Tommy-零代码开发和测试](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share)
 
 ### 视频教程
-
-[http://i.youku.com/apijson](http://i.youku.com/apijson)
+[Bilibili](https://space.bilibili.com/437134249/search/video?keyword=apiauto) <br />
+[优酷](http://i.youku.com/apijson)
 
 
 ### 部署方法
