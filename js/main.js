@@ -364,7 +364,7 @@
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-  function getRequestFromURL(url_) {
+  function getRequestFromURL(url_, tryParse) {
     var url = url_ || window.location.search;
 
     var index = url == null ? -1 : url.indexOf("?")
@@ -389,16 +389,50 @@
       }
 
       var v = decodeURIComponent(part.substring(ind+1));
-      try {
-        v = JSON.parse(v)
+      if (tryParse == true) {
+        try {
+          v = JSON.parse(v)
+        }
+        catch (e) {
+        }
       }
-      catch (e) {}
 
       theRequest[part.substring(0, ind)] = v;
     }
 
     return theRequest;
   }
+
+
+  function markdownToHTML(md, isRequest) {
+    if (editormd == null) {
+      return;
+    }
+
+    if (isRequest) {
+      vRequestMarkdown.innerHTML = '';
+    }
+    else {
+      vMarkdown.innerHTML = '';
+    }
+    editormd.markdownToHTML(isRequest ? 'vRequestMarkdown' : "vMarkdown", {
+      markdown        : md ,//+ "\r\n" + $("#append-test").text(),
+      //htmlDecode      : true,       // 开启 HTML 标签解析，为了安全性，默认不开启
+      htmlDecode      : "style,script,iframe",  // you can filter tags decode
+      //toc             : false,
+      tocm            : true,    // Using [TOCM]
+      //tocContainer    : "#custom-toc-container", // 自定义 ToC 容器层
+      //gfm             : false,
+      tocDropdown     : true,
+      // markdownSourceCode : true, // 是否保留 Markdown 源码，即是否删除保存源码的 Textarea 标签
+      taskList        : true,
+      tex             : true,  // 默认不解析
+      flowChart       : true,  // 默认不解析
+      sequenceDiagram : true,  // 默认不解析
+    });
+  }
+
+
 
   var PLATFORM_POSTMAN = 'POSTMAN'
   var PLATFORM_SWAGGER = 'SWAGGER'
@@ -3479,7 +3513,7 @@
         var url = StringUtil.get(vUrl.value)
         var index = url.indexOf('?')
         if (index >= 0) {
-          var paramObj = getRequestFromURL(url.substring(index))
+          var paramObj = getRequestFromURL(url.substring(index), true)
           vUrl.value = url.substring(0, index)
           if (paramObj != null && $.isEmptyObject(paramObj) == false) {
             var originVal = this.getRequest(vInput.value, {});
@@ -3879,13 +3913,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     catch (e) {
                       log(e)
                       try {
-                        json = getRequestFromURL('?' + content);  // a=1&b=c
+                        json = getRequestFromURL('?' + content, true);  // a=1&b=c
                       } catch (e2) {
                         log(e2)
                       }
                     }
 
-                    vInput.value = json == null || Object.keys(json).length < 0 ? '' : JSON.stringify(json, null, '    ');
+                    vInput.value = json == null ? '' : JSON.stringify(json, null, '    ');
                     event.preventDefault();
                     break;
                   }
@@ -3943,7 +3977,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     var left = target == vHeader ? StringUtil.trim(l.substring(0, ind)) : l.substring(0, ind);
                     if (left.indexOf('=') >= 0 || left.indexOf('&') >= 0) {
                       try {
-                        json = getRequestFromURL('?' + paste);
+                        json = getRequestFromURL('?' + paste, true);
                         if (Object.keys(json).length > 0) {
                           break;
                         }
@@ -3957,7 +3991,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
 
                 if (Object.keys(json).length <= 0) {
-                  json = getRequestFromURL('?' + paste);
+                  json = getRequestFromURL('?' + paste, true);
                 }
 
                 if (Object.keys(json).length > 0) {
