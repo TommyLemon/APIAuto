@@ -137,6 +137,9 @@ https://github.com/TommyLemon/APIAuto/issues/9
 注意默认是官网的托管服务器 http://apijson.cn:9090 ，仅支持公网， <br />
 如果是贵公司内网，请按以上 [部署方法](https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95) 文档来部署 APIJSON 后端到内网，并修改托管服务器地址。
 
+百度、搜狗、抖音公网接口调用演示
+https://github.com/TommyLemon/APIAuto/issues/16
+
 #### 2.没有生成文档
 右上角设置项与数据库实际配置不一致 等  <br />
 https://github.com/Tencent/APIJSON/issues/85
