@@ -3348,20 +3348,29 @@
           }
 
           var docKey = this.isEditResponse ? 'TestRecord' : 'Document';
-          var detail = ((this.currentRemoteItem || {})[docKey] || {}).detail;
+          var currentItem = (this.currentRemoteItem || {})[docKey] || {}
+          var detail = currentItem.detail;
           var extraComment = this.getExtraComment()
 
           try {
             var standardObj = null;
             try {
-              standardObj = JSON.parse(((this.currentRemoteItem || {})[docKey] || {}).standard);
+              standardObj = JSON.parse(currentItem.standard);
+            } catch (e3) {
+              log(e3)
+            }
+
+            var isAPIJSONRouter = false;
+            try {
+              var apijson = JSON.parse(currentItem.apijson);
+              isAPIJSONRouter = JSONResponse.isObject(apijson)
             } catch (e3) {
               log(e3)
             }
 
             var m = this.getMethod();
-            var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true));
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj));
+            var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true, isAPIJSONRouter));
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, null, isAPIJSONRouter));
 
 
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers

@@ -939,6 +939,26 @@ var JSONResponse = {
     return t;
   },
 
+  isObject: function(o) {
+    return o instanceof Array == false && o instanceof Object;
+  },
+
+  isArray: function(o) {
+    return o instanceof Array;
+  },
+  isString: function(o) {
+    return typeof o == 'string';
+  },
+  isNumber: function(o) {
+    return typeof o == 'number';
+  },
+  isInteger: function(o) {
+    return JSONResponse.getType(o) == 'integer';
+  },
+  isBoolean: function(o) {
+    return typeof o == 'boolean';
+  },
+
 
   /**更新测试标准，通过原来的标准与最新的数据合并来实现
    */
