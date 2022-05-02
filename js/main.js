@@ -1784,8 +1784,9 @@
 
           var config = vRandom.value;
           const mapReq = {};
-          var mustKeysStr = "";
+          const mustKeys = [];
           const typeObj = {};
+          const refuseKeys = [];
 
           if (isReleaseRESTful) {
             var mapReq2 = {}
@@ -1821,7 +1822,13 @@
                 mapReq[k] = v;
                 mapReq2[k] = v;
 
-                mustKeysStr += (i <= 0 ? '' : ',') + k;
+                // 智能判断 count, @key 等
+                if (k.startsWith('@') || k.endsWith('[].count') || k.endsWith('[].query') || ['format', 'version'].indexOf(k) >= 0) {
+                  refuseKeys.push('!' + k);
+                }
+                else {
+                  mustKeys.push(k);
+                }
 
                 var t = JSONResponse.getType(v);
                 typeObj[k] = t == 'integer' ? 'NUMBER' : (t == 'number' ? 'DECIMAL' : t.toUpperCase());
@@ -1829,6 +1836,7 @@
                 newCfg += (i <= 0 ? '' : '\n') + k + ': ' + cfgLine.substring(ind+2).trim();
               }
 
+              refuseKeys.push('!');
               config = newCfg;
             }
 
@@ -1941,7 +1949,7 @@
                   }
 
                   if (isReleaseRESTful) {
-                    var structure = {"MUST": mustKeysStr, "TYPE": typeObj, "REFUSE": "!"};  // TODO 智能判断 count, @key 等
+                    var structure = {"MUST": mustKeys.join(), "TYPE": typeObj, "REFUSE": refuseKeys.join()};
 
                     var reqObj = {
                       format: false,
@@ -1955,11 +1963,11 @@
                     };
 
                     App.request(true, REQUEST_TYPE_JSON, baseUrl + '/post', reqObj, {}, function (url, res, err) {
-                      var reqStr = JSON.stringify(reqObj, null, '  ');
                       if (res.data != null && res.data.Request != null && res.data.Request.code == CODE_SUCCESS) {
-                        alert('已自动生成并上传 Request 表校验规则配置:\n' + reqStr)
+                        alert('已自动生成并上传 Request 表校验规则配置:\n' + JSON.stringify(reqObj.Request, null, '  '))
                       }
                       else {
+                        var reqStr = JSON.stringify(reqObj, null, '  ');
                         console.log('已自动生成，但上传以下 Request 表校验规则配置失败，可能需要手动加表记录:\nPOST ' + baseUrl + '/post' + '\n' + reqStr)
                         alert('已自动生成，但上传以下 Request 表校验规则配置失败，可能需要手动加表记录，如未自动复制可在控制台复制:\n' + reqStr)
                         navigator.clipboard.writeText(reqStr);
