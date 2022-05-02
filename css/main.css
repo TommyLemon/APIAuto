@@ -374,7 +374,7 @@ textarea {
   position: absolute;
   text-align: center;
   width: 370px;
-  background-color: #b5b5b5;
+  background-color: #cccccc;
   left: 50%;
   margin-left: -500px;
   margin-top: 192px;
@@ -383,7 +383,8 @@ textarea {
   padding-left: 10px;
   padding-right: 10px;
   z-index: 100;
-  border: #dadada  1px solid;
+  border: #bbbbbb  1px solid;
+  border-radius: 6px;
 }
 
 .save-box input {

@@ -140,13 +140,22 @@ var StringUtil = {
     return s.toLowerCase();
   },
 
-  split: function (s, separator) {
+  split: function (s, separator, trim) {
     if (s == null) {
       return null;
     }
 
     if (separator == null) {
       separator = ',';
+    }
+
+    if (trim) {
+      while (s.startsWith(separator)) {
+        s = s.substring(1);
+      }
+      while (s.endsWith(separator)) {
+        s = s.substring(0, s.length - 1);
+      }
     }
 
     if (s.indexOf(separator) < 0) {

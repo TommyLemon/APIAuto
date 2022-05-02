@@ -43,21 +43,7 @@ var CodeUtil = {
   thirdParty: 'YAPI',
   thirdPartyApiMap: null,  // {}
 
-  /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
-   * @param reqStr //已格式化的JSON String
-   * @param tableList
-   * @param method
-   * @param database
-   * @param language
-   * @return parseComment
-   */
-  parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj, isExtract, isWarning, isAPIJSONRouter) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
-    if (StringUtil.isEmpty(reqStr)) {
-      return '';
-    }
-
-    var reqObj = JSON5.parse(reqStr);
-
+  parseUri: function (method, isReq) {
     method = method || 'get';
     var isRestful = true;
 
@@ -70,6 +56,7 @@ var CodeUtil = {
     }
 
     var startName = null;
+    var tag = null;
 
     var mIndex = method.lastIndexOf('/');
     if (mIndex < 0) {
@@ -91,13 +78,42 @@ var CodeUtil = {
       isRestful = APIJSON_METHODS.indexOf(method) < 0;
 
       if (isReq && ! isRestful) {
-        var tag = suffix;
+        tag = suffix;
         var tbl = tag.endsWith("[]") ? tag.substring(0, tag.length - 2) : tag;
         if (JSONObject.isTableKey(tbl)) {
           startName = method == 'put' || method == 'delete' ? tbl : tag;
         }
       }
     }
+
+    return {
+      method,
+      isRestful,
+      tag,
+      table: startName
+    }
+  },
+
+  /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
+   * @param reqStr //已格式化的JSON String
+   * @param tableList
+   * @param method
+   * @param database
+   * @param language
+   * @return parseComment
+   */
+  parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj, isExtract, isWarning, isAPIJSONRouter) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
+    if (StringUtil.isEmpty(reqStr)) {
+      return '';
+    }
+
+    var reqObj = JSON5.parse(reqStr);
+
+    var methodInfo = CodeUtil.parseUri(method, isReq) || {};
+    var method = methodInfo.method;
+    var isRestful = methodInfo.isRestful;
+    var tag = methodInfo.tag;
+    var startName = methodInfo.table;
 
     if (isRestful != true) {
       method = method.toUpperCase();
