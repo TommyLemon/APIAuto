@@ -378,22 +378,26 @@ textarea {
   left: 50%;
   margin-left: -500px;
   margin-top: 192px;
-  padding: 30px;
+  padding-top: 30px;
+  padding-bottom: 12px;
+  padding-left: 10px;
+  padding-right: 10px;
   z-index: 100;
-  border: #dadada  10px solid;
-
+  border: #dadada  1px solid;
 }
 
 .save-box input {
   padding: 10px;
   border: none;
   outline: none;
-  width: 200px;
+  width: 100%;
+  text-align: center;
 }
 
 .save-box button {
   border:  none;
   padding: 8px 20px;
+  margin-top: 10px;
   cursor: pointer;
   outline: none;
 }

@@ -621,6 +621,7 @@
       isDelayShow: false,
       isSaveShow: false,
       isExportShow: false,
+      isExportCheckShow: false,
       isExportRandom: false,
       isTestCaseShow: false,
       isHeaderShow: false,
@@ -674,6 +675,7 @@
       uploadFailCount: 0,
       exTxt: {
         name: 'APIJSON测试',
+        label: '发布简单接口',
         button: '保存',
         index: 0
       },
@@ -1066,13 +1068,15 @@
       // 显示导出弹窗
       showExport: function (show, isRemote, isRandom) {
         if (show) {
+          // this.isExportCheckShow = isRemote
+
           if (isRemote) { //共享测试用例
             this.isExportRandom = isRandom
 
             // if (isRandom != true) {  // 分享搜索关键词和分页信息也挺好 } && this.isTestCaseShow != true) {  // 没有拿到列表，没用
-            //   setTimeout(function () {
-            //     App.shareLink(App.isRandomTest)
-            //   }, 1000)
+              // setTimeout(function () {
+              //   App.shareLink(App.isRandomTest)
+              // }, 1000)
             // }
 
             if (this.isTestCaseShow) {
