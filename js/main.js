@@ -1900,7 +1900,7 @@
                 'testAccountId': currentAccountId,
                 'name': extName,
                 'type': App.type,
-                'url': isReleaseRESTful ? ('/' + methodInfo.method + '/' + methodInfo.tag) : ('/' + method),
+                'url': '/' + method, // 'url': isReleaseRESTful ? ('/' + methodInfo.method + '/' + methodInfo.tag) : ('/' + method),
                 'request': JSON.stringify(btnIndex <= 0 ? constJson : mapReq, null, '    '),
                 'apijson': btnIndex <= 0 ? undefined : JSON.stringify(constJson, null, '    '),
                 'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),

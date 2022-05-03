@@ -43,56 +43,6 @@ var CodeUtil = {
   thirdParty: 'YAPI',
   thirdPartyApiMap: null,  // {}
 
-  parseUri: function (method, isReq) {
-    method = method || 'get';
-    var isRestful = true;
-
-    if (method.startsWith("/")) {
-      method = method.substring(1);
-    }
-
-    if (method.endsWith("/")) {
-      method = method.substring(0, method.length - 1);
-    }
-
-    var startName = null;
-    var tag = null;
-
-    var mIndex = method.lastIndexOf('/');
-    if (mIndex < 0) {
-      isRestful = APIJSON_METHODS.indexOf(method) < 0;
-    }
-    else if (APIJSON_METHODS.indexOf(method.substring(mIndex+1)) >= 0) {
-      isRestful = false;
-      method = method.substring(mIndex+1);
-    }
-    else {
-      var suffix = method.substring(mIndex + 1);
-      method = method.substring(0, mIndex);
-
-      mIndex = method.lastIndexOf("/");
-      if (mIndex >= 0) {
-        method = method.substring(mIndex+1);
-      }
-
-      isRestful = APIJSON_METHODS.indexOf(method) < 0;
-
-      if (isReq && ! isRestful) {
-        tag = suffix;
-        var tbl = tag.endsWith("[]") ? tag.substring(0, tag.length - 2) : tag;
-        if (JSONObject.isTableKey(tbl)) {
-          startName = method == 'put' || method == 'delete' ? tbl : tag;
-        }
-      }
-    }
-
-    return {
-      method,
-      isRestful,
-      tag,
-      table: startName
-    }
-  },
 
   /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
    * @param reqStr //已格式化的JSON String
@@ -109,7 +59,7 @@ var CodeUtil = {
 
     var reqObj = JSON5.parse(reqStr);
 
-    var methodInfo = CodeUtil.parseUri(method, isReq) || {};
+    var methodInfo = JSONObject.parseUri(method, isReq) || {};
     var method = methodInfo.method;
     var isRestful = methodInfo.isRestful;
     var tag = methodInfo.tag;

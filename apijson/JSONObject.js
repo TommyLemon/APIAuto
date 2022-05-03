@@ -62,9 +62,13 @@ var JSONObject = {
   },
 
   isAPIJSONPath: function (method) {
-    if (method == null) {
-      return false;
-    }
+    var info = JSONObject.parseUri(method, true)
+    return info != null && info.isRestful != true;
+  },
+
+  parseUri: function (method, isReq) {
+    method = method || 'get';
+    var isRestful = true;
 
     if (method.startsWith("/")) {
       method = method.substring(1);
@@ -74,17 +78,43 @@ var JSONObject = {
       method = method.substring(0, method.length - 1);
     }
 
-    var mIndex = method.indexOf('/');
+    var startName = null;
+    var tag = null;
+
+    var mIndex = method.lastIndexOf('/');
     if (mIndex < 0) {
-      return true;
+      isRestful = APIJSON_METHODS.indexOf(method) < 0;
+    }
+    else if (APIJSON_METHODS.indexOf(method.substring(mIndex+1)) >= 0) {
+      isRestful = false;
+      method = method.substring(mIndex+1);
+    }
+    else {
+      var suffix = method.substring(mIndex + 1);
+      method = method.substring(0, mIndex);
+
+      mIndex = method.lastIndexOf("/");
+      if (mIndex >= 0) {
+        method = method.substring(mIndex+1);
+      }
+
+      isRestful = APIJSON_METHODS.indexOf(method) < 0;
+
+      if (isReq && ! isRestful) {
+        tag = suffix;
+        var tbl = tag.endsWith("[]") ? tag.substring(0, tag.length - 2) : tag;
+        if (JSONObject.isTableKey(tbl)) {
+          startName = method == 'put' || method == 'delete' ? tbl : tag;
+        }
+      }
     }
 
-    if (APIJSON_METHODS.indexOf(method.substring(0, mIndex)) >= 0) {
-      mIndex = method.substring(mIndex + 1).indexOf("/");
-      return mIndex < 0;
+    return {
+      method,
+      isRestful,
+      tag,
+      table: startName
     }
-
-    return false;
   }
 
 }
