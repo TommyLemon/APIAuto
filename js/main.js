@@ -617,6 +617,7 @@
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
+      isLoading: false,
       isRandomTest: false,
       isDelayShow: false,
       isSaveShow: false,
@@ -3816,6 +3817,8 @@
 
       //请求
       request: function (isAdminOperation, type, url, req, header, callback) {
+        this.isLoading = true
+
         type = type || REQUEST_TYPE_JSON
         url = StringUtil.noBlank(url)
 
@@ -3856,6 +3859,8 @@
           // crossDomain: true
         })
           .then(function (res) {
+            App.isLoading = false
+
             res = res || {}
 
             if (isDelegate) {
