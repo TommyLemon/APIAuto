@@ -150,7 +150,7 @@ var JSONResponse = {
    * @param fullName
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = true, formatAt = true, formatHyphen = true, firstCase = true
    */
-  getVariableName(fullName, listSuffix) {
+  getVariableName: function(fullName, listSuffix) {
     if (JSONObject.isArrayKey(fullName)) {
       fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
@@ -161,7 +161,7 @@ var JSONResponse = {
    * @param key empty ? "list" : key + "List" 且首字母小写
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = true, firstCase = true
    */
-  formatArrayKey(key) {
+  formatArrayKey: function(key) {
     if (JSONObject.isArrayKey(key)) {
       key = StringUtil.addSuffix(key.substring(0, key.length - 2), "list");
     }
@@ -177,7 +177,7 @@ var JSONResponse = {
    * @param key name 或 name:alias
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = false, firstCase = true
    */
-  formatObjectKey(key) {
+  formatObjectKey: function(key) {
     var index = key == null ? -1 : key.indexOf(":");
     if (index >= 0) {
       return key.substring(index + 1); //不处理自定义的
@@ -190,7 +190,7 @@ var JSONResponse = {
    * @param fullName name 或 name:alias
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = false, formatAt = true, formatHyphen = false, firstCase = false
    */
-  formatOtherKey(fullName) {
+  formatOtherKey: function(fullName) {
     return JSONResponse.formatKey(fullName, false, true, false, false); //节约性能，除了关键词 @key ，一般都符合变量命名规范，不符合也原样返回便于调试
   },
 
@@ -202,7 +202,7 @@ var JSONResponse = {
    * @param firstCase 第一个单词首字母小写，后面的首字母大写， Ab => ab ; A-b-Cd => aBCd
    * @return name => name; name:alias => alias
    */
-  formatKey(fullName, formatAlias, formatAt, formatHyphen, firstCase, formatUnderline, formatFunChar) {
+  formatKey: function(fullName, formatAlias, formatAt, formatHyphen, firstCase, formatUnderline, formatFunChar) {
     if (fullName == null) {
       log(JSONResponse.TAG, "formatKey  fullName == null >> return null;");
       return null;
@@ -231,7 +231,7 @@ var JSONResponse = {
    * @param key
    * @return
    */
-  formatAt(key) {
+  formatAt: function(key) {
     var k = key.startsWith("@") ? key.substring(1) : key;
     return k; //由 formatFunChar 实现去掉末尾的 @ k.endsWith("@") ? k.substring(0, k.length - 1) : k;
   },
@@ -239,7 +239,7 @@ var JSONResponse = {
    * @param key
    * @return
    */
-  formatAlias(key) {
+  formatAlias: function(key) {
     var index = key.indexOf(":");
     return index < 0 ? key : key.substring(0, index) + 'As' + StringUtil.firstCase(key.substring(index + 1), true);
   },
@@ -248,7 +248,7 @@ var JSONResponse = {
    * @param key
    * @return
    */
-  formatHyphen(key, firstCase) {
+  formatHyphen: function(key, firstCase) {
     var first = true;
     var index;
 
@@ -272,7 +272,7 @@ var JSONResponse = {
    * @param key
    * @return
    */
-  formatUnderline(key, firstCase) {
+  formatUnderline: function(key, firstCase) {
     var first = true;
     var index;
 
@@ -296,7 +296,7 @@ var JSONResponse = {
    * @param key
    * @return
    */
-  formatFunChar(key) {
+  formatFunChar: function(key) {
     var name = key.replace(/@/g, 'At');
     name = name.replace(/{}/g, 'In')
     name = name.replace(/}{/g, 'Exists')
@@ -1489,7 +1489,7 @@ var JSONResponse = {
     return StringUtil.isEmpty(folder, true) ? name : folder + divider + name;
   },
 
-  getShowString(arr, lineItemCount) {
+  getShowString: function(arr, lineItemCount) {
     if (arr == null || arr.length <= 0) {
       return '';
     }

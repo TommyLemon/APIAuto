@@ -576,7 +576,7 @@
       error: {},
       requestVersion: 3,
       requestCount: 1,
-      urlComment: '关联查询 Comment.userId = User.id',
+      urlComment: '一对多关联查询 Comment.userId = User.id',
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -3174,7 +3174,7 @@
         this.password = user.password
       },
 
-      setRememberLogin(remember) {
+      setRememberLogin: function (remember) {
         vRemember.checked = remember || false
       },
 
@@ -3821,6 +3821,9 @@
 
         type = type || REQUEST_TYPE_JSON
         url = StringUtil.noBlank(url)
+        if (url.startsWith('/')) {
+          url = (isAdminOperation ? this.server : this.project) + url
+        }
 
         var isDelegate = (isAdminOperation == false && this.isDelegateEnabled) || (isAdminOperation && url.indexOf('://apijson.cn:9090') > 0)
 
@@ -5273,7 +5276,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         // alert('< json = ' + JSON.stringify(json, null, '    '))
 
-        for (let i = 0; i < lines.length; i ++) {
+        for (let i = 0; i < reqCount; i ++) {
           const which = i;
           const lineItem = lines[i] || '';
 
@@ -5663,7 +5666,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             continue
           }
           if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-            this.log('test  document.url == "/login" || document.url == "/logout" >> continue')
+            this.log('startTest  document.url == "/login" || document.url == "/logout" >> continue')
             doneCount++
             continue
           }
@@ -5873,7 +5876,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       removeDebugInfo: function (obj) {
         if (obj != null) {
-          delete obj["debug:info|help"]
+          delete obj["trace"]
           delete obj["sql:generate|cache|execute|maxExecute"]
           delete obj["depth:count|max"]
           delete obj["time:start|duration|end"]
@@ -6311,7 +6314,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         return result
       }
     },
-    created () {
+    created: function  () {
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         var url = this.getCache('', 'URL_BASE')
         if (StringUtil.isEmpty(url, true) == false) {

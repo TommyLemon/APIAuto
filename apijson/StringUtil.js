@@ -167,6 +167,10 @@ var StringUtil = {
 
   isNumber: function (s) {
     return typeof s == 'string' && /^[0-9]+$/.test(s);
+  },
+
+  join: function (arr, separator) {
+    return arr == null ? '' : arr.join(separator)
   }
 
 }
