@@ -177,7 +177,7 @@ https://github.com/TommyLemon/APIAuto
 
 ### 其它项目
 
-[APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、热更新、全自动 ORM 库 🏆 后端接口和文档自动化，前端(客户端) 定制返回 JSON 的数据和结构
+[APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、全功能、强安全 ORM 库 🏆 后端接口和文档零代码，前端(客户端) 定制返回 JSON 的数据和结构
 
 [UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
 
