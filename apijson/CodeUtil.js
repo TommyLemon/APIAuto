@@ -111,7 +111,9 @@ var CodeUtil = {
       var hintComment;
 
       if (line.endsWith('{')) { //对象，判断是不是Table，再加对应的注释
-        // value = {}
+        if (value == null) {
+          value = {}
+        }
 
         if (depth > 0 && comment.length > 0) {
           standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
@@ -132,7 +134,9 @@ var CodeUtil = {
       }
       else {
         if (line.endsWith('}')) {
-          // value = {}
+          if (value == null) {
+            value = {}
+          }
 
           if (depth > 0 && comment.length > 0) {
             standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
@@ -164,7 +168,9 @@ var CodeUtil = {
         // }
         else {
           if (line.endsWith('[')) { // []  不影响
-            // value = []
+            if (value == null) {
+              value = []
+            }
 
             if (depth > 0 && comment.length > 0) {
               standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
@@ -183,7 +189,9 @@ var CodeUtil = {
           }
           else {
             if (line.endsWith(']')) {
-              // value = []
+              if (value == null) {
+                value = []
+              }
 
               if (depth > 0 && comment.length > 0) {
                 standardObj = JSONResponse.updateStandardByPath(standardObj, names, key, value, comment)
@@ -204,19 +212,19 @@ var CodeUtil = {
                 continue;
               }
             }
-            else { //其它，直接在后面加上注释
-              // value = line.substring(index + 2).trim()
-              // if (value.startsWith('"')) {
-              //   value = value.substring(1, value.lastIndexOf('"'))
-              // }
-              // else {
-              //   try {
-              //     value = JSON.parse(value)
-              //   }
-              //   catch (e) {
-              //     console.log(e)
-              //   }
-              // }
+            else if (value == null) { //其它，直接在后面加上注释
+              value = line.substring(index + 2).trim()
+              if (value.startsWith('"')) {
+                value = value.substring(1, value.lastIndexOf('"'))
+              }
+              else {
+                try {
+                  value = JSON.parse(value)
+                }
+                catch (e) {
+                  console.log(e)
+                }
+              }
             }
             // alert('depth = ' + depth + '; line = ' + line + '; isArray = ' + isArray);
             hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, isInSubquery, database, language, isReq, names, isRestful, standardObj, isWarning, isAPIJSONRouter);
