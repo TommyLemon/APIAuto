@@ -35,6 +35,8 @@
 * 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
 
+#### 质效无双线上技术访谈-零代码智能测试工具实践介绍-第11期
+![https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==](https://user-images.githubusercontent.com/5738175/179575169-de9cc578-6d90-4aec-bbf4-f28147277ed2.png)
 
 #### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
 零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例 <br /><br />
@@ -102,6 +104,10 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 [Bilibili](https://space.bilibili.com/437134249/search/video?keyword=apiauto) <br />
 [优酷](https://i.youku.com/i/UNTg1NzI1MjQ4MA==)
 
+### 相关推荐
+[别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg)
+
+<br/>
 
 ### 部署方法
 
@@ -155,25 +161,23 @@ https://github.com/TommyLemon/APIAuto/issues/13
 更多常见问题 <br />
 https://github.com/TommyLemon/APIAuto
 
+<br />
+
 ### 感谢开源
 * jsonon
 * editor.md
 * vue.js
 
-
 ### 技术交流
 ##### 关于作者
 [https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
 
-##### QQ群聊
-734652054（新）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=rJLwYzITdoQBfiGUOjMrM3eJDyks1tJP&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Free" title="APIJSON技术讨论群" style="bottom:2px;margin-top:4px" /></a>    
-607020115（旧）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON付费解决群"  style="bottom:2px;margin-top:4px" /></a>    
+##### QQ 群聊
+607020115（群1）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON技术群1"  style="bottom:2px;margin-top:4px" /></a>    
+734652054（群2）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=rJLwYzITdoQBfiGUOjMrM3eJDyks1tJP&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Free" title="APIJSON技术群2" style="bottom:2px;margin-top:4px" /></a>    
 
 如果有什么问题或建议可以 [提ISSUE](https://github.com/TommyLemon/APIAuto/issues) 或 加群，交流技术，分享经验。<br >
 如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
-<br />
-<br />
-
 
 ### 其它项目
 
@@ -183,23 +187,17 @@ https://github.com/TommyLemon/APIAuto
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
 
-[apijson-go](https://gitee.com/tiangao/apijson-go) Go 版 APIJSON ，支持单表查询、数组查询、多表一对一关联查询、多表一对多关联查询 等
+[apijson-go](https://github.com/j2go/apijson-go) Go 版 APIJSON ，支持单表查询、数组查询、多表一对一关联查询、多表一对多关联查询 等
 
-[APIJSON-php](https://github.com/xianglong111/APIJSON-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, SQL Server, Oracle 等
+[apijson-hyperf](https://github.com/kvnZero/hyperf-APIJSON) PHP 版 APIJSON，基于 Hyperf 支持 MySQL
 
-[apijson-php](https://github.com/qq547057827/apijson-php) PHP 版 APIJSON，基于 ThinkPHP，支持 MySQL, PostgreSQL, SQL Server, Oracle 等
-
-[apijson-node](https://github.com/kevinaskin/apijson-node) 字节跳动工程师开源的 Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo
+[apijson-node](https://github.com/kevinaskin/apijson-node) Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo，由字节跳动工程师开发
 
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
 
-[APIJSONParser](https://github.com/Zerounary/APIJSONParser) 第三方 APIJSON 解析器，将 JSON 动态解析成 SQL
-
-[APIJSON-ToDo-Demo](https://github.com/jerrylususu/apijson_todo_demo) 一个简单的 todo 示例项目，精简数据，简化上手流程，带自定义鉴权逻辑 
-  
 [apijson-practice](https://github.com/vcoolwind/apijson-practice) BAT 技术专家开源的 APIJSON 参数校验注解 Library 及相关 Demo
 
-[apijson-learn](https://github.com/rainboy-learn/apijson-learn) APIJSON 学习笔记和源码解析
+[Android-ZBLibrary](https://github.com/TommyLemon/Android-ZBLibrary) Android MVP 快速开发框架，Demo 全面，注释详细，使用简单，代码严谨
 
 
 ### 持续更新

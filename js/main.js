@@ -1711,7 +1711,7 @@
           const isReleaseRESTful = isExportRandom && btnIndex == 1 && ! isEditResponse
 
           const method = App.getMethod();
-          const methodInfo = isReleaseRESTful ? (CodeUtil.parseUri(method, true) || {}) : {};
+          const methodInfo = isReleaseRESTful ? (JSONObject.parseUri(method, true) || {}) : {};
           if (isReleaseRESTful) {
             var isRestful = methodInfo.isRestful;
             var tag = methodInfo.tag;
