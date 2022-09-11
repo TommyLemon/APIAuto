@@ -36,6 +36,7 @@
 * 零代码开发和测试(API测试•单元测试•API开发)
 
 #### 质效无双线上技术访谈-零代码智能测试工具实践介绍-第11期
+https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==
 ![https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==](https://user-images.githubusercontent.com/5738175/179575169-de9cc578-6d90-4aec-bbf4-f28147277ed2.png)
 
 #### 和华为云副总裁并列，QECon-全球软件质量&效能 大会分享总结
@@ -171,6 +172,7 @@ https://github.com/TommyLemon/APIAuto
 ### 技术交流
 ##### 关于作者
 [https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
+<img width="1279" alt="image" src="https://user-images.githubusercontent.com/5738175/189525500-5fe3ba45-c2b3-4df9-9607-c84120111e3c.png">
 
 ##### QQ 群聊
 607020115（群1）<a target="_blank" style="bottom:2px;padding-top:4px" href="https://qm.qq.com/cgi-bin/qm/qr?k=1wnUodOM6ngXnl0rubf06DuAUbOX-u44&jump_from=webapi"><img border="0" src="http://pub.idqqimg.com/wpa/images/group.png" alt="APIJSON-Fee" title="APIJSON技术群1"  style="bottom:2px;margin-top:4px" /></a>    
@@ -184,6 +186,8 @@ https://github.com/TommyLemon/APIAuto
 [APIJSON](https://github.com/Tencent/APIJSON) 腾讯零代码、全功能、强安全 ORM 库 🏆 后端接口和文档零代码，前端(客户端) 定制返回 JSON 的数据和结构
 
 [UnitAuto](https://github.com/TommyLemon/UnitAuto) 机器学习单元测试平台，零代码、全方位、自动化 测试 方法/函数 的正确性和可用性
+
+[SQLAuto](https://github.com/TommyLemon/SQLAuto) 智能零代码自动化测试 SQL 语句执行结果的数据库工具
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
 
