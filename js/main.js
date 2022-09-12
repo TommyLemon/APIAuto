@@ -1898,7 +1898,7 @@
               format: false,
               'Document': isEditResponse ? null : {
                 'id': did == null ? undefined : did,
-                'testAccountId': currentAccountId,
+//                'testAccountId': currentAccountId,
                 'name': extName,
                 'type': App.type,
                 'url': '/' + method, // 'url': isReleaseRESTful ? ('/' + methodInfo.method + '/' + methodInfo.tag) : ('/' + method),
@@ -1912,7 +1912,7 @@
                 'documentId': isEditResponse ? did : undefined,
                 'randomId': 0,
                 'host': baseUrl,
-                'testAccountId': currentAccountId,
+//                'testAccountId': currentAccountId,
                 'response': JSON.stringify(isEditResponse ? inputObj : currentResponse),
                 'standard': isML || isEditResponse ? JSON.stringify(isEditResponse ? commentObj : stddObj) : undefined,
                 // 没必要，直接都在请求中说明，查看也方便 'detail': (isEditResponse ? App.getExtraComment() : null) || ((App.currentRemoteItem || {}).TestRecord || {}).detail,
@@ -2936,7 +2936,7 @@
 
 
       //显示远程的测试用例文档
-      showTestCase: function (show, isLocal) {
+      showTestCase: function (show, isLocal, callback) {
         this.isTestCaseShow = show
         this.isLocalShow = isLocal
 
@@ -2991,10 +2991,10 @@
               'TestRecord': {
                 'documentId@': '/Document/id',
                 'userId': this.User.id,
-                'testAccountId': this.getCurrentAccountId(),
+//                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
+                '@column': 'id,userId,documentId,testAccountId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
                 '@having': this.isMLEnabled ? 'length(standard)>2' : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
@@ -3003,25 +3003,36 @@
 
           this.onChange(false)
           this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
-            App.onResponse(url, res, err)
-
-            var rpObj = res.data
-
-            if (rpObj != null && rpObj.code === CODE_SUCCESS) {
-              App.isTestCaseShow = true
-              App.isLocalShow = false
-              App.testCases = App.remotes = rpObj['[]']
-              vOutput.value = show ? '' : (output || '')
-              App.showDoc()
-
-              //App.onChange(false)
+            if (callback) {
+              callback(url, res, err)
+              return
             }
+
+            App.onTestCaseListResponse(show, url, res, err)
           })
+        } else if (callback != null) {
+          callback(null, {}, null)
+        }
+      },
+
+      onTestCaseListResponse: function(show, url, res, err) {
+        App.onResponse(url, res, err)
+
+        var rpObj = res.data
+
+        if (rpObj != null && rpObj.code === CODE_SUCCESS) {
+          App.isTestCaseShow = true
+          App.isLocalShow = false
+          App.testCases = App.remotes = rpObj['[]']
+          vOutput.value = show ? '' : (output || '')
+          App.showDoc()
+
+          //App.onChange(false)
         }
       },
 
       //显示远程的随机配置文档
-      showRandomList: function (show, item, isSub) {
+      showRandomList: function (show, item, isSub, callback) {
         this.isRandomEditable = false
         this.isRandomListShow = show && ! isSub
         this.isRandomSubListShow = show && isSub
@@ -3055,7 +3066,7 @@
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
-                'testAccountId': this.getCurrentAccountId(),
+//                'testAccountId': this.getCurrentAccountId(),
                 'host': this.getBaseUrl(),
                 '@order': 'date-'
               },
@@ -3070,7 +3081,7 @@
                 },
                 'TestRecord': {
                   'randomId@': '/Random/id',
-                  'testAccountId': this.getCurrentAccountId(),
+//                  'testAccountId': this.getCurrentAccountId(),
                   'host': this.getBaseUrl(),
                   '@order': 'date-'
                 }
@@ -3080,32 +3091,41 @@
 
           this.onChange(false)
           this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
-            App.onResponse(url, res, err)
-
-            var rpObj = res.data
-
-            if (rpObj != null && rpObj.code === CODE_SUCCESS) {
-              App.isRandomListShow = ! isSub
-              App.isRandomSubListShow = isSub
-              if (isSub) {
-                if (App.currentRandomItem == null) {
-                  App.currentRandomItem = {}
-                }
-                App.randomSubs = App.currentRandomItem.subs = App.currentRandomItem['[]'] = rpObj['[]']
-              }
-              else {
-                App.randoms = rpObj['[]']
-              }
-
-              vOutput.value = show ? '' : (output || '')
-              App.showDoc()
-
-              //App.onChange(false)
+            if (callback) {
+              callback(url, res, err)
+              return
             }
+            App.onRandomListResponse(show, isSub, url, res, err)
           })
+        } else if (callback) {
+          callback(null, {}, null)
         }
       },
 
+      onRandomListResponse: function (show, isSub, url, res, err) {
+        App.onResponse(url, res, err)
+
+        var rpObj = res.data
+
+        if (rpObj != null && rpObj.code === CODE_SUCCESS) {
+          App.isRandomListShow = ! isSub
+          App.isRandomSubListShow = isSub
+          if (isSub) {
+            if (App.currentRandomItem == null) {
+              App.currentRandomItem = {}
+            }
+            App.randomSubs = App.currentRandomItem.subs = App.currentRandomItem['[]'] = rpObj['[]']
+          }
+          else {
+            App.randoms = rpObj['[]']
+          }
+
+          vOutput.value = show ? '' : (output || '')
+          App.showDoc()
+
+          //App.onChange(false)
+        }
+      },
 
       // 设置文档
       showDoc: function () {
@@ -3212,37 +3232,7 @@
               return
             }
 
-            var rpObj = res.data || {}
-
-            if (rpObj.code != CODE_SUCCESS) {
-              alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
-              App.onResponse(url, res, err)
-            }
-            else {
-              var user = rpObj.user || {}
-
-              if (user.id > 0) {
-                user.remember = rpObj.remember
-                user.phone = req.phone
-                user.password = req.password
-                App.User = user
-              }
-
-              //保存User到缓存
-              App.saveCache(App.server, 'User', user)
-
-              if (App.currentAccountIndex == null || App.currentAccountIndex < 0) {
-                App.currentAccountIndex = 0
-              }
-              var item = App.accounts[App.currentAccountIndex]
-              item.isLoggedIn = false
-              App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
-
-              if (user.id > 0) {
-                App.showTestCase(true, false)
-              }
-            }
-
+            App.onLoginResponse(isAdminOperation, req, url, res, err);
           })
         }
         else {
@@ -3272,32 +3262,70 @@
               return
             }
 
-            App.onResponse(url, res, err)
-
-            //由login按钮触发，不能通过callback回调来实现以下功能
-            var data = res.data || {}
-            if (data.code == CODE_SUCCESS) {
-              var user = data.user || {}
-              App.accounts.push({
-                isLoggedIn: true,
-                id: user.id,
-                name: user.name,
-                phone: req.phone,
-                password: req.password,
-                remember: data.remember
-              })
-
-              var lastItem = App.accounts[App.currentAccountIndex]
-              if (lastItem != null) {
-                lastItem.isLoggedIn = false
-              }
-
-              App.currentAccountIndex = App.accounts.length - 1
-
-              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
-            }
+            App.onLoginResponse(isAdminOperation, req, url, res, err)
           })
+        }
+      },
+
+      onLoginResponse: function(isAdmin, req, url, res, err) {
+        res = res || {}
+        if (isAdmin) {
+          var rpObj = res.data || {}
+
+          if (rpObj.code != CODE_SUCCESS) {
+            alert('登录失败，请检查网络后重试。\n' + rpObj.msg + '\n详细信息可在浏览器控制台查看。')
+            App.onResponse(url, res, err)
+          }
+          else {
+            var user = rpObj.user || {}
+
+            if (user.id > 0) {
+              user.remember = rpObj.remember
+              user.phone = req.phone
+              user.password = req.password
+              App.User = user
+            }
+
+            //保存User到缓存
+            App.saveCache(App.server, 'User', user)
+
+            if (App.currentAccountIndex == null || App.currentAccountIndex < 0) {
+              App.currentAccountIndex = 0
+            }
+            var item = App.accounts[App.currentAccountIndex]
+            item.isLoggedIn = false
+            App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
+
+            if (user.id > 0) {
+              App.showTestCase(true, false)
+            }
+          }
+        } else {
+          App.onResponse(url, res, err)
+
+          //由login按钮触发，不能通过callback回调来实现以下功能
+          var data = res.data || {}
+          if (data.code == CODE_SUCCESS) {
+            var user = data.user || {}
+            App.accounts.push({
+              isLoggedIn: true,
+              id: user.id,
+              name: user.name,
+              phone: req.phone,
+              password: req.password,
+              remember: data.remember
+            })
+
+            var lastItem = App.accounts[App.currentAccountIndex]
+            if (lastItem != null) {
+              lastItem.isLoggedIn = false
+            }
+
+            App.currentAccountIndex = App.accounts.length - 1
+
+            App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+            App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+          }
         }
       },
 
@@ -5879,14 +5907,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       removeDebugInfo: function (obj) {
         if (obj != null) {
           delete obj["trace"]
-          delete obj["sql:generate|cache|execute|maxExecute"]
-          delete obj["depth:count|max"]
+          // 保留 delete obj["sql:generate|cache|execute|maxExecute"]
+          // 保留 delete obj["depth:count|max"]
           delete obj["time:start|duration|end"]
           delete obj["time:start|duration|end|parse|sql"]
           // 保留 delete obj["throw"]
           // 保留 delete obj["trace:throw"]
           delete obj["trace:stack"]
           delete obj["stack"]
+          delete obj["debug:info|help"]
         }
         return obj
       },
@@ -6296,8 +6325,40 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
         var h = isDuration ? item.durationHint : item.hintMessage;
         this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
-      }
+      },
 
+      handleTestArg(hasTestArg, rawReq, delayTime) {
+        if (hasTestArg) {
+          vUrlComment.value = ""
+          vComment.value = ""
+          vWarning.value = ""
+        }
+
+        App.onChange(false)
+
+        if (hasTestArg && rawReq.send != "false" && rawReq.send != "null") {
+          setTimeout(function () {
+            if (rawReq.send == 'random') {
+              App.onClickTestRandom()
+            } else if (App.isTestCaseShow) {
+              App.onClickTest()
+            } else {
+              App.send(false)
+            }
+
+            var url = vUrl.value || ''
+            if (rawReq.jump == "true" || rawReq.jump == "null"
+              || (rawReq.jump != "false" && App.isTestCaseShow != true && rawReq.send != 'random'
+                && (url.endsWith("/get") || url.endsWith("/head"))
+              )
+            ) {
+              setTimeout(function () {
+                window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
+              }, 2000)
+            }
+          }, Math.max(2000, delayTime))
+        }
+      }
     },
     watch: {
       jsoncon: function () {
@@ -6475,50 +6536,45 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
               }
 
-              if (setting.isRandomShow && setting.isRandomListShow) {
-                delayTime += Math.min(5000, (App.isMLEnabled ? 60 : 20)*(setting.randomCount || App.randomCount) + 1000)
-                App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
-              }
+              if (setting.isTestCaseShow || (setting.isRandomShow && setting.isRandomListShow)) {
+                var isTest = hasTestArg
+                hasTestArg = false
 
-              if (setting.isTestCaseShow) {
-                delayTime += Math.min(5000, (App.isMLEnabled ? 30 : 10)*(setting.testCaseCount || App.testCaseCount) + 1000)
-                App.showTestCase(true, setting.isLocalShow)
+                App.login(true, function (url, res, err) {
+                  if (setting.isRandomShow && setting.isRandomListShow) {
+                    delayTime += Math.min(5000, (App.isMLEnabled ? 50 : 20) * (setting.randomCount || App.randomCount) + 1000)
+                    App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow, function (url, res, err) {
+                      App.onRandomListResponse(url, res, err)
+                      App.handleTestArg(isTest, rawReq, delayTime)
+                    })
+                  }
+                  else {  // if (setting.isTestCaseShow) {
+                    delayTime += Math.min(5000, (App.isMLEnabled ? 30 : 10) * (setting.testCaseCount || App.testCaseCount) + 1000)
+
+                    // App.login(true)
+                    App.onLoginResponse(true, {
+                      type: 0, // 登录方式，非必须 0-密码 1-验证码
+                      phone: App.account,
+                      password: App.password,
+                      version: 1, // 全局默认版本号，非必须
+                      remember: vRemember.checked,
+                      format: false
+                    }, url, res, err)
+
+                    App.showTestCase(true, setting.isLocalShow, function (url, res, err) {
+                      App.onTestCaseListResponse(url, res, err)
+                      App.handleTestArg(isTest, rawReq, delayTime)
+                    })
+                  }
+
+                })
               }
             } catch (e) {
               log(e)
             }
           }
 
-          if (hasTestArg) {
-            vUrlComment.value = ""
-            vComment.value = ""
-            vWarning.value = ""
-          }
-
-          App.onChange(false)
-
-          if (hasTestArg && rawReq.send != "false" && rawReq.send != "null") {
-            setTimeout(function () {
-              if (rawReq.send == 'random') {
-                App.onClickTestRandom()
-              } else if (App.isTestCaseShow) {
-                App.onClickTest()
-              } else {
-                App.send(false)
-              }
-
-              var url = vUrl.value || ''
-              if (rawReq.jump == "true" || rawReq.jump == "null"
-                || (rawReq.jump != "false" && App.isTestCaseShow != true && rawReq.send != 'random'
-                  && (url.endsWith("/get") || url.endsWith("/head"))
-                )
-              ) {
-                setTimeout(function () {
-                  window.open(vUrl.value + "/" + encodeURIComponent(JSON.stringify(encode(JSON.parse(vInput.value)))))
-                }, 2000)
-              }
-            }, Math.max(1000, delayTime))
-          }
+          App.handleTestArg(hasTestArg, rawReq, delayTime)
         }, 2000)
 
       }
