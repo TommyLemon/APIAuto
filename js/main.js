@@ -3103,6 +3103,8 @@
       },
 
       onRandomListResponse: function (show, isSub, url, res, err) {
+        res = res || {}
+
         App.onResponse(url, res, err)
 
         var rpObj = res.data
@@ -5091,7 +5093,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // }
 
           const list = (testSubList ? this.randomSubs : this.randoms) || []
-          var allCount = list.length
+          var allCount = 0  // list.length
+          for (let i = 0; i < list.length; i++) {
+            const item = list[i]
+            const random = item == null ? null : item.Random
+            allCount += (random == null || random.count == null ? 0 : random.count)
+          }
+
           doneCount = 0
 
           if (allCount <= 0) {
@@ -5126,11 +5134,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const index = i
 
             const itemAllCount = random.count || 0
-            allCount += (itemAllCount - 1)
+            // allCount += (itemAllCount - 1)  // 为什么减 1？因为初始化时 var allCount = list.length
 
             this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, function (url, res, err) {
-
-              doneCount ++
+              doneCount += itemAllCount // ++
               App.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
               try {
                 App.onResponse(url, res, err)
@@ -5139,7 +5146,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, callback)
+              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, null, callback)
             })
           }
         }
@@ -5225,7 +5232,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   App.resetCount(item)
                   item.subs = subs
                 }
-                App.testRandom(false, false, true, count)
+                App.testRandom(false, false, true, count, callback)
               }
 
             }
@@ -5640,11 +5647,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (accountIndex == null) {
           accountIndex = -1 //isCrossEnabled ? -1 : 0
         }
+
         if (isCrossEnabled) {
           var isCrossDone = accountIndex >= accounts.length
           this.crossProcess = isCrossDone ? (isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭') : ('交叉账号: ' + (accountIndex + 1) + '/' + accounts.length)
           if (isCrossDone) {
-            alert('已完成账号交叉测试: 退出登录状态 和 每个账号登录状态')
+            App.testProcess = (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭')
+            if (accountIndex == accounts.length) {
+              // App.currentAccountIndex = accounts.length - 1
+              alert('已完成账号交叉测试: 退出登录状态 和 每个账号登录状态')
+            }
             return
           }
         }
@@ -5723,7 +5735,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           this.request(false, document.type, baseUrl + document.url, this.getRequest(document.request, null, true), header, function (url, res, err) {
-
             try {
               App.onResponse(url, res, err)
               App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
@@ -5848,11 +5859,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (this.tests == null) {
           this.tests = {}
         }
-        if (this.tests[String(accountIndex)] == null) {
-          this.tests[String(accountIndex)] = {}
+
+        var accountIndexStr = String(accountIndex)
+        if (this.tests[accountIndexStr] == null) {
+          this.tests[accountIndexStr] = {}
         }
 
-        var tests = this.tests[String(accountIndex)] || {}
+        var tests = this.tests[accountIndexStr] || {}
         var t = tests[documentId]
         if (t == null) {
           t = tests[documentId] = {}
@@ -5866,11 +5879,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           App.toTestDocIndexes.push(index);
         }
 
-        this.tests[String(accountIndex)] = tests
+        this.tests[accountIndexStr] = tests
         this.log('tests = ' + JSON.stringify(tests, null, '    '))
         // this.showTestCase(true)
 
-        if (doneCount >= allCount && isRandom != true) {
+        if (doneCount >= allCount) {
           if (callback != null) {
             callback(isRandom, allCount)
             return
@@ -5882,7 +5895,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (isRandom != true && toTestAllCount > 0) { // 自动给非 红色 报错的接口跑参数注入
             this.toTestDoneCount = 0;
             this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, toTestAllCount, accountIndex)
-
           } else if (this.isCrossEnabled) {
             this.test(false, accountIndex + 1)
           }
@@ -5891,34 +5903,51 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       toTestDoneCount: 0,
       startRandomTest4Doc: function (list, indexes, position, toTestAllCount, accountIndex) {
-        var index = indexes[position]
-        var it = list[index] || {}
-        this.restoreRemote(index, it, false)
+        var callback = function (isRandom, allCount) {
+          setTimeout(function () {
+            App.isTestCaseShow = true
 
-        this.randoms = []
-        this.isRandomEditable = true
-        this.isRandomListShow = false
-        this.isRandomSubListShow = false
-        this.showRandomList(true, it.Document, false, function (url, res, err) {
-            App.onRandomListResponse(true, false, url, res, err)
-            App.onClickTestRandom(function (isRandom, allCount) {
-              App.isTestCaseShow = true
+            App.toTestDoneCount ++
+            App.testProcess = '正在深度测试: ' + App.toTestDoneCount + '/' + toTestAllCount
 
-              App.toTestDoneCount ++
-              App.testProcess = '正在深度测试: ' + App.toTestDoneCount + '/' + toTestAllCount
-
-              if (App.toTestDoneCount < toTestAllCount) {
-                setTimeout(function () {
-                  App.startRandomTest4Doc(list, indexes, position + 1, toTestAllCount)
-                }, 1000)
-              } else if (App.isCrossEnabled) {
-                App.test(false, accountIndex + 1)
-              } else {
-                App.testProcess = (this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭')
+            if (App.toTestDoneCount < toTestAllCount) {
+              setTimeout(function () {
+                App.startRandomTest4Doc(list, indexes, position + 1, toTestAllCount, accountIndex)
+              }, 1000)
+            } else if (App.isCrossEnabled) {
+              App.test(false, accountIndex + 1)
+            } else {
+              App.testProcess = (App.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭')
+              if (App.toTestDoneCount == toTestAllCount) {
                 alert('已完成回归测试')
               }
-            })
+            }
+          }, 1000)
+        }
+
+        try {
+          var index = indexes[position]
+          var it = list[index] || {}
+
+          this.restoreRemote(index, it, false)
+
+          this.randoms = []
+          this.isRandomEditable = true
+          this.isRandomListShow = false
+          this.isRandomSubListShow = false
+          this.showRandomList(true, it.Document, false, function (url, res, err) {
+            try {
+              App.onRandomListResponse(true, false, url, res, err)
+            } catch (e) {
+              log(e)
+            }
+
+            App.onClickTestRandom(callback)
           })
+        } catch (e2) {
+          log(e2)
+          callback(true, toTestAllCount)
+        }
       },
 
       //更新父级总览数据
