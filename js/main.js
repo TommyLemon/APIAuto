@@ -6543,8 +6543,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.login(true, function (url, res, err) {
                   if (setting.isRandomShow && setting.isRandomListShow) {
                     delayTime += Math.min(5000, (App.isMLEnabled ? 50 : 20) * (setting.randomCount || App.randomCount) + 1000)
-                    App.showRandomList(true, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow, function (url, res, err) {
-                      App.onRandomListResponse(url, res, err)
+                    App.isRandomEditable = true
+                    App.isRandomListShow = false
+                    App.isRandomSubListShow = false
+                    // App.showRandomList(false, setting.isRandomSubListShow ? App.currentRandomItem : null, setting.isRandomSubListShow)
+                    App.showRandomList(true, setting.isRandomSubListShow ? (App.currentRandomItem || {}).Random : (App.currentRemoteItem || {}).Document, setting.isRandomSubListShow, function (url, res, err) {
+                      App.onRandomListResponse(true, setting.isRandomSubListShow, url, res, err)
                       App.handleTestArg(isTest, rawReq, delayTime)
                     })
                   }
