@@ -1,9 +1,10 @@
 
 (function () {
-  var DEBUG = true
-  var isNode = typeof window == 'undefined'
-  var isBrowser = typeof window == 'object'
-  if (isNode) {
+  const DEBUG = true
+  const IS_NODE = typeof window == 'undefined'
+  const IS_BROWSER = typeof window == 'object'
+
+  if (IS_NODE) {  // 解决在 Node 环境下缺少相关变量/常量/函数导致报错
     try {
       eval(`
         var alert = function(msg) {console.log('alert: ' + msg)};
@@ -427,8 +428,6 @@
     }
   })
 
-
-  var DEBUG = false
 
   var initJson = {}
 
@@ -3023,7 +3022,7 @@
         this.isTestCaseShow = show
         this.isLocalShow = isLocal
 
-        if (isBrowser) {
+        if (IS_BROWSER) {
           vOutput.value = show ? '' : (output || '')
           this.showDoc()
         }
@@ -3087,7 +3086,7 @@
             // '@role': 'LOGIN'
           }
 
-          if (isBrowser) {
+          if (IS_BROWSER) {
             this.onChange(false)
           }
 
@@ -3114,7 +3113,7 @@
           App.isLocalShow = false
           App.testCases = App.remotes = rpObj['[]']
 
-          if (isBrowser) {
+          if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
             App.showDoc()
           }
@@ -3132,7 +3131,7 @@
           this.randomSubs = []
         }
 
-        if (isBrowser) {
+        if (IS_BROWSER) {
           vOutput.value = show ? '' : (output || '')
           this.showDoc()
         }
@@ -3183,7 +3182,7 @@
             }
           }
 
-          if (isBrowser) {
+          if (IS_BROWSER) {
             this.onChange(false)
           }
 
@@ -3219,7 +3218,7 @@
             App.randoms = rpObj['[]']
           }
 
-          if (isBrowser) {
+          if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
             App.showDoc()
           }
@@ -3573,7 +3572,7 @@
       /**计时回调
        */
       onHandle: function (before) {
-        if (isNode) {
+        if (IS_NODE) {
           return;
         }
 
@@ -3772,7 +3771,7 @@
       onChange: function (delay) {
         this.setBaseUrl();
 
-        if (isNode) {
+        if (IS_NODE) {
           return;
         }
 
@@ -3975,7 +3974,7 @@
           else {
             document.cookie = header.Cookie
           }
-        } else if (isNode) {
+        } else if (IS_NODE) {
           var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
           if (curUser != null && curUser.cookie != null) {
             if (header == null) {
@@ -3996,7 +3995,7 @@
         }
 
 
-        if (isNode) {
+        if (IS_NODE) {
           console.log('req = ' + JSON.stringify(req, null, '  '))
           // 低版本 node 报错 cannot find module 'node:url' ，高版本报错 TypeError: axiosCookieJarSupport is not a function
           //   const axiosCookieJarSupport = require('axios-cookiejar-support').default;
@@ -4098,12 +4097,12 @@
         log('onResponse url = ' + url + '\nerr = ' + err + '\nreq = \n'
           + (res.request == null ? 'null' : JSON.stringify(res.request)) + '\n\nres = \n' + JSON.stringify(res))
         if (err != null) {
-          if (isBrowser) {
+          if (IS_BROWSER) {
             vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
           }
         }
         else {
-          if (isBrowser) {
+          if (IS_BROWSER) {
             var data = res.data || {}
             if (isSingle && JSONResponse.isSuccess(data)) { //不格式化错误的结果
               data = JSONResponse.formatObject(data);
@@ -6125,7 +6124,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (App.toTestDoneCount < toTestAllCount) {
               setTimeout(function () {
                 App.startRandomTest4Doc(list, indexes, position + 1, toTestAllCount, accInd)
-              }, isNode ? 1000 : 1000)
+              }, IS_NODE ? 1000 : 1000)
             } else if (App.isCrossEnabled) {
               // if (App.toTestDoneCount == toTestAllCount) {
                 App.test(false, accInd + 1)
@@ -6139,7 +6138,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
               }
             }
-          }, isNode ? 1000 : 1000)
+          }, IS_NODE ? 1000 : 1000)
         }
 
         try {
@@ -6642,13 +6641,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       handleTestArg(hasTestArg, rawReq, delayTime, callback) {
-        if (hasTestArg && isBrowser) {
+        if (hasTestArg && IS_BROWSER) {
           vUrlComment.value = ""
           vComment.value = ""
           vWarning.value = ""
         }
 
-        if (isBrowser) {
+        if (IS_BROWSER) {
           App.onChange(false)
         }
 
@@ -6663,7 +6662,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             var url = vUrl.value || ''
-            if (isBrowser && (rawReq.jump == "true" || rawReq.jump == "null"
+            if (IS_BROWSER && (rawReq.jump == "true" || rawReq.jump == "null"
               || (rawReq.jump != "false" && App.isTestCaseShow != true && rawReq.send != 'random'
                 && (url.endsWith("/get") || url.endsWith("/head"))
               )
@@ -6756,7 +6755,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }, url, res, err)
 
             App.showTestCase(true, setting.isLocalShow, function (url, res, err) {
-              App.onTestCaseListResponse(isBrowser, url, res, err)
+              App.onTestCaseListResponse(IS_BROWSER, url, res, err)
               App.handleTestArg(isTest, rawReq, delayTime, callback)
             })
           }
@@ -7064,7 +7063,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     }
   }
 
-  if (isBrowser) {
+  if (IS_BROWSER) {
     App = new Vue(App)
   }
   else {
