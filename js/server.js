@@ -7,6 +7,7 @@ const JSONResponse = require('../apijson/JSONResponse');
 
 var isLoading = false;
 var startTime = 0;
+var endTime = 0;
 var message = '';
 var error = null;
 var timeMsg = '';
@@ -37,7 +38,13 @@ app.use(async ctx => {
       }
 
       var curTime = (new Date()).getTime();
-      timeMsg = '\n\nStart Time: ' + startTime + '; \nCurrent Time: ' + curTime + '; \nTime Spent: ' + (curTime - startTime);
+      if (endTime <= 0 || isLoading) {
+        endTime = curTime;
+      }
+
+      timeMsg = '\n\nStart Time: ' + startTime
+        + (isLoading ? ('; \nCurrent Time: ' + curTime) : ('; \nEnd Time: ' + endTime))
+        + '; \nTime Spent: ' + (endTime - startTime);
 
       var accountDoneCount = App.currentAccountIndex + 1;
       var accountAllCount = App.accounts.length;
@@ -71,7 +78,9 @@ app.use(async ctx => {
   }
   else if (ctx.path == '/status' || (isLoading && ctx.path == '/')) {
     var curTime = (new Date()).getTime();
-    timeMsg = '\n\nStart Time: ' + startTime + '; \nCurrent Time: ' + curTime + '; \nTime Spent: ' + (curTime - startTime);
+    timeMsg = '\n\nStart Time: ' + startTime
+      + (isLoading ? ('; \nCurrent Time: ' + curTime) : ('; \nEnd Time: ' + endTime))
+      + '; \nTime Spent: ' + (endTime - startTime);
 
     if (progress < 1) {
       // ctx.response.header['refresh'] = "1";

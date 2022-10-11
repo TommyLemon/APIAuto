@@ -53,6 +53,13 @@
         var clipboard = require('./clipboard.min');
         var jsonlint = require('./jsonlint');
         var JSON5 = require('json5');
+        // var window = {};
+        // var $ = require('./jquery').jQuery;
+        var $ = {
+          isEmptyObject: function (obj) {
+            return obj == null || Object.keys(obj).length <= 0;
+          }
+        };
 
         // var LocalStorage = require('node-localstorage').LocalStorage;
         // var localStorage = new LocalStorage('./scratch');
@@ -4014,6 +4021,10 @@
           // const {parse, stringify, toJSON, fromJSON} = require('flatted');
           // JSON.stringify = stringify;
           // JSON.parse = parse;
+
+          // const CircularJSON = require('circular-json');
+          // JSON.stringify = CircularJSON.stringify;
+          // JSON.parse = CircularJSON.parse;
         }
 
         // axios.defaults.withcredentials = true
@@ -4104,7 +4115,7 @@
           res = {}
         }
         log('onResponse url = ' + url + '\nerr = ' + err + '\nreq = \n'
-          + (res.request == null ? 'null' : JSON.stringify(res.request))
+          + (res.request == null || res.request.data == null ? 'null' : JSON.stringify(res.request.data))
           + '\n\nres = \n' + (res.data == null ? 'null' : JSON.stringify(res.data))
         )
 
