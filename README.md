@@ -29,11 +29,12 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
 
 
-#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
+#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组、IEG PC 游戏平台部 邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
 * 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
+* 零代码开发和测试(接口测试•单元测试•接口开发)
 
 #### 质效无双线上技术访谈-零代码智能测试工具实践介绍-第11期
 https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==
