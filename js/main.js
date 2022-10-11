@@ -1,5 +1,6 @@
 
 (function () {
+  var DEBUG = true
   var isNode = typeof window == 'undefined'
   var isBrowser = typeof window == 'object'
   if (isNode) {
@@ -77,6 +78,7 @@
   }
 
   function log(msg) {
+    if (DEBUG) {}
     console.log(msg)
   }
 
@@ -3980,6 +3982,7 @@
               header = {}
             }
 
+            // Node 环境内通过 headers 设置 Cookie 无效
             header.Cookie = curUser.cookie
             document.cookie = header.Cookie
           }
@@ -3992,16 +3995,17 @@
           header['Apijson-Delegate-Id'] = this.delegateId
         }
 
-        console.log('req = ' + JSON.stringify(req, null, '  '))
 
-        // if (isNode) {
-        //   const axiosCookieJarSupport = require('axios-cookiejar-support').default;
-        //   const tough = require('tough-cookie');
-        //   axiosCookieJarSupport(axios);
-        //   const cookieJar = new tough.CookieJar();
-        //   axios.defaults.jar = cookieJar;
-        //   axios.defaults.withCredentials = true;
-        // }
+        if (isNode) {
+          console.log('req = ' + JSON.stringify(req, null, '  '))
+          // 低版本 node 报错 cannot find module 'node:url' ，高版本报错 TypeError: axiosCookieJarSupport is not a function
+          //   const axiosCookieJarSupport = require('axios-cookiejar-support').default;
+          //   const tough = require('tough-cookie');
+          //   axiosCookieJarSupport(axios);
+          //   const cookieJar = new tough.CookieJar();
+          //   axios.defaults.jar = cookieJar;
+          //   axios.defaults.withCredentials = true;
+        }
 
         // axios.defaults.withcredentials = true
         axios({
@@ -7058,7 +7062,25 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       })
 
     }
-  })
+  }
+
+  if (isBrowser) {
+    App = new Vue(App)
+  }
+  else {
+    var data = App.data
+    if (data instanceof Object && data instanceof Array == false) {
+      App = Object.assign(App, data)
+    }
+
+    var methods = App.methods
+    if (methods instanceof Object && methods instanceof Array == false) {
+      App = Object.assign(App, methods)
+    }
+
+    module.exports = {getRequestFromURL, App}
+  }
+
 })()
 
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
