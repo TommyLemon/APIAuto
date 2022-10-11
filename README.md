@@ -20,7 +20,7 @@
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
-腾讯内部用户包括 互动娱乐、技术工程、云与智慧 等，外部用户包含 500强上市公司深圳传音、行业领头羊社保科技 等。
+腾讯内部用户包括 互动娱乐、技术工程、云与智慧 等，外部用户包含 工商银行某地分行、500强上市公司深圳传音、行业领头羊社保科技 等。
 
 <h3 align="center" style="text-align:center;">
 腾讯 AI 测试圈子演讲(部分)
@@ -29,11 +29,12 @@
 ![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
 
 
-#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组 邀请分享了 
+#### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组、IEG PC 游戏平台部 邀请分享了 
 * APIAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
 * 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
+* 零代码开发和测试(接口测试•单元测试•接口开发)
 
 #### 质效无双线上技术访谈-零代码智能测试工具实践介绍-第11期
 https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==
