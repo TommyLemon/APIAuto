@@ -17,6 +17,16 @@
  * @author Lemon
  */
 
+if (typeof window == 'undefined') {
+  try {
+    eval(`
+      var StringUtil = require("./StringUtil");
+      var JSONObject = require("./JSONObject");
+    `)
+  } catch (e) {
+    console.log(e)
+  }
+}
 
 //状态信息，非GET请求获得的信息<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -59,8 +69,19 @@ var JSONResponse = {
    * @param code
    * @return
    */
-  isSuccess: function(code) {
-    return code == CODE_SUCCESS;
+  isSuccess: function(obj) {
+    if (obj == null) {
+      return false
+    }
+
+    if (typeof obj == 'number') {
+      return obj == CODE_SUCCESS;
+    }
+    if (obj instanceof Object && obj instanceof Array == false) {
+      return obj.code == CODE_SUCCESS;
+    }
+
+    return false
   },
 
   /**校验服务端是否存在table
@@ -1544,4 +1565,8 @@ var JSONResponse = {
     return value;
   }
 
+};
+
+if (typeof module == 'object') {
+  module.exports = JSONResponse;
 }

@@ -467,5 +467,8 @@ function newArrayString(table, json, count, page) {
     + table + "\":" + JSON.stringify(json) + "}}";
 }
 
+if (typeof module == 'object') {
+  module.exports = this;
+}
 
 //常用请求>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

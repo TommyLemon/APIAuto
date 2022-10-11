@@ -19,12 +19,16 @@
 var JSONObject = {
   TAG: 'JSONObject',
 
+  log: function (tag, msg) {
+
+  },
+
   /**判断key是否为表名
    * @param key
    * @return
    */
   isTableKey: function(key, value, isRestful) {
-    log(this.TAG, 'isTableKey  typeof key = ' + (typeof key));
+    JSONObject.log(this.TAG, 'isTableKey  typeof key = ' + (typeof key));
     if (key == null) {
       return false;
     }
@@ -44,7 +48,7 @@ var JSONObject = {
    * @return
    */
   isArrayKey: function(key, value, isRestful) {
-    log(this.TAG, 'isArrayKey  typeof key = ' + (typeof key));
+    JSONObject.log(this.TAG, 'isArrayKey  typeof key = ' + (typeof key));
 
     if (key == null) {
       return false;
@@ -110,13 +114,16 @@ var JSONObject = {
     }
 
     return {
-      method,
-      isRestful,
-      tag,
+      method: method,
+      isRestful: isRestful,
+      tag: tag,
       table: startName
     }
   }
 
-}
+};
 
+if (typeof module == 'object') {
+  module.exports = JSONObject;
+}
 //TODO 取消注释  Object.freeze(JSONObject) //不可修改

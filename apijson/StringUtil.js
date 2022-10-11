@@ -173,6 +173,10 @@ var StringUtil = {
     return arr == null ? '' : arr.join(separator)
   }
 
+};
+
+if (typeof module == 'object') {
+  module.exports = StringUtil;
 }
 
 //校正（自动补全等）字符串>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

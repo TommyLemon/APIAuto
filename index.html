@@ -171,7 +171,7 @@
         </div>
         <div class="left-panel">
             <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                <li v-for="(item, index) in testCases" >
+                <li v-for="(item, index) in testCases" :id="'docItem' + index" >
                     <div style="display: inline-table">
                         <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;padding: 0px;position: relative" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type) }}</button>
                         <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
@@ -321,7 +321,7 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
 
                         <!-- 临时生成的配置子项 -->
                         <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll; padding-bottom: 100px">
-                            <li style="width: 100%" v-for="(item, index) in randomSubs" >
+                            <li style="width: 100%" v-for="(item, index) in randomSubs" :id="'randomSubItem' + index" >
                                 <a v-show="! isRandomEditable" class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
                                 <input v-show="isRandomEditable" style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
 
@@ -351,7 +351,7 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
 
                         <!-- 持久化存储的配置项 -->
                         <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 100px">
-                            <li style="width: 100%; display: inline-table" v-for="(item, index) in randoms" >
+                            <li style="width: 100%; display: inline-table" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
                                 <input v-model="(item.Random || {}).count" style="min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" @keyup="doOnKeyUp(event, 'random', false, item)" />
                                 <a style="margin-left: 4px; ">次</a>
                                 <a v-show="! isRandomEditable" style="top: 13px; left: 68px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
