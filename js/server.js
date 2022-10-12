@@ -106,7 +106,7 @@ app.use(async ctx => {
   }
   else if (ctx.path == '/status' || (isLoading && ctx.path == '/')) {
     update();
-    if (progress < 1) {
+    if (isLoading) {
       // ctx.response.header['refresh'] = "1";
       // ctx.redirect('/status');
     }

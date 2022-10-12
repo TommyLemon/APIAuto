@@ -86,8 +86,9 @@
   }
 
   function log(msg) {
-    if (DEBUG) {}
-    console.log(msg)
+    if (DEBUG) {
+      console.log(msg)
+    }
   }
 
   Vue.component('vue-item', {
@@ -3096,7 +3097,7 @@
                 '@having': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
-            // '@role': 'LOGIN'
+            '@role': IS_NODE ? null : 'LOGIN'
           }
 
           if (IS_BROWSER) {
@@ -3339,7 +3340,7 @@
         }
 
         if (isAdminOperation) {
-          this.request(isAdminOperation, REQUEST_TYPE_JSON, this.server + '/login', req, {}, function (url, res, err) {
+          this.request(isAdminOperation, REQUEST_TYPE_JSON, this.server + '/login', req, this.getHeader(vHeader.value), function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -3396,7 +3397,7 @@
               user.remember = rpObj.remember
               user.phone = req.phone
               user.password = req.password
-              user.cookie = res.cookie || res.headers.cookie
+              user.cookie = res.cookie || (res.headers || {}).cookie
               App.User = user
             }
 
@@ -3428,7 +3429,7 @@
               phone: req.phone,
               password: req.password,
               remember: data.remember,
-              cookie: res.cookie || res.headers.cookie
+              cookie: res.cookie || (res.headers || {}).cookie
             })
 
             var lastItem = App.accounts[App.currentAccountIndex]
@@ -3525,7 +3526,7 @@
 
         // alert('logout  isAdminOperation = ' + isAdminOperation + '; url = ' + url)
         if (isAdminOperation) {
-          this.request(isAdminOperation, REQUEST_TYPE_JSON, this.server + '/logout', req, {}, function (url, res, err) {
+          this.request(isAdminOperation, REQUEST_TYPE_JSON, this.server + '/logout', req, this.getHeader(vHeader.value), function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -4057,7 +4058,7 @@
               }
             }
 
-	    //any one of then callback throw error will cause it calls then(null)
+	          //any one of then callback throw error will cause it calls then(null)
             // if ((res.config || {}).method == 'options') {
             //   return
             // }
@@ -4824,14 +4825,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 '@column': 'value:column_comment'
               },
               "AllColumn": isNotTSQL ? null : {
-		        "TABLE_NAME@": "[]/AllTable/table_name",
-		        "@column": "COLUMN_NAME:column_name,DATA_TYPE:column_type"
-		      },
-		      "AllColumnComment": isNotTSQL ? null : {
-		        "TABLE_NAME@": "[]/AllTable/table_name",
-		        "COLUMN_NAME@": "/AllColumn/column_name",
-		        "@column": "COMMENTS:column_comment"
-		      }
+    		        "TABLE_NAME@": "[]/AllTable/table_name",
+    		        "@column": "COLUMN_NAME:column_name,DATA_TYPE:column_type"
+    		      },
+    		      "AllColumnComment": isNotTSQL ? null : {
+    		        "TABLE_NAME@": "[]/AllTable/table_name",
+    		        "COLUMN_NAME@": "/AllColumn/column_name",
+    		        "@column": "COMMENTS:column_comment"
+    		      }
             }
           },
           'Function[]': {
@@ -4867,7 +4868,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return;
           }
 
-//      log('getDoc  docRq.responseText = \n' + docRq.responseText);
+//        log('getDoc  docRq.responseText = \n' + docRq.responseText);
           docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
 
           //转为文档格式
@@ -5257,11 +5258,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       /**参数注入，动态替换键值对
        * @param show
        */
-      onClickTestRandom: function (callback) {
+      onClickTestRandom: function (isCross, callback) {
         this.isRandomTest = true
-        this.testRandom(! this.isRandomListShow && ! this.isRandomSubListShow, this.isRandomListShow, this.isRandomSubListShow, null, callback)
+        this.testRandom(! this.isRandomListShow && ! this.isRandomSubListShow, this.isRandomListShow, this.isRandomSubListShow, null, isCross, callback)
       },
-      testRandom: function (show, testList, testSubList, limit, callback) {
+      testRandom: function (show, testList, testSubList, limit, isCross, callback) {
         this.isRandomEditable = false
         if (testList != true && testSubList != true) {
           this.testRandomProcess = ''
@@ -5340,17 +5341,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             // }
 
             App[testSubList ? 'currentRandomSubIndex' : 'currentRandomIndex'] = index
-            this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, function (url, res, err) {
+            this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, isCross, function (url, res, err) {
               App.randomDoneCount += itemAllCount // ++
               App.testRandomProcess = App.randomDoneCount >= allCount ? '' : ('正在测试: ' + App.randomDoneCount + '/' + allCount)
-              try {
-                App.onResponse(url, res, err)
-                App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
-              } catch (e) {
-                App.log('test  App.request >> } catch (e) {\n' + e.message)
+              if (res instanceof Object) {  // 可能通过 onTestResponse 返回的是 callback(true, 18, null)
+                try {
+                  App.onResponse(url, res, err)
+                  App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                } catch (e) {
+                  App.log('test  App.request >> } catch (e) {\n' + e.message)
+                }
               }
 
-              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, null, callback)
+              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, null, isCross, callback)
             })
           }
         }
@@ -5359,7 +5362,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param show
        * @param callback
        */
-      testRandomSingle: function (show, testList, testSubList, item, type, url, json, header, callback) {
+      testRandomSingle: function (show, testList, testSubList, item, type, url, json, header, isCross, callback) {
         item = item || {}
         var random = item.Random = item.Random || {}
         var subs = item['[]'] || []
@@ -5436,7 +5439,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   App.resetCount(item)
                   item.subs = subs
                 }
-                App.testRandom(false, false, true, count, callback)
+                App.testRandom(false, false, true, count, isCross, callback)
               }
 
             }
@@ -5828,7 +5831,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onClickTest: function (callback) {
         this.isRandomTest = false
-        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, callback)
+        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, this.isCrossEnabled, callback)
       },
       /**回归测试
        * 原理：
@@ -5844,21 +5847,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        3-对象缺少字段/整数变小数，黄色；
        4-code/值类型 改变，红色；
        */
-      test: function (isRandom, accountIndex, callback) {
+      test: function (isRandom, accountIndex, isCross, callback) {
         var accounts = this.accounts || []
         // alert('test  accountIndex = ' + accountIndex)
-        var isCrossEnabled = this.isCrossEnabled
         if (accountIndex == null) {
-          accountIndex = -1 //isCrossEnabled ? -1 : 0
+          accountIndex = -1 //isCross ? -1 : 0
         }
 
-        if (isCrossEnabled) {
+        if (isCross) {
           var isCrossDone = accountIndex >= accounts.length
-          this.crossProcess = isCrossDone ? (isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭') : ('交叉账号: ' + (accountIndex + 1) + '/' + accounts.length)
+          this.crossProcess = isCrossDone ? '交叉账号:已开启' : ('交叉账号: ' + (accountIndex + 1) + '/' + accounts.length)
           if (isCrossDone) {
             this.testProcess = (this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭')
             if (accountIndex == accounts.length) {
-              // this.currentAccountIndex = accounts.length - 1
+              this.currentAccountIndex = accounts.length - 1  // -1 导致最后右侧显示空对象
               if (callback) {
                 callback('已完成账号交叉测试: 退出登录状态 和 每个账号登录状态')
               } else {
@@ -5870,10 +5872,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
             }
             return
-          } else {
-            if (callback != this.autoTestCallback && typeof this.autoTestCallback == 'function') {
-              this.autoTestCallback('正在账号交叉测试 ')
-            }
+          }
+
+          if (callback != this.autoTestCallback && typeof this.autoTestCallback == 'function') {
+            this.autoTestCallback('正在账号交叉测试 ')
           }
         }
 
@@ -5909,7 +5911,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return
         }
 
-        if (isCrossEnabled) {
+        if (isCross) {
           if (accountIndex < 0 && accounts[this.currentAccountIndex] != null) {  //退出登录已登录的账号
             accounts[this.currentAccountIndex].isLoggedIn = true
           }
@@ -5921,17 +5923,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //   return
             // }
             App.showTestCase(true, false)
-            App.startTest(list, allCount, isRandom, accountIndex, callback)
+            App.startTest(list, allCount, isRandom, accountIndex, isCross, callback)
           })
         }
         else {
-          this.startTest(list, allCount, isRandom, accountIndex, callback)
+          this.startTest(list, allCount, isRandom, accountIndex, isCross, callback)
         }
       },
 
       toTestDocIndexes: [],
 
-      startTest: function (list, allCount, isRandom, accountIndex, callback) {
+      startTest: function (list, allCount, isRandom, accountIndex, isCross, callback) {
         this.testProcess = '正在测试: ' + 0 + '/' + allCount
         this.toTestDocIndexes = []
 
@@ -5970,13 +5972,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               App.log('test  App.request >> } catch (e) {\n' + e.message)
             }
 
-            App.compareResponse(allCount, list, index, item, res.data, isRandom, accountIndex, false, err)
+            App.compareResponse(allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
           })
         }
 
       },
 
-      compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, callback) {
+      compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback) {
         var it = item || {} //请求异步
         var d = (isRandom ? this.currentRemoteItem.Document : it.Document) || {} //请求异步
         var r = isRandom ? it.Random : null //请求异步
@@ -5992,8 +5994,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var dt = + it.duration
           it.duration = dt
           it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60).toFixed(1) + 'm' : '>1h')))
-          var min = tr.minDuration || 20
-          var max = tr.maxDuration || 200
+          var min = tr.minDuration == null || tr.minDuration <= 0 ? 20 : tr.minDuration
+          var max = tr.maxDuration == null || tr.maxDuration <= 0 ? 200 : tr.maxDuration
           it.durationColor = dt < min ? 'green' : (dt > 2*max ? 'red' : (dt > max + min ? 'orange' : (dt > max ? 'blue' : 'black')))
           it.durationHint = dt < min ? '很快：比以往 [' + min + 'ms, ' + max + 'ms] 最快还更快' : (dt > 2*max ? '非常慢：比以往 [' + min + 'ms, ' + max + 'ms] 最慢的两倍还更慢'
             : (dt > max + min ? '比较慢：比以往 [' + min + 'ms, ' + max + 'ms] 最快与最慢之和(平均值两倍)还更慢'
@@ -6019,10 +6021,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           tr.compare.duration = it.durationHint
         }
 
-        this.onTestResponse(allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, callback);
+        this.onTestResponse(allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback);
       },
 
-      onTestResponse: function(allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, callback) {
+      onTestResponse: function(allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback) {
         tr = tr || {}
         tr.compare = cmp;
 
@@ -6135,14 +6137,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           App.deepAllCount = deepAllCount
           if (isRandom != true && deepAllCount > 0) { // 自动给非 红色 报错的接口跑参数注入
             App.deepDoneCount = 0;
-            this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex)
-          } else if (this.isCrossEnabled && doneCount == allCount) {
-            this.test(false, accountIndex + 1)
+            this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex, isCross)
+          } else if (isCross && doneCount == allCount) {
+            this.test(false, accountIndex + 1, isCross)
           }
         }
       },
 
-      startRandomTest4Doc: function (list, indexes, position, deepAllCount, accountIndex) {
+      startRandomTest4Doc: function (list, indexes, position, deepAllCount, accountIndex, isCross) {
         const accInd = accountIndex
         var callback = function (isRandom, allCount) {
           setTimeout(function () {
@@ -6156,11 +6158,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             if (App.deepDoneCount < deepAllCount) {
               setTimeout(function () {
-                App.startRandomTest4Doc(list, indexes, position + 1, deepAllCount, accInd)
+                App.startRandomTest4Doc(list, indexes, position + 1, deepAllCount, accInd, isCross)
               }, IS_NODE ? 1000 : 1000)
-            } else if (App.isCrossEnabled) {
+            } else if (isCross) {
               if (App.deepDoneCount == deepAllCount) {
-                App.test(false, accInd + 1)
+                App.test(false, accInd + 1, isCross)
               }
             } else {
               if (App.deepDoneCount == deepAllCount) {
@@ -6197,7 +6199,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               log(e)
             }
 
-            App.onClickTestRandom(callback)
+            App.onClickTestRandom(isCross, callback)
           })
         } catch (e2) {
           log(e2)
@@ -6325,7 +6327,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param index
        * @param item
        */
-      handleTest: function (right, index, item, isRandom, isDuration) {
+      handleTest: function (right, index, item, isRandom, isDuration, isCross) {
         item = item || {}
         var random = item.Random = item.Random || {}
         var document;
@@ -6410,7 +6412,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 item.TestRecord = null
               }
 
-              App.updateTestRecord(0, list, index, item, currentResponse, isRandom, App.currentAccountIndex, true)
+              App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true, App.currentAccountIndex, isCross)
             })
           }
           else { //上传新的校验标准
@@ -6612,7 +6614,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //   }
                 // }
 
-                App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true)
+                App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true, App.currentAccountIndex, isCross)
               }
 
             })
@@ -6621,7 +6623,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
-      updateTestRecord: function (allCount, list, index, item, response, isRandom, ignoreTrend) {
+      updateTestRecord: function (allCount, list, index, item, response, isRandom, ignoreTrend, accountIndex, isCross) {
         item = item || {}
         var doc = (isRandom ? item.Random : item.Document) || {}
 
@@ -6645,7 +6647,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           item.TestRecord = data.TestRecord
-          App.compareResponse(allCount, list, index, item, response, isRandom, App.currentAccountIndex, true, err, ignoreTrend);
+          App.compareResponse(allCount, list, index, item, response, isRandom, accountIndex, true, err, ignoreTrend, isCross);
         })
       },
 
