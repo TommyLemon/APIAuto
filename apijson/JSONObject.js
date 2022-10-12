@@ -23,6 +23,10 @@ var JSONObject = {
 
   },
 
+  isEmpty: function (obj) {
+    return obj == null || Object.keys(obj).length <= 0;
+  },
+
   /**判断key是否为表名
    * @param key
    * @return

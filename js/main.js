@@ -55,11 +55,11 @@
         var JSON5 = require('json5');
         // var window = {};
         // var $ = require('./jquery').jQuery;
-        var $ = {
-          isEmptyObject: function (obj) {
-            return obj == null || Object.keys(obj).length <= 0;
-          }
-        };
+        // var $ = {
+        //   isEmptyObject: function (obj) {
+        //     return obj == null || Object.keys(obj).length <= 0;
+        //   }
+        // };
 
         // var LocalStorage = require('node-localstorage').LocalStorage;
         // var localStorage = new LocalStorage('./scratch');
@@ -3054,7 +3054,7 @@
             this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
 
             var tests = this.tests[String(accountIndex)] || {}
-            if (tests != null && $.isEmptyObject(tests) != true) {
+            if (tests != null && JSONObject.isEmpty(tests) != true) {
               for (var i = 0; i < allCount; i++) {
                 var item = testCases[i]
                 if (item == null) {
@@ -3853,11 +3853,11 @@
         if (index >= 0) {
           var paramObj = getRequestFromURL(url.substring(index), true)
           vUrl.value = url.substring(0, index)
-          if (paramObj != null && $.isEmptyObject(paramObj) == false) {
+          if (paramObj != null && JSONObject.isEmpty(paramObj) == false) {
             var originVal = this.getRequest(vInput.value, {});
             var isConflict = false;
 
-            if ($.isEmptyObject(originVal) == false) {
+            if (JSONObject.isEmpty(originVal) == false) {
               for (var k in paramObj) {
                 if (originVal.hasOwnProperty(k)) {
                   isConflict = true;
