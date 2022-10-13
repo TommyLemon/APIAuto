@@ -3097,7 +3097,8 @@
                 '@having': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
-            '@role': IS_NODE ? null : 'LOGIN'
+            '@role': IS_NODE ? null : 'LOGIN',
+            key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
           }
 
           if (IS_BROWSER) {
@@ -3193,7 +3194,8 @@
                   '@order': 'date-'
                 }
               }
-            }
+            },
+            key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
           }
 
           if (IS_BROWSER) {
@@ -3333,7 +3335,9 @@
           version: 1, // 全局默认版本号，非必须
           remember: vRemember.checked,
           format: false,
-          defaults: isAdminOperation ? undefined : {
+          defaults: isAdminOperation ? {
+            key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
+          } : {
             '@database': StringUtil.isEmpty(this.database, true) ? undefined : this.database,
             '@schema': StringUtil.isEmpty(this.schema, true) ? undefined : this.schema
           }
@@ -5829,7 +5833,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onClickTest: function (callback) {
         this.isRandomTest = false
-        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, this.isCrossEnabled, callback)
+        this.test(false, App.isCrossEnabled ? -1 : App.currentAccountIndex, App.isCrossEnabled, callback)
       },
       /**回归测试
        * 原理：
@@ -5999,8 +6003,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var bdt = tr.duration || 0
         it.durationBeforeShowStr = bdt <= 0 ? '' : (bdt < 1000 ? bdt + 'ms' : (bdt < 1000*60 ? (bdt/1000).toFixed(1) + 's' : (bdt <= 1000*60*60 ? (bdt/1000/60).toFixed(1) + 'm' : '>1h')))
         try {
-          var durationInfo = response['time:start|duration|end|parse|sql']
+          var durationInfo = response == null ? null : response['time:start|duration|end|parse|sql']
           it.durationInfo = durationInfo
+          if (durationInfo == null) {
+            throw new Error("response['time:start|duration|end|parse|sql'] is null!");
+          }
+
           var di = durationInfo.substring(durationInfo.indexOf('\|') + 1)
           it.duration = di.substring(0, di.indexOf('\|') || di.length) || 0
           var dt = + it.duration
@@ -6014,7 +6022,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               : (dt > max ? '有点慢：比以往 [' + min + 'ms, ' + max + 'ms] 最慢还更慢' : '正常：在以往 [' + min + 'ms, ' + max + 'ms] 最快和最慢之间')))
         }
         catch (e) {
-          log(e)
+          // log(e)
           it.durationShowStr = it.durationShowStr || it.duration
           it.durationHint = it.durationHint || '最外层缺少字段 "time:start|duration|end|parse|sql"，无法对比耗时'
         }
@@ -6742,6 +6750,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       autoTest: function(callback, delayTime, isTest, rawReq, setting) {
         this.autoTestCallback = callback
+        // this.currentAccountIndex = -1
 
         if (delayTime == null) {
           delayTime = 0
@@ -6772,9 +6781,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             isRandomSubListShow: false,
             isMLEnabled: true,
             isCrossEnabled: true,
-            testCaseCount: 100,
+            // testCaseCount: 100,
             testCasePage: 0,
-            randomCount: 100,
+            // randomCount: 100,
             randomPage: 0,
           }
         }
@@ -6788,9 +6797,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.isRandomSubListShow = setting.isRandomSubListShow
         this.isMLEnabled = setting.isMLEnabled
         this.isCrossEnabled = setting.isCrossEnabled
-        this.testCaseCount = setting.testCaseCount
+        // this.testCaseCount = setting.testCaseCount
         this.testCasePage = setting.testCasePage
-        this.randomCount = setting.randomCount
+        // this.randomCount = setting.randomCount
         this.randomPage = setting.randomPage
         this.server = this.getBaseUrl()
 

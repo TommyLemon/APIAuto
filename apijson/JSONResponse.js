@@ -22,6 +22,7 @@ if (typeof window == 'undefined') {
     eval(`
       var StringUtil = require("./StringUtil");
       var JSONObject = require("./JSONObject");
+      var CodeUtil = require("./CodeUtil");
     `)
   } catch (e) {
     console.log(e)

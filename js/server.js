@@ -1,9 +1,10 @@
 const Koa = require('koa');
-const Vue = require('vue');
+// const Vue = require('vue');
 const {getRequestFromURL, App} = require('./main');
 // const { createBundleRenderer } = require('vue-server-renderer')
 
-const JSONResponse = require('../apijson/JSONResponse');
+// const JSONResponse = require('../apijson/JSONResponse');
+const StringUtil = require('../apijson/StringUtil');
 
 var isLoading = false;
 var startTime = 0;
@@ -66,8 +67,8 @@ const app = new Koa();
 app.use(async ctx => {
   console.log(ctx)
 
-  if (ctx.path == '/start' || (isLoading != true && ctx.path == '/')) {
-    if (isLoading && ctx.path == '/start') {
+  if (ctx.path == '/test/start' || (isLoading != true && ctx.path == '/test')) {
+    if (isLoading && ctx.path == '/test/start') {
       ctx.body = 'Already started auto testing in node, please wait for minutes...';
       ctx.status = 200
       return
@@ -89,6 +90,13 @@ app.use(async ctx => {
 
     update();
 
+    App.key = ctx.query.key;
+    if (StringUtil.isNotEmpty(App.key, true)) {
+      App.testCaseCount = App.data.testCaseCount = 1000;
+      App.randomCount = App.data.randomCount = 200;
+      App.randomSubCount = App.data.randomSubCount = 500;
+    }
+
     App.autoTest(function (msg, err) {
       message = msg;
       error = err;
@@ -101,10 +109,10 @@ app.use(async ctx => {
     ctx.body = 'Auto testing in node...';
 
     // setTimeout(function () {  // 延迟无效
-    ctx.redirect('/status');
+    ctx.redirect('/test/status');
     // }, 1000)
   }
-  else if (ctx.path == '/status' || (isLoading && ctx.path == '/')) {
+  else if (ctx.path == '/test/status' || (isLoading && ctx.path == '/test')) {
     update();
     if (isLoading) {
       // ctx.response.header['refresh'] = "1";
