@@ -3029,6 +3029,28 @@
         this.showLogin(true, false)
       },
 
+      showCompare4TestCaseList: function (show) {
+        var testCases = show ? App.testCases : null
+        var allCount = testCases == null ? 0 : testCases.length
+        App.allCount = allCount
+        if (allCount > 0) {
+          var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
+          this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
+
+          var tests = this.tests[String(accountIndex)]
+          if (tests != null && JSONObject.isEmpty(tests) != true) {
+            for (var i = 0; i < allCount; i++) {
+              var item = testCases[i]
+              var d = item == null ? null : item.Document
+              if (d == null || d.id == null) {
+                continue
+              }
+
+              this.compareResponse(allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
+            }
+          }
+        }
+      },
 
       //显示远程的测试用例文档
       showTestCase: function (show, isLocal, callback) {
@@ -3050,21 +3072,8 @@
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
           App.allCount = allCount
-          if (IS_BROWSER && allCount > 0) {
-            var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
-            this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
-
-            var tests = this.tests[String(accountIndex)]
-            if (tests != null && JSONObject.isEmpty(tests) != true) {
-              for (var i = 0; i < allCount; i++) {
-                var item = testCases[i]
-                if (item == null) {
-                  continue
-                }
-                var d = item.Document || {}
-                this.compareResponse(allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
-              }
-            }
+          if (allCount > 0) {
+            this.showCompare4TestCaseList(show)
             return;
           }
 
@@ -3133,7 +3142,52 @@
             App.showDoc()
           }
 
+          App.showCompare4TestCaseList(show)
+
           //App.onChange(false)
+        }
+      },
+
+      showCompare4RandomList: function (show, isSub) {
+        var randoms = show ? (isSub ? this.randomSubs : this.randoms) : null
+        var randomCount = randoms == null ? 0 : randoms.length
+        if (randomCount > 0) {
+          var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
+          this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
+          var docId = ((this.currentRemoteItem || {}).Document || {}).id
+
+          var tests = (this.tests[String(accountIndex)] || {})[docId]
+          if (tests != null && JSONObject.isEmpty(tests) != true) {
+            this.resetCount(this.currentRandomItem)
+
+            for (var i = 0; i < randomCount; i++) {
+              var item = randoms[i]
+              var r = item == null ? null : item.Random
+              if (r == null || r.id == null) {
+                continue
+              }
+
+              this.resetCount(item)
+
+              var subCount = r.count || 0
+              if (subCount == 1) {
+                this.compareResponse(randomCount, randoms, i, item, tests[r.id], true, accountIndex, true)
+              }
+              else if (subCount > 1) {
+                var subRandoms = item['[]'] || []
+                var subSize = Math.min(subRandoms.length, subCount)
+                for (var j = 0; j < subSize; j++) {
+                  var subItem = subRandoms[j]
+                  var sr = subItem == null ? null : subItem.Random
+                  if (sr == null || sr.id == null) {
+                    continue
+                  }
+
+                  this.compareResponse(subSize, subRandoms, j, subItem, tests[sr.id > 0 ? sr.id : (sr.toId + '' + sr.id)], true, accountIndex, true)
+                }
+              }
+            }
+          }
         }
       },
 
@@ -3152,6 +3206,7 @@
         }
 
         this.randoms = this.randoms || []
+        this.showCompare4RandomList(show, isSub)
 
         if (show && this.isRandomShow && this.randoms.length <= 0 && item != null && item.id != null) {
           this.isRandomListShow = false
@@ -3238,6 +3293,8 @@
             vOutput.value = show ? '' : (output || '')
             App.showDoc()
           }
+
+          App.showCompare4RandomList(show, isSub)
 
           //App.onChange(false)
         }
@@ -3369,12 +3426,17 @@
             }
           }
 
-          this.showUrl(isAdminOperation, '/login')
+          if (IS_BROWSER) {
+            this.showUrl(isAdminOperation, '/login')
 
-          vInput.value = JSON.stringify(req, null, '    ')
+            vInput.value = JSON.stringify(req, null, '    ')
+          }
+
           this.type = REQUEST_TYPE_JSON
           this.showTestCase(false, this.isLocalShow)
-          this.onChange(false)
+          if (IS_BROWSER) {
+            this.onChange(false)
+          }
           this.send(isAdminOperation, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
@@ -4792,16 +4854,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               		'@combine': search == null ? null : 'table_name$,table_comment$',
             	}
             },
-		    "AllTable": isNotTSQL ? null : {
-		        "@order": "TABLE_NAME+",
-		        "@column": "TABLE_NAME:table_name",
-		        'TABLE_NAME{}@': 'sql'
-		    },
-		    "AllTableComment": isNotTSQL ? null : {
-		        "TABLE_TYPE": "TABLE",
-		        "TABLE_NAME@": "/AllTable/TABLE_NAME",
-		        "@column": "COMMENTS:table_comment"
-		    },
+    		    "AllTable": isNotTSQL ? null : {
+    		        "@order": "TABLE_NAME+",
+    		        "@column": "TABLE_NAME:table_name",
+    		        'TABLE_NAME{}@': 'sql'
+    		    },
+    		    "AllTableComment": isNotTSQL ? null : {
+    		        "TABLE_TYPE": "TABLE",
+    		        "TABLE_NAME@": "/AllTable/TABLE_NAME",
+    		        "@column": "COMMENTS:table_comment"
+    		    },
             '[]': {
               'count': 0,
               'Column': isTSQL ? null : {
