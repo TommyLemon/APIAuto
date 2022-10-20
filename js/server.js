@@ -6,6 +6,7 @@ const {getRequestFromURL, App} = require('./main');
 // const JSONResponse = require('../apijson/JSONResponse');
 const StringUtil = require('../apijson/StringUtil');
 
+var isCrossEnabled = true; // false;
 var isLoading = false;
 var startTime = 0;
 var endTime = 0;
@@ -43,13 +44,13 @@ function update() {
   var accountDoneCount = App.currentAccountIndex + 1;
   var accountAllCount = App.accounts.length;
 
-  accountProgress = accountDoneCount >= accountAllCount ? 1 : (accountDoneCount/accountAllCount).toFixed(2);
+  accountProgress = isCrossEnabled != true || accountAllCount <= 0 || accountDoneCount >= accountAllCount ? 1 : (accountDoneCount/accountAllCount).toFixed(2);
   testCaseProgress = App.doneCount >= App.allCount ? 1 : (App.doneCount/App.allCount).toFixed(2);
   deepProgress = App.deepDoneCount >= App.deepAllCount ? 1 : (App.deepDoneCount/App.deepAllCount).toFixed(2);
   randomProgress = App.randomDoneCount >= App.randomAllCount ? 1 : (App.randomDoneCount/App.randomAllCount).toFixed(2);
   // progress = accountProgress*testCaseProgress*deepProgress*randomProgress;
-  progress = accountProgress >= 1 ? 1 : (accountProgress + (accountAllCount <= 0 ? 1 : 1/accountAllCount)*(testCaseProgress
-    + (App.allCount <= 0 ? 1 : 1/App.allCount)*(deepProgress + (App.deepAllCount <= 0 ? 1 : 1/App.deepAllCount)*randomProgress)));
+  progress = accountProgress >= 1 ? 1 : (accountProgress + (accountAllCount <= 0 ? 1 : 1/accountAllCount*(testCaseProgress
+    + (App.allCount <= 0 ? 1 : 1/App.allCount*(deepProgress + (App.deepAllCount <= 0 ? 1 : 1/App.deepAllCount*randomProgress))))));
 
   if (progress >= 1) {
     isLoading = false;
@@ -74,6 +75,9 @@ app.use(async ctx => {
       return
     }
 
+    App.isCrossEnabled = isCrossEnabled;
+    App.currentAccountIndex = -1;
+    // isCrossEnabled = App.isCrossEnabled;
     isLoading = true;
     startTime = (new Date()).getTime();
     endTime = startTime;
@@ -102,8 +106,10 @@ app.use(async ctx => {
       error = err;
       update();
       console.log('autoTest callback(' + msg + ')' + timeMsg + progressMsg);
-    })
+      return Number.isNaN(progress) != true && progress >= 1;
+    });
     isLoading = true;
+    isCrossEnabled = App.isCrossEnabled;
 
     ctx.status = ctx.response.status = 200; // 302;
     ctx.body = 'Auto testing in node...';

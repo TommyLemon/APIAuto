@@ -1,6 +1,6 @@
 
 (function () {
-  const DEBUG = true
+  const DEBUG = false // true
   const IS_NODE = typeof window == 'undefined'
   const IS_BROWSER = typeof window == 'object'
 
@@ -793,7 +793,7 @@
       language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
-      count: 100,
+      count: 50,
       search: '',
       testCasePage: 0,
       testCaseCount: 50,
@@ -3050,11 +3050,11 @@
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
           App.allCount = allCount
-          if (allCount > 0) {
+          if (IS_BROWSER && allCount > 0) {
             var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
             this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
 
-            var tests = this.tests[String(accountIndex)] || {}
+            var tests = this.tests[String(accountIndex)]
             if (tests != null && JSONObject.isEmpty(tests) != true) {
               for (var i = 0; i < allCount; i++) {
                 var item = testCases[i]
@@ -3094,7 +3094,7 @@
                 'randomId': 0,
                 '@order': 'date-',
                 '@column': 'id,userId,documentId,testAccountId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
-                '@having': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
+                'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               }
             },
             '@role': IS_NODE ? null : 'LOGIN',
@@ -3330,6 +3330,7 @@
 
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
+          // asDBAccount: ! isAdminOperation,  // 直接 /execute 接口传 account, password
           phone: this.account,
           password: this.password,
           version: 1, // 全局默认版本号，非必须
@@ -3354,7 +3355,7 @@
           })
         }
         else {
-          if (callback == null) {
+          if (IS_BROWSER && callback == null) {
             var item
             for (var i in this.accounts) {
               item = this.accounts[i]
@@ -3701,7 +3702,6 @@
             var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true, isAPIJSONRouter));
             var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, null, isAPIJSONRouter));
 
-
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
             if (isSingle != true) {
               if (afterObj.tag == null) {
@@ -4014,7 +4014,7 @@
 
 
         if (IS_NODE) {
-          console.log('req = ' + JSON.stringify(req, null, '  '))
+          log('req = ' + JSON.stringify(req, null, '  '))
           // 低版本 node 报错 cannot find module 'node:url' ，高版本报错 TypeError: axiosCookieJarSupport is not a function
           //   const axiosCookieJarSupport = require('axios-cookiejar-support').default;
           //   const tough = require('tough-cookie');
@@ -4119,10 +4119,12 @@
         if (res == null) {
           res = {}
         }
-        log('onResponse url = ' + url + '\nerr = ' + err + '\nreq = \n'
-          + (res.request == null || res.request.data == null ? 'null' : JSON.stringify(res.request.data))
-          + '\n\nres = \n' + (res.data == null ? 'null' : JSON.stringify(res.data))
-        )
+        if (DEBUG) {
+          log('onResponse url = ' + url + '\nerr = ' + err + '\nreq = \n'
+            + (res.request == null || res.request.data == null ? 'null' : JSON.stringify(res.request.data))
+            + '\n\nres = \n' + (res.data == null ? 'null' : JSON.stringify(res.data))
+          )
+        }
 
         if (err != null) {
           if (IS_BROWSER) {
@@ -4697,7 +4699,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return false;
         }
         doc = d;
-        vOutput.value += (
+        vOutput.value = (this.isTestCaseShow ? '' : output) + (
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/Tencent/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">关于</h3>'
           + '<p align="center">APIAuto-机器学习 HTTP 接口工具'
@@ -4911,12 +4913,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // item.Table.table_name = table.table_name
               // item.Table.table_comment = table_comment
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n#### 说明: \n'
+              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n'
                 + App.toMD(table_comment);
 
 
               //Column[]
-              doc += '\n\n#### 字段: \n 名称  |  类型  |  最大长度  |  详细说明' +
+              doc += '\n\n 名称  |  类型  |  最大长度  |  详细说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
               columnList = item['[]'];
@@ -5356,6 +5358,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, null, isCross, callback)
+              return true
             })
           }
         }
@@ -5481,7 +5484,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 config: vRandom.value
               }
             },
-            this.type, this.getUrl(), this.getRequest(vInput.value, {}), this.getHeader(vHeader.value), callback
+            this.type, this.getUrl(), this.getRequest(vInput.value, {}), this.getHeader(vHeader.value), false, callback
           )
         }
         catch (e) {
@@ -5833,7 +5836,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onClickTest: function (callback) {
         this.isRandomTest = false
-        this.test(false, App.isCrossEnabled ? -1 : App.currentAccountIndex, App.isCrossEnabled, callback)
+        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, this.isCrossEnabled, callback)
       },
       /**回归测试
        * 原理：
@@ -6150,8 +6153,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // this.showTestCase(true)
 
         if (doneCount >= allCount) {  // 导致不继续测试  App.doneCount == allCount) {
-          if (callback != null) {
-            callback(isRandom, allCount)
+          if (callback != null && callback(isRandom, allCount)) {
             return
           }
 
@@ -6162,7 +6164,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (isRandom != true && deepAllCount > 0) { // 自动给非 红色 报错的接口跑参数注入
             App.deepDoneCount = 0;
             this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex, isCross)
-          } else if (isCross && doneCount == allCount) {
+          } else if (isCross && doneCount == allCount && accountIndex <= this.accounts.length) {
             this.test(false, accountIndex + 1, isCross)
           }
         }
@@ -6172,8 +6174,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         const accInd = accountIndex
         var callback = function (isRandom, allCount) {
           if (App.randomDoneCount < App.randomAllCount) {
-            return
+            return true
           }
+
           App.randomDoneCount = 0
           // App.randomAllCount = 0
 
@@ -6194,7 +6197,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (deepDoneCount < deepAllCount) {
               setTimeout(function () {
                 App.startRandomTest4Doc(list, indexes, position + 1, deepAllCount, accInd, isCross)
-              }, IS_NODE ? 1000 : 1000)
+              }, IS_NODE ? 200 : 1000)
             } else {
               App.testRandomProcess = ''
               if (isCross) {
@@ -6210,17 +6213,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
               }
             }
-          }, IS_NODE ? 1000 : 1000)
+          }, IS_NODE ? 200 : 1000)
+
+          return true
         }
 
         try {
           var index = indexes[position]
           var it = list[index] || {}
 
-          try {
-            document.getElementById('docItem' + index).scrollIntoView()
-          } catch (e) {
-            console.log(e)
+          if (IS_BROWSER) {
+            try {
+              document.getElementById('docItem' + index).scrollIntoView()
+            } catch (e) {
+              console.log(e)
+            }
           }
 
           this.restoreRemote(index, it, false)
@@ -6673,7 +6680,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'host': this.getBaseUrl(),
             '@order': 'date-',
             '@column': 'id,userId,testAccountId,documentId,randomId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
-            '@having': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  // '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
+            'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  // '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
@@ -6713,7 +6720,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
       },
 
-      handleTestArg(hasTestArg, rawReq, delayTime, callback) {
+      handleTestArg: function(hasTestArg, rawReq, delayTime, callback) {
         if (hasTestArg && IS_BROWSER) {
           vUrlComment.value = ""
           vComment.value = ""
@@ -6750,7 +6757,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       autoTest: function(callback, delayTime, isTest, rawReq, setting) {
         this.autoTestCallback = callback
-        // this.currentAccountIndex = -1
 
         if (delayTime == null) {
           delayTime = 0
@@ -6801,7 +6807,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.testCasePage = setting.testCasePage
         // this.randomCount = setting.randomCount
         this.randomPage = setting.randomPage
-        this.server = this.getBaseUrl()
+        this.server = 'http://localhost:8080' // this.getBaseUrl()
+
+        // if (this.isCrossEnabled) {
+        //   this.currentAccountIndex = -1
+        // }
 
         this.login(true, function (url, res, err) {
           if (setting.isRandomShow && setting.isRandomListShow) {
@@ -6831,6 +6841,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             App.showTestCase(true, setting.isLocalShow, function (url, res, err) {
               App.onTestCaseListResponse(IS_BROWSER, url, res, err)
+              App.isTestCaseShow = true
               App.handleTestArg(isTest, rawReq, delayTime, callback)
             })
           }
@@ -7143,12 +7154,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
   }
   else {
     var data = App.data
-    if (data instanceof Object && data instanceof Array == false) {
+    if (data instanceof Object && (data instanceof Array == false)) {
       App = Object.assign(App, data)
     }
 
     var methods = App.methods
-    if (methods instanceof Object && methods instanceof Array == false) {
+    if (methods instanceof Object && (methods instanceof Array == false)) {
       App = Object.assign(App, methods)
     }
 

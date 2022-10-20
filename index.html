@@ -84,13 +84,16 @@
         </div>
 
         <div class="top-right">
-
-            <a v-show="User.id == null || User.id <= 0" href="https://git.code.tencent.com/Tencent_Open_Source/APIJSON" target="_blank" >
+            <a style="padding: 6px" v-show="User.id == null || User.id <= 0" href="https://git.code.tencent.com/Tencent_Open_Source/APIJSON" target="_blank" >
                 <img class="ui inline black image" height="24" src="http://apijson.cn/images/tencent_open_logo.png">
             </a>
 
-            <a v-show="User.id == null || User.id <= 0" href="https://gitee.com/Tencent/APIJSON" target="_blank">
+            <a style="padding: 6px" v-show="User.id == null || User.id <= 0" href="https://gitee.com/Tencent/APIJSON" target="_blank">
                 <img class="ui inline black image" height="24" src="https://gitee.com/logo-black.svg?20171024" width="60">
+            </a>
+
+            <a style="padding-left: 6px" v-show="User.id == null || User.id <= 0" href="https://gitee.com/Tencent/APIJSON" target="_blank">
+              <img style="margin-bottom: -1px" height="18" src="https://gitee.com/Tencent/APIJSON/badge/star.svg?theme=gvp">
             </a>
 
             <a v-show="User.id != null && User.id > 0" href="javascript:void(0)" @click="logout(true)">

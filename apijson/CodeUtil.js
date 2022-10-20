@@ -5990,7 +5990,7 @@ var CodeUtil = {
 
         if (JSONObject.isTableKey(objName)) {
           var c = CodeUtil.getCommentFromDoc(tableList, objName, null, method, database, language, isReq != true || isRestful, isReq, pathKeys, isRestful, value, null, null, null, isWarning);
-          if (c.startsWith(' ! ')) {
+          if (c != null && c.startsWith(' ! ')) {
             return c;
           }
           return StringUtil.isEmpty(c) ? ' ! 表 ' + objName + ' 不存在！' : (isWarning ? '' : CodeUtil.getComment(
@@ -6420,6 +6420,8 @@ var CodeUtil = {
       return isWarning ? ' ' : '...';
     }
 
+    var isTSQL = ['ORACLE', 'DAMENG'].indexOf(database) >= 0;
+
     var item;
 
     var table;
@@ -6429,7 +6431,7 @@ var CodeUtil = {
       item = tableList[i];
 
       //Table
-      table = item == null ? null : (database != 'SQLSERVER' ? item.Table : item.SysTable);
+      table = item == null ? null : (isTSQL ? item.AllTable : (database != 'SQLSERVER' ? item.Table : item.SysTable));
       if (table == null || tableName != CodeUtil.getModelName(table.table_name)) {
         continue;
       }
@@ -6437,12 +6439,12 @@ var CodeUtil = {
 
       if (StringUtil.isEmpty(columnName)) {
         return /*没必要，常识，太占地方，而且自动生成代码就有  CodeUtil.getType4Object(language) + ', ' + */ (
-          database == 'POSTGRESQL'
+          isTSQL ? (item.AllTableComment || {}).table_comment : (database == 'POSTGRESQL'
             ? (item.PgClass || {}).table_comment
             : (database == 'SQLSERVER'
               ? (item.ExtendedProperty || {}).table_comment
               : table.table_comment
-          )
+          ))
         );
       }
 
@@ -6666,7 +6668,7 @@ var CodeUtil = {
       var name;
       var columnNames = []
       for (var j = 0; j < columnList.length; j++) {
-        column = (columnList[j] || {}).Column;
+        column = (columnList[j] || {})[isTSQL ? 'AllColumn' : 'Column'];
         name = column == null ? null : column.column_name;
         if (name == null || key != name) {
           if (name != null) {
@@ -6679,12 +6681,12 @@ var CodeUtil = {
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
 
-        var o = database == 'POSTGRESQL'
+        var o = isTSQL ? (columnList[j] || {}).AllColumnComment : (database == 'POSTGRESQL'
           ? (columnList[j] || {}).PgAttribute
           : (database == 'SQLSERVER'
               ? (columnList[j] || {}).ExtendedProperty
               : column
-          );
+          ));
 
         column.column_type = CodeUtil.getColumnType(column, database);
         var t = CodeUtil.getType4Language(language, column.column_type, true);
