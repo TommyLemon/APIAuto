@@ -3208,7 +3208,9 @@
         }
 
         this.randoms = this.randoms || []
-        this.showCompare4RandomList(show, isSub)
+        if (! this.isRandomSummaryShow()) {
+          this.showCompare4RandomList(show, isSub)
+        }
 
         if (show && this.isRandomShow && this.randoms.length <= 0 && item != null && item.id != null) {
           this.isRandomListShow = false
@@ -3296,7 +3298,9 @@
             App.showDoc()
           }
 
-          App.showCompare4RandomList(show, isSub)
+          // if (! this.isRandomSummaryShow()) {
+            App.showCompare4RandomList(show, isSub)
+          // }
 
           //App.onChange(false)
         }
@@ -4523,7 +4527,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 + msg
               )
 
-              App.isRandomEditable = !isOk
+              App.isRandomEditable = ! isOk
             })
 
             return
@@ -5379,7 +5383,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
-          this.resetCount(testSubList ? this.currentRandomItem : this.currentRemoteItem, testSubList)
+          var summaryItem = this.getCurrentRandomSummaryItem()
+          this.resetCount(summaryItem, testSubList)
+          summaryItem.totalCount = allCount
 
           var json = this.getRequest(vInput.value, {})
           var url = this.getUrl()
@@ -5570,15 +5576,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         try {
           var count = this.testRandomCount || 0;
           this.isRandomSubListShow = count > 1;
-          this.testRandomSingle(show, false, this.isRandomSubListShow, {
-              Random: {
-                toId: 0, // ((this.currentRandomItem || {}).Random || {}).id || 0,
-                userId: (this.User || {}).id,
-                count: count,
-                name: this.randomTestTitle,
-                config: vRandom.value
-              }
+          this.currentRandomItem = {
+            Random: {
+              toId: 0, // ((this.currentRandomItem || {}).Random || {}).id || 0,
+              userId: (this.User || {}).id,
+              count: count,
+              name: this.randomTestTitle,
+              config: vRandom.value
             },
+            totalCount: count
+          }
+
+          this.testRandomSingle(show, false, this.isRandomSubListShow, this.currentRandomItem,
             this.type, this.getUrl(), this.getRequest(vInput.value, {}), this.getHeader(vHeader.value), false, callback
           )
         }
@@ -6358,15 +6367,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       //更新父级总览数据
       updateToRandomSummary: function (item, change) {
-        if (item == null || change == null) {
+        var random = item == null || change == null ? null : item.Random
+        if (random == null) {
           return
         }
 
-        var random = item.Random
-        if (random != null && (random.count == 1 || (random.id != null && random.id < 0))) {
+        if (random.count == 1 || (random.id != null && random.id < 0)) {
           var key = item.compareColor + 'Count'
 
-          var cri = this.currentRemoteItem || {} // this.getCurrentRandomSummaryItem()
+          var curRandom = this.isRandomListShow || this.currentRandomItem == null ? null : this.currentRandomItem.Random
+          var isTemp = curRandom != null && (curRandom.id == null || curRandom.id < 0)
+          var cri = (isTemp ? this.currentRandomItem : this.currentRemoteItem) || {}  // this.getCurrentRandomSummaryItem()
 
           var criCmpCount = cri[key]
           if (criCmpCount == null) {
@@ -6385,7 +6396,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // }
           cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
 
-          this.currentRemoteItem = cri
+          if (isTemp) {
+            this.currentRandomItem = cri
+          } else {
+            this.currentRemoteItem = cri
+          }
 
           var toId = random.toId
           if (toId != null && toId > 0) {
