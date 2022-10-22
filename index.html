@@ -298,10 +298,10 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
                             <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
                             <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
                             <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '参数注入 Random Test' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
-                                <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 10px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
-                                    查看父项列表
+                                <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 6px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
+                                    父项列表
                                 </a>
-                                <a style="padding-right: 10px;padding-top: 2px">
+                                <a style="padding-right: 4px">
                                   {{ testRandomProcess }}
                                 </a>
                                 <div v-show="isRandomSummaryShow()" style="background: lightgray; padding: 1px; margin-right: 10px; top: 10px;right: 36px;display: inline-block" >
@@ -309,17 +309,17 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
                                   <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (getCurrentRandomSummaryItem().totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ getCurrentRandomSummaryItem().whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ getCurrentRandomSummaryItem().greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ getCurrentRandomSummaryItem().blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ getCurrentRandomSummaryItem().orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ getCurrentRandomSummaryItem().redCount || 0 }}</a>
                                 </div>
                             </a>
-                            <a class="hint--top @cli-tool" data-hint="添加" style="font-size:xx-large; margin-bottom: 2px; color: black;"
+                            <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="onClickTestRandom()">
+                              <img class="icon" src="img/refresh.png"/>
+                            </a>
+                            <a class="hint--top @cli-tool" data-hint="添加配置" style="font-size:xx-large; margin-bottom: 2px; color: black;"
                                href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
                             <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/分享"  @click="showExport(true, true)">
                                 <svg class="icon">
                                     <use xlink:href="svg/icon.svg#share"></use>
                                 </svg>
                             </a>
-                            <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="onClickTestRandom()">
-                                <img class="icon" src="img/refresh.png"/>
-                            </a>
-                            <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 5)">
+                            <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right; padding: 8px; margin-top: 2px; height: 100%"  href="javascript:void(0)" @click="showConfig(false, 5)">
                                 <svg class="icon close-icon"  >
                                     <use xlink:href="svg/icon.svg#close"></use>
                                 </svg>
