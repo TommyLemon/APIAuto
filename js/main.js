@@ -3158,7 +3158,9 @@
 
           var tests = (this.tests[String(accountIndex)] || {})[docId]
           if (tests != null && JSONObject.isEmpty(tests) != true) {
-            this.resetCount(this.currentRandomItem)
+            if (! isSub) {
+              this.resetCount(this.currentRemoteItem, isSub)
+            }
 
             for (var i = 0; i < randomCount; i++) {
               var item = randoms[i]
@@ -3167,7 +3169,7 @@
                 continue
               }
 
-              this.resetCount(item)
+              this.resetCount(item, isSub)
 
               var subCount = r.count || 0
               if (subCount == 1) {
@@ -5375,11 +5377,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             return
           }
-          this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
 
-          if (testSubList) {
-            this.resetCount(this.currentRandomItem)
-          }
+          this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
+          this.resetCount(testSubList ? this.currentRandomItem : this.currentRemoteItem, testSubList)
 
           var json = this.getRequest(vInput.value, {})
           var url = this.getUrl()
@@ -5503,7 +5503,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (testSubList && respCount >= count) { // && which >= count - 1) {
                 App.randomSubs = subs
                 if (App.isRandomListShow == true) {
-                  App.resetCount(item)
+                  App.resetCount(item, testSubList)
                   item.subs = subs
                 }
                 App.testRandom(false, false, true, count, isCross, callback)
@@ -5516,17 +5516,50 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
     },
 
-      resetCount: function (randomItem) {
-        if (randomItem == null) {
+      resetCount: function (item, isSub) {
+        if (item == null) {
           this.log('resetCount  randomItem == null >> return')
           return
         }
-        randomItem.totalCount = 0
-        randomItem.whiteCount = 0
-        randomItem.greenCount = 0
-        randomItem.blueCount = 0
-        randomItem.orangeCount = 0
-        randomItem.redCount = 0
+
+        var cri = this.currentRemoteItem // isSub ? this.currentRemoteItem : null
+        // if (cri != null && item != null && item.toId != null && item.toId > 0) {
+        if (cri != null && (cri != item || cri.id != item.id)) {
+          cri.totalCount -= item.totalCount
+          cri.whiteCount -= item.whiteCount
+          cri.greenCount -= item.greenCount
+          cri.blueCount -= item.blueCount
+          cri.orangeCount -= item.orangeCount
+          cri.redCount -= item.redCount
+
+          // if (cri.totalCount < 0) {
+          //   cri.totalCount = 0
+          // }
+          if (cri.whiteCount < 0) {
+            cri.whiteCount = 0
+          }
+          if (cri.greenCount < 0) {
+            cri.greenCount = 0
+          }
+          if (cri.blueCount < 0) {
+            cri.blueCount = 0
+          }
+          if (cri.orangeCount < 0) {
+            cri.orangeCount = 0
+          }
+          if (cri.redCount < 0) {
+            cri.redCount = 0
+          }
+
+          cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
+        }
+
+        item.totalCount = 0
+        item.whiteCount = 0
+        item.greenCount = 0
+        item.blueCount = 0
+        item.orangeCount = 0
+        item.redCount = 0
       },
 
       /**参数注入，动态替换键值对
@@ -6314,44 +6347,78 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
+      getCurrentRandomSummaryItem: function () {
+        return (this.isRandomSubListShow ? this.currentRandomItem : this.currentRemoteItem) || {}
+      },
+
+      isRandomSummaryShow: function () {
+        var ci = this.isRandomListShow || this.isRandomSubListShow ? this.getCurrentRandomSummaryItem() : null
+        return ci != null && ci.totalCount != null && ci.totalCount > 0
+      },
+
       //更新父级总览数据
       updateToRandomSummary: function (item, change) {
-        var random = item == null || change == null ? null : item.Random
-        var toId = random == null ? null : random.toId
-        if (toId != null && toId > 0) {
+        if (item == null || change == null) {
+          return
+        }
 
-          for (var i in this.randoms) {
+        var random = item.Random
+        if (random != null && (random.count == 1 || (random.id != null && random.id < 0))) {
+          var key = item.compareColor + 'Count'
 
-            var toIt = this.randoms[i]
-            if (toIt != null && toIt.Random != null && toIt.Random.id == toId) {
+          var cri = this.currentRemoteItem || {} // this.getCurrentRandomSummaryItem()
 
-              var toRandom = toIt.Random
-              var id = toRandom == null ? 0 : toRandom.id
-              var count = id == null || id <= 0 ? 0 : toRandom.count
-              if (count != null && count > 1) {
-                var key = item.compareColor + 'Count'
-                if (toIt[key] == null) {
-                  toIt[key] = 0
-                }
-                toIt[key] += change
-                if (toIt[key] < 0) {
-                  toIt[key] = 0
-                }
+          var criCmpCount = cri[key]
+          if (criCmpCount == null) {
+            criCmpCount = 0
+          }
+          criCmpCount += change
+          cri[key] = criCmpCount < 0 ? 0 : criCmpCount
 
-                if (toIt.totalCount == null) {
-                  toIt.totalCount = 0
+          // 对于 Random 进入子项再退出后有时显示居然不准
+          // if (cri.totalCount == null) {
+          //   cri.totalCount = 0
+          // }
+          // cri.totalCount += change
+          // if (cri.totalCount < 0) {
+          //   cri.totalCount = 0
+          // }
+          cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
+
+          this.currentRemoteItem = cri
+
+          var toId = random.toId
+          if (toId != null && toId > 0) {
+            for (var i in this.randoms) {
+              var toIt = this.randoms[i]
+              if (toIt != null && toIt.Random != null && toIt.Random.id == toId) {
+
+                var toRandom = toIt.Random
+                var id = toRandom == null ? 0 : toRandom.id
+                var count = id == null || id <= 0 ? 0 : toRandom.count
+                if (count != null && count > 1) {
+                  var cmpCount = toIt[key]
+                  if (cmpCount == null) {
+                    cmpCount = 0
+                  }
+                  cmpCount += change
+                  toIt[key] = cmpCount < 0 ? 0 : cmpCount
+
+                  // if (toIt.totalCount == null) {
+                  //   toIt.totalCount = 0
+                  // }
+                  // toIt.totalCount += change
+                  // if (toIt.totalCount < 0) {
+                  //   toIt.totalCount = 0
+                  // }
+                  toIt.totalCount = toIt.whiteCount + toIt.greenCount + toIt.blueCount + toIt.orangeCount + toIt.redCount
                 }
-                toIt.totalCount += change
-                if (toIt.totalCount < 0) {
-                  toIt.totalCount = 0
-                }
+                Vue.set(this.randoms, i, toIt)
+
+                break
               }
 
-              Vue.set(this.randoms, i, toIt)
-
-              break;
             }
-
           }
         }
       },
