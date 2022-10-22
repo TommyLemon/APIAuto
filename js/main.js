@@ -5940,6 +5940,31 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onClickTest: function (callback) {
         this.isRandomTest = false
+
+        // 自动往右移动，避免断言结果遮挡太多接口名称、URL
+        var split_obj = IS_BROWSER ? $('.splitx') : null
+        var split_obj_left = split_obj == null ? 0 : parseInt(split_obj.css('left'))
+        var width = split_obj_left <= 0 ? 0 : (window.innerWidth || 1280)
+        if (width > 0 && Math.abs(split_obj_left - 0.4*width) <= 5) {
+          // 构造事件比较麻烦，即便用 JQuery 也是
+          // split_obj[0].dispatchEvent(new TouchEvent('', new class implements TouchEventInit{
+          //   clientX: 0.6*width
+          // }()))
+
+          var left_ele = $('.side-left')
+          var right_ele = $('.side-right')
+
+          // var left_width = left_ele.width()
+          // var right_width = right_ele.width()
+          //
+          // var right_left = parseInt(right_ele.css('left'))
+
+          split_obj.css('left', 0.55*width)
+          left_ele.width(0.55*width);
+          right_ele.width(0.45*width).css('left', 0.55*width);
+          // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
+        }
+
         this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, this.isCrossEnabled, callback)
       },
       /**回归测试
