@@ -5558,7 +5558,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               if (testSubList && respCount >= count) { // && which >= count - 1) {
-                App.randomSubs = subs
+                if (App.currentRandomItem == null) {
+                  App.currentRandomItem = {}
+                }
+                App.randomSubs = App.currentRandomItem.subs = subs
                 App.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
                 if (App.isRandomListShow == true) {
                   App.resetCount(item, testSubList)
