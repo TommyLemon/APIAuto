@@ -3148,6 +3148,48 @@
         }
       },
 
+      onClickSummary: function (color, isRandom) {
+        var isSub = this.isRandomSubListShow
+        var arr = isRandom ? (isSub ? this.currentRandomItem.subs : this.currentRemoteItem.randoms) : this.testCases;
+        var list = []
+        if (color == null || color == 'total') {
+          list = arr
+        } else if (arr != null) {
+          for (var i = 0; i < arr.length; i++) {
+            var obj = arr[i]
+            if (obj == null) {
+              continue
+            }
+
+            var count = isRandom && obj != null && obj.Random != null ? obj.Random.count : null
+            if (count != null && count > 1) {
+              var sum = obj[color + 'Count']
+              if (sum != null && sum > 0) {
+                list.push(obj)
+              }
+              continue
+            }
+
+            if (obj.compareColor == color) {
+              list.push(obj)
+            }
+          }
+        }
+
+        if (isRandom) {
+          if (isSub) {
+            this.currentRandomItem.summaryType = color
+            this.randomSubs = list
+          } else {
+            this.currentRemoteItem.summaryType = color
+            this.randoms = list
+          }
+        } else {
+          this.summaryType = color
+          this.remotes = list
+        }
+      },
+
       showCompare4RandomList: function (show, isSub) {
         var randoms = show ? (isSub ? this.randomSubs : this.randoms) : null
         var randomCount = randoms == null ? 0 : randoms.length
@@ -3290,7 +3332,10 @@
             App.randomSubs = App.currentRandomItem.subs = App.currentRandomItem['[]'] = rpObj['[]']
           }
           else {
-            App.randoms = rpObj['[]']
+            if (App.currentRemoteItem == null) {
+              App.currentRemoteItem = {}
+            }
+            App.randoms = App.currentRemoteItem.randoms = rpObj['[]']
           }
 
           if (IS_BROWSER) {
