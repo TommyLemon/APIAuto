@@ -674,6 +674,7 @@
       randomSubs: [],
       account: '13000082001',
       password: '123456',
+      logoutSummary: {},
       accounts: [
         {
           'isLoggedIn': false,
@@ -694,6 +695,7 @@
           'password': '123456'
         }
       ],
+      allSummary: {},
       currentAccountIndex: 0,
       currentDocIndex: -1,
       currentRandomIndex: -1,
@@ -2930,6 +2932,15 @@
 
       onClickAccount: function (index, item, callback) {
         this.isTestCaseShow = false
+        var accounts = this.accounts
+        var num = accounts == null ? 0 : accounts.length
+        if (index < 0 || index >= num) {
+          this.currentAccountIndex = index
+          if (callback != null) {
+            callback(false, index)
+          }
+          return
+        }
 
         if (this.currentAccountIndex == index) {
           if (item == null) {
@@ -3067,14 +3078,16 @@
           return
         }
         this.testCases = this.remotes || []
-        // this.getCurrentRandomSummaryItem().summaryType = 'total' // this.onClickSummary('total', true)
+        this.getCurrentSummary().summaryType = 'total' // this.onClickSummary('total', true)
 
         if (show) {
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
           App.allCount = allCount
           if (allCount > 0) {
-            this.showCompare4TestCaseList(show)
+            if (! (this.isAllSummaryShow() || this.isCurrentSummaryShow())) {
+              this.showCompare4TestCaseList(show)
+            }
             return;
           }
 
@@ -3137,7 +3150,7 @@
           this.isTestCaseShow = true
           this.isLocalShow = false
           this.testCases = App.remotes = rpObj['[]']
-          this.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
+          this.getCurrentRandomSummary().summaryType = 'total' // App.onClickSummary('total', true)
 
           if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
@@ -3150,9 +3163,21 @@
         }
       },
 
-      onClickSummary: function (color, isRandom) {
+      onClickLogoutSummary: function (color) {
+        this.onClickSummary(color, false, -1)
+      },
+      onClickAllSummary: function (color) {
+        this.onClickSummary(color, false, this.accounts.length) // this.currentAccountIndex)
+      },
+      onClickCurrentSummary: function (color) {
+        this.onClickSummary(color, false, this.currentAccountIndex)
+      },
+      onClickSummary: function (color, isRandom, accountIndex) {
+        this.currentAccountIndex = accountIndex
+        // this.isTestCaseShow = false
+
         var isSub = this.isRandomSubListShow
-        var arr = isRandom ? (isSub ? this.currentRandomItem.subs : this.currentRemoteItem.randoms) : this.testCases;
+        var arr = isRandom ? (isSub ? this.currentRandomItem.subs : this.currentRemoteItem.randoms) : this.remotes;
         var list = []
         if (color == null || color == 'total') {
           list = arr
@@ -3187,13 +3212,16 @@
             this.randoms = list
           }
         } else {
-          this.summaryType = color
-          this.remotes = list
+          var summary = this.getSummary(accountIndex) || {}
+          summary.summaryType = color
+          this.testCases = list
+          // this.isTestCaseShow = true
+          // this.showTestCase(true, false)
         }
       },
 
       showCompare4RandomList: function (show, isSub) {
-        this.getCurrentRandomSummaryItem().summaryType = 'total'
+        this.getCurrentRandomSummary().summaryType = 'total'
 
         var randoms = show ? (isSub ? this.randomSubs : this.randoms) : null
         var randomCount = randoms == null ? 0 : randoms.length
@@ -3205,7 +3233,7 @@
           var tests = (this.tests[String(accountIndex)] || {})[docId]
           if (tests != null && JSONObject.isEmpty(tests) != true) {
             if (! isSub) {
-              this.resetCount(this.currentRemoteItem, isSub)
+              this.resetCount(this.currentRemoteItem, true, accountIndex)
             }
 
             for (var i = 0; i < randomCount; i++) {
@@ -3215,7 +3243,7 @@
                 continue
               }
 
-              this.resetCount(item, isSub)
+              this.resetCount(item, true, accountIndex)
 
               var subCount = r.count || 0
               if (subCount == 1) {
@@ -3254,7 +3282,7 @@
         }
 
         this.randoms = (this.currentRemoteItem || {}).randoms || []
-        this.getCurrentRandomSummaryItem().summaryType = 'total' // this.onClickSummary('total', true)
+        this.getCurrentRandomSummary().summaryType = 'total' // this.onClickSummary('total', true)
         if (! this.isRandomSummaryShow()) {
           this.showCompare4RandomList(show, isSub)
         }
@@ -3342,7 +3370,7 @@
             }
             App.randoms = App.currentRemoteItem.randoms = rpObj['[]']
           }
-          this.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
+          this.getCurrentRandomSummary().summaryType = 'total' // App.onClickSummary('total', true)
 
           if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
@@ -5434,8 +5462,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
-          var summaryItem = this.getCurrentRandomSummaryItem()
-          this.resetCount(summaryItem, testSubList)
+          var summaryItem = this.getCurrentRandomSummary()
+          this.resetCount(summaryItem, true, App.currentAccountIndex)
           summaryItem.totalCount = allCount
 
           var json = this.getRequest(vInput.value, {})
@@ -5562,9 +5590,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   App.currentRandomItem = {}
                 }
                 App.randomSubs = App.currentRandomItem.subs = subs
-                App.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
+                App.getCurrentRandomSummary().summaryType = 'total' // App.onClickSummary('total', true)
                 if (App.isRandomListShow == true) {
-                  App.resetCount(item, testSubList)
+                  App.resetCount(item, true, App.currentAccountIndex)
                   item.subs = subs
                 }
                 App.testRandom(false, false, true, count, isCross, callback)
@@ -5577,42 +5605,63 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
     },
 
-      resetCount: function (item, isSub) {
-        if (item == null) {
-          this.log('resetCount  randomItem == null >> return')
-          return
+      resetParentCount: function (item, cri) {
+        cri.totalCount -= item.totalCount
+        cri.whiteCount -= item.whiteCount
+        cri.greenCount -= item.greenCount
+        cri.blueCount -= item.blueCount
+        cri.orangeCount -= item.orangeCount
+        cri.redCount -= item.redCount
+
+        // if (cri.totalCount < 0) {
+        //   cri.totalCount = 0
+        // }
+        if (cri.whiteCount < 0) {
+          cri.whiteCount = 0
+        }
+        if (cri.greenCount < 0) {
+          cri.greenCount = 0
+        }
+        if (cri.blueCount < 0) {
+          cri.blueCount = 0
+        }
+        if (cri.orangeCount < 0) {
+          cri.orangeCount = 0
+        }
+        if (cri.redCount < 0) {
+          cri.redCount = 0
         }
 
-        var cri = this.currentRemoteItem // isSub ? this.currentRemoteItem : null
-        // if (cri != null && item != null && item.toId != null && item.toId > 0) {
-        if (cri != null && (cri != item || cri.id != item.id)) {
-          cri.totalCount -= item.totalCount
-          cri.whiteCount -= item.whiteCount
-          cri.greenCount -= item.greenCount
-          cri.blueCount -= item.blueCount
-          cri.orangeCount -= item.orangeCount
-          cri.redCount -= item.redCount
+        cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
+      },
+      resetCount: function (item, isRandom, accountIndex) {
+        if (item == null) {
+          this.log('resetCount  randomItem == null >> return')
+          return item
+        }
 
-          // if (cri.totalCount < 0) {
-          //   cri.totalCount = 0
-          // }
-          if (cri.whiteCount < 0) {
-            cri.whiteCount = 0
+        if (isRandom) {
+          var cri = this.currentRemoteItem // isSub ? this.currentRemoteItem : null
+          // if (cri != null && item != null && item.toId != null && item.toId > 0) {
+          if (cri != null && (cri != item || cri.id != item.id)) {
+            this.resetParentCount(item, cri)
           }
-          if (cri.greenCount < 0) {
-            cri.greenCount = 0
-          }
-          if (cri.blueCount < 0) {
-            cri.blueCount = 0
-          }
-          if (cri.orangeCount < 0) {
-            cri.orangeCount = 0
-          }
-          if (cri.redCount < 0) {
-            cri.redCount = 0
-          }
+        }
 
-          cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
+        var accounts = this.accounts
+        var num = accounts == null ? 0 : accounts.length
+        if (isRandom && accountIndex != this.currentAccountIndex && accountIndex != num) {
+          var cs = this.getSummary(accountIndex)
+          if (cs != null && (cs != item || cs.id != item.id)) {
+            this.resetParentCount(item, cs)
+          }
+        }
+
+        if (isRandom || accountIndex != num) {
+          var als = this.getAllSummary()
+          if (als != null && (als != item || als.id != item.id)) {
+            this.resetParentCount(item, als)
+          }
         }
 
         item.totalCount = 0
@@ -5621,6 +5670,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         item.blueCount = 0
         item.orangeCount = 0
         item.redCount = 0
+        return item
       },
 
       /**参数注入，动态替换键值对
@@ -6014,13 +6064,38 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           //
           // var right_left = parseInt(right_ele.css('left'))
 
-          split_obj.css('left', 0.55*width)
-          left_ele.width(0.55*width);
-          right_ele.width(0.45*width).css('left', 0.55*width);
+          split_obj.css('left', 0.52*width)
+          left_ele.width(0.52*width);
+          right_ele.width(0.48*width).css('left', 0.52*width);
           // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
         }
 
-        this.test(false, this.isCrossEnabled ? -1 : this.currentAccountIndex, this.isCrossEnabled, callback)
+        var isCross = this.isCrossEnabled
+        var accountIndex = isCross ? -1 : this.currentAccountIndex
+
+        var accounts = this.accounts
+        var num = accounts == null ? 0 : accounts.length
+
+        var remotes = this.remotes
+        var total = remotes == null ? 0 : remotes.length
+
+        var als = this.getAllSummary()
+        als = this.resetCount(als, false, num)
+        als.totalCount = isCross ? (num + 1)*total : total
+
+        if (isCross) {
+          for (var i = -1; i < num; i++) {
+            var cs = this.getSummary(i)
+            cs = this.resetCount(cs, false, i)
+            cs.totalCount = total
+          }
+        } else {
+          var cs = this.getSummary(accountIndex)
+          cs = this.resetCount(cs, false, accountIndex)
+          cs.totalCount = total
+        }
+
+        this.test(false, accountIndex, isCross, callback)
       },
       /**回归测试
        * 原理：
@@ -6096,6 +6171,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (isRandom != true) {
           App.allCount = allCount
         }
+
+        // var cs = this.getSummary(accountIndex)
+        // if (isCross && cs.totalCount <= 0) {
+        //   cs = this.resetCount(cs)
+        //   cs.totalCount = allCount
+        // }
+        //
+        // var als = this.getAllSummary()
+        // if (als.totalCount <= 0) {
+        //   als = this.resetCount(als)
+        //   als.totalCount = allCount
+        // }
 
         if (allCount <= 0) {
           if (callback) {
@@ -6273,10 +6360,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           r = r || {}
           it.Random = r
 
-          this.updateToRandomSummary(it, 1)
+          this.updateToRandomSummary(it, 1, accountIndex)
         }
         else {
+          d = d || {}
           it.Document = d
+
+          this.updateToSummary(it, 1, accountIndex)
         }
         it.TestRecord = tr
 
@@ -6436,17 +6526,119 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
-      getCurrentRandomSummaryItem: function () {
+      getSummary: function (accountIndex) {
+        if (accountIndex == -1) {
+          return this.getLogoutSummary()
+        }
+        var accounts = this.accounts || []
+        if (accountIndex == accounts.length) {
+          return this.getAllSummary()
+        }
+
+        if (accountIndex < 0 || accountIndex >= accounts.length) {
+          return {}
+        }
+
+        var ci = this.accounts[accountIndex]
+        return ci || {}
+      },
+
+      getLogoutSummary: function () {
+        return this.logoutSummary || {}
+      },
+      getCurrentSummary: function () {
+        return this.getSummary(this.currentAccountIndex) || {}
+      },
+      getAllSummary: function () {
+        return this.allSummary || {}
+      },
+
+      getCurrentRandomSummary: function () {
         return (this.isRandomSubListShow ? this.currentRandomItem : this.currentRemoteItem) || {}
       },
 
+      isSummaryShow: function (accountIndex) {
+        if (accountIndex == -1) {
+          return this.isLogoutSummaryShow()
+        }
+        var accounts = this.accounts
+        if (accountIndex == accounts.length) {
+          return this.isAllSummaryShow()
+        }
+
+        if (accountIndex < 0 || accountIndex >= accounts.length) {
+          return false
+        }
+
+        // var ci = this.isTestCaseShow ? this.accounts[accountIndex] : null
+        var ci = this.accounts[accountIndex]
+        return ci != null && ci.totalCount != null && ci.totalCount > 0
+      },
+      isLogoutSummaryShow: function () {
+        // var ci = this.isCrossEnabled != true ? null : this.logoutSummary
+        var ci = this.logoutSummary
+        return ci != null && ci.totalCount != null && ci.totalCount > 0
+      },
+      isCurrentSummaryShow: function () {
+        return this.isSummaryShow(this.currentAccountIndex)
+      },
+      isAllSummaryShow: function () {
+        // var ci = this.isCrossEnabled != true ? null : this.allSummary
+        var ci = this.allSummary
+        return ci != null && ci.totalCount != null && ci.totalCount > 0
+      },
       isRandomSummaryShow: function () {
-        var ci = this.isRandomListShow || this.isRandomSubListShow ? this.getCurrentRandomSummaryItem() : null
+        var ci = this.isRandomListShow || this.isRandomSubListShow ? this.getCurrentRandomSummary() : null
         return ci != null && ci.totalCount != null && ci.totalCount > 0
       },
 
+      updateSummary: function (item, change, key) {
+        if (item == null) {
+          item = {}
+        }
+
+        var count = item[key]
+        if (count == null) {
+          count = 0
+        }
+        count += change
+
+        item[key] = count < 0 ? 0 : count
+
+        // 对于 Random 进入子项再退出后有时显示居然不准
+        // if (cri.totalCount == null) {
+        //   cri.totalCount = 0
+        // }
+        // cri.totalCount += change
+        // if (cri.totalCount < 0) {
+        //   cri.totalCount = 0
+        // }
+        item.totalCount = item.whiteCount + item.greenCount + item.blueCount + item.orangeCount + item.redCount
+
+        return item
+      },
+
       //更新父级总览数据
-      updateToRandomSummary: function (item, change) {
+      updateToSummary: function (item, change, accountIndex) {
+        if (item == null || change == null) {
+          return
+        }
+
+        var key = item.compareColor + 'Count'
+        this.allSummary = this.updateSummary(this.allSummary, change, key)
+
+        if (accountIndex == -1) {
+          this.logoutSummary = this.updateSummary(this.logoutSummary, change, key)
+        }
+          // else if (accountIndex== this.accounts.length) {
+          //   this.allSummary = this.updateSummary(this.allSummary, change, key)
+        // }
+        else if (accountIndex >= 0 && accountIndex < this.accounts.length) {
+          var accountItem = this.updateSummary(this.getSummary(accountIndex), change, key)
+          this.accounts[accountIndex] = accountItem
+        }
+      },
+      updateToRandomSummary: function (item, change, accountIndex) {
         var random = item == null || change == null ? null : item.Random
         if (random == null) {
           return
@@ -6454,27 +6646,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (random.count == 1 || (random.id != null && random.id < 0)) {
           var key = item.compareColor + 'Count'
+          // this.updateToSummary(item, change, accountIndex)
 
           var curRandom = this.isRandomListShow || this.currentRandomItem == null ? null : this.currentRandomItem.Random
           var isTemp = curRandom != null && (curRandom.id == null || curRandom.id < 0)
-          var cri = (isTemp ? this.currentRandomItem : this.currentRemoteItem) || {}  // this.getCurrentRandomSummaryItem()
-
-          var criCmpCount = cri[key]
-          if (criCmpCount == null) {
-            criCmpCount = 0
-          }
-          criCmpCount += change
-          cri[key] = criCmpCount < 0 ? 0 : criCmpCount
-
-          // 对于 Random 进入子项再退出后有时显示居然不准
-          // if (cri.totalCount == null) {
-          //   cri.totalCount = 0
-          // }
-          // cri.totalCount += change
-          // if (cri.totalCount < 0) {
-          //   cri.totalCount = 0
-          // }
-          cri.totalCount = cri.whiteCount + cri.greenCount + cri.blueCount + cri.orangeCount + cri.redCount
+          var cri = this.updateSummary(isTemp ? this.currentRandomItem : this.currentRemoteItem)  // this.getCurrentRandomSummary())
 
           if (isTemp) {
             this.currentRandomItem = cri
@@ -6492,27 +6668,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var id = toRandom == null ? 0 : toRandom.id
                 var count = id == null || id <= 0 ? 0 : toRandom.count
                 if (count != null && count > 1) {
-                  var cmpCount = toIt[key]
-                  if (cmpCount == null) {
-                    cmpCount = 0
-                  }
-                  cmpCount += change
-                  toIt[key] = cmpCount < 0 ? 0 : cmpCount
-
-                  // if (toIt.totalCount == null) {
-                  //   toIt.totalCount = 0
-                  // }
-                  // toIt.totalCount += change
-                  // if (toIt.totalCount < 0) {
-                  //   toIt.totalCount = 0
-                  // }
-                  toIt.totalCount = toIt.whiteCount + toIt.greenCount + toIt.blueCount + toIt.orangeCount + toIt.redCount
+                  toIt = this.updateSummary(toIt, change, key)
+                  Vue.set(this.randoms, i, toIt)
                 }
-                Vue.set(this.randoms, i, toIt)
 
                 break
               }
-
             }
           }
         }
@@ -6607,7 +6768,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.restoreRandom(index, item)
             this.randomSubs = (item.subs || item['[]']) || []
             this.isRandomSubListShow = true
-            this.getCurrentRandomSummaryItem().summaryType = 'total'
+            this.getCurrentRandomSummary().summaryType = 'total'
             return
           }
 
@@ -6667,7 +6828,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               if (isRandom) {
-                App.updateToRandomSummary(item, -1)
+                App.updateToRandomSummary(item, -1, App.currentAccountIndex)
+              } else {
+                App.updateToSummary(item, -1, App.currentAccountIndex)
               }
 
               if (isDuration) {
@@ -6837,7 +7000,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
               else {
                 if (isRandom) {
-                  App.updateToRandomSummary(item, -1)
+                  App.updateToRandomSummary(item, -1, App.currentAccountIndex)
+                } else {
+                  App.updateToSummary(item, -1, App.currentAccountIndex)
                 }
 
                 var testRecord = item.TestRecord || {}
@@ -7169,6 +7334,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\nthis.User = this.getCache(this.server, User, {})' +
           '\n} catch (e) {\n' + e.message)
       }
+
+      try {
+        var accounts = this.accounts
+        var num = accounts == null ? 0 : accounts.length
+        for (var i = -1; i <= num; i++) {
+          this.resetCount(this.getSummary(i), false, i)
+        }
+      } catch (e) {
+        console.log('created  try { ' +
+          '\nthis.User = this.getCache(this.server, User, {})' +
+          '\n} catch (e) {\n' + e.message)
+      }
+
 
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
 
