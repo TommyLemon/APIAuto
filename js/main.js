@@ -2935,10 +2935,27 @@
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
         if (index < 0 || index >= num) {
-          this.currentAccountIndex = index
-          if (callback != null) {
-            callback(false, index)
+          item = this.getCurrentAccount()
+          if (item.isLoggedIn) {
+            //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
+            this.logout(false, function (url, res, err) {
+              App.onResponse(url, res, err)
+
+              item.isLoggedIn = false
+              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
+              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+
+              if (callback != null) {
+                callback(false, index, err)
+              }
+            });
+          } else {
+            if (callback != null) {
+              callback(false, index)
+            }
           }
+
+          this.currentAccountIndex = index
           return
         }
 
@@ -2966,6 +2983,8 @@
                   callback(false, index, err)
                 }
               });
+
+              this.currentAccountIndex = -1
             }
             else {
               //login
@@ -3173,7 +3192,10 @@
         this.onClickSummary(color, false, this.currentAccountIndex)
       },
       onClickSummary: function (color, isRandom, accountIndex) {
-        this.currentAccountIndex = accountIndex
+        if (this.currentAccountIndex != accountIndex) {
+          this.onClickAccount(accountIndex, accountIndex < 0 ? this.logoutSummary : this.accounts[accountIndex])
+        }
+        // this.currentAccountIndex = accountIndex
         // this.isTestCaseShow = false
 
         var isSub = this.isRandomSubListShow
@@ -3215,7 +3237,7 @@
           var summary = this.getSummary(accountIndex) || {}
           summary.summaryType = color
           this.testCases = list
-          // this.isTestCaseShow = true
+          this.isTestCaseShow = true
           // this.showTestCase(true, false)
         }
       },
@@ -6064,9 +6086,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           //
           // var right_left = parseInt(right_ele.css('left'))
 
-          split_obj.css('left', 0.52*width)
-          left_ele.width(0.52*width);
-          right_ele.width(0.48*width).css('left', 0.52*width);
+          split_obj.css('left', 0.55*width)
+          left_ele.width(0.55*width);
+          right_ele.width(0.45*width).css('left', 0.55*width);
           // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
         }
 
