@@ -3067,6 +3067,7 @@
           return
         }
         this.testCases = this.remotes || []
+        // this.getCurrentRandomSummaryItem().summaryType = 'total' // this.onClickSummary('total', true)
 
         if (show) {
           var testCases = this.testCases
@@ -3128,23 +3129,24 @@
       },
 
       onTestCaseListResponse: function(show, url, res, err) {
-        App.onResponse(url, res, err)
+        this.onResponse(url, res, err)
 
         var rpObj = res.data
 
         if (JSONResponse.isSuccess(rpObj)) {
-          App.isTestCaseShow = true
-          App.isLocalShow = false
-          App.testCases = App.remotes = rpObj['[]']
+          this.isTestCaseShow = true
+          this.isLocalShow = false
+          this.testCases = App.remotes = rpObj['[]']
+          this.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
 
           if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
-            App.showDoc()
+            this.showDoc()
           }
 
-          App.showCompare4TestCaseList(show)
+          this.showCompare4TestCaseList(show)
 
-          //App.onChange(false)
+          //this.onChange(false)
         }
       },
 
@@ -3191,6 +3193,8 @@
       },
 
       showCompare4RandomList: function (show, isSub) {
+        this.getCurrentRandomSummaryItem().summaryType = 'total'
+
         var randoms = show ? (isSub ? this.randomSubs : this.randoms) : null
         var randomCount = randoms == null ? 0 : randoms.length
         if (randomCount > 0) {
@@ -3249,7 +3253,8 @@
           this.showDoc()
         }
 
-        this.randoms = this.randoms || []
+        this.randoms = (this.currentRemoteItem || {}).randoms || []
+        this.getCurrentRandomSummaryItem().summaryType = 'total' // this.onClickSummary('total', true)
         if (! this.isRandomSummaryShow()) {
           this.showCompare4RandomList(show, isSub)
         }
@@ -3337,6 +3342,7 @@
             }
             App.randoms = App.currentRemoteItem.randoms = rpObj['[]']
           }
+          this.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
 
           if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
@@ -5553,6 +5559,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               if (testSubList && respCount >= count) { // && which >= count - 1) {
                 App.randomSubs = subs
+                App.getCurrentRandomSummaryItem().summaryType = 'total' // App.onClickSummary('total', true)
                 if (App.isRandomListShow == true) {
                   App.resetCount(item, testSubList)
                   item.subs = subs
@@ -6597,6 +6604,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.restoreRandom(index, item)
             this.randomSubs = (item.subs || item['[]']) || []
             this.isRandomSubListShow = true
+            this.getCurrentRandomSummaryItem().summaryType = 'total'
             return
           }
 
