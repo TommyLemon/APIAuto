@@ -2410,9 +2410,8 @@
                     App.uploadDoneCount = 0
                     App.uploadFailCount = 0
 
-                    var item
                     for (var url in apis) {
-                      item = apis[url] || {}
+                      var item = apis[url] || {}
 
                       var list = (isRap ? [ { _id: item.id } ] : (item == null ? null : item.list)) || []
                       for (let i1 = 0; i1 < list.length; i1++) {
@@ -2936,7 +2935,7 @@
         var num = accounts == null ? 0 : accounts.length
         if (index < 0 || index >= num) {
           item = this.getCurrentAccount()
-          if (item.isLoggedIn) {
+          if (item != null && item.isLoggedIn) {
             //logout FIXME 没法自定义退出，浏览器默认根据url来管理session的
             this.logout(false, function (url, res, err) {
               App.onResponse(url, res, err)

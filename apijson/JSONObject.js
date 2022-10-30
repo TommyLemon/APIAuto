@@ -130,4 +130,5 @@ var JSONObject = {
 if (typeof module == 'object') {
   module.exports = JSONObject;
 }
+
 //TODO 取消注释  Object.freeze(JSONObject) //不可修改
