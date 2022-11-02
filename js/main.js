@@ -493,6 +493,12 @@
   }
 
 
+  // 无效，Markdown 中链接触发方法时找不到
+  // function onClickPut(tableIndex) {
+  //   alert('onClickPut(' + tableIndex + ')')
+  //   App.showUrl(false, '/put')
+  // }
+
   function markdownToHTML(md, isRequest) {
     if (editormd == null) {
       return;
@@ -2942,6 +2948,114 @@
 
 
 
+      getTableObj(tableIndex) {
+        var list = docObj == null ? null : docObj['[]']
+        var item = list == null ? null : list[tableIndex]
+        return item == null ? null : (this.database != 'SQLSERVER' ? item.Table : item.SysTable);
+      },
+      getModelName(tableIndex) {
+        var table = this.getTableObj(tableIndex)
+        return table == null ? '' : CodeUtil.getModelName(table.table_name)
+      },
+
+      onClickPost: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''),
+          isSingle ? `{
+    "content": "Test post ` + new Date().toLocaleString() + `",
+    "date": "2022-02-02 00:00:00.000"
+}` : `{
+    "` + modelName + `": {
+        "content": "Test post ` + new Date().toLocaleString() + `",
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `"
+}`)
+      },
+
+      onClickGet: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/get' + (isSingle ? '/' + modelName + '[]?total@=' + modelName + '[]/total' : ''),
+          isSingle ? `{
+    "` + modelName + `": {
+        "@order": "id-",  // "@group": "userId",
+        "id>": 10,  // "@column": "userId;avg(id)",
+        "date{}": "!=null"  // "@having": "avg(id)>10",
+    },
+    "count": 10,
+    "page": 0,
+    "query": 2
+}` : `{
+    "` + modelName + `[]": {
+        "` + modelName + `": {
+            "@order": "id-",  // "@group": "userId",
+            "id>": 10,  // "@column": "userId;avg(id)",
+            "date{}": "!=null"  // "@having": "avg(id)>10",
+        },
+        "count": 10,
+        "page": 0,
+        "query": 2
+    },
+    "total@": "` + modelName + `[]/total",
+    "info@": "` + modelName + `[]/info"
+}`)
+      },
+
+      onClickPut: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''),
+          isSingle ? `{
+    "id{}": [
+        1,
+        2,
+        4,
+        12,
+        470,
+        82011,
+        82012
+    ],
+    "date": "2022-02-02 00:00:00.000"
+}` : `{
+    "` + modelName + `": {
+        "id{}": [
+            1,
+            2,
+            4,
+            12,
+            470,
+            82011,
+            82012
+        ],
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `"
+}`)
+      },
+
+      onClickDelete: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/delete' + (isSingle ? '/' + modelName : ''),
+          isSingle ? `{
+    "id": 1
+}` : `{
+    "` + modelName + `": {
+        "id": 1
+    },
+    "tag": "` + modelName + `"
+}`)
+      },
+
+      showCRUD: function (url, json) {
+        this.type = REQUEST_TYPE_JSON
+        this.showUrl(false, url)
+        this.urlComment = ''
+        vInput.value = StringUtil.trim(json)
+        this.onChange(false)
+      },
 
       onClickAccount: function (index, item, callback) {
         this.isTestCaseShow = false
@@ -5114,84 +5228,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var schema = table.table_schema
               var modelName = CodeUtil.getModelName(table.table_name)
+              var baseUrl = App.getBaseUrl()
+              // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
 
               doc += '\n### ' + (i + 1) + '. ' + modelName
                 + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
-                + '  - [POST](' + App.getShareLink(false,
-                encodeURIComponent(isSingle ? `{
-    "content": "Test post ` + new Date().toLocaleString() + `",
-    "date": "2022-02-02 00:00:00.000"
-}` : `{
-    "` + modelName + `": {
-        "content": "Test post ` + new Date().toLocaleString() + `",
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `"
-}`).replaceAll(')', '%29')
-                  , App.getBaseUrl() + '/post' + (isSingle ? '/' + modelName : ''), null, null, '') + ') '
-                + '[GET](' + App.getShareLink(false,
-                encodeURIComponent(isSingle ? `{
-    "` + modelName + `": {
-        "@order": "id-",  // "@group": "userId",
-        "id>": 10,  // "@column": "userId;avg(id)",
-        "date{}": "!=null"  // "@having": "avg(id)>10",
-    },
-    "count": 10,
-    "page": 0,
-    "query": 2
-}` : `{
-    "` + modelName + `[]": {
-        "` + modelName + `": {
-            "@order": "id-",  // "@group": "userId",
-            "id>": 10,  // "@column": "userId;avg(id)",
-            "date{}": "!=null"  // "@having": "avg(id)>10",
-        },
-        "count": 10,
-        "page": 0,
-        "query": 2
-    },
-    "total@": "` + modelName + `[]/total",
-    "info@": "` + modelName + `[]/info"
-}`).replaceAll(')', '%29')
-                  , App.getBaseUrl() + '/get' + (isSingle ? '/' + modelName + '[]?total@=' + modelName + '[]/total' : ''), null, null, '') + ') '
-                + '[PUT](' + App.getShareLink(false,
-                encodeURIComponent(isSingle ? `{
-    "id{}": [
-        1,
-        2,
-        4,
-        12,
-        470,
-        82011,
-        82012
-    ],
-    "date": "2022-02-02 00:00:00.000"
-}` : `{
-    "` + modelName + `": {
-        "id{}": [
-            1,
-            2,
-            4,
-            12,
-            470,
-            82011,
-            82012
-        ],
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `"
-}`).replaceAll(')', '%29')
-                  , App.getBaseUrl() + '/put' + (isSingle ? '/' + modelName + '[]' : ''), null, null, '') + ') '
-                + '[DELETE](' + App.getShareLink(false,
-                encodeURIComponent(isSingle ? `{
-    "id": 1
-}` : `{
-    "` + modelName + `": {
-        "id": 1
-    },
-    "tag": "` + modelName + `"
-}`).replaceAll(')', '%29')
-                  , App.getBaseUrl() + '/delete' + (isSingle ? '/' + modelName : ''), null, null, '') + ') '
+                + ' - <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickPut(' + i + ',\'' + modelName + '\')">PUT</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickDelete(' + i + ',\'' + modelName + '\')">DELETE</a>'
                 + '\n' + App.toMD(table_comment);
 
 
