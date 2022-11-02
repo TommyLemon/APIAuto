@@ -2947,116 +2947,6 @@
 
 
 
-
-      getTableObj(tableIndex) {
-        var list = docObj == null ? null : docObj['[]']
-        var item = list == null ? null : list[tableIndex]
-        return item == null ? null : (this.database != 'SQLSERVER' ? item.Table : item.SysTable);
-      },
-      getModelName(tableIndex) {
-        var table = this.getTableObj(tableIndex)
-        return table == null ? '' : CodeUtil.getModelName(table.table_name)
-      },
-
-      onClickPost: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
-
-        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''),
-          isSingle ? `{
-    "content": "Test post ` + new Date().toLocaleString() + `",
-    "date": "2022-02-02 00:00:00.000"
-}` : `{
-    "` + modelName + `": {
-        "content": "Test post ` + new Date().toLocaleString() + `",
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `"
-}`)
-      },
-
-      onClickGet: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
-
-        this.showCRUD('/get' + (isSingle ? '/' + modelName + '[]?total@=' + modelName + '[]/total' : ''),
-          isSingle ? `{
-    "` + modelName + `": {
-        "@order": "id-",  // "@group": "userId",
-        "id>": 10,  // "@column": "userId;avg(id)",
-        "date{}": "!=null"  // "@having": "avg(id)>10",
-    },
-    "count": 10,
-    "page": 0,
-    "query": 2
-}` : `{
-    "` + modelName + `[]": {
-        "` + modelName + `": {
-            "@order": "id-",  // "@group": "userId",
-            "id>": 10,  // "@column": "userId;avg(id)",
-            "date{}": "!=null"  // "@having": "avg(id)>10",
-        },
-        "count": 10,
-        "page": 0,
-        "query": 2
-    },
-    "total@": "` + modelName + `[]/total",
-    "info@": "` + modelName + `[]/info"
-}`)
-      },
-
-      onClickPut: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
-
-        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''),
-          isSingle ? `{
-    "id{}": [
-        1,
-        2,
-        4,
-        12,
-        470,
-        82011,
-        82012
-    ],
-    "date": "2022-02-02 00:00:00.000"
-}` : `{
-    "` + modelName + `": {
-        "id{}": [
-            1,
-            2,
-            4,
-            12,
-            470,
-            82011,
-            82012
-        ],
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `"
-}`)
-      },
-
-      onClickDelete: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
-
-        this.showCRUD('/delete' + (isSingle ? '/' + modelName : ''),
-          isSingle ? `{
-    "id": 1
-}` : `{
-    "` + modelName + `": {
-        "id": 1
-    },
-    "tag": "` + modelName + `"
-}`)
-      },
-
-      showCRUD: function (url, json) {
-        this.type = REQUEST_TYPE_JSON
-        this.showUrl(false, url)
-        this.urlComment = ''
-        vInput.value = StringUtil.trim(json)
-        this.onChange(false)
-      },
-
       onClickAccount: function (index, item, callback) {
         this.isTestCaseShow = false
         var accounts = this.accounts
@@ -5233,12 +5123,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               doc += '\n### ' + (i + 1) + '. ' + modelName
                 + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
-                + ' - <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
+                + ' - <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
                 + ' <a href="javascript:void(0)" onclick="window.App.onClickPut(' + i + ',\'' + modelName + '\')">PUT</a>'
                 + ' <a href="javascript:void(0)" onclick="window.App.onClickDelete(' + i + ',\'' + modelName + '\')">DELETE</a>'
                 + '\n' + App.toMD(table_comment);
-
 
               //Column[]
               doc += '\n\n 名称  |  类型  |  最大长度  |  详细说明' +
@@ -5398,6 +5287,120 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
 //      log('getDoc  callback(doc); = \n' + doc);
+      },
+
+      getTableObj(tableIndex) {
+        var list = docObj == null ? null : docObj['[]']
+        var item = list == null ? null : list[tableIndex]
+        return item == null ? null : (this.database != 'SQLSERVER' ? item.Table : item.SysTable);
+      },
+      getModelName(tableIndex) {
+        var table = this.getTableObj(tableIndex)
+        return table == null ? '' : CodeUtil.getModelName(table.table_name)
+      },
+
+      onClickPost: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''),
+          isSingle ? `{
+    'content': 'Test post ` + new Date().toLocaleString() + `',
+    'date': '2022-02-02 00:00:00.000'
+}` : `{
+    "` + modelName + `": {
+        "content": "Test post ` + new Date().toLocaleString() + `",
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `",
+    "@explain": true
+}`)
+      },
+
+      onClickGet: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+        var arrName = modelName + '[]'
+
+        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
+          isSingle ? `{
+    '` + modelName + `': {
+        '@order': 'id-',  // '@group': 'userId',
+        'id>': 10,  // '@column': 'userId;avg(id)',
+        'date{}': '!=null'  // '@having': 'avg(id)>10',
+    },
+    'count': 10,
+    'page': 0,
+    'query': 2
+}` : `{
+    "` + modelName + `[]": {
+        "` + modelName + `": {
+            "@order": "id-",  // "@group": "userId",
+            "id>": 10,  // "@column": "userId;avg(id)",
+            "date{}": "!=null"  // "@having": "avg(id)>10",
+        },
+        "count": 10,
+        "page": 0,
+        "query": 2
+    },
+    "total@": "` + modelName + `[]/total",
+    "info@": "` + modelName + `[]/info",
+    "@explain": true
+}`)
+      },
+
+      onClickPut: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''),
+          isSingle ? `{
+    'id{}': [
+        1,
+        2,
+        4,
+        12,
+        470,
+        82011,
+        82012
+    ],
+    'date': '2022-02-02 00:00:00.000'
+}` : `{
+    "` + modelName + `": {
+        "id{}": [
+            1,
+            2,
+            4,
+            12,
+            470,
+            82011,
+            82012
+        ],
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `",
+    "@explain": true
+}`)
+      },
+
+      onClickDelete: function (tableIndex, modelName) {
+        modelName = modelName || this.getModelName(tableIndex)
+
+        this.showCRUD('/delete' + (isSingle ? '/' + modelName : ''),
+          isSingle ? `{
+    'id': 1
+}` : `{
+    "` + modelName + `": {
+        "id": 1
+    },
+    "tag": "` + modelName + `",
+    "@explain": true
+}`)
+      },
+
+      showCRUD: function (url, json) {
+        this.type = REQUEST_TYPE_JSON
+        this.showUrl(false, url)
+        this.urlComment = ''
+        vInput.value = StringUtil.trim(json)
+        this.onChange(false)
       },
 
       // toDoubleJSON: function (json, defaultValue) {
