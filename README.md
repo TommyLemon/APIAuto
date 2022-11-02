@@ -134,7 +134,7 @@ https://www.bilibili.com/video/BV1JZ4y1d7c8
 
 <br/>
 
-### 部署方法
+### 快速上手
 
 本项目是纯静态 SPA 网页，下载源码解压后：<br />
 可以用浏览器打开 index.html，建议用 [Chrome](https://www.google.com/intl/zh-CN/chrome) 或 [Firefox](https://www.mozilla.org/zh-CN/firefox) (Safari、Edge、IE 等可能有兼容问题)，注意此方法不显示 svg 图标。<br />
