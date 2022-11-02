@@ -112,7 +112,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 
 ### 百度、搜狗、抖音公网接口调用演示<br />
 因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
-可以复制 Chrome 等浏览器 Network HTTP API 的文本，<br />
+可以复制 Chrome 等浏览器、Charles 等抓包工具的请求文本，<br />
 粘贴到 APIAuto 的 URL 输入框，会自动填充 URL, JSON, Header 等。<br />
 https://github.com/TommyLemon/APIAuto/issues/16 
 
