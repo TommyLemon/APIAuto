@@ -153,6 +153,35 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 **建议使用已 [内置 APIAuto](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static) 的 [APIJSONBoot-MultiDataSource](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource)，可以避免以下常见问题 1, 3, 4**
 
+### 后台 Headless 无 UI 模式
+![image](https://user-images.githubusercontent.com/5738175/199445916-29ac8ded-8838-46d8-88ff-0daad06b11a9.png)
+![image](https://user-images.githubusercontent.com/5738175/199445960-2eac952e-75d9-48b1-945b-5759370c21c0.png)
+
+#### 1.配置 Node 环境及 NPM 包管理工具
+https://nodejs.org/zh-cn/
+
+#### 2.安装相关依赖
+```sh
+nvm install 7
+npm i koa
+```
+
+#### 3.使用后台 HTTP 服务
+先启动 HTTP 服务
+```sh
+cd js
+node server.js
+```
+如果运行报错 missing package xxx，说明缺少相关依赖，参考步骤 2 来执行
+```sh
+npm i xxx
+```
+然后再启动 HTTP 服务。<br />
+
+启动成功后会有提示，点击链接或者复制到浏览器输入框打开即可。
+
+<br /><br />
+
 ### 常见问题
 
 **本网页工具基本每个按钮/输入框等 UI 组件都有注释或悬浮文档等形式的操作提示，<br />
