@@ -1047,7 +1047,7 @@
             item = hs[i] || ''
 
             // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
-            var index = StringUtil.trim(item).startsWith('//') ? 0 : item.lastIndexOf('  //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
+            var index = StringUtil.trim(item).startsWith('//') ? 0 : item.lastIndexOf(' //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
             item2 = item2.trim()
             if (item2.length <= 0) {
@@ -1082,17 +1082,6 @@
 
       // 分享 APIAuto 特有链接，打开即可还原分享人的 JSON 参数、设置项、搜索关键词、分页数量及页码等配置
       shareLink: function (isRandom) {
-        var jsonStr = null
-        if (this.isTestCaseShow != true) {
-          try {
-            jsonStr = JSON.stringify(encode(JSON.parse(vInput.value)))
-          } catch (e) {  // 可能包含注释
-            log(e)
-            jsonStr = encode(StringUtil.trim(vInput.value))
-          }
-        }
-
-        // URL 太长导致打不开标签
         var settingStr = null
         try {
           settingStr = JSON.stringify({
@@ -1126,26 +1115,51 @@
             randomSearch: StringUtil.isEmpty(this.randomSearch, true) ? undefined : encodeURIComponent(this.randomSearch),
             randomSubSearch: StringUtil.isEmpty(this.randomSubSearch, true) ? undefined : encodeURIComponent(this.randomSubSearch)
           })
-        } catch (e){
+        } catch (e) {
           log(e)
         }
 
-        var headerStr = this.isTestCaseShow || StringUtil.isEmpty(vHeader.value, true) ? null : encodeURIComponent(StringUtil.trim(vHeader.value))
-        var randomStr = this.isTestCaseShow || StringUtil.isEmpty(vRandom.value, true) ? null : encodeURIComponent(StringUtil.trim(vRandom.value))
+        // 实测 561059 长度的 URL 都支持，只是输入框显示长度约为 2000
+        window.open(this.getShareLink(
+          isRandom
+          , null
+          , null
+          , null
+          , this.isTestCaseShow || StringUtil.isEmpty(vHeader.value, true) ? null : encodeURIComponent(StringUtil.trim(vHeader.value))
+          , this.isTestCaseShow || StringUtil.isEmpty(vRandom.value, true) ? null : encodeURIComponent(StringUtil.trim(vRandom.value))
+          , settingStr
+        ))
+      },
+      getShareLink: function (isRandom, json, url, type, header, random, setting) {
+        var jsonStr = json == null ? null : (typeof json == 'string' ? json : JSON.stringify(json))
+        if (this.isTestCaseShow != true && jsonStr == null) { // StringUtil.isEmpty(jsonStr)
+          try {
+            jsonStr = JSON.stringify(encode(JSON.parse(vInput.value)))
+          } catch (e) {  // 可能包含注释
+            log(e)
+            jsonStr = encode(StringUtil.trim(vInput.value))
+          }
+        }
+
+        var headerStr = header
+
+        var randomStr = random
+
+        // URL 太长导致打不开标签
+        var settingStr = setting
 
         var href = window.location.href || 'http://apijson.cn/api'
         var ind = href == null ? -1 : href.indexOf('?')  // url 后带参数只能 encodeURIComponent
 
-        // 实测 561059 长度的 URL 都支持，只是输入框显示长度约为 2000
-        window.open((ind < 0 ? href : href.substring(0, ind))
+        return (ind < 0 ? href : href.substring(0, ind))
           + (this.view != 'code' ? "?send=false" : (isRandom ? "?send=random" : "?send=true"))
-          + "&type=" + StringUtil.trim(this.type)
-          + "&url=" + encodeURIComponent(StringUtil.trim(vUrl.value))
-          + (StringUtil.isEmpty(jsonStr, true) ? '' : "&json=" + jsonStr)
-          + (StringUtil.isEmpty(headerStr, true) ? '' : "&header=" + headerStr)
-          + (StringUtil.isEmpty(randomStr, true) ? '' : "&random=" + randomStr)
-          + (StringUtil.isEmpty(settingStr, true) ? '' : "&setting=" + settingStr)
-        )
+          + "&type=" + StringUtil.trim(type == null ? REQUEST_TYPE_JSON : type)
+          + "&url=" + encodeURIComponent(StringUtil.trim(url == null ? vUrl.value : url))
+          + (jsonStr == null ? '' : "&json=" + jsonStr)
+          + (headerStr == null ? '' : "&header=" + headerStr)
+          + (randomStr == null ? '' : "&random=" + randomStr)
+          + (settingStr == null ? '' : "&setting=" + settingStr)
+
       },
 
       // 显示保存弹窗
@@ -3986,7 +4000,7 @@
 
         vInput.value = this.switchQuote(vInput.value);
 
-        this.isTestCaseShow = false
+        this.isTestCaseShow = false;
 
         // // 删除注释 <<<<<<<<<<<<<<<<<<<<<
         //
@@ -3998,6 +4012,9 @@
         // // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
         this.onChange(false);
+        this.onDocumentListResponse('', {data: docObj}, function (d) {
+          App.setDoc(d);
+        });
       },
 
       /**获取显示的请求类型名称
@@ -4366,7 +4383,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   continue;
                 }
 
-                var ind = l.lastIndexOf('  //');
+                var ind = l.lastIndexOf(' //');
                 l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
 
                 ind = l.indexOf(':');
@@ -4535,7 +4552,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     continue;
                   }
 
-                  var ind = l.lastIndexOf('  //');
+                  var ind = l.lastIndexOf(' //');
                   l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
 
                   ind = l.indexOf(':');
@@ -4890,11 +4907,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       getDoc: function (callback) {
 
-      	var isTSQL = ['ORACLE', 'DAMENG'].indexOf(this.database) >= 0
-      	var isNotTSQL = ! isTSQL
+        var isTSQL = ['ORACLE', 'DAMENG'].indexOf(this.database) >= 0
+        var isNotTSQL = !isTSQL
 
         var count = this.count || 100  //超过就太卡了
         var page = this.page || 0
+
+        var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
 
         var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         this.request(false, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
@@ -4924,7 +4943,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'count': count,
             'page': page,
             'Table': isTSQL || this.database == 'SQLSERVER' ? null : {
-              'table_schema': this.schema,
+              'table_schema{}': schemas,
               'table_type': 'BASE TABLE',
               // 'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
               'table_name$': search,
@@ -4932,7 +4951,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               '@combine': search == null || this.database == 'POSTGRESQL' ? null : 'table_name$,table_comment$',
               'table_name{}@': 'sql',
               '@order': 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
-              '@column': this.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment'
+              '@column': (schemas != null && schemas.length == 1 ? '' : 'table_schema:table_schema,') + (this.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment')
             },
             'PgClass': this.database != 'POSTGRESQL' ? null : {
               'relname@': '/Table/table_name',
@@ -4954,26 +4973,27 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               '@column': 'value:table_comment'
             },
             "join": isNotTSQL ? null : {
-            	"&/AllTableComment": {
-            		'table_name$': search,
-              		'table_comment$': search,
-              		'@combine': search == null ? null : 'table_name$,table_comment$',
-            	}
+              "&/AllTableComment": {
+                'table_name$': search,
+                'table_comment$': search,
+                '@combine': search == null ? null : 'table_name$,table_comment$',
+              }
             },
-    		    "AllTable": isNotTSQL ? null : {
-    		        "@order": "TABLE_NAME+",
-    		        "@column": "TABLE_NAME:table_name",
-    		        'TABLE_NAME{}@': 'sql'
-    		    },
-    		    "AllTableComment": isNotTSQL ? null : {
-    		        "TABLE_TYPE": "TABLE",
-    		        "TABLE_NAME@": "/AllTable/TABLE_NAME",
-    		        "@column": "COMMENTS:table_comment"
-    		    },
+            "AllTable": isNotTSQL ? null : {
+              "@order": "TABLE_NAME+",
+              "@column": "TABLE_NAME:table_name",
+              'TABLE_NAME{}@': 'sql'
+            },
+            "AllTableComment": isNotTSQL ? null : {
+              "TABLE_TYPE": "TABLE",
+              "TABLE_NAME@": "/AllTable/TABLE_NAME",
+              "@column": "COMMENTS:table_comment"
+            },
             '[]': {
               'count': 0,
               'Column': isTSQL ? null : {
-                'table_schema': this.schema,
+                'table_schema{}': schemas,
+                'table_schema@': schemas != null && schemas.length == 1 ? null : '[]/Table/table_schema',
                 'table_name@': this.database != 'SQLSERVER' ? '[]/Table/table_name' : "[]/SysTable/table_name",
                 "@order": this.database != 'SQLSERVER' ? null : "table_name+",
                 '@column': this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
@@ -4999,14 +5019,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 '@column': 'value:column_comment'
               },
               "AllColumn": isNotTSQL ? null : {
-    		        "TABLE_NAME@": "[]/AllTable/table_name",
-    		        "@column": "COLUMN_NAME:column_name,DATA_TYPE:column_type"
-    		      },
-    		      "AllColumnComment": isNotTSQL ? null : {
-    		        "TABLE_NAME@": "[]/AllTable/table_name",
-    		        "COLUMN_NAME@": "/AllColumn/column_name",
-    		        "@column": "COMMENTS:column_comment"
-    		      }
+                "TABLE_NAME@": "[]/AllTable/table_name",
+                "@column": "COLUMN_NAME:column_name,DATA_TYPE:column_type"
+              },
+              "AllColumnComment": isNotTSQL ? null : {
+                "TABLE_NAME@": "[]/AllTable/table_name",
+                "COLUMN_NAME@": "/AllColumn/column_name",
+                "@column": "COMMENTS:column_comment"
+              }
             }
           },
           'Function[]': {
@@ -5036,11 +5056,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
           }
         }, {}, function (url, res, err) {
-          if (err != null || res == null || res.data == null) {
-            log('getDoc  err != null || res == null || res.data == null >> return;');
+          App.onDocumentListResponse(url, res, err, callback)
+        })
+      },
+
+      onDocumentListResponse: function(url, res, err, callback) {
+        if (err != null || res == null || res.data == null) {
+          log('getDoc  err != null || res == null || res.data == null >> return;');
+          if (callback != null) {
             callback('')
-            return;
           }
+          return;
+        }
 
 //        log('getDoc  docRq.responseText = \n' + docRq.responseText);
           docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
@@ -5081,8 +5108,87 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // item.Table.table_name = table.table_name
               // item.Table.table_comment = table_comment
 
-              doc += '### ' + (i + 1) + '. ' + CodeUtil.getModelName(table.table_name) + '\n'
-                + App.toMD(table_comment);
+              var schema = table.table_schema
+              var modelName = CodeUtil.getModelName(table.table_name)
+
+              doc += '\n### ' + (i + 1) + '. ' + modelName
+                + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
+                + '  - [POST](' + App.getShareLink(false,
+                encodeURIComponent(isSingle ? `{
+    "content": "Test post ` + new Date().toLocaleString() + `",
+    "date": "2022-02-02 00:00:00.000"
+}` : `{
+    "` + modelName + `": {
+        "content": "Test post ` + new Date().toLocaleString() + `",
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `"
+}`).replaceAll(')', '%29')
+                  , App.getBaseUrl() + '/post' + (isSingle ? '/' + modelName : ''), null, null, '') + ') '
+                + '[GET](' + App.getShareLink(false,
+                encodeURIComponent(isSingle ? `{
+    "` + modelName + `": {
+        "@order": "id-",  // "@group": "userId",
+        "id>": 10,  // "@column": "userId;avg(id)",
+        "date{}": "!=null"  // "@having": "avg(id)>10",
+    },
+    "count": 10,
+    "page": 0,
+    "query": 2
+}` : `{
+    "` + modelName + `[]": {
+        "` + modelName + `": {
+            "@order": "id-",  // "@group": "userId",
+            "id>": 10,  // "@column": "userId;avg(id)",
+            "date{}": "!=null"  // "@having": "avg(id)>10",
+        },
+        "count": 10,
+        "page": 0,
+        "query": 2
+    },
+    "total@": "` + modelName + `[]/total",
+    "info@": "` + modelName + `[]/info"
+}`).replaceAll(')', '%29')
+                  , App.getBaseUrl() + '/get' + (isSingle ? '/' + modelName + '[]?total@=' + modelName + '[]/total' : ''), null, null, '') + ') '
+                + '[PUT](' + App.getShareLink(false,
+                encodeURIComponent(isSingle ? `{
+    "id{}": [
+        1,
+        2,
+        4,
+        12,
+        470,
+        82011,
+        82012
+    ],
+    "date": "2022-02-02 00:00:00.000"
+}` : `{
+    "` + modelName + `": {
+        "id{}": [
+            1,
+            2,
+            4,
+            12,
+            470,
+            82011,
+            82012
+        ],
+        "date": "2022-02-02 00:00:00.000"
+    },
+    "tag": "` + modelName + `"
+}`).replaceAll(')', '%29')
+                  , App.getBaseUrl() + '/put' + (isSingle ? '/' + modelName + '[]' : ''), null, null, '') + ') '
+                + '[DELETE](' + App.getShareLink(false,
+                encodeURIComponent(isSingle ? `{
+    "id": 1
+}` : `{
+    "` + modelName + `": {
+        "id": 1
+    },
+    "tag": "` + modelName + `"
+}`).replaceAll(')', '%29')
+                  , App.getBaseUrl() + '/delete' + (isSingle ? '/' + modelName : ''), null, null, '') + ') '
+                + '\n' + App.toMD(table_comment);
 
 
               //Column[]
@@ -5238,12 +5344,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           App.onChange(false);
 
-
-          callback(doc);
+          if (callback != null) {
+            callback(doc);
+          }
 
 //      log('getDoc  callback(doc); = \n' + doc);
-        });
-
       },
 
       // toDoubleJSON: function (json, defaultValue) {
@@ -5283,15 +5388,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       toMD: function (s) {
         if (s == null) {
-          s = '';
-        }
-        else {
-          //无效
-          s = s.replace(/\|/g, '\|');
-          s = s.replace(/\n/g, ' <br /> ');
-          // s = s.replace(/ /g, '&ensp;');
+          return ''
         }
 
+        if (s instanceof Object) {
+          s = JSON.stringify(s)
+        }
+
+        if (typeof s != 'string') {
+          return new String(s)
+        }
+
+        //无效
+        s = s.replace(/\|/g, '\|');
+        s = s.replace(/\n/g, ' <br /> ');
+        // s = s.replace(/ /g, '&ensp;');
         return s;
       },
 
@@ -5768,7 +5879,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const lineItem = lines[i] || '';
 
           // remove comment   // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
-          const commentIndex = StringUtil.trim(lineItem).startsWith('//') ? 0 : lineItem.lastIndexOf('  //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf('  //');
+          const commentIndex = StringUtil.trim(lineItem).startsWith('//') ? 0 : lineItem.lastIndexOf(' //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf(' //');
           const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
 
           if (line.length <= 0) {
@@ -7493,7 +7604,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                    continue;
                   }
 
-                  var ind = l.lastIndexOf('  //');
+                  var ind = l.lastIndexOf(' //');
                   l = ind < 0 ? l : StringUtil.trim(l.substring(0, ind));
 
                   if (target == vHeader || target == vRandom) {
@@ -7531,26 +7642,32 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var newStr = json.substring(0, start);
 
+              var commentSign = '//'
+              var commentSignLen = commentSign.length
+
               for (var i = 0; i < lines.length; i ++) {
                 var l = lines[i] || '';
                 if (i > 0) {
                   newStr += '\n';
                 }
 
-                if (StringUtil.trim(l).startsWith('//')) {
-                  var ind = l.indexOf('//');
-                  var suffix = l.substring(ind + 2);
-                  if (suffix.startsWith('  ')) {
-                    suffix = suffix.substring(2);
-                    selectionEnd -= 2;
+                if (StringUtil.trim(l).startsWith(commentSign)) {
+                  var ind = l.indexOf(commentSign);
+                  var suffix = l.substring(ind + commentSignLen);
+                  if (suffix.startsWith(' ')) {
+                    suffix = suffix.substring(1);
+                    selectionStart -= 1;
+                    selectionEnd -= 1;
                   }
 
                   newStr += StringUtil.get(l.substring(0, ind)) + StringUtil.get(suffix)
-                  selectionEnd -= 2;
+                  selectionStart -= commentSignLen;
+                  selectionEnd -= commentSignLen;
                 }
                 else {
-                  newStr += '//  ' + l;
-                  selectionEnd += 4;
+                  newStr += commentSign + ' ' + l;
+                  selectionStart += commentSignLen + 1;
+                  selectionEnd += commentSignLen + 1;
                 }
               }
 
@@ -7575,6 +7692,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
   if (IS_BROWSER) {
     App = new Vue(App)
+    window.App = App
   }
   else {
     var data = App.data
