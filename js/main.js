@@ -5168,7 +5168,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var column_comment = (o || {}).column_comment
 
                 // column.column_comment = column_comment
-                doc += '\n' + name + '  |  ' + type.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '  |  ' + length + '  |  ' + App.toMD(column_comment);
+                doc += '\n' + ' <a href="javascript:void(0)" onclick="window.App.onClickColumn(' + i + ",'" + modelName + "'," + j + ",'" + name + "'" + ')">' + name + '</a>'
+                  + '  |  ' + type.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '  |  ' + length + '  |  ' + App.toMD(column_comment);
 
               }
 
@@ -5241,7 +5242,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
 
-              doc += '\n' + item.detail + '  |  ' + JSON.stringify(item.demo);
+              var demoStr = JSON.stringify(item.demo)
+
+              // doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ",'"
+              //   + demoStr.replaceAll("'", "\'") + ')">' + demoStr + '</a>';
+              doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ')">' + demoStr + '</a>';
             }
 
             doc += '\n' //避免没数据时表格显示没有网格
@@ -5289,10 +5294,47 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 //      log('getDoc  callback(doc); = \n' + doc);
       },
 
+      getTableKey(database) {
+        database = database || this.database
+        return this.database == 'SQLSERVER' ? 'SysTable' : (['ORALCE', 'DAMENG'].indexOf(database) >= 0 ? 'AllTable' : 'Table')
+      },
+      getColumnKey(database) {
+        database = database || this.database
+        return this.database == 'SQLSERVER' ? 'SysColumn' : (['ORALCE', 'DAMENG'].indexOf(database) >= 0 ? 'AllColumn' : 'Column')
+      },
       getTableObj(tableIndex) {
         var list = docObj == null ? null : docObj['[]']
         var item = list == null ? null : list[tableIndex]
-        return item == null ? null : (this.database != 'SQLSERVER' ? item.Table : item.SysTable);
+        return item == null ? null : item[this.getTableKey()];
+      },
+      getColumnList(tableIndex) {
+        var list = docObj == null ? null : docObj['[]']
+        var item = list == null ? null : list[tableIndex]
+        return item == null ? null : item['[]']
+      },
+      getColumnObj(columnList, columnIndex) {
+        return columnList == null ? null : (columnList[columnIndex] || {})[this.getColumnKey()];
+      },
+      getFunctionObj(funcionList, index) {
+        return funcionList == null ? null : funcionList[index];
+      },
+      getSchemaName(tableIndex) {
+        var table = this.getTableObj(tableIndex)
+        var sch = table == null ? null : table.table_shema
+        if (StringUtil.isNotEmpty(sch)) {
+          return sch
+        }
+
+        var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
+        return schemas == null || schemas.length != 1 ? null : this.schema
+      },
+      getTableName(tableIndex) {
+        var table = this.getTableObj(tableIndex)
+        return table == null ? '' : table.table_name
+      },
+      getColumnName(columnList, columnIndex) {
+        var column = this.getColumnObj(columnList, columnIndex)
+        return column == null ? '' : column.column_name
       },
       getModelName(tableIndex) {
         var table = this.getTableObj(tableIndex)
@@ -5393,6 +5435,49 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     "tag": "` + modelName + `",
     "@explain": true
 }`)
+      },
+
+      onClickColumn: function (tableIndex, modelName, columnIndex, columnName) {
+        modelName = modelName || this.getModelName(tableIndex)
+        if (StringUtil.isEmpty(columnName, true)) {
+          var columnList = this.getColumnList(tableIndex)
+          columnName = columnName || this.getColumnName(columnList, columnIndex)
+        }
+
+        var arrName = modelName + '[]'
+
+        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
+          isSingle ? `{
+    '` + modelName + `': {
+        '@column': 'DISTINCT ` + columnName + `',
+        '@order': '` + columnName + `+',  // '@order': 'id-'
+    },
+    'count': 0,
+    'page': 0,
+    'query': 2
+}` : `{
+    "` + modelName + '-' + columnName + `[]": {
+        "` + modelName + `": {
+            "@column": "DISTINCT ` + columnName + `",
+            "@order": "` + columnName + `+",  // "@order": "id-"
+        },
+        "count": 0,
+        "page": 0,
+        "query": 2
+    },
+    "total@": "` + modelName + '-' + columnName + `[]/total",
+    "info@": "` + modelName + '-' + columnName + `[]/info",
+    "@explain": true
+}`)
+      },
+
+      onClickFunction: function (index, demo) {
+        if (StringUtil.isEmpty(demo, true)) {
+          var fun = this.getFunctionObj(docObj == null ? null : docObj['Function[]'], index)
+          demo = JSON.stringify(fun.demo, null, '    ')  // this.getFunctionDemo(fun)
+        }
+
+        this.showCRUD('/get', isSingle ? this.switchQuote(demo) : demo)
       },
 
       showCRUD: function (url, json) {
