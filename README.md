@@ -5,7 +5,7 @@
 <p align="center">☔ HTTP 接口 机器学习测试 和 智能开发管理 工具</p>
 
 <p align="center" >
-  <a href="https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95">使用文档</a>
+  <a href="https://github.com/TommyLemon/APIAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">使用文档</a>
   <a href="https://space.bilibili.com/437134249/search/video?keyword=apiauto">视频教程</a>
   <a href="http://apijson.cn/api">在线体验</a>
 </p>
