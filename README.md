@@ -125,6 +125,13 @@ https://github.com/TommyLemon/APIAuto/issues/16
 #### 抖音
 ![APIAuto_request_douyin_api](https://user-images.githubusercontent.com/5738175/154854538-d21f22cc-d9f1-4f84-ae2f-8e63bfd02f8f.gif)
 
+<br />
+
+**还可以参考视频：APIAuto 测试请求第三方 HTTP API** <br />
+https://www.bilibili.com/video/BV1JZ4y1d7c8
+![image](https://user-images.githubusercontent.com/5738175/160234764-a8e02ca4-1d0e-407b-8ac7-2f85c9f200d6.png)
+
+
 <br/>
 
 ### 部署方法
