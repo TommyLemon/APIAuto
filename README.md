@@ -110,6 +110,21 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 ### 相关推荐
 [别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg)
 
+### 百度、搜狗、抖音公网接口调用演示<br />
+因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
+可以复制 Chrome 等浏览器 Network HTTP API 的文本，<br />
+粘贴到 APIAuto 的 URL 输入框，会自动填充 URL, JSON, Header 等。<br />
+https://github.com/TommyLemon/APIAuto/issues/16 
+
+#### 百度
+![APIAuto_request_thirdparty_api_baidu](https://user-images.githubusercontent.com/5738175/154853951-558b9ce0-b8a5-4f35-a811-3c3fbee1235a.gif)
+
+#### 搜狗
+![APIAuto_request_sogou_api](https://user-images.githubusercontent.com/5738175/154854769-dbb0da94-ce59-41a9-8e79-f500c61e17b3.gif)
+
+#### 抖音
+![APIAuto_request_douyin_api](https://user-images.githubusercontent.com/5738175/154854538-d21f22cc-d9f1-4f84-ae2f-8e63bfd02f8f.gif)
+
 <br/>
 
 ### 部署方法
@@ -145,9 +160,6 @@ https://github.com/TommyLemon/APIAuto/issues/9
 或者在 APIAuto 右上角设置开启托管服务器代理，通过后端代理访问接口， <br />
 注意默认是官网的托管服务器 http://apijson.cn:9090 ，仅支持公网， <br />
 如果是贵公司内网，请按以上 [部署方法](https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95) 文档来部署 APIJSON 后端到内网，并修改托管服务器地址。
-
-百度、搜狗、抖音公网接口调用演示
-https://github.com/TommyLemon/APIAuto/issues/16
 
 #### 2.没有生成文档
 右上角设置项与数据库实际配置不一致 等  <br />
