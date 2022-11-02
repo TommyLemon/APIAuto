@@ -4012,9 +4012,13 @@
         // // 删除注释 >>>>>>>>>>>>>>>>>>>>>
 
         this.onChange(false);
-        this.onDocumentListResponse('', {data: docObj}, function (d) {
-          App.setDoc(d);
-        });
+
+        var list = docObj == null ? null : docObj['[]'];
+        if (list != null && list.length > 0) {
+          this.onDocumentListResponse('', {data: docObj}, null, function (d) {
+            App.setDoc(d);
+          });
+        }
       },
 
       /**获取显示的请求类型名称
