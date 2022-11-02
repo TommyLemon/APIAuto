@@ -153,9 +153,11 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 **建议使用已 [内置 APIAuto](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static) 的 [APIJSONBoot-MultiDataSource](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource)，可以避免以下常见问题 1, 3, 4**
 
-### 后台 Headless 无 UI 模式
-![image](https://user-images.githubusercontent.com/5738175/199445916-29ac8ded-8838-46d8-88ff-0daad06b11a9.png)
-![image](https://user-images.githubusercontent.com/5738175/199445960-2eac952e-75d9-48b1-945b-5759370c21c0.png)
+### 后台 Headless 无 UI 模式回归测试
+Jenkins、蓝盾 等 CI/CD 等流水线不支持带 UI 测试，所以提供了这个模式， <br />
+通过调用 HTTP API 即可执行用例和查看进度，方便集成到 CI/CD 流水线。
+![image](https://user-images.githubusercontent.com/5738175/199452068-dee4cbcb-ca4c-484a-8953-84b6bd238982.png)
+![image](https://user-images.githubusercontent.com/5738175/199453742-b1e897f5-6950-40e2-8bfc-80b826966c6b.png)
 
 #### 1.配置 Node 环境及 NPM 包管理工具
 https://nodejs.org
