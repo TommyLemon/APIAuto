@@ -493,12 +493,6 @@
   }
 
 
-  // 无效，Markdown 中链接触发方法时找不到
-  // function onClickPut(tableIndex) {
-  //   alert('onClickPut(' + tableIndex + ')')
-  //   App.showUrl(false, '/put')
-  // }
-
   function markdownToHTML(md, isRequest) {
     if (editormd == null) {
       return;
@@ -5290,8 +5284,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             doc += '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
-              + ' \n 版本  |  方法  |  数据和结构'
-              + ' \n --------  |  ------------  |  ------------  |  ------------ ';
+              + ' \n 版本  |  方法  |  请求标识  |  数据和结构'
+              + ' \n --------  |  ------------  |  ------------  |  ------------  |  ------------ ';
 
             for (var i = 0; i < list.length; i++) {
               item = list[i];
@@ -5302,8 +5296,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
 
-              doc += '\n' + item.version + '  |  ' + item.method
-                + '  |  ' + JSON.stringify(App.getStructure(item.structure, item.tag));
+              var jsonStr = JSON.stringify(App.getStructure(null, item.structure, item.method, item.tag, item.version))
+
+              doc += '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
+                + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickRequest(' + i + ')">' + jsonStr + '</a>'
             }
 
             doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
@@ -5339,11 +5335,93 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var item = list == null ? null : list[tableIndex]
         return item == null ? null : item['[]']
       },
+      getColumnListWithModelName(modelName, schemaName) {
+        var list = docObj == null ? null : docObj['[]']
+        if (list != null) {
+          for (var i = 0; i < list.length; i++) {
+            var table = this.getTableObj(i)
+            if (table != null && CodeUtil.getModelName(table.table_name) == modelName
+              && (schemaName == null || table.table_schema == schemaName)) {
+              return list[i]['[]']
+            }
+          }
+        }
+        return null
+      },
+      getTableByName(tableName, schemaName) {
+        var list = docObj == null ? null : docObj['[]']
+        if (list != null) {
+          for (var i = 0; i < list.length; i++) {
+            var table = this.getTableObj(i)
+            if (table != null && table.table_name == tableName
+              && (schemaName == null || table.table_schema == schemaName)) {
+              return table
+            }
+          }
+        }
+
+        return null
+      },
+      getTableByModelName(modelName, schemaName) {
+        var list = docObj == null ? null : docObj['[]']
+        if (list != null) {
+          for (var i = 0; i < list.length; i++) {
+            var table = this.getTableObj(i)
+            if (table != null && CodeUtil.getModelName(table.table_name) == modelName
+              && (schemaName == null || table.table_schema == schemaName)) {
+              return table
+            }
+          }
+        }
+        return null
+      },
+      getColumnTypeWithModelName(columnName, modelName, schemaName) {
+        var columnList = this.getColumnListWithModelName(modelName, schemaName)
+        if (columnList != null) {
+          for (var j = 0; j < columnList.length; j++) {
+            var column = this.getColumnObj(columnList, j)
+            if (column != null && column.column_name == columnName) {
+              return column
+            }
+          }
+        }
+        return null
+      },
       getColumnObj(columnList, columnIndex) {
         return columnList == null ? null : (columnList[columnIndex] || {})[this.getColumnKey()];
       },
-      getFunctionObj(funcionList, index) {
-        return funcionList == null ? null : funcionList[index];
+      getFunctionObj(index) {
+        var list = docObj == null ? null : docObj['Function[]']
+        return list == null ? null : list[index];
+      },
+      getFunctionByName(functionName) {
+        var list = docObj == null ? null : docObj['Function[]']
+        if (list != null) {
+          for (var i = 0; i < list.length; i++) {
+            var fun = this.getFunctionObj(i)
+            if (fun != null && fun.name == functionName) {
+              return fun
+            }
+          }
+        }
+        return null
+      },
+      getRequestObj(index) {
+        var list = docObj == null ? null : docObj['Request[]']
+        return list == null ? null : list[index];
+      },
+      getRequestBy(method, tag, version) {
+        var list = docObj == null ? null : docObj['Request[]']
+        if (list != null) {
+          for (var i = 0; i < list.length; i++) {
+            var req = this.getRequestObj(i)
+            if (req != null && req.method == method && req.tag == tag && (
+              version == null || req.version == version)) {
+              return req
+            }
+          }
+        }
+        return null
       },
       getSchemaName(tableIndex) {
         var table = this.getTableObj(tableIndex)
@@ -5564,11 +5642,29 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       onClickFunction: function (index, demo) {
         if (StringUtil.isEmpty(demo, true)) {
-          var fun = this.getFunctionObj(docObj == null ? null : docObj['Function[]'], index)
+          var fun = this.getFunctionObj(index)
           demo = JSON.stringify(fun.demo, null, '    ')  // this.getFunctionDemo(fun)
         }
 
         this.showCRUD('/get', isSingle ? this.switchQuote(demo) : demo)
+      },
+
+      onClickRequest: function (index, method, tag, version, jsonStr) {
+        if (StringUtil.isEmpty(method, true) || StringUtil.isEmpty(tag, true) || StringUtil.isEmpty(jsonStr, true)) {
+          var fun = this.getRequestObj(index)
+          method = fun.method || 'get'
+          tag = fun.tag
+          version = fun.version
+          if (StringUtil.isEmpty(jsonStr, true)) {
+            var json = this.getStructure(null, fun.structure, method, tag, version, isSingle, true)
+            jsonStr = json == null ? '' : JSON.stringify(json, null, '    ')
+          }
+        }
+
+        this.showCRUD(
+          '/' + StringUtil.toLowerCase(method) + (isSingle ? '/' + tag + (version == null ? '' : '?version=' + version) : '')
+          , isSingle ? this.switchQuote(jsonStr) : jsonStr
+        )
       },
 
       showCRUD: function (url, json) {
@@ -5636,92 +5732,195 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       /**处理请求结构
-       * @param obj
-       * @param tag
-       * @return {*}
        */
-      getStructure: function (obj, tag) {
+      getStructure: function (name, obj, method, tag, version, unwrap, isDemo) {
         if (obj == null) {
           return null;
         }
 
-        log('getStructure  tag = ' + tag + '; obj = \n' + format(JSON.stringify(obj)));
+        if (DEBUG) {
+          log('getStructure  tag = ' + tag + '; version = ' + version + '; isDemo = ' + isDemo + '; obj = \n' + format(obj));
+        }
+
+        var tableName = tag
+        if (tag != null) { //补全省略的Table
+          var isArrayKey = JSONObject.isArrayKey(tag);
+          var key = isArrayKey ? tag.substring(0, tag.length - (tag.endsWith(':[]') ? 3 : 2)) : tag;
+          if (this.isTableKey(key)) {
+            tableName = key
+            // name = key
+          }
+        }
+
+        var newObj = {}
 
         if (obj instanceof Array) {
           for (var i = 0; i < obj.length; i++) {
-            obj[i] = this.getStructure(obj[i]);
+            newObj[i] = this.getStructure(i + '', obj[i], method);
           }
         }
         else if (obj instanceof Object) {
-          var v;
-          var nk;
+          var refuseKeys = null
+
           for (var k in obj) {
             if (k == null || k == '' || k == 'INSERT' || k == 'REMOVE' || k == 'REPLACE' || k == 'UPDATE') {
-              delete obj[k];
               continue;
             }
 
-            v = obj[k];
+            var v = obj[k];
             if (v == null) {
-              delete obj[k];
               continue;
             }
 
-            if (k == 'DISALLOW') {
-              nk = '不能传';
-            }
-            else if (k == 'NECESSARY') {
-              nk = '必须传';
-            }
-            else if (k == 'UNIQUE') {
-              nk = '不重复';
-            }
-            else if (k == 'VERIFY') {
-              nk = '满足条件';
-            }
-            else if (k == 'TYPE') {
-              nk = '满足类型';
+            var nk = k;
+
+            if (isDemo) {
+              nk = null
+              if (k == 'REFUSE') {
+                refuseKeys = StringUtil.isEmpty(v, true) ? null : StringUtil.split(v)
+              }
+              else if (k == 'MUST' || k == 'UNIQUE') {
+                var ks = StringUtil.isEmpty(v, true) ? null : StringUtil.split(v)
+                if (ks != null) {
+                  for (var j = 0; j < ks.length; j++) {
+                    var kj = ks[j]
+                    newObj[kj] = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT
+                      , CodeUtil.getColumnType(this.getColumnTypeWithModelName(kj, tableName), this.database)), kj)
+                  }
+                }
+              }
+              else if (k == 'VERIFY') {
+                for (var kj in v) {
+                  newObj[kj] = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT
+                    , CodeUtil.getColumnType(this.getColumnTypeWithModelName(kj, tableName), this.database)), kj)
+                }
+              }
+              else if (k == 'TYPE') {
+                for (var kj in v) {
+                  newObj[kj] = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, v[kj]), kj)
+                }
+              }
+              else {
+                nk = k
+              }
             }
             else {
-              nk = null;
-            }
-
-            if (v instanceof Object) {
-              v = this.getStructure(v);
-            }
-            else if (v === '!') {
-              v = '非必须传的字段';
+              if (k == 'REFUSE') {
+                nk = '不能传';
+              } else if (k == 'MUST') {
+                nk = '必须传';
+              } else if (k == 'UNIQUE') {
+                nk = '不重复';
+              } else if (k == 'VERIFY') {
+                nk = '满足条件';
+              } else if (k == 'TYPE') {
+                nk = '满足类型';
+              } else {
+                nk = k;
+              }
             }
 
             if (nk != null) {
-              obj[nk] = v;
-              delete obj[k];
+              if (v instanceof Object) {
+                v = this.getStructure(nk, v, method);
+              }
+              else if (v === '!') {
+                v = '非必须传的字段';
+              }
+
+              if (v != null) {
+                newObj[nk] = v;
+              }
             }
           }
 
-          if (tag != null && obj[tag] == null) { //补全省略的Table
-            var isArrayKey = tag.endsWith(":[]");  //JSONObject.isArrayKey(tag);
-            var key = isArrayKey ? tag.substring(0, tag.length - 3) : tag;
+          var isFulfill = name == null && this.isTableKey(tableName) && newObj[tableName] == null
+          if (isFulfill) {
+            name = tableName
+          }
 
-            if (this.isTableKey(key)) {
-              if (isArrayKey) { //自动为 tag = Comment:[] 的 { ... } 新增键值对 "Comment[]":[] 为 { "Comment[]":[], ... }
-                obj[key + "[]"] = [];
+          if (isDemo && this.isTableKey(name) && (refuseKeys == null || refuseKeys.indexOf('!') < 0)) {
+            var columnList = this.getColumnListWithModelName(name)
+            if (columnList != null) {
+              for (var i = 0; i < columnList.length; i++) {
+                var column = this.getColumnObj(columnList, i)
+                var cn = column == null ? null : column.column_name
+                if (cn == null || (method == 'POST' && cn.toLowerCase() == 'id') || (refuseKeys != null && refuseKeys.indexOf(cn) >= 0)) {
+                  continue
+                }
+
+                var nv = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, CodeUtil.getColumnType(column, this.database)), cn)
+                if (nv != null || newObj[cn] == null) {
+                  newObj[cn] = nv
+                }
               }
-              else { //自动为 tag = Comment 的 { ... } 包一层为 { "Comment": { ... } }
-                var realObj = {};
-                realObj[tag] = obj;
-                obj = realObj;
+            }
+          }
+
+          if (isFulfill) { //补全省略的Table
+            var isArrayKey = tag.endsWith("[]");  //JSONObject.isArrayKey(tag);
+
+            var realObj = {};
+            if (isArrayKey) { //自动为 tag = Comment:[] 的 { ... } 新增键值对 "Comment[]":[] 为 { "Comment[]":[], ... }
+              if (tag.endsWith(":[]") && (method == 'POST' || method == 'PUT')) {
+                var reqObj = isDemo ? this.getRequestBy(method, tableName) : null
+                var childStruct = reqObj == null ? null : reqObj.structure
+                if (childStruct != null && childStruct[tableName] != null) {
+                  childStruct = childStruct[tableName]
+                }
+
+                newObj = childStruct == null ? newObj : Object.assign(
+                  this.getStructure(null, childStruct, reqObj.method, null, null, true, isDemo), newObj
+                )
+                realObj[key + "[]"] = isDemo ? [newObj, newObj] : [newObj];
               }
+              else if (unwrap || method == 'PUT' || method == 'DELETE') {
+                if (isDemo && newObj['id{}'] == null) {
+                  newObj['id{}'] = [
+                    1,
+                    2,
+                    4,
+                    12,
+                    470,
+                    82011,
+                    82012
+                  ]
+                }
+                realObj[tableName] = newObj;
+              }
+              else {
+                realObj[key + "[]"] = {
+                  [tableName]: newObj
+                }
+              }
+              newObj = realObj
+            }
+            else if (unwrap != true) { //自动为 tag = Comment 的 { ... } 包一层为 { "Comment": { ... } }
+              if (method == 'PUT' || method == 'DELETE') {
+                if (isDemo && newObj.id == null) {
+                  newObj.id = 1
+                }
+              }
+
+              realObj[tableName] = newObj;
+              newObj = realObj;
             }
           }
 
         }
 
-        obj.tag = tag; //补全tag
+        if (tag != null && unwrap != true) {
+          newObj.tag = tag; //补全tag
+        }
+        if (version != null && unwrap != true) {
+          newObj.version = version;
+        }
 
-        log('getStructure  return obj; = \n' + format(JSON.stringify(obj)));
+        if (DEBUG) {
+          log('getStructure  return newObj = \n' + format(newObj));
+        }
 
-        return obj;
+        return newObj;
       },
 
       /**判断key是否为表名，用CodeUtil里的同名函数会在Safari上报undefined

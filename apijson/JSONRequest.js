@@ -210,6 +210,10 @@ function toFormData(data) {
  * @param json
  */
 function format(json) {
+  if (json instanceof Object) {
+    return JSON.stringify(json, null, "\t");
+  }
+
   try {
     return JSON.stringify(JSON.parse(json), null, "\t");
   } catch(e) {
