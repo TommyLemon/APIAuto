@@ -2803,6 +2803,33 @@
         }
       },
 
+      generateValue: function (t, n) {
+        if (t == 'boolean') {
+          return true
+        }
+        if (t == 'integer') {
+          return n == 'pageSize' ? 10 : 1
+        }
+        if (t == 'number') {
+          return n == 'pageSize' ? 10 : 1
+        }
+        if (t == 'string') {  // TODO
+          return ''
+        }
+        if (t == 'object') {
+          return {}
+        }
+        if (t == 'array') {
+          return []
+        }
+        var suffix = n != null && n.length >= 3 ? n.substring(n.length - 3).toLowerCase() : null
+        if (suffix == 'dto') {
+          return {}
+        }
+
+        return null
+      },
+
       //上传第三方平台的 API 至 APIAuto
       uploadThirdPartyApi: function(type, name, url, parameters, header, description, creator) {
         var req = '{'
@@ -5344,30 +5371,79 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       onClickPost: function (tableIndex, modelName) {
         modelName = modelName || this.getModelName(tableIndex)
 
-        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''),
-          isSingle ? `{
-    'content': 'Test post ` + new Date().toLocaleString() + `',
-    'date': '2022-02-02 00:00:00.000'
-}` : `{
-    "` + modelName + `": {
-        "content": "Test post ` + new Date().toLocaleString() + `",
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `",
-    "@explain": true
-}`)
+        var tbl = {}
+
+        var columnList = this.getColumnList(tableIndex)
+        if (columnList != null && columnList.length > 0) {
+          for (var j = 0; j < columnList.length; j++) {
+            var column = this.getColumnObj(columnList, j)
+            var name = column == null ? null : column.column_name;
+            if (name == null || name.toLowerCase() == "id") {
+              continue;
+            }
+
+            var val = column.column_default
+            if (val == null) {
+              var column_type = CodeUtil.getColumnType(column, this.database);
+              var type = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column_type, false);
+              val = this.generateValue(type, name)
+            }
+
+            tbl[name] = val
+          }
+        }
+
+        var json = isSingle ? tbl : {}
+        if (! isSingle) {
+          json[modelName] = tbl
+          json.tag = modelName
+          json['@explain'] = true
+        }
+
+        var s = JSON.stringify(json, null, '    ')
+
+        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''), isSingle ? this.switchQuote(s) : s)
       },
 
       onClickGet: function (tableIndex, modelName) {
         modelName = modelName || this.getModelName(tableIndex)
+
+        var idName = 'id'
+        var userIdName = 'userId'
+        var dateName = 'date'
+        var s = ''
+        var columnList = this.getColumnList(tableIndex)
+        if (columnList != null && columnList.length > 0) {
+          for (var j = 0; j < columnList.length; j++) {
+            var column = this.getColumnObj(columnList, j)
+            var name = column == null ? null : column.column_name;
+            if (name == null) {
+              continue;
+            }
+
+            var ln = name.replaceAll('_', '').toLowerCase()
+            if (ln == "id") {
+              idName = name
+            }
+            else if (ln == "userid") {
+              userIdName = name
+            } else if (("date", "time", "createtime", "createat", "createat", "createdat").indexOf(ln) >= 0) {
+              dateName = name
+            }
+
+            s += (j <= 0 ? '' : ',') + name
+          }
+        }
+
         var arrName = modelName + '[]'
 
         this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
           isSingle ? `{
     '` + modelName + `': {
-        '@order': 'id-',  // '@group': 'userId',
-        'id>': 10,  // '@column': 'userId;avg(id)',
-        'date{}': '!=null'  // '@having': 'avg(id)>10',
+        '@column': '` + s + `',
+        '@order': '` + idName + `-',  // '@group': '` + userIdName + `',
+        '` + idName + `>': 10,  // '@column': '` + userIdName + `;avg(` + idName + `)',
+        '` + dateName + `{}': '!=null'  // '@having': 'avg(` + idName + `)>10',
     },
     'count': 10,
     'page': 0,
@@ -5375,9 +5451,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 }` : `{
     "` + modelName + `[]": {
         "` + modelName + `": {
-            "@order": "id-",  // "@group": "userId",
-            "id>": 10,  // "@column": "userId;avg(id)",
-            "date{}": "!=null"  // "@having": "avg(id)>10",
+            "@column": "` + s + `",
+            "@order": "` + idName + `-",  // "@group": "` + userIdName + `",
+            "` + idName + `>": 10,  // "@column": "` + userIdName + `;avg(` + idName + `)",
+            "` + dateName + `{}": "!=null"  // "@having": "avg(` + idName + `)>10",
         },
         "count": 10,
         "page": 0,
@@ -5392,21 +5469,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       onClickPut: function (tableIndex, modelName) {
         modelName = modelName || this.getModelName(tableIndex)
 
-        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''),
-          isSingle ? `{
-    'id{}': [
-        1,
-        2,
-        4,
-        12,
-        470,
-        82011,
-        82012
-    ],
-    'date': '2022-02-02 00:00:00.000'
-}` : `{
-    "` + modelName + `": {
-        "id{}": [
+        var tbl = {
+          "id{}": [
             1,
             2,
             4,
@@ -5414,12 +5478,39 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             470,
             82011,
             82012
-        ],
-        "date": "2022-02-02 00:00:00.000"
-    },
-    "tag": "` + modelName + `",
-    "@explain": true
-}`)
+          ]
+        }
+
+        var columnList = this.getColumnList(tableIndex)
+        if (columnList != null && columnList.length > 0) {
+          for (var j = 0; j < columnList.length; j++) {
+            var column = this.getColumnObj(columnList, j)
+            var name = column == null ? null : column.column_name;
+            if (name == null) {
+              continue;
+            }
+
+            var val = column.column_default
+            if (val == null) {
+              var column_type = CodeUtil.getColumnType(column, this.database);
+              var type = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column_type, false);
+              val = this.generateValue(type, name)
+            }
+
+            tbl[name] = val
+          }
+        }
+
+        var json = isSingle ? tbl : {}
+        if (! isSingle) {
+          json[modelName] = tbl
+          json.tag = modelName
+          json['@explain'] = true
+        }
+
+        var s = JSON.stringify(json, null, '    ')
+
+        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''), isSingle ? this.switchQuote(s) : s)
       },
 
       onClickDelete: function (tableIndex, modelName) {
@@ -5485,6 +5576,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.showUrl(false, url)
         this.urlComment = ''
         vInput.value = StringUtil.trim(json)
+        this.showTestCase(false, this.isLocalShow)
         this.onChange(false)
       },
 
