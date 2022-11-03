@@ -5296,7 +5296,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
 
-              var jsonStr = JSON.stringify(App.getStructure(null, item.structure, item.method, item.tag, item.version))
+              var jsonStr = JSON.stringify(App.getStructure(false, null, item.structure, item.method, item.tag, item.version))
 
               doc += '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
                 + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickRequest(' + i + ')">' + jsonStr + '</a>'
@@ -5656,7 +5656,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           tag = fun.tag
           version = fun.version
           if (StringUtil.isEmpty(jsonStr, true)) {
-            var json = this.getStructure(null, fun.structure, method, tag, version, isSingle, true)
+            var json = this.getStructure(true, null, fun.structure, method, tag, version, isSingle, true)
             jsonStr = json == null ? '' : JSON.stringify(json, null, '    ')
           }
         }
@@ -5733,7 +5733,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       /**处理请求结构
        */
-      getStructure: function (name, obj, method, tag, version, unwrap, isDemo) {
+      getStructure: function (isDemo, name, obj, method, tag, version, unwrap) {
         if (obj == null) {
           return null;
         }
@@ -5756,7 +5756,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (obj instanceof Array) {
           for (var i = 0; i < obj.length; i++) {
-            newObj[i] = this.getStructure(i + '', obj[i], method);
+            newObj[i] = this.getStructure(isDemo, i + '', obj[i], method);
           }
         }
         else if (obj instanceof Object) {
@@ -5789,11 +5789,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
               }
-              else if (k == 'VERIFY') {
-                for (var kj in v) {
-                  newObj[kj] = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT
-                    , CodeUtil.getColumnType(this.getColumnTypeWithModelName(kj, tableName), this.database)), kj)
-                }
+              else if (k == 'VERIFY') { // 后续会用数据字典填空
+                nk = null
+                // for (var kj in v) { // 还得把功能符去掉 {} $ > <= ...
+                //   newObj[kj] = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT
+                //     , CodeUtil.getColumnType(this.getColumnTypeWithModelName(kj, tableName), this.database)), kj)
+                // }
               }
               else if (k == 'TYPE') {
                 for (var kj in v) {
@@ -5822,7 +5823,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             if (nk != null) {
               if (v instanceof Object) {
-                v = this.getStructure(nk, v, method);
+                v = this.getStructure(isDemo, nk, v, method);
               }
               else if (v === '!') {
                 v = '非必须传的字段';
@@ -5870,7 +5871,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
 
                 newObj = childStruct == null ? newObj : Object.assign(
-                  this.getStructure(null, childStruct, reqObj.method, null, null, true, isDemo), newObj
+                  this.getStructure(isDemo, null, childStruct, reqObj.method, null, null, true), newObj
                 )
                 realObj[key + "[]"] = isDemo ? [newObj, newObj] : [newObj];
               }
