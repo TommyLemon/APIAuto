@@ -2,7 +2,7 @@
   APIAuto
 </h1>
  
-<p align="center">☔ HTTP 接口 机器学习测试 和 智能开发管理 工具</p>
+<p align="center">☔ HTTP 接口 机器学习零代码测试 和 一站式智能开发管理 工具</p>
 
 <p align="center" >
   <a href="https://github.com/TommyLemon/APIAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">使用文档</a>
