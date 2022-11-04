@@ -211,8 +211,8 @@ https://github.com/Tencent/APIJSON/issues/85
 不能代理接口、不能展示文档、不能对断言结果纠错 等 <br />
 https://github.com/TommyLemon/APIAuto/issues/12
 
-#### 4.apijson.org 访问不了
-管理后台网页改用 http://apijson.cn/api ，托管服务地址改为 http://47.74.39.68:9090  <br />
+#### 4.apijson.cn 访问不了
+托管服务地址改为 http://47.74.39.68:8080  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
 
 更多问题及解答 <br />
@@ -231,7 +231,7 @@ https://github.com/TommyLemon/APIAuto/issues
 <img width="1279" alt="image" src="https://user-images.githubusercontent.com/5738175/199979403-ace8b574-cd64-4582-8c19-b51571945214.png">
 
 如果有什么问题或建议可以 [提 issue](https://github.com/TommyLemon/APIAuto/issues)，交流技术，分享经验。<br >
-如果你解决了某些bug，或者新增了一些功能，欢迎 [贡献代码](https://github.com/TommyLemon/APIAuto/pulls)，感激不尽。
+如果你解决了某些 bug，或者新增了一些功能，欢迎 [提 PR 贡献代码](https://github.com/Tencent/APIJSON/blob/master/CONTRIBUTING.md)，感激不尽。
 <br />
 <br />
 
