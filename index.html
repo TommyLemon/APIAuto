@@ -203,33 +203,33 @@
                     </textarea>
                     <textarea v-show="! isEditResponse" id="vWarning" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: orangered; background-color: #0000;" wrap="off" disabled>
 					</textarea>
-                    <textarea id="vInput" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{  // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
-  '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
-    'count': 5,  // 每页数量
-    'page': 0,  // 分页页码
-    'join': '</User/id@',  // 多表连接：LEFT JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
-    'Moment': {  // 动态
-      '@order': 'date+',  // 排序方式：+升序，-降序
-      '@column': 'id,userId;date_format(date,%Y-%m-%d %H:%m)',  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
-      '@explain': true,  // 性能分析：true-开启 false-关闭，返回执行的 SQL 及查询计划
-      'content~': 'o',  // 正则匹配 < content: String(300)? 内容
-      'userId!': 82001,  // 都不符合 < userId: Int(15), 用户id
-      '@combine': 'userId!,content~'  // 条件组合，| 可省略。合并同类，外层按照 & | ! 顺序，内层按传参顺序组合成 (key0 & key1 & key6 & 其它key) & (key2 | key3 | key7) & !(key4 | key5)
+                    <textarea id="vInput" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%; position: absolute; z-index: 100; background: #0000;" wrap="off" placeholder="{   // 根对象，可在内部加 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对
+  '[]': { // 数组，可在内部加 count,page,query,join 等关键词键值对
+    'count': 5, // 每页数量
+    'page': 0, // 分页页码
+    'join': '</User/id@', // 多表连接：LEFT JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
+    'Moment': { // 动态
+      '@order': 'date+', // 排序方式：+升序，-降序
+      '@column': 'id,userId;date_format(date,%Y-%m-%d %H:%m)', // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+      '@explain': true, // 性能分析：true-开启 false-关闭，返回执行的 SQL 及查询计划
+      'content~': 'o', // 正则匹配 < content: String(300)? 内容
+      'userId!': 82001, // 都不符合 < userId: Int(15), 用户id
+      '@combine': 'userId!,content~' // 条件组合，| 可省略。合并同类，外层按照 & | ! 顺序，内层按传参顺序组合成 (key0 & key1 & key6 & 其它key) & (key2 | key3 | key7) & !(key4 | key5)
     },
-    'User': {  // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
-      'id@': '/Moment/userId',  // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
-      '@column': 'id,name,head'  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+    'User': { // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
+      'id@': '/Moment/userId', // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
+      '@column': 'id,name,head' // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
     },
-    '[]': {  // 数组，可在内部加 count,page,query,join 等关键词键值对
-      'count': 6,  // 每页数量
-      'join': '@/User/id@',  // 多表连接：APP JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
-      'Comment': {  // 评论
-        '@order': 'date-',  // 排序方式：+升序，-降序
-        'momentId@': '[]/Moment/id'  // 引用赋值，从最外层开始的绝对(完整)路径 < momentId: Int(15), 动态id
+    '[]': { // 数组，可在内部加 count,page,query,join 等关键词键值对
+      'count': 6, // 每页数量
+      'join': '@/User/id@', // 多表连接：APP JOIN User，同一层级必须有 'User':{ 'id@':'/../..' }
+      'Comment': { // 评论
+        '@order': 'date-', // 排序方式：+升序，-降序
+        'momentId@': '[]/Moment/id' // 引用赋值，从最外层开始的绝对(完整)路径 < momentId: Int(15), 动态id
       },
-      'User': {  // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
-        'id@': '/Comment/userId',  // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
-        '@column': 'DISTINCT id,name;concat(%,name,%):concat'  // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
+      'User': { // 用户公开信息表。  对安全要求高，不想泄漏真实名称。对外名称为 User
+        'id@': '/Comment/userId', // 引用赋值，从对象父级开始的相对(缺省)路径 < id: Int(15), 唯一标识
+        '@column': 'DISTINCT id,name;concat(%,name,%):concat' // 返回字段，可传 字段(:别名)、SQL 函数(:别名，用分号 ; 隔开)、表达式，以及部分 SQL 关键词
       }
     }
   }
@@ -271,7 +271,7 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
 {
     "User": {
         "id": 82001
-    },  // 以上查一个对象，以下查一个数组，Comment.userId = User.id
+    }, // 以上查一个对象，以下查一个数组，Comment.userId = User.id
     "[]": {
          Comment : {
             'userId@': "User/id"
@@ -404,31 +404,31 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
 
                         <textarea id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%;" wrap="off"
                                   placeholder="# 常用：
-RANDOM_IN(val0:Any, val1:Any ...)  // 从选项内随机取值
-RANDOM_INT(min:Integer, max:Integer)  // 从范围内随机取整数
-RANDOM_DB(min:Integer, max:Integer, table:String, column:String)  // 从数据库随机取值
-RANDOM_NUM(min:Number, max:Number, precision:Integer)  // 从范围内随机取小数
-RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String)  // 从长度范围内随机取字符串
-ORDER_IN(val0:Any, val1:Any ...)  // 从选项内顺序取值
-ORDER_INT(min:Integer, max:Integer)  // 从范围内顺序取整数
-ORDER_DB(min:Integer, max:Integer, table:String, column:String)  // 从数据库顺序取值
+RANDOM_IN(val0:Any, val1:Any ...) // 从选项内随机取值
+RANDOM_INT(min:Integer, max:Integer) // 从范围内随机取整数
+RANDOM_DB(min:Integer, max:Integer, table:String, column:String) // 从数据库随机取值
+RANDOM_NUM(min:Number, max:Number, precision:Integer) // 从范围内随机取小数
+RANDOM_STR(minLength:Integer, maxLength:Integer, regexp:String) // 从长度范围内随机取字符串
+ORDER_IN(val0:Any, val1:Any ...) // 从选项内顺序取值
+ORDER_INT(min:Integer, max:Integer) // 从范围内顺序取整数
+ORDER_DB(min:Integer, max:Integer, table:String, column:String) // 从数据库顺序取值
 其中 RANDOM 开头的是随机函数；ORDER 开头的是顺序函数，可以使用 + - 升降序 和 step 跨步，例如 ORDER_IN-(1, 2, 3) 降序取值，ORDER_INT+3(0, 100) 间隔 step = 3 位来升序取整数。
 # 模板：
-format: ORDER_IN(true, false, null, undefined)  // 从选项中顺序取值
-User/id: RANDOM_DB()  // 从数据库随机取值，等价于 User/id: RANDOM_DB(null, null, 'User', 'id')
-[]/page: Math.round(100*Math.random())  // 通过 JavaScript 代码来自定义 [] 内的 page
+format: ORDER_IN(true, false, null, undefined) // 从选项中顺序取值
+User/id: RANDOM_DB() // 从数据库随机取值，等价于 User/id: RANDOM_DB(null, null, 'User', 'id')
+[]/page: Math.round(100*Math.random()) // 通过 JavaScript 代码来自定义 [] 内的 page
 ">
-User/id: RANDOM_INT(82001, 82020)  // 随机整数
-[]/count: RANDOM_IN(5, 10, 's', false, [], {})  // 随机取值
-[]/page: Math.round(5*Math.random())  // 通过代码来自定义
-@explain: ORDER_IN(true, false)  // 顺序取值
-  // 从数据库随机取值  []/Comment/toId: RANDOM_DB()
+User/id: RANDOM_INT(82001, 82020) // 随机整数
+[]/count: RANDOM_IN(5, 10, 's', false, [], {}) // 随机取值
+[]/page: Math.round(5*Math.random()) // 通过代码来自定义
+@explain: ORDER_IN(true, false) // 顺序取值
+// 从数据库随机取值  []/Comment/toId: RANDOM_DB()
 
-  // 注释可省略，但如果未省略则前面两个空格必须；清空文本内容可查看规则。
+// 注释可省略，但如果未省略则前面两个空格必须；清空文本内容可查看规则。
 
-  // ## 快捷键
-  // Ctrl + I 或 Command + I 格式化文本，清除所有注释和无效空格、换行等；
-  // Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
+// ## 快捷键
+// Ctrl + I 或 Command + I 格式化文本，清除所有注释和无效空格、换行等；
+// Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
                         </textarea>
                     </div>
 
@@ -442,11 +442,11 @@ User/id: RANDOM_INT(82001, 82020)  // 随机整数
                                 </svg>
                             </a>
                         </div>
-                        <textarea id="vHeader" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4=  // 示例，支持单行注释
-My-Header: 'Secret' + Math.random()  // 示例，代码执行结果作为实际值，值为 fun(arg0, arg1..) 等包含函数名与括号的格式
-  // ## 快捷键
-  // Ctrl + I 或 Command + I 格式化文本，清除所有注释和无效空格、换行等；
-  // Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；"></textarea>
+                        <textarea id="vHeader" @copy="doOnCopy" @paste="doOnPaste" @keyup="onChange(true)" style="width: 100%;height: 100%;" wrap="off" placeholder="Authorization: Basic YWRtaW46YWRtaW4= // 示例，支持单行注释
+My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际值，值为 fun(arg0, arg1..) 等包含函数名与括号的格式
+// ## 快捷键
+// Ctrl + I 或 Command + I 格式化文本，清除所有注释和无效空格、换行等；
+// Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；"></textarea>
                     </div>
 
                 </div>
