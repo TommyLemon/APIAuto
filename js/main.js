@@ -3391,6 +3391,11 @@
           this.showCompare4TestCaseList(show)
 
           //this.onChange(false)
+        } else if (IS_BROWSER) { // 解决一旦错了，就只能清缓存
+          this.testCaseCount = 50
+          this.testCasePage = 0
+          this.saveCache(this.server, 'testCasePage', this.testCasePage)
+          this.saveCache(this.server, 'testCaseCount', this.testCaseCount)
         }
       },
 

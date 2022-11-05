@@ -5881,6 +5881,10 @@ var CodeUtil = {
   DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'DAMENG', 'CLICKHOUSE', 'SQLITE', 'TDENGINE'],
 
   getComment4Function: function (funCallStr, method) {
+    if (typeof funCallStr != 'string') {
+      return '远程函数 value 必须是 String 类型！';
+    }
+
     var start = funCallStr == null ? -1 : funCallStr.indexOf('(')
     if (start <= 0 || funCallStr.endsWith(')') != true) {
       throw new Error('远程函数调用格式非法！必须为 fun(arg0,arg1..) 这种形式！不允许多余的空格！')
@@ -6059,24 +6063,25 @@ var CodeUtil = {
       }
     }
 
-    if (isRestful != true && key != null && key.endsWith('()')) { // 方法，查询完后处理，先用一个Map<key,function>保存？
+    if (isRestful != true && key != null && key.startsWith('@') != true && key.endsWith('()')) { // 方法，查询完后处理，先用一个Map<key,function>保存？
       if (['GET', 'HEAD'].indexOf(method) < 0) {
         return ' ! 远程函数只能用于 GET,HEAD 请求！！';
       }
 
       if (value != null && valuesIsNotString) {
-        return ' ! value必须是String类型！';
+        return ' ! 远程函数 value 必须是 String 类型！';
       }
-      if (value != null) {
-        var startIndex = value.indexOf("(");
-        if (startIndex <= 0 || value.endsWith(")") == false) {
-          return ' ! value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
-        }
-        var fun = value.substring(0, startIndex);
-        if (StringUtil.isName(fun) != true) {
-          return '! 函数名' + fun + '不合法！value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
-        }
-      }
+
+      // if (value != null) {
+      //   var startIndex = value.indexOf("(");
+      //   if (startIndex <= 0 || value.endsWith(")") == false) {
+      //     return ' ! 远程函数 value 必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+      //   }
+      //   var fun = value.substring(0, startIndex);
+      //   if (StringUtil.isName(fun) != true) {
+      //     return '! 函数名' + fun + '不合法！value 必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+      //   }
+      // }
 
       var c = ''
       if (StringUtil.isNotEmpty(value)) { // isValueNotEmpty 居然不对
