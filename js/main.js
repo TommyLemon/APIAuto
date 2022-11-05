@@ -5375,10 +5375,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
               doc += '\n### ' + (i + 1) + '. ' + modelName
                 + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
-                + ' - <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
+                + ' - <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
                 + ' <a href="javascript:void(0)" onclick="window.App.onClickPut(' + i + ',\'' + modelName + '\')">PUT</a>'
                 + ' <a href="javascript:void(0)" onclick="window.App.onClickDelete(' + i + ',\'' + modelName + '\')">DELETE</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickGets(' + i + ',\'' + modelName + '\')">GETS</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickHead(' + i + ',\'' + modelName + '\')">HEAD</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickHeads(' + i + ',\'' + modelName + '\')">HEADS</a>'
                 + '\n' + App.toMD(table_comment);
 
               //Column[]
@@ -5707,13 +5710,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var s = JSON.stringify(json, null, '    ')
-
-        var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
-        var isRoleEmpty = StringUtil.isEmpty(role, true)
-
-        this.showCRUD('/post' + (isSingle ? '/' + modelName
-          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
-          : ''), isSingle ? this.switchQuote(s) : s)
+        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''), isSingle ? this.switchQuote(s) : s)
       },
 
       onClickGet: function (tableIndex, modelName, schemaName, role) {
@@ -5753,16 +5750,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var arrName = modelName + '[]'
 
-        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info'
-          + (StringUtil.isEmpty(schemaName, true) ? '' : '&@schema=' + schemaName) + (StringUtil.isEmpty(role, true) ? '' : '&@role=' + role): ''),
+        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
           isSingle ? `{
     '` + modelName + `': {` + (StringUtil.isEmpty(role, true) ? '' : `
         '@role': '` + role + "',") + (StringUtil.isEmpty(schemaName, true) ? '' : `
         '@schema': '` + schemaName + "',") + `
         '@column': '` + s + `',
-        '@order': '` + idName + `-',  // '@group': '` + userIdName + `',
-        '` + idName + `>': 10,  // '@column': '` + userIdName + `;avg(` + idName + `)',
-        '` + dateName + `{}': '!=null'  // '@having': 'avg(` + idName + `)>10'
+        '@order': '` + idName + `-', // '@group': '` + userIdName + `',
+        '` + idName + `>': 10, // '@column': '` + userIdName + `;avg(` + idName + `)',
+        '` + dateName + `{}': '!=null' // '@having': 'avg(` + idName + `)>10'
     },
     'count': 10,
     'page': 0,
@@ -5773,9 +5769,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             "@role": "` + role + '",') + (StringUtil.isEmpty(schemaName, true) ? '' : `
             "@schema": "` + schemaName + '",') + `
             "@column": "` + s + `",
-            "@order": "` + idName + `-",  // "@group": "` + userIdName + `",
-            "` + idName + `>": 10,  // "@column": "` + userIdName + `;avg(` + idName + `)",
-            "` + dateName + `{}": "!=null"  // "@having": "avg(` + idName + `)>10"
+            "@order": "` + idName + `-", // "@group": "` + userIdName + `",
+            "` + idName + `>": 10, // "@column": "` + userIdName + `;avg(` + idName + `)",
+            "` + dateName + `{}": "!=null" // "@having": "avg(` + idName + `)>10"
         },
         "count": 10,
         "page": 0,
@@ -5841,19 +5837,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var s = JSON.stringify(json, null, '    ')
-
-        var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
-        var isRoleEmpty = StringUtil.isEmpty(role, true)
-
-        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]'
-          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
-          : ''), isSingle ? this.switchQuote(s) : s)
+        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''), isSingle ? this.switchQuote(s) : s)
       },
 
       onClickDelete: function (tableIndex, modelName, schemaName, role) {
         this.handleClickDelete(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
       },
       handleClickDelete: function (columnList, modelName, schemaName, role) {
+        this.handleClickGetsOrDelete(false, columnList, modelName, schemaName, role)
+      },
+      handleClickGetsOrDelete: function (isGets, columnList, modelName, schemaName, role) {
         if (columnList == null) {
           columnList = this.getColumnListWithModelName(modelName, schemaName)
         }
@@ -5861,9 +5854,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
         var isRoleEmpty = StringUtil.isEmpty(role, true)
 
-        this.showCRUD('/delete' + (isSingle ? '/' + modelName
-          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
-          : ''),
+        this.showCRUD((isGets ? '/gets' : '/delete') + (isSingle ? '/' + modelName : ''),
           isSingle ? `{
     'id': 1` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
     '@schema': '` + schemaName + "'") + (StringUtil.isEmpty(role, true) ? '' : `,
@@ -5871,6 +5862,46 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 }` : `{
     "` + modelName + `": {
         "id": 1` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
+        "@schema": "` + schemaName + '"') + (StringUtil.isEmpty(role, true) ? '' : `,
+        "@role": "` + role + '"') + `
+    },
+    "tag": "` + modelName + `",
+    "@explain": true
+}`)
+      },
+
+      onClickGets: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickGets(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickGets: function (columnList, modelName, schemaName, role) {
+        this.handleClickGetsOrDelete(true, columnList, modelName, schemaName, role)
+      },
+
+      onClickHead: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickHead(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickHead: function (columnList, modelName, schemaName, role) {
+        this.handleClickHeadOrHeads(false, columnList, modelName, schemaName, role)
+      },
+      onClickHeads: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickHeads(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickHeads: function (columnList, modelName, schemaName, role) {
+        this.handleClickHeadOrHeads(true, columnList, modelName, schemaName, role)
+      },
+      handleClickHeadOrHeads: function (isHeads, columnList, modelName, schemaName, role) {
+        if (columnList == null) {
+          columnList = this.getColumnListWithModelName(modelName, schemaName)
+        }
+
+        this.showCRUD((isHeads ? '/heads' : '/head') + (isSingle ? '/' + modelName : ''),
+          isSingle ? `{
+    'userId': 82001` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
+    '@schema': '` + schemaName + "'") + (StringUtil.isEmpty(role, true) ? '' : `,
+    '@role': '` + role + "'") + `
+}` : `{
+    "` + modelName + `": {
+        "userId": 82001` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
         "@schema": "` + schemaName + '"') + (StringUtil.isEmpty(role, true) ? '' : `,
         "@role": "` + role + '"') + `
     },
@@ -5892,7 +5923,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           isSingle ? `{
     '` + modelName + `': {
         '@column': 'DISTINCT ` + columnName + `',
-        '@order': '` + columnName + `+',  // '@order': 'id-'
+        '@order': '` + columnName + `+', // '@order': 'id-'
     },
     'count': 0,
     'page': 0,
@@ -5901,7 +5932,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     "` + modelName + '-' + columnName + `[]": {
         "` + modelName + `": {
             "@column": "DISTINCT ` + columnName + `",
-            "@order": "` + columnName + `+",  // "@order": "id-"
+            "@order": "` + columnName + `+", // "@order": "id-"
         },
         "count": 0,
         "page": 0,
@@ -5923,6 +5954,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         switch (method) {
           case 'get':
             this.handleClickGet(null, model, schema, role)
+            break
+          case 'gets':
+            this.handleClickGets(null, model, schema, role)
+            break
+          case 'head':
+            this.handleClickHead(null, model, schema, role)
+            break
+          case 'heads':
+            this.handleClickHeads(null, model, schema, role)
             break
           case 'post':
             this.handleClickPost(null, model, schema, role)
