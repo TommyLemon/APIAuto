@@ -5140,8 +5140,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'Access': {
               '@column': 'name,alias,get,head,gets,heads,post,put,delete',
               '@order': 'date-,name+',
-              'name()': 'getWithDefault(alias,name)',
-              'r0()': 'removeKey(alias)',
               'name$': search,
               'alias$': search,
               '@combine': search == null ? null : 'name$,alias$',
@@ -5276,14 +5274,73 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
 //        log('getDoc  docRq.responseText = \n' + docRq.responseText);
-          docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
+        docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
 
-          //转为文档格式
+        var map = {};
+
+        //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        var ad = ''
+        list = docObj == null ? null : docObj['Access[]'];
+        CodeUtil.accessList = list;
+        if (list != null) {
+          if (DEBUG) {
+            log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
+          }
+
+          ad += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
+            + ' \n 表名  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  表名'
+            + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
+
+          for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            if (item == null) {
+              continue;
+            }
+            if (DEBUG) {
+              log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
+            }
+
+            var name = StringUtil.isEmpty(item.alias, true) ? StringUtil.firstCase(item.name, true) : item.alias
+            map[StringUtil.toLowerCase(item.schema) + '.' + StringUtil.toLowerCase(item.name)] = item
+
+            function getShowString(method, lineItemCount) {
+              var roles = item[method] == null ? null : JSON.parse(item[method])
+              var rs = []
+              if (roles != null) {
+                var schemaStr = StringUtil.isEmpty(item.schema) ? 'null' : "'" + item.schema + "'"
+                for (var j = 0; j < roles.length; j++) {
+                  var r = roles[j] || ''
+                  rs.push('<a href="javascript:void(0)" onclick="window.App.onClickAccess(' + i + ',\'' + name + '\',' + schemaStr + ',\'' + method + '\',\'' + r + '\')">' + r + '</a>')
+                }
+              }
+              return JSONResponse.getShowString(rs, lineItemCount)
+            }
+
+            ad += '\n' + (name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
+              + '  |  ' + getShowString('post', 1)
+              + '  |  ' + getShowString('put', 1)
+              + '  |  ' + getShowString('delete', 1)
+              + '  |  ' + getShowString('get', 2)
+              + '  |  ' + getShowString('head', 2)
+              + '  |  ' + getShowString('gets', 2)
+              + '  |  ' + getShowString('heads', 2)
+              + '  |  ' + (name); //右上角设置指定了 Schema  + '(' + item.schema + ')');
+          }
+
+          ad += ' \n 表名  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色   |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色 |  表名'
+
+          ad += '\n' //避免没数据时表格显示没有网格
+        }
+        var accessMap = CodeUtil.accessMap = map;
+        //Access[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+        //转为文档格式
           var doc = '';
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docObj == null ? null : docObj['[]'];
-          var map = {};
+          map = {};
           CodeUtil.tableList = list;
           if (list != null) {
             if (DEBUG) {
@@ -5312,10 +5369,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // item.Table.table_comment = table_comment
 
               var schema = table.table_schema
-              var modelName = CodeUtil.getModelName(table.table_name)
-              map[schema + '.' + modelName] = table
-              // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
+              var modelName = App.getModelName(i)
+              map[StringUtil.toLowerCase(schema) + '.' + StringUtil.toLowerCase(modelName)] = table
 
+              // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
               doc += '\n### ' + (i + 1) + '. ' + modelName
                 + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
                 + ' - <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
@@ -5373,49 +5430,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           CodeUtil.tableMap = map;
           //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
-          //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['Access[]'];
-          CodeUtil.accessList = list;
-          if (list != null) {
-            if (DEBUG) {
-              log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
-            }
-
-            doc += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
-              + ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
-              + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
-
-            for (var i = 0; i < list.length; i++) {
-              var item = list[i];
-              if (item == null) {
-                continue;
-              }
-              if (DEBUG) {
-                log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
-              }
-
-              map[item.schema + '.' + item.name] = item
-
-              doc += '\n' + (item.name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get), 2)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.head), 2)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.gets), 2)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.heads), 2)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.post), 1)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.put), 1)
-                + '  |  ' + JSONResponse.getShowString(JSON.parse(item.delete), 1)
-                + '  |  ' + (item.name); //右上角设置指定了 Schema  + '(' + item.schema + ')');
-            }
-
-            doc += ' \n 表名  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  表名'
-
-            doc += '\n' //避免没数据时表格显示没有网格
-          }
-          CodeUtil.accessMap = map;
-          //Access[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+          doc += ad;
 
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Function[]'];
@@ -5522,7 +5537,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
             var table = this.getTableObj(i)
-            if (table != null && CodeUtil.getModelName(table.table_name) == modelName
+            if (table != null && this.getModelName(i) == modelName
               && (schemaName == null || table.table_schema == schemaName)) {
               return list[i]['[]']
             }
@@ -5549,7 +5564,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
             var table = this.getTableObj(i)
-            if (table != null && CodeUtil.getModelName(table.table_name) == modelName
+            if (table != null && this.getModelName(i) == modelName
               && (schemaName == null || table.table_schema == schemaName)) {
               return table
             }
@@ -5571,6 +5586,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       getColumnObj(columnList, columnIndex) {
         return columnList == null ? null : (columnList[columnIndex] || {})[this.getColumnKey()];
+      },
+      getAccessObj(index) {
+        var list = docObj == null ? null : docObj['Access[]']
+        return list == null ? null : list[index];
       },
       getFunctionObj(index) {
         var list = docObj == null ? null : docObj['Function[]']
@@ -5625,15 +5644,35 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       getModelName(tableIndex) {
         var table = this.getTableObj(tableIndex)
-        return table == null ? '' : CodeUtil.getModelName(table.table_name)
+        var table_name = table == null ? null : table.table_name
+
+        var accessMap = table_name == null ? null : CodeUtil.accessMap
+        var access = accessMap == null ? null : accessMap[StringUtil.toLowerCase(table.table_schema) + '.' + StringUtil.toLowerCase(table_name)]
+        var alias = access == null ? null : access.alias
+
+        return StringUtil.isEmpty(alias, true) ? StringUtil.firstCase(table_name, true) : alias
+      },
+      getModelNameByTableName(tableName, schemaName) {
+        var table = this.getTableByName(tableName, schemaName)
+        var table_name = table == null ? null : table.table_name
+
+        var accessMap = table_name == null ? null : CodeUtil.accessMap
+        var access = accessMap == null ? null : accessMap[StringUtil.toLowerCase(table.table_schema) + '.' + StringUtil.toLowerCase(table_name)]
+        var alias = access == null ? null : access.alias
+
+        return StringUtil.isEmpty(alias, true) ? StringUtil.firstCase(table_name, true) : alias
       },
 
-      onClickPost: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
+      onClickPost: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickPost(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickPost: function (columnList, modelName, schemaName, role) {
+        if (columnList == null) {
+          columnList = this.getColumnListWithModelName(modelName, schemaName)
+        }
 
         var tbl = {}
 
-        var columnList = this.getColumnList(tableIndex)
         if (columnList != null && columnList.length > 0) {
           for (var j = 0; j < columnList.length; j++) {
             var column = this.getColumnObj(columnList, j)
@@ -5653,6 +5692,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
         }
 
+        if (StringUtil.isNotEmpty(schemaName, true)) {
+          tbl['@schema'] = schemaName
+        }
+        if (StringUtil.isNotEmpty(role, true)) {
+          tbl['@role'] = role
+        }
+
         var json = isSingle ? tbl : {}
         if (! isSingle) {
           json[modelName] = tbl
@@ -5662,17 +5708,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var s = JSON.stringify(json, null, '    ')
 
-        this.showCRUD('/post' + (isSingle ? '/' + modelName : ''), isSingle ? this.switchQuote(s) : s)
+        var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
+        var isRoleEmpty = StringUtil.isEmpty(role, true)
+
+        this.showCRUD('/post' + (isSingle ? '/' + modelName
+          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
+          : ''), isSingle ? this.switchQuote(s) : s)
       },
 
-      onClickGet: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
+      onClickGet: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickGet(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickGet: function (columnList, modelName, schemaName, role) {
+        if (columnList == null) {
+          columnList = this.getColumnListWithModelName(modelName, schemaName)
+        }
 
         var idName = 'id'
         var userIdName = 'userId'
         var dateName = 'date'
         var s = ''
-        var columnList = this.getColumnList(tableIndex)
         if (columnList != null && columnList.length > 0) {
           for (var j = 0; j < columnList.length; j++) {
             var column = this.getColumnObj(columnList, j)
@@ -5698,24 +5753,29 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var arrName = modelName + '[]'
 
-        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
+        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info'
+          + (StringUtil.isEmpty(schemaName, true) ? '' : '&@schema=' + schemaName) + (StringUtil.isEmpty(role, true) ? '' : '&@role=' + role): ''),
           isSingle ? `{
-    '` + modelName + `': {
+    '` + modelName + `': {` + (StringUtil.isEmpty(role, true) ? '' : `
+        '@role': '` + role + "',") + (StringUtil.isEmpty(schemaName, true) ? '' : `
+        '@schema': '` + schemaName + "',") + `
         '@column': '` + s + `',
         '@order': '` + idName + `-',  // '@group': '` + userIdName + `',
         '` + idName + `>': 10,  // '@column': '` + userIdName + `;avg(` + idName + `)',
-        '` + dateName + `{}': '!=null'  // '@having': 'avg(` + idName + `)>10',
+        '` + dateName + `{}': '!=null'  // '@having': 'avg(` + idName + `)>10'
     },
     'count': 10,
     'page': 0,
     'query': 2
 }` : `{
     "` + modelName + `[]": {
-        "` + modelName + `": {
+        "` + modelName + `": {` + (StringUtil.isEmpty(role, true) ? '' : `
+            "@role": "` + role + '",') + (StringUtil.isEmpty(schemaName, true) ? '' : `
+            "@schema": "` + schemaName + '",') + `
             "@column": "` + s + `",
             "@order": "` + idName + `-",  // "@group": "` + userIdName + `",
             "` + idName + `>": 10,  // "@column": "` + userIdName + `;avg(` + idName + `)",
-            "` + dateName + `{}": "!=null"  // "@having": "avg(` + idName + `)>10",
+            "` + dateName + `{}": "!=null"  // "@having": "avg(` + idName + `)>10"
         },
         "count": 10,
         "page": 0,
@@ -5727,8 +5787,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 }`)
       },
 
-      onClickPut: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
+      onClickPut: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickPut(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickPut: function (columnList, modelName, schemaName, role) {
+        if (columnList == null) {
+          columnList = this.getColumnListWithModelName(modelName, schemaName)
+        }
 
         var tbl = {
           "id{}": [
@@ -5742,7 +5807,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           ]
         }
 
-        var columnList = this.getColumnList(tableIndex)
         if (columnList != null && columnList.length > 0) {
           for (var j = 0; j < columnList.length; j++) {
             var column = this.getColumnObj(columnList, j)
@@ -5762,6 +5826,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
         }
 
+        if (StringUtil.isNotEmpty(schemaName, true)) {
+          tbl['@schema'] = schemaName
+        }
+        if (StringUtil.isNotEmpty(role, true)) {
+          tbl['@role'] = role
+        }
+
         var json = isSingle ? tbl : {}
         if (! isSingle) {
           json[modelName] = tbl
@@ -5771,18 +5842,37 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var s = JSON.stringify(json, null, '    ')
 
-        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]' : ''), isSingle ? this.switchQuote(s) : s)
+        var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
+        var isRoleEmpty = StringUtil.isEmpty(role, true)
+
+        this.showCRUD('/put' + (isSingle ? '/' + modelName + '[]'
+          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
+          : ''), isSingle ? this.switchQuote(s) : s)
       },
 
-      onClickDelete: function (tableIndex, modelName) {
-        modelName = modelName || this.getModelName(tableIndex)
+      onClickDelete: function (tableIndex, modelName, schemaName, role) {
+        this.handleClickDelete(this.getColumnList(tableIndex), modelName || this.getModelName(tableIndex), schemaName, role)
+      },
+      handleClickDelete: function (columnList, modelName, schemaName, role) {
+        if (columnList == null) {
+          columnList = this.getColumnListWithModelName(modelName, schemaName)
+        }
 
-        this.showCRUD('/delete' + (isSingle ? '/' + modelName : ''),
+        var isSchemaEmpty = StringUtil.isEmpty(schemaName, true)
+        var isRoleEmpty = StringUtil.isEmpty(role, true)
+
+        this.showCRUD('/delete' + (isSingle ? '/' + modelName
+          + (isSchemaEmpty && isRoleEmpty ? '' : '?' + (isSchemaEmpty ? '' : '&@schema=' + schemaName) + (isRoleEmpty ? '' : '&@role=' + role))
+          : ''),
           isSingle ? `{
-    'id': 1
+    'id': 1` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
+    '@schema': '` + schemaName + "'") + (StringUtil.isEmpty(role, true) ? '' : `,
+    '@role': '` + role + "'") + `
 }` : `{
     "` + modelName + `": {
-        "id": 1
+        "id": 1` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
+        "@schema": "` + schemaName + '"') + (StringUtil.isEmpty(role, true) ? '' : `,
+        "@role": "` + role + '"') + `
     },
     "tag": "` + modelName + `",
     "@explain": true
@@ -5821,6 +5911,29 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     "info@": "` + modelName + '-' + columnName + `[]/info",
     "@explain": true
 }`)
+      },
+
+      onClickAccess: function (index, model, schema, method, role) {
+        if (StringUtil.isEmpty(model, true) || StringUtil.isEmpty(schema, true) || StringUtil.isEmpty(method, true) || StringUtil.isEmpty(role, true)) {
+          // var access = this.getAccessObj(index)
+          // model = this.getModelNameByTableName()
+        }
+
+        method = StringUtil.toLowerCase(method)
+        switch (method) {
+          case 'get':
+            this.handleClickGet(null, model, schema, role)
+            break
+          case 'post':
+            this.handleClickPost(null, model, schema, role)
+            break
+          case 'put':
+            this.handleClickPut(null, model, schema, role)
+            break
+          case 'delete':
+            this.handleClickDelete(null, model, schema, role)
+            break
+        }
       },
 
       onClickFunction: function (index, demo) {
