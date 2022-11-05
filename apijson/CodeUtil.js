@@ -49,12 +49,14 @@ var CodeUtil = {
   database: 'MYSQL',
   schema: 'sys',
   language: 'Kotlin',
+  functionList: [],
+  requestList: [],
   tableList: [],
   thirdParty: 'YAPI',
   thirdPartyApiMap: null,  // {}
 
 
-  /**生成JSON的注释  TODO 提取  // 单行注释，补充到 TestRecord 的 standard 中，文档也是有版本的
+  /**生成JSON的注释
    * @param reqStr //已格式化的JSON String
    * @param tableList
    * @param method
@@ -5878,6 +5880,82 @@ var CodeUtil = {
   },
   DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'DAMENG', 'CLICKHOUSE', 'SQLITE', 'TDENGINE'],
 
+  getComment4Function: function (funCallStr, method) {
+    var start = funCallStr == null ? -1 : funCallStr.indexOf('(')
+    if (start <= 0 || funCallStr.endsWith(')') != true) {
+      throw new Error('远程函数调用格式非法！必须为 fun(arg0,arg1..) 这种形式！不允许多余的空格！')
+    }
+
+    var fun = funCallStr.substring(0, start)
+    if (StringUtil.isName(fun) != true) {
+      throw new Error('远程函数名称 ' + fun + ' 非法！必须为大小写英文字母开头且其它字符只能是字母/下划线/数字！')
+    }
+
+    var funObj = CodeUtil.getFunctionFromList(fun, method)
+    if (funObj == null) {
+      throw new Error('远程函数 ' + fun + ' 非法！只能传后端 Function 表中配置的！')
+    }
+
+    // 不做校验，似乎怎么写都是对的
+    var argStr = funCallStr.substring(start + 1, funCallStr.length - 1)
+    var args = StringUtil.isEmpty(argStr) ? null : StringUtil.split(argStr)
+    var argLen = args == null ? 0 : args.length
+
+    // if (args != null) {
+    //   for (var i = 0; i < args.length; i++) {
+    //     var a = args[i]
+    //     if (a.startsWith("'") && a.endsWith("'")) {
+    //       continue
+    //     }
+    //
+    //     if (a.startsWith('`') && a.endsWith('`')) {
+    //       a = a.substring(1, a.length - 1)
+    //       if (StringUtil.isName(a) != true) {
+    //         throw new Error('远程函数名称 ' + fun + ' 非法！必须为大小写英文字母开头且其它字符只能是字母/下划线/数字！')
+    //       }
+    //     }
+    //   }
+    // }
+
+    var allowArgStr = funObj.arguments
+    var allowArgs = StringUtil.isEmpty(allowArgStr) ? null : StringUtil.split(allowArgStr)
+    var allowArgLen = allowArgs == null ? 0 : allowArgs.length
+    if (argLen != allowArgLen) {
+      throw new Error('远程函数参数数量 ' + argLen + ' 非法！必须是 ' + allowArgLen + ' 个！格式为 ' + fun + '(' + StringUtil.trim(allowArgStr) + ')')
+    }
+
+    return funObj.rawDetail || funObj.detail
+  },
+
+  getFunctionFromList: function (name, method) {
+    if (StringUtil.isEmpty(name)) {
+      return null
+    }
+
+    var functionMap = CodeUtil.functionMap;
+    var funObj = functionMap == null ? null : functionMap[name]
+    if (funObj != null) {
+      return funObj;
+    }
+
+    var functionList = CodeUtil.functionList;
+    if (functionList != null) {
+      for (var i = 0; i < functionList.length; i++) {
+        var f = functionList[i];
+        if (f != null && f.name == name) {
+          if (functionMap == null) {
+            functionMap = {};
+          }
+          functionMap[name] = f;
+          CodeUtil.functionMap = functionMap;
+          return f;
+        }
+      }
+    }
+
+    return null;
+  },
+
   /**获取请求JSON的注释
    * @param tableList
    * @param name
@@ -5898,7 +5976,7 @@ var CodeUtil = {
     var valuesIsNotInteger = typeOfValue != 'integer';
     // var valuesIsNotNumber = valuesIsNotInteger && typeOfValue != 'number';
     var valuesIsNotBoolean = typeOfValue != 'boolean';
-    var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isEmpty(value, true) != true;
+    var isValueNotEmpty = valuesIsNotString ? (typeOfValue != 'array' ? value != null : value.length > 0) : StringUtil.isNotEmpty(value, true);
 
     var extraComment = '';
     if (isAPIJSONRouter) {
@@ -5981,7 +6059,7 @@ var CodeUtil = {
       }
     }
 
-    if (isRestful != true && key != null && key.endsWith("()")) { // 方法，查询完后处理，先用一个Map<key,function>保存？
+    if (isRestful != true && key != null && key.endsWith('()')) { // 方法，查询完后处理，先用一个Map<key,function>保存？
       if (['GET', 'HEAD'].indexOf(method) < 0) {
         return ' ! 远程函数只能用于 GET,HEAD 请求！！';
       }
@@ -6000,6 +6078,15 @@ var CodeUtil = {
         }
       }
 
+      var c = ''
+      if (StringUtil.isNotEmpty(value)) { // isValueNotEmpty 居然不对
+        try {
+          c = CodeUtil.getComment4Function(value, method)
+        } catch (e) {
+          return ' ! ' + e.message
+        }
+      }
+
       if (isWarning) {
         return ' ';
       }
@@ -6012,10 +6099,11 @@ var CodeUtil = {
         priority = ' < 在解析所在对象后滞后执行';
       }
       else {
-        priority = '，执行时机在解析所在对象后，解析子对象前，可以在 () 前用 + - 设置优先级，例如 key-() 优先执行';
+        priority = ' < 执行时机在解析所在对象后，解析子对象前，可以在 () 前用 + - 设置优先级，例如 key-() 优先执行';
       }
 
-      return CodeUtil.getComment('远程函数' + (isValueNotEmpty ? '，触发调用后端对应的方法/函数' + priority : '，例如 "isContain(praiseUserIdList,userId)"'), false, ' ');
+      return CodeUtil.getComment('远程函数' + (isValueNotEmpty ? (StringUtil.isEmpty(c, true) ? '' : '：' + c) + priority
+        : '，例如 "isContain(praiseUserIdList,userId)"'), false, ' ');
     }
 
 
@@ -6490,7 +6578,7 @@ var CodeUtil = {
 
     }
 
-    // if (isRestful != true && onlyTableAndColumn != true && columnName != null && columnName.endsWith("()")) { // 方法，查询完后处理，先用一个Map<key,function>保存？
+    // if (isRestful != true && onlyTableAndColumn != true && columnName != null && columnName.endsWith('()')) { // 方法，查询完后处理，先用一个Map<key,function>保存？
     //   if (['GET', 'HEAD'].indexOf(method) < 0) {
     //     return ' ! 远程函数只能用于 GET,HEAD 请求！！';
     //   }

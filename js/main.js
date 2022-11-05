@@ -5237,11 +5237,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'page': page,
             'Function': {
               '@order': 'date-,name+',
-              '@column': 'name,arguments,demo,detail',
+              '@column': 'name,arguments,demo,detail,detail:rawDetail',
               'demo()': 'getFunctionDemo()',
               'detail()': 'getFunctionDetail()',
-              'r0()': 'removeKey(name)',
-              'r1()': 'removeKey(arguments)',
               'name$': search,
               'detail$': search,
               '@combine': search == null ? null : 'name$,detail$',
@@ -5277,24 +5275,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           //转为文档格式
           var doc = '';
-          var item;
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           var list = docObj == null ? null : docObj['[]'];
+          var map = {};
           CodeUtil.tableList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  [] = \n' + format(JSON.stringify(list)));
             }
 
-            var table;
-            var columnList;
-            var column;
             for (var i = 0; i < list.length; i++) {
-              item = list[i];
+              var item = list[i];
 
               //Table
-              table = item == null ? null : (App.database != 'SQLSERVER' ? item.Table : item.SysTable);
+              var table = item == null ? null : (App.database != 'SQLSERVER' ? item.Table : item.SysTable);
               if (table == null) {
                 continue;
               }
@@ -5313,7 +5308,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var schema = table.table_schema
               var modelName = CodeUtil.getModelName(table.table_name)
-              var baseUrl = App.getBaseUrl()
+              map[schema + '.' + modelName] = table
               // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
 
               doc += '\n### ' + (i + 1) + '. ' + modelName
@@ -5328,7 +5323,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               doc += '\n\n 名称  |  类型  |  最大长度  |  详细说明' +
                 ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
-              columnList = item['[]'];
+              var columnList = item['[]'];
               if (columnList == null) {
                 continue;
               }
@@ -5336,19 +5331,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 log('getDoc [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
               }
 
-              var name;
-              var type;
-              var length;
               for (var j = 0; j < columnList.length; j++) {
-                column = (columnList[j] || {}).Column;
-                name = column == null ? null : column.column_name;
+                var column = (columnList[j] || {}).Column;
+                var name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
                 }
 
                 column.column_type = CodeUtil.getColumnType(column, App.database);
-                type = CodeUtil.getType4Language(App.language, column.column_type, false);
-                length = CodeUtil.getMaxLength(column.column_type);
+                var type = CodeUtil.getType4Language(App.language, column.column_type, false);
+                var length = CodeUtil.getMaxLength(column.column_type);
 
                 if (DEBUG) {
                   log('getDoc [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
@@ -5373,13 +5365,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
           }
-
+          CodeUtil.tableMap = map;
           //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 
           //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Access[]'];
+          CodeUtil.accessList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
@@ -5390,13 +5383,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
             for (var i = 0; i < list.length; i++) {
-              item = list[i];
+              var item = list[i];
               if (item == null) {
                 continue;
               }
               if (DEBUG) {
                 log('getDoc Access[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
+
+              map[item.schema + '.' + item.name] = item
 
               doc += '\n' + (item.name) //右上角设置指定了 Schema  + '(' + item.schema + ')')
                 + '  |  ' + JSONResponse.getShowString(JSON.parse(item.get), 2)
@@ -5413,12 +5408,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             doc += '\n' //避免没数据时表格显示没有网格
           }
-
+          CodeUtil.accessMap = map;
           //Access[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Function[]'];
+          CodeUtil.functionList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
@@ -5429,13 +5425,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               + ' \n --------  |  -------------- ';
 
             for (var i = 0; i < list.length; i++) {
-              item = list[i];
+              var item = list[i];
               if (item == null) {
                 continue;
               }
               if (DEBUG) {
                 log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
+
+              map[item.name] = item
 
               var demoStr = JSON.stringify(item.demo)
 
@@ -5446,12 +5444,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             doc += '\n' //避免没数据时表格显示没有网格
           }
-
+          CodeUtil.functionMap = map;
           //Function[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
           //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
           list = docObj == null ? null : docObj['Request[]'];
+          map = {};
+          CodeUtil.requestList = list;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
@@ -5462,13 +5462,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               + ' \n --------  |  ------------  |  ------------  |  ------------  |  ------------ ';
 
             for (var i = 0; i < list.length; i++) {
-              item = list[i];
+              var item = list[i];
               if (item == null) {
                 continue;
               }
               if (DEBUG) {
                 log('getDoc Request[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
+
+              map[item.version + '.' + item.method + '.' + item.tag] = item
 
               var jsonStr = JSON.stringify(App.getStructure(false, null, item.structure, item.method, item.tag, item.version))
 
@@ -5478,6 +5480,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
+          CodeUtil.requestMap = map;
 
 
           //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
