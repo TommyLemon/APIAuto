@@ -5844,6 +5844,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
         }
 
+        vInput.value = ''
         this.showCRUD(
           '/' + StringUtil.toLowerCase(method) + (isSingle ? '/' + tag + (version == null ? '' : '?version=' + version) : '')
           , isSingle ? this.switchQuote(jsonStr) : jsonStr
@@ -5851,6 +5852,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       showCRUD: function (url, json) {
+        if (url == this.getBranchUrl()) {
+          var origin = this.getRequest(vInput.value)
+          if (origin != null && Object.keys(origin).length > 0) {
+            json = this.getRequest(json)
+            if (json == null || Object.keys(json).length <= 0
+              || (json instanceof Array != true && json instanceof Object)) {
+              json = Object.assign(origin, json)
+              json = JSON.stringify(json, null, '    ')
+            }
+          }
+        }
+
         this.type = REQUEST_TYPE_JSON
         this.showUrl(false, url)
         this.urlComment = ''

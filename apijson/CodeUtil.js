@@ -6715,7 +6715,7 @@ var CodeUtil = {
             return ' ! value必须是String或Array类型！';
           }
 
-          fun = '匹配 选项/条件' + (isValueNotEmpty ? '' : '，例如 ' + (valuesIsNotString ? '[1, 2, 3] ["%c%", "S%", "%end"] 等' : '">100" "%2=0;<=100000" 等'));
+          fun = (valuesIsNotString ? '匹配选项' : '匹配条件') + (isValueNotEmpty ? '' : '，例如 ' + (valuesIsNotString ? '[1, 2, 3] ["%c%", "S%", "%end"] 等' : '">100" "%2=0;<=100000" 等'));
           key = columnName.substring(0, columnName.length - 2);
 
           verifyType = false;
