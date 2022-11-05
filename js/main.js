@@ -5138,7 +5138,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'count': count,
             'page': page,
             'Access': {
-              '@column': 'name,alias,get,head,gets,heads,post,put,delete',
+              '@column': 'name,alias,post,put,delete,get,gets,head,heads',
               '@order': 'date-,name+',
               'name$': search,
               'alias$': search,
@@ -5288,7 +5288,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           ad += '\n\n\n\n\n\n\n\n\n### 访问权限\n自动查 Access 表写入的数据来生成\n'
-            + ' \n 表名  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色  |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色  |  表名'
+            + ' \n 表名  |  允许 POST<br>的角色  |  允许 PUT<br>的角色  |  允许 DELETE<br>的角色  |  允许 GET<br>的角色  |  允许 GETS<br>的角色  |  允许 HEAD<br>的角色  |  允许 HEADS<br>的角色  |  表名'
             + ' \n --------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  ---------  |  --------- | --------  ';
 
           for (var i = 0; i < list.length; i++) {
@@ -5321,13 +5321,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               + '  |  ' + getShowString('put', 1)
               + '  |  ' + getShowString('delete', 1)
               + '  |  ' + getShowString('get', 2)
-              + '  |  ' + getShowString('head', 2)
               + '  |  ' + getShowString('gets', 2)
+              + '  |  ' + getShowString('head', 2)
               + '  |  ' + getShowString('heads', 2)
               + '  |  ' + (name); //右上角设置指定了 Schema  + '(' + item.schema + ')');
+
+            if (i % 5 == 4) {
+              ad += ' \n **表名**  |  **允许 POST**<br>**的角色**  |  **允许 PUT**<br>**的角色**  |  **允许 DELETE**<br>**的角色**   |  **允许 GET**<br>**的角色**  |  **允许 GETS**<br>**的角色**  |  **允许 HEAD**<br>**的角色**  |  **允许 HEADS**<br>**的角色** |  表名'
+            }
           }
 
-          ad += ' \n 表名  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色   |  允许 get<br>的角色  |  允许 head<br>的角色  |  允许 gets<br>的角色  |  允许 heads<br>的角色 |  表名'
+          // ad += ' \n 表名  |  允许 post<br>的角色  |  允许 put<br>的角色  |  允许 delete<br>的角色   |  允许 get<br>的角色  |  允许 gets<br>的角色  |  允许 head<br>的角色  |  允许 heads<br>的角色 |  表名'
 
           ad += '\n' //避免没数据时表格显示没有网格
         }
