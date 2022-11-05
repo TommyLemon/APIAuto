@@ -1329,7 +1329,7 @@
                     if (err != null || (code != null && code != 0)) {
                       App.isHeaderShow = true
                       App.isRandomShow = false
-                      alert('请把 YApi/Rap/Swagger 等网站的有效 Cookie 粘贴到请求头 Request Header 输入框后再试！')
+                      alert('请把 YApi/Rap/Swagger/Postman 等网站的有效 Cookie 粘贴到请求头 Request Header 输入框后再试！')
                     }
 
                     App.onResponse(url_, res, err)
@@ -2562,7 +2562,9 @@
 
                 var apis = (res.data || {}).data
                 if (apis == null) { // || apis.length <= 0) {
-                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！请开启跨域代理，并检查 URL 是否正确！YApi/Rap/Swagger 网站的 Cookie 必须粘贴到请求头 Request Header 输入框！')
+                  alert('没有查到 ' + (isRap ? 'Rap' : 'YApi') + ' 文档！' +
+                    '\n请开启跨域代理，并检查 URL 是否正确！' +
+                    '\nYApi/Rap/Swagger/Postman 网站的 Cookie 必须粘贴到请求头 Request Header 输入框！')
                   return
                 }
 
@@ -2618,8 +2620,8 @@
         var itemUrl = null
 
         if (platform == PLATFORM_POSTMAN) {
-          if (docUrl.indexOf('://') < 0) {
-            docUrl = 'https://www.postman.com/collections' + (docUrl.startsWith('/') ? '' : '/') + docUrl
+          if (docUrl.startsWith('/') || docUrl.indexOf('://') < 0) {
+            docUrl = 'https://www.postman.com' + (docUrl.startsWith('/collections') ? '' : '/collections') + (docUrl.startsWith('/') ? '' : '/') + docUrl
           }
           listUrl = docUrl
         }
@@ -3045,10 +3047,6 @@
         var commentObj = JSONResponse.updateStandard({}, reqObj);
         CodeUtil.parseComment(req, null, url, this.database, this.language, true, commentObj, true)
 
-        if (StringUtil.isEmpty(description, true) == false) {
-          req += '\n\n/**\n\n' + StringUtil.trim(description).replace(/\*\//g, '* /') + '\n\n*/'
-        }
-
         name = StringUtil.get(name)
         if (name.length > 100) {
           name = name.substring(0, 60) + ' ... ' + name.substring(70, 100)
@@ -3065,7 +3063,8 @@
             'url': this.getBranchUrl(url),
             'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
             'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
-            'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header)
+            'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
+            'detail': StringUtil.trim(description).replace(/\*\//g, '* /')
           },
           'TestRecord': {
             'randomId': 0,
@@ -5675,12 +5674,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             var ln = name.replaceAll('_', '').toLowerCase()
-            if (ln == "id") {
+            if (name.toLowerCase() == "id") {
               idName = name
             }
             else if (ln == "userid") {
               userIdName = name
-            } else if (("date", "time", "createtime", "createat", "createat", "createdat").indexOf(ln) >= 0) {
+            }
+            else if (("date", "time", "createtime", "createat", "createat", "createdat").indexOf(ln) >= 0) {
               dateName = name
             }
 
@@ -5917,11 +5917,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           log('getStructure  tag = ' + tag + '; version = ' + version + '; isDemo = ' + isDemo + '; obj = \n' + format(obj));
         }
 
+        method = method == null ? 'GET' : method.trim().toUpperCase()
+
+        var isArrayKey = tag != null && tag.endsWith('[]');
+        var isMultiArrayKey = isArrayKey && tag.endsWith(":[]")
+        var isTableKey = false
         var tableName = tag
         if (tag != null) { //补全省略的Table
-          var isArrayKey = JSONObject.isArrayKey(tag);
           var key = isArrayKey ? tag.substring(0, tag.length - (tag.endsWith(':[]') ? 3 : 2)) : tag;
           if (this.isTableKey(key)) {
+            isTableKey = true
             tableName = key
             // name = key
           }
@@ -5997,7 +6002,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             if (nk != null) {
-              if (v instanceof Object) {
+              if (v instanceof Object && (v instanceof Array == false)) {
                 v = this.getStructure(isDemo, nk, v, method);
               }
               else if (v === '!') {
@@ -6010,35 +6015,47 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
           }
 
-          var isFulfill = name == null && this.isTableKey(tableName) && newObj[tableName] == null
-          if (isFulfill) {
+          var isPutOrDel = method == 'PUT' || method == 'DELETE'
+          var isPostOrPutMulti = isMultiArrayKey && (method == 'POST' || method == 'PUT')
+          var isGetOrGetsMulti = isArrayKey && (method == 'GET' || method == 'GETS')
+          var mustHasKey = tableName + (isPostOrPutMulti || isGetOrGetsMulti ? '[]' : '')
+          var isFulfill = name == null && isTableKey && (isPostOrPutMulti || newObj[mustHasKey] == null)
+          if (isFulfill && (isPostOrPutMulti || ! isArrayKey)) {
             name = tableName
           }
 
           if (isDemo && this.isTableKey(name) && (refuseKeys == null || refuseKeys.indexOf('!') < 0)) {
             var columnList = this.getColumnListWithModelName(name)
             if (columnList != null) {
+              var s = ''
               for (var i = 0; i < columnList.length; i++) {
                 var column = this.getColumnObj(columnList, i)
                 var cn = column == null ? null : column.column_name
-                if (cn == null || (method == 'POST' && cn.toLowerCase() == 'id') || (refuseKeys != null && refuseKeys.indexOf(cn) >= 0)) {
+
+                if (cn == null || cn.startsWith('_') || (method == 'POST' && cn.toLowerCase() == 'id') || (refuseKeys != null && refuseKeys.indexOf(cn) >= 0)) {
                   continue
                 }
 
-                var nv = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, CodeUtil.getColumnType(column, this.database)), cn)
-                if (nv != null || newObj[cn] == null) {
-                  newObj[cn] = nv
+                if (method == 'GET' || method == 'GETS') {
+                  s += (i <= 0 ? '' : ',') + cn
+                } else {
+                  var nv = this.generateValue(CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, CodeUtil.getColumnType(column, this.database)), cn)
+                  if (nv != null || newObj[cn] == null) {
+                    newObj[cn] = nv
+                  }
                 }
               }
+            }
+
+            if (method == 'GET' || method == 'GETS') {
+              newObj['@column'] = s
             }
           }
 
           if (isFulfill) { //补全省略的Table
-            var isArrayKey = tag.endsWith("[]");  //JSONObject.isArrayKey(tag);
-
             var realObj = {};
             if (isArrayKey) { //自动为 tag = Comment:[] 的 { ... } 新增键值对 "Comment[]":[] 为 { "Comment[]":[], ... }
-              if (tag.endsWith(":[]") && (method == 'POST' || method == 'PUT')) {
+              if (isPostOrPutMulti) {
                 var reqObj = isDemo ? this.getRequestBy(method, tableName) : null
                 var childStruct = reqObj == null ? null : reqObj.structure
                 if (childStruct != null && childStruct[tableName] != null) {
@@ -6048,10 +6065,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 newObj = childStruct == null ? newObj : Object.assign(
                   this.getStructure(isDemo, null, childStruct, reqObj.method, null, null, true), newObj
                 )
-                realObj[key + "[]"] = isDemo ? [newObj, newObj] : [newObj];
+
+                delete newObj[mustHasKey]
+                realObj[mustHasKey] = isDemo ? [newObj, newObj] : [newObj];
               }
-              else if (unwrap || method == 'PUT' || method == 'DELETE') {
-                if (isDemo && newObj['id{}'] == null) {
+              else if (unwrap || isPutOrDel) {
+                if (isDemo && isPutOrDel && newObj['id{}'] == null) {
                   newObj['id{}'] = [
                     1,
                     2,
@@ -6062,23 +6081,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     82012
                   ]
                 }
-                realObj[tableName] = newObj;
+                realObj[mustHasKey] = newObj;
               }
               else {
-                realObj[key + "[]"] = {
-                  [tableName]: newObj
-                }
+                realObj[mustHasKey] = newObj
               }
               newObj = realObj
             }
             else if (unwrap != true) { //自动为 tag = Comment 的 { ... } 包一层为 { "Comment": { ... } }
-              if (method == 'PUT' || method == 'DELETE') {
+              if (isPutOrDel) {
                 if (isDemo && newObj.id == null) {
                   newObj.id = 1
                 }
               }
 
-              realObj[tableName] = newObj;
+              realObj[mustHasKey] = newObj;
               newObj = realObj;
             }
           }
