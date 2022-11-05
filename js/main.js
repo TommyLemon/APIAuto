@@ -2441,6 +2441,10 @@
                 }
 
                 if (isJSONData) {
+                  App.uploadTotal = 0 // apis.length || 0
+                  App.uploadDoneCount = 0
+                  App.uploadFailCount = 0
+
                   itemCallback(itemUrl, { data: jsonData }, null)
                 }
                 else {
@@ -2659,6 +2663,7 @@
         this.uploadTotal ++
 
         var request = api.request || {}
+        var response = api.response || []
         var body = request.body || {}
         var json = body.raw || api.rawModeData
         var options = body.options || {}
@@ -2744,7 +2749,8 @@
           header = api.headers
         }
 
-        return this.uploadThirdPartyApi(type, api.name || request.name, url, parameters2, json, header, api.description || request.description)
+        return this.uploadThirdPartyApi(type, api.name || request.name, url, parameters2, json, header
+          , api.description || request.description, null, response == null ? null : response[0])
       },
 
       /**上传 Swagger API
@@ -2990,12 +2996,11 @@
       },
 
       //上传第三方平台的 API 至 APIAuto
-      uploadThirdPartyApi: function(type, name, url, parameters, json, header, description, creator) {
-        url = this.getBranchUrl(url)
-
+      uploadThirdPartyApi: function(type, name, url, parameters, json, header, description, creator, rspObj) {
         if (typeof json == 'string') {
           json = JSON.parse(json)
         }
+        var reqObj = json || {}
 
         var req = '{'
 
@@ -3008,31 +3013,13 @@
             var t = paraItem.type || typeof val
 
             if (val == undefined) {
-              if (t == 'boolean') {
-                val = 'true'
-              }
-              if (t == 'integer') {
-                val = n == 'pageSize' ? '10' : '1'
-              }
-              else if (t == 'string') {
-                val = '""'
-              }
-              else if (t == 'object') {
-                val = '{}'
-              }
-              else if (t == 'array') {
-                val = '[]'
-              }
-              else {
-                var suffix = n.length >= 3 ? n.substring(n.length - 3).toLowerCase() : null
-                if (suffix == 'dto') {
-                  val = '{}'
-                } else {
-                  val = 'null'
-                }
-              }
+              val = this.generateValue(t, n)
+              reqObj[n] = val
             }
-            else if (typeof val == 'string' && (StringUtil.isEmpty(t, true) || t == 'string')) {
+
+            reqObj[n] = val
+
+            if (typeof val == 'string' && (StringUtil.isEmpty(t, true) || t == 'string')) {
               val = isJSONEmpty ? ('"' + val.replace(/"/g, '\\"') + '"') : val
             }
             else if (val instanceof Object) {
@@ -3055,6 +3042,9 @@
           req = JSON.stringify(json, null, '    ')
         }
 
+        var commentObj = JSONResponse.updateStandard({}, reqObj);
+        CodeUtil.parseComment(req, null, url, this.database, this.language, true, commentObj, true)
+
         if (StringUtil.isEmpty(description, true) == false) {
           req += '\n\n/**\n\n' + StringUtil.trim(description).replace(/\*\//g, '* /') + '\n\n*/'
         }
@@ -3072,15 +3062,16 @@
             'testAccountId': currentAccountId,
             'type': type,
             'name': StringUtil.get(name),
-            'url': url,
-            'request': req,
+            'url': this.getBranchUrl(url),
+            'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
+            'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header)
           },
           'TestRecord': {
             'randomId': 0,
-            'host': this.getBaseUrl(),
+            'host': this.getBaseUrl(url),
             'testAccountId': currentAccountId,
-            'response': ''
+            'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
           },
           'tag': 'Document'
         }, {}, function (url, res, err) {
