@@ -652,6 +652,7 @@
   var isSingle = true
 
   var currentTarget = vInput;
+  var isInputValue = false;
   var selectionStart = 0;
   var selectionEnd = 0;
 
@@ -1175,8 +1176,9 @@
 
       },
 
-      selectInput: function (target, item, index, isDone) {
+      selectInput: function (target, item, index, isDone, isValue) {
         currentTarget = target;
+        isInputValue = isValue;
         // 失去焦点后拿不到有效值
         // var selectionStart = target.selectionStart;
         // var selectionEnd = target.selectionEnd;
@@ -1185,8 +1187,8 @@
         var before = text.substring(0, selectionStart);
         var after = text.substring(selectionEnd);
 
-        var name = StringUtil.get(item.name);
-        target.value = before + name + after
+        var name = item == null ? '' : StringUtil.get(item.name);
+        target.value = text = before + name + after
         if (target == vInput) {
           inputted = target.value;
         }
@@ -1195,9 +1197,13 @@
           this.options = [];
 
           target.focus();
-          selectionStart = target.selectionStart = selectionEnd + 3;
-          selectionEnd = target.selectionEnd = selectionStart + 4
+          selectionStart = target.selectionStart = selectionEnd + (isValue ? 1 : 3);
+          selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
           // vOption.focusout()
+
+          if (isValue != true) {
+            App.showOptions(target, text, before + name + (isSingle ? "'" : '"') + ': ', after.substring(3), true);
+          }
         } else {
           target.selectionStart = selectionStart;
           selectionEnd = target.selectionEnd = selectionStart + name.length;
@@ -4211,7 +4217,7 @@
       onChange: function (delay) {
         this.setBaseUrl();
 
-        if (IS_NODE) {
+        if (IS_NODE || document.activeElement == vOption || this.options.length > 0) {
           return;
         }
 
@@ -8210,6 +8216,497 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
         })
+      },
+
+      showOptions: function(target, text, before, after, isValue) {
+        currentTarget = target;
+        isInputValue = isValue;
+        selectionStart = target.selectionStart;
+        selectionEnd = target.selectionEnd;
+        App.options = []
+
+        var posX = 0, posY = 0;
+
+        var event = window.event;
+        if (event.pageX || event.pageY) {
+          posX = event.pageX;
+          posY = event.pageY;
+        }
+        else if (event.clientX || event.clientY) {
+          posX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
+          posY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
+        }
+        else if (target.offsetHeight || target.offsetWidth) {
+          // posX = target.offsetHeight;
+          // posY = target.offsetWidth;
+        }
+
+        vOption.style.left = posX + 'px';
+        vOption.style.top = posY + 'px';
+
+        var quote = isSingle ? "'" : '"';
+
+        var table = null;
+        var isArrayKey = false;
+        var isSubqueryKey = false;
+
+        var prev = before;
+        while (prev != null && prev.length > 0) {
+          var lastIndex = prev.lastIndexOf('{');
+          prev = prev.substring(0, lastIndex).trimRight();
+
+          if (prev.endsWith(':')) {
+            prev = prev.substring(0, prev.length - 1).trimRight();
+            var endsWithDoubleQuote = prev.endsWith('"')
+
+            if (endsWithDoubleQuote || prev.endsWith("'")) {
+              prev = prev.substring(0, prev.length - 1);
+              lastIndex = prev.lastIndexOf('\n');
+
+              var lastLine = prev.substring(lastIndex + 1, prev.length);
+              var ind = lastLine.lastIndexOf(endsWithDoubleQuote ? '"' : "'");
+              table = ind < 0 ? null : lastLine.substring(ind + 1, lastLine.length);
+
+              if (App.isTableKey(table)) {
+                break;
+              }
+              if (table != null && table.endsWith('[]')) {
+                isArrayKey = true;
+                break;
+              }
+              if (table != null && table.endsWith('@')) {
+                isSubqueryKey = true;
+                break;
+              }
+
+              prev = lastIndex <= 0 ? '' : prev.substring(0, lastIndex);
+            }
+          }
+        }
+
+        if (isValue) {
+          var lastIndex = before.lastIndexOf('\n');
+          var lastLine = before.substring(lastIndex + 1, before.length);
+          lastIndex = lastLine.lastIndexOf(':');
+          lastLine = lastIndex < 0 ? '' : lastLine.substring(0, lastIndex).trim();
+
+          var endsWithDoubleQuote = lastLine.endsWith('"')
+          if (endsWithDoubleQuote || lastLine.endsWith("'")) {
+            lastLine = lastLine.substring(0, lastLine.length - 1);
+          }
+          var ind = lastLine.lastIndexOf(endsWithDoubleQuote ? '"' : "'");
+          var key = ind < 0 ? null : lastLine.substring(ind + 1, lastLine.length);
+
+          var isArrayKey = JSONObject.isArrayKey(key)
+          if (isArrayKey || App.isTableKey(key)) {
+            table = key;
+            if (isArrayKey) {
+              ind = key.indexOf('-');
+              if (ind < 0) {
+                ind = key.indexOf(':');
+              }
+              table = key.substring(0, ind < 0 ? key.length - 2 : ind);
+            }
+
+            App.options = [{
+              name: "{}",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: (isArrayKey ? '数组 < ' + table + ': ' : '') + StringUtil.trim((App.getTableByModelName(table) || {}).table_comment)
+            }]
+          }
+          else {
+            switch (key) {
+              case '@from@':
+                App.options = [{
+                  name: "{}",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "object"),
+                  comment: '数据来源'
+                }];
+                break;
+              case '@combine':
+              case '@raw':
+                var isRaw = key == '@raw';
+
+                var end = before.lastIndexOf('{');
+                var start = after.indexOf('}');
+                var s = (end < 0 ? before : before.substring(end)) + after.substring(0, start + 1);
+                var json = App.getRequest(s, {});
+
+                var ks = '';
+                var first = true;
+                for (var k in json) {
+                  if (StringUtil.isNotEmpty(k, true)) {
+                    App.options.push({
+                      name: quote + k + quote,
+                      type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                      comment: isRaw ? '原始SQL片段' : '条件组合'
+                    });
+
+                    ks += (first ? '' : (isRaw ? ',' : ' & ')) + k;
+                    first = false;
+                  }
+                };
+
+                if (StringUtil.isNotEmpty(ks, true)) {
+                  App.options.push({
+                    name: quote + ks + quote,
+                    type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                    comment: isRaw ? '原始SQL片段' : '条件组合'
+                  });
+                }
+                break;
+              case '@schema':
+                var schemas = StringUtil.split(App.schema);
+                if (schemas != null) {
+                  for (var i = 0; i < schemas.length; i++) {
+                    var sch = schemas[i];
+                    if (StringUtil.isNotEmpty(sch, true)) {
+                      App.options.push({
+                        name: quote + sch + quote,
+                        type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                        comment: '集合空间(数据库名/模式)'
+                      });
+                    }
+                  }
+                }
+                break;
+              case '@database':
+                App.options = [{
+                  name: isSingle ? "'MYSQL'" : '"MYSQL"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'MySQL'
+                },{
+                  name: isSingle ? "'POSTGRESQL'" : '"POSTGRESQL"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'PostgreSQL'
+                },{
+                  name: isSingle ? "'SQLSERVER'" : '"SQLSERVER"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'SQLServer'
+                },{
+                  name: isSingle ? "'ORACLE'" : '"ORACLE"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'Oracle'
+                },{
+                  name: isSingle ? "'DB2'" : '"DB2"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'DB2'
+                },{
+                  name: isSingle ? "'DAMENG'" : '"DAMENG"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '达梦数据库'
+                },{
+                  name: isSingle ? "'CLICKHOUSE'" : '"CLICKHOUSE"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'ClickHouse'
+                },{
+                  name: isSingle ? "'SQLITE'" : '"SQLITE"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'SQLite'
+                },{
+                  name: isSingle ? "'TDENGINE'" : '"TDENGINE"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: 'TDengine'
+                }];
+                break;
+              case '@role':
+                App.options = [{
+                  name: isSingle ? "'UNKNOWN'" : '"UNKNOWN"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 未登录'
+                },{
+                  name: isSingle ? "'LOGIN'" : '"LOGIN"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 已登录'
+                },{
+                  name: isSingle ? "'CIRCLE'" : '"CIRCLE"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 圈子成员'
+                },{
+                  name: isSingle ? "'CONTACT'" : '"CONTACT"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 联系人'
+                },{
+                  name: isSingle ? "'OWNER'" : '"OWNER"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 拥有者'
+                },{
+                  name: isSingle ? "'ADMIN'" : '"ADMIN"',
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  comment: '来访角色: 管理员'
+                }];
+                break;
+              case '@cache':
+                App.options = [{
+                  name: "0",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  comment: '缓存方式: 全部'
+                },{
+                  name: "1",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  comment: '缓存方式: 磁盘'
+                },{
+                  name: "2",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  comment: '缓存方式: 内存'
+                }];
+                break;
+              case '@explain':
+                App.options = [{
+                  name: "true",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  comment: '性能分析: 开启'
+                },{
+                  name: "false",
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  comment: '性能分析: 关闭'
+                }];
+                break;
+              default:
+                if (key.endsWith('()')) {
+                  if (key.startsWith('@')) {
+                    App.options = [{
+                      name: quote + 'fun(arg0,arg1)' + quote,
+                      type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                      comment: '存储过程'
+                    }];
+                  } else {
+                    var functionList = docObj == null ? null : docObj['Function[]'];
+                    if (functionList != null) {
+                      for (var i = 0; i < functionList.length; i++) {
+                        var item = functionList[i];
+                        var name = item == null ? null : item.name;
+                        if (StringUtil.isEmpty(name, true)) {
+                          continue;
+                        }
+
+                        App.options = ({
+                          name: quote + name + '(' + StringUtil.trim(item.arguments) + ')' + quote,
+                          type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                          comment: item.detail
+                        });
+                      }
+                    }
+                  }
+                }
+                break;
+            }
+
+            var columnList = App.getColumnListWithModelName(table);
+            if (columnList != null) {
+              var ks = '';
+              var first = true;
+              for (var j = 0; j < columnList.length; j++) {
+                var column = App.getColumnObj(columnList, j)
+                var name = column == null ? null : column.column_name;
+                if (StringUtil.isEmpty(name, true)) {
+                  continue;
+                }
+
+                var k = name;
+                switch (key) {
+                  case '@having':
+                    var arr = ['max', 'min', 'sum', 'avg', 'length', 'len', 'json_length'];
+                    var which = Math.floor(arr.length*Math.random());
+                    k = arr[which] + '(' + name + ')';
+                    break;
+                  case '@order':
+                    k = name + (Math.random() < 0.2 ? '' : (Math.random() < 0.5 ? '-' : '+'));
+                    break;
+                  case '@cast':
+                    k = name + ':' + StringUtil.toUpperCase(column.column_type);
+                    break;
+                  // case '@column':
+                  // case '@group':
+                  // case '@json':
+                  // case '@null':
+                  default:
+                    k = name;
+                    break;
+                }
+
+                App.options.push({
+                  name: quote + k + quote,
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
+                  comment: column.column_comment
+                })
+
+                ks += (first ? '' : ',') + k;
+                first = false;
+              }
+
+              App.options.push({
+                name: quote + ks + quote,
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'string'),
+                comment: '所有字段组合'
+              })
+            }
+          }
+        }
+        else {
+          App.selectIndex = -1;
+          App.options = [
+            {
+              name: "@column",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "返回字段"
+            },
+            {name: "@from@", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "object"), comment: "数据来源"},
+            {
+              name: "@group",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "分组方式"
+            },
+            {
+              name: "@having",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "聚合函数"
+            },
+            {
+              name: "@order",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "排序方式"
+            },
+            {
+              name: "@combine",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "条件组合"
+            },
+            {
+              name: "@raw",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "原始SQL片段"
+            },
+            {
+              name: "@json",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "转为JSON"
+            },
+            {
+              name: "@null",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "NULL值字段"
+            },
+            {name: "@cast", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "类型转换"},
+            {
+              name: "@schema",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "集合空间(数据库名/模式)"
+            },
+            {
+              name: "@database",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "数据库类型"
+            },
+            {
+              name: "@datasource",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "跨数据源"
+            },
+            {name: "@role", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "来访角色"},
+            {
+              name: "@cache",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "缓存方式"
+            },
+            {
+              name: "@explain",
+              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              comment: "性能分析"
+            },
+          ];
+
+          if (isArrayKey) {
+            App.options = [
+              {name: "count", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "每页数量"},
+              {name: "page", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "分页页码"},
+              {name: "query", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "查询内容"},
+              {
+                name: "compat",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                comment: "兼容统计"
+              },
+              {
+                name: "join",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "联表查询"
+              },
+            ];
+          } else if (isSubqueryKey) {
+            App.options = [
+              {
+                name: "from",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "主表名称"
+              },
+              {name: "count", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "每页数量"},
+              {name: "page", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "分页页码"},
+              {
+                name: "range",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "比较范围"
+              },
+              {
+                name: "join",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "联表查询"
+              },
+            ];
+          } else if (App.isTableKey(table)) {
+            var columnList = App.getColumnListWithModelName(table);
+            if (columnList != null) {
+              for (var j = 0; j < columnList.length; j++) {
+                var column = App.getColumnObj(columnList, j)
+                var name = column == null ? null : column.column_name;
+                if (StringUtil.isEmpty(name, true)) {
+                  continue;
+                }
+
+                App.options.push({
+                  name: name,
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
+                  comment: column.column_comment
+                })
+              }
+            }
+          } else {
+            App.options.push([
+              {
+                name: "format",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "格式化"
+              },
+              {name: "tag", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "请求标识"},
+              {
+                name: "version",
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                comment: "请求版本"
+              },
+            ])
+          }
+
+          if (App.isTableKey(table) != true) {
+            var tableList = docObj['[]']
+            if (tableList != null) {
+              for (var j = 0; j < tableList.length; j++) {
+                var tableObj = App.getTableObj(j);
+                var name = tableObj == null ? null : App.getModelNameByTableName(tableObj.table_name);
+                if (StringUtil.isEmpty(name, true)) {
+                  continue;
+                }
+
+                App.options.push({
+                  name: name,
+                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'object'),
+                  comment: tableObj.table_comment
+                })
+              }
+            }
+          }
+
+        }
+
+        vOption.focus();
       }
     },
     watch: {
@@ -8418,149 +8915,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       }
 
 
-      function showOptions(target, text, before, after) {
-        currentTarget = target;
-        selectionStart = target.selectionStart;
-        selectionEnd = target.selectionEnd;
-        App.options = []
-
-        var posX = 0, posY = 0;
-
-        var event = window.event;
-        if (event.pageX || event.pageY) {
-          posX = event.pageX;
-          posY = event.pageY;
-        }
-        else if (event.clientX || event.clientY) {
-          posX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
-          posY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
-        }
-        else if (target.offsetHeight || target.offsetWidth) {
-          // posX = target.offsetHeight;
-          // posY = target.offsetWidth;
-        }
-
-        vOption.style.left = posX + 'px';
-        vOption.style.top = posY + 'px';
-
-        var table = null;
-        var isArrayKey = false;
-        var isSubqueryKey = false;
-        while (before != null && before.length > 0) {
-          var lastIndex = before.lastIndexOf('{');
-          before = before.substring(0, lastIndex).trimRight();
-          if (before.endsWith(':')) {
-            before = before.substring(0, before.length - 1).trimRight();
-            var endsWithDoubleQuote = before.endsWith('"')
-            if (endsWithDoubleQuote || before.endsWith("'")) {
-              before = before.substring(0, before.length - 1);
-              lastIndex = before.lastIndexOf('\n');
-              var lastLine = before.substring(lastIndex + 1, before.length);
-              var ind = lastLine.lastIndexOf(endsWithDoubleQuote ? '"' : "'");
-              table = ind < 0 ? null : lastLine.substring(ind + 1, lastLine.length);
-              if (App.isTableKey(table)) {
-                break;
-              }
-              if (table != null && table.endsWith('[]')) {
-                isArrayKey = true;
-                break;
-              }
-              if (table != null && table.endsWith('@')) {
-                isSubqueryKey = true;
-                break;
-              }
-
-              before = lastIndex <= 0 ? '' : before.substring(0, lastIndex);
-            }
-          }
-        }
-
-        App.selectIndex = 0;
-        App.options = [
-          {name:"@column", type: "string", comment:"返回字段"},
-          {name:"@from@", type: "object", comment:"数据来源"},
-          {name:"@group", type: "string", comment:"分组方式"},
-          {name:"@having", type: "string", comment:"聚合函数"},
-          {name:"@order", type: "string", comment:"排序方式"},
-          {name:"@combine", type: "string", comment:"条件组合"},
-          {name:"@raw", type: "string", comment:"原始SQL片段"},
-          {name:"@json", type: "string", comment:"转为JSON"},
-          {name:"@null", type: "string", comment:"NULL值字段"},
-          {name:"@cast", type: "string", comment:"类型转换"},
-          {name:"@schema", type: "string", comment:"集合空间(数据库名/模式)"},
-          {name:"@database", type: "string", comment:"数据库类型"},
-          {name:"@datasource", type: "string", comment:"跨数据源"},
-          {name:"@role", type: "string", comment:"来访角色"},
-          {name:"@cache", type: "string", comment:"缓存方式"},
-          {name:"@explain", type: "string", comment:"性能分析"},
-        ];
-
-        if (isArrayKey) {
-          App.options = [
-            {name:"count", type: "integer", comment:"每页数量"},
-            {name:"page", type: "integer", comment:"分页页码"},
-            {name:"query", type: "integer", comment:"查询内容"},
-            {name:"compat", type: "boolean", comment:"兼容统计"},
-            {name:"join", type: "string", comment:"联表查询"},
-          ];
-        }
-        else if (isSubqueryKey) {
-          App.options = [
-            {name:"from", type: "string", comment:"主表名称"},
-            {name:"count", type: "integer", comment:"每页数量"},
-            {name:"page", type: "integer", comment:"分页页码"},
-            {name:"range", type: "string", comment:"比较范围"},
-            {name:"join", type: "string", comment:"联表查询"},
-          ];
-        }
-        else if (App.isTableKey(table)) {
-          var columnList = App.getColumnListWithModelName(table);
-          if (columnList != null) {
-            for (var j = 0; j < columnList.length; j++) {
-              var column = App.getColumnObj(columnList, j)
-              var name = column == null ? null : column.column_name;
-              if (StringUtil.isEmpty(name, true)) {
-                continue;
-              }
-
-              App.options.push({
-                name: name,
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
-                comment: column.column_comment
-              })
-            }
-          }
-        }
-        else {
-          App.options.push([
-            {name:"format", type: "string", comment:"格式化"},
-            {name:"tag", type: "string", comment:"请求标识"},
-            {name:"version", type: "string", comment:"请求版本"},
-          ])
-        }
-
-        if (App.isTableKey(table) != true) {
-          var tableList = docObj['[]']
-          if (tableList != null) {
-            for (var j = 0; j < tableList.length; j++) {
-              var tableObj = App.getTableObj(j);
-              var name = tableObj == null ? null : App.getModelNameByTableName(tableObj.table_name);
-              if (StringUtil.isEmpty(name, true)) {
-                continue;
-              }
-
-              App.options.push({
-                name: name,
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'object'),
-                comment: tableObj.table_comment
-              })
-            }
-          }
-        }
-
-        vOption.focus();
-      }
-
       // 快捷键 CTRL + I 格式化 JSON
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
@@ -8574,44 +8928,48 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (document.activeElement == vOption || App.options.length > 0) {
             App.options = [];
             target.focus();
+            return;
           }
         }
         else if (keyCode === 40 || keyCode === 38) {  // 方向键 上 和 下
-          if (keyCode === 38) {
-            if (App.selectIndex > 0) {
-              App.selectIndex --
-              App.selectInput(vInput, App.options[App.selectIndex], App.selectIndex)
+          if (document.activeElement == vOption || App.options.length > 0) {
+            if (keyCode === 38) {
+              if (App.selectIndex >= 0) {
+                App.selectIndex --
+                App.selectInput(vInput, App.selectIndex < 0 ? null : App.options[App.selectIndex], App.selectIndex, false, isInputValue)
+              }
+            } else if (App.selectIndex < App.options.length) {
+              App.selectIndex ++
+              App.selectInput(vInput, App.selectIndex >= App.options.length ? null : App.options[App.selectIndex], App.selectIndex, false, isInputValue)
             }
-          } else if (App.selectIndex < App.options.length - 1) {
-            App.selectIndex ++
-            App.selectInput(vInput, App.options[App.selectIndex], App.selectIndex)
-          }
 
-          // var options = document.activeElement == vOption || App.options.length > 0 ? App.options : null; // vOption.options : null;
-          // if (options != null) {
-          //   for (var i = 0; i < options.length; i++) {
-          //     var opt = options[i]
-          //     if (opt != null && (opt.selected || i == App.selectIndex)) {
-          //       if (keyCode === 38) {
-          //         if (i > 0) {
-          //           opt.selected = false
-          //           options[i - 1].selected = true
-          //           App.selectInput(vInput, App.options[i - 1], i - 1)
-          //         }
-          //       } else {
-          //         if (i < options.length - 1) {
-          //           opt.selected = false
-          //           options[i + 1].selected = true
-          //           App.selectInput(vInput, App.options[i + 1], i + 1)
-          //         }
-          //       }
-          //
-          //       break
-          //     }
-          //   }
+            // var options = document.activeElement == vOption || App.options.length > 0 ? App.options : null; // vOption.options : null;
+            // if (options != null) {
+            //   for (var i = 0; i < options.length; i++) {
+            //     var opt = options[i]
+            //     if (opt != null && (opt.selected || i == App.selectIndex)) {
+            //       if (keyCode === 38) {
+            //         if (i > 0) {
+            //           opt.selected = false
+            //           options[i - 1].selected = true
+            //           App.selectInput(vInput, App.options[i - 1], i - 1)
+            //         }
+            //       } else {
+            //         if (i < options.length - 1) {
+            //           opt.selected = false
+            //           options[i + 1].selected = true
+            //           App.selectInput(vInput, App.options[i + 1], i + 1)
+            //         }
+            //       }
+            //
+            //       break
+            //     }
+            //   }
 
             event.preventDefault();
-          // }
+            return;
+            // }
+          }
         }
         else if (isEnter || isDel) { // enter || delete
           if (document.activeElement == vOption || App.options.length > 0) { // hasFocus is undefined   vOption.hasFocus()) {
@@ -8624,7 +8982,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               for (var i = 0; i < options.length; i++) {
                 var opt = options[i]
                 if (opt != null && (opt.selected || i == App.selectIndex)) {
-                  App.selectInput(currentTarget, App.options[i], i, true);
+                  App.selectInput(currentTarget, App.options[i], i, true, isInputValue);
                   break;
                 }
               }
@@ -8712,7 +9070,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 event.preventDefault();
 
                 if (hasNewKey) {
-                  showOptions(target, text, before, after);
+                  App.showOptions(target, text, before, after);
+                  if (target == vInput) {
+                    inputted = target.value;
+                  }
+                  return;
                 }
               }
               else if (isDel) {
@@ -8904,8 +9266,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           target.selectionStart = selectionStart;
           target.selectionEnd = selectionEnd;
         }
-      })
 
+        App.selectIndex = -1;
+        App.options = []
+      })
     }
   }
 
