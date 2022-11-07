@@ -8421,8 +8421,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             var hasPadding = false;
             var hasComma = false;
+            var hasNewKey = null;
             if (isEnter) {
               var tll = lastLine.trimRight();
+              if (tll.endsWith('[') || tfl.startsWith(']')) {
+                hasNewKey = false;
+              }
+              else if (tfl.startsWith('}') || tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
+                hasNewKey = true;
+              }
+
               hasPadding = tll.endsWith('{') || tll.endsWith('[')
 
               tll = before.trimRight();
@@ -8439,16 +8447,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 before = tll + ',';
                 selectionStart += 1;
               }
+
+              if (hasNewKey == null) {
+                hasNewKey = tll.endsWith('{');
+              }
             }
 
             if (prefix.length > 0) {
               if (isEnter) {
                 target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
-                  + (tfl.startsWith('}') || tfl.startsWith(']') ? after
+                  + (hasNewKey ? (isSingle ? "'': null," : '"": null,') : '') + (tfl.startsWith('}') || tfl.startsWith(']') ? after
                     : (hasPadding ? tfl.trimLeft() : tfl) + '\n' + after.substring(firstIndex + 1)
                   );
 
-                target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasPadding ? 4 : 0);
+                target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0);
                 event.preventDefault();
               }
               else if (isDel) {
