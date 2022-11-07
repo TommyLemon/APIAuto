@@ -8379,13 +8379,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       // 快捷键 CTRL + I 格式化 JSON
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
-        // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
 
+        var target = event.target;
         var keyCode = event.keyCode
         var isEnter = keyCode === 13
         var isDel = keyCode === 8 || keyCode === 46 // backspace 和 del
+
         if (isEnter || isDel) { // enter || delete
-          var target = event.target
           if (target == vUrl) {
           }
           else {
@@ -8463,8 +8463,55 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
           }
         }
+        else if (keyCode === 9) {  // Tab 加空格
+          try {
+            var selectionStart = target.selectionStart;
+            var selectionEnd = target.selectionEnd;
+
+            var text = StringUtil.get(target.value);
+            var before = text.substring(0, selectionStart);
+            var after = text.substring(selectionEnd);
+
+            var ind = before.lastIndexOf('\n');
+            var start = ind < 0 ? 0 : ind + 1;
+            ind = after.indexOf('\n');
+            var end = ind < 0 ? text.length : selectionEnd + ind - 1;
+
+            var selection = text.substring(start, end);
+            var lines = StringUtil.split(selection, '\n');
+
+            var newStr = text.substring(0, start);
+
+            var prefix = '    ';
+            var prefixLen = prefix.length;
+            for (var i = 0; i < lines.length; i ++) {
+              var l = lines[i] || '';
+              if (i > 0) {
+                newStr += '\n';
+              }
+
+              newStr += prefix + l;
+              if (i <= 0) {
+                selectionStart += prefixLen;
+              }
+              selectionEnd += prefixLen;
+            }
+
+            newStr += text.substring(end);
+
+            target.value = newStr;
+            event.preventDefault();
+            if (target == vInput) {
+              inputted = newStr;
+            }
+
+            target.selectionStart = selectionStart;
+            target.selectionEnd = selectionEnd;
+          } catch (e) {
+            log(e)
+          }
+        }
         else if (event.ctrlKey || event.metaKey) {
-          var target = event.target;
           var selectionStart = target.selectionStart;
           var selectionEnd = target.selectionEnd;
 
@@ -8538,17 +8585,23 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   var suffix = l.substring(ind + commentSignLen);
                   if (suffix.startsWith(' ')) {
                     suffix = suffix.substring(1);
-                    selectionStart -= 1;
+                    if (i <= 0) {
+                      selectionStart -= 1;
+                    }
                     selectionEnd -= 1;
                   }
 
                   newStr += StringUtil.get(l.substring(0, ind)) + StringUtil.get(suffix)
-                  selectionStart -= commentSignLen;
+                  if (i <= 0) {
+                    selectionStart -= commentSignLen;
+                  }
                   selectionEnd -= commentSignLen;
                 }
                 else {
                   newStr += commentSign + ' ' + l;
-                  selectionStart += commentSignLen + 1;
+                  if (i <= 0) {
+                    selectionStart += commentSignLen + 1;
+                  }
                   selectionEnd += commentSignLen + 1;
                 }
               }
