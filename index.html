@@ -293,6 +293,18 @@ Ctrl + / 或 Command + / 对选中行 新增行注释 或 取消行注释；
 
 
                     </textarea>
+<!--                  <select id="vOption" style="position: fixed" v-show="options != null && options.length > 0">-->
+<!--                    <option selected="index == 0" style="width: 100%" v-for="(item, index) in options" :id="'option' + index" >{{item.name + ': ' + item.comment}}</option>-->
+<!--                  </select>-->
+<!--                  <div class="dropdown-menu" id="vOption" style="position: fixed;background: red" v-show="options != null && options.length > 0">-->
+<!--                    <a class="dropdown-item" style="width: 100%;background: blue" v-for="(item, index) in options" :id="'option' + index" @keyup="doOnKeyUp(event, 'option', false, item)" >{{item.name + ': ' + item.comment}}</a>-->
+<!--                  </div>-->
+<!--                      <select class="form-control dropdown-menu" id="vOption" style="position: fixed;background: red" v-show="options != null && options.length > 0">-->
+<!--                        <option class="dropdown-item" style="width: 100%;background: blue" v-for="(item, index) in options" :id="'option' + index" @keyup="doOnKeyUp(event, 'option', false, item)" >{{StringUtil.get(item.name) + ': ' + StringUtil.get(item.type) + ',' + StringUtil.trim(item.comment)}}</option>-->
+<!--                      </select>-->
+<!--                      <ul class="dropdown-menu" id="vOption" style="display: block; position: fixed; top: 20px; left: 10px" v-show="options != null && options.length > 0">-->
+<!--                        <li class="dropdown-item" style="width: 100%" :style="{'color': (index == selectIndex ? 'orangered' : 'black')}" v-for="(item, index) in options" :id="'option' + index" @click="selectInput(vInput, item, index, true)" >{{StringUtil.get(item.name) + ': ' + StringUtil.get(item.type) + ', ' + StringUtil.trim(item.comment)}}</li>-->
+<!--                      </ul>-->
                 </div>
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
@@ -600,6 +612,10 @@ My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际�
                     <input id="vCount" v-model="count" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" />
                     <a >条</a>
                 </div>
+
+                <ul class="dropdown-menu" id="vOption" style="display: block; max-height: 100%; max-width: 100%; overflow: scroll; overflow-x: scroll; overflow-y:scroll;" v-show="options != null && options.length > 0">
+                  <li class="dropdown-item" style="width: 100%" :style="{'color': (index == selectIndex ? 'orangered' : 'black')}" v-for="(item, index) in options" :id="'option' + index" @click="selectInput(vInput, item, index, true)" >{{StringUtil.get(item.name) + ': ' + StringUtil.get(item.type) + ', ' + StringUtil.trim(item.comment)}}</li>
+                </ul>
             </div>
 
 
@@ -867,6 +883,7 @@ My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际�
   var vType = document.getElementById("vType");
   var vSend = document.getElementById("vSend");
 
+  var vOption = document.getElementById("vOption");
   var vInput = document.getElementById("vInput");
   var vWarning = document.getElementById("vWarning");
   var vComment = document.getElementById("vComment");

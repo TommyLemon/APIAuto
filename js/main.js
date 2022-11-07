@@ -641,6 +641,7 @@
   }
   //这些全局变量不能放在data中，否则会报undefined错误
 
+
   var baseUrl
   var inputted
   var handler
@@ -650,6 +651,9 @@
 
   var isSingle = true
 
+  var currentTarget = vInput;
+  var selectionStart = 0;
+  var selectionEnd = 0;
 
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -665,6 +669,8 @@
       requestVersion: 3,
       requestCount: 1,
       urlComment: '一对多关联查询 Comment.userId = User.id',
+      selectIndex: 0,
+      options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],
       history: {name: '请求0'},
       remotes: [],
@@ -714,6 +720,7 @@
       isExportShow: false,
       isExportCheckShow: false,
       isExportRandom: false,
+      isOptionListShow: false,
       isTestCaseShow: false,
       isHeaderShow: false,
       isRandomShow: true,  // 默认展示
@@ -1166,6 +1173,35 @@
           + (randomStr == null ? '' : "&random=" + randomStr)
           + (settingStr == null ? '' : "&setting=" + settingStr)
 
+      },
+
+      selectInput: function (target, item, index, isDone) {
+        currentTarget = target;
+        // 失去焦点后拿不到有效值
+        // var selectionStart = target.selectionStart;
+        // var selectionEnd = target.selectionEnd;
+
+        var text = StringUtil.get(target.value);
+        var before = text.substring(0, selectionStart);
+        var after = text.substring(selectionEnd);
+
+        var name = StringUtil.get(item.name);
+        target.value = before + name + after
+        if (target == vInput) {
+          inputted = target.value;
+        }
+
+        if (isDone) {
+          this.options = [];
+
+          target.focus();
+          selectionStart = target.selectionStart = selectionEnd + 3;
+          selectionEnd = target.selectionEnd = selectionStart + 4
+          // vOption.focusout()
+        } else {
+          target.selectionStart = selectionStart;
+          selectionEnd = target.selectionEnd = selectionStart + name.length;
+        }
       },
 
       // 显示保存弹窗
@@ -4804,6 +4840,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       doOnKeyUp: function (event, type, isFilter, item) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
+        if (type == 'option') {
+          if (keyCode == 13) {
+            this.selectInput(vInput, item);
+          }
+          return
+        }
 
         var obj = event.srcElement ? event.srcElement : event.target;
         if ($(obj).attr('id') == 'vUrl') {
@@ -8376,6 +8418,149 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       }
 
 
+      function showOptions(target, text, before, after) {
+        currentTarget = target;
+        selectionStart = target.selectionStart;
+        selectionEnd = target.selectionEnd;
+        App.options = []
+
+        var posX = 0, posY = 0;
+
+        var event = window.event;
+        if (event.pageX || event.pageY) {
+          posX = event.pageX;
+          posY = event.pageY;
+        }
+        else if (event.clientX || event.clientY) {
+          posX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
+          posY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
+        }
+        else if (target.offsetHeight || target.offsetWidth) {
+          // posX = target.offsetHeight;
+          // posY = target.offsetWidth;
+        }
+
+        vOption.style.left = posX + 'px';
+        vOption.style.top = posY + 'px';
+
+        var table = null;
+        var isArrayKey = false;
+        var isSubqueryKey = false;
+        while (before != null && before.length > 0) {
+          var lastIndex = before.lastIndexOf('{');
+          before = before.substring(0, lastIndex).trimRight();
+          if (before.endsWith(':')) {
+            before = before.substring(0, before.length - 1).trimRight();
+            var endsWithDoubleQuote = before.endsWith('"')
+            if (endsWithDoubleQuote || before.endsWith("'")) {
+              before = before.substring(0, before.length - 1);
+              lastIndex = before.lastIndexOf('\n');
+              var lastLine = before.substring(lastIndex + 1, before.length);
+              var ind = lastLine.lastIndexOf(endsWithDoubleQuote ? '"' : "'");
+              table = ind < 0 ? null : lastLine.substring(ind + 1, lastLine.length);
+              if (App.isTableKey(table)) {
+                break;
+              }
+              if (table != null && table.endsWith('[]')) {
+                isArrayKey = true;
+                break;
+              }
+              if (table != null && table.endsWith('@')) {
+                isSubqueryKey = true;
+                break;
+              }
+
+              before = lastIndex <= 0 ? '' : before.substring(0, lastIndex);
+            }
+          }
+        }
+
+        App.selectIndex = 0;
+        App.options = [
+          {name:"@column", type: "string", comment:"返回字段"},
+          {name:"@from@", type: "object", comment:"数据来源"},
+          {name:"@group", type: "string", comment:"分组方式"},
+          {name:"@having", type: "string", comment:"聚合函数"},
+          {name:"@order", type: "string", comment:"排序方式"},
+          {name:"@combine", type: "string", comment:"条件组合"},
+          {name:"@raw", type: "string", comment:"原始SQL片段"},
+          {name:"@json", type: "string", comment:"转为JSON"},
+          {name:"@null", type: "string", comment:"NULL值字段"},
+          {name:"@cast", type: "string", comment:"类型转换"},
+          {name:"@schema", type: "string", comment:"集合空间(数据库名/模式)"},
+          {name:"@database", type: "string", comment:"数据库类型"},
+          {name:"@datasource", type: "string", comment:"跨数据源"},
+          {name:"@role", type: "string", comment:"来访角色"},
+          {name:"@cache", type: "string", comment:"缓存方式"},
+          {name:"@explain", type: "string", comment:"性能分析"},
+        ];
+
+        if (isArrayKey) {
+          App.options = [
+            {name:"count", type: "integer", comment:"每页数量"},
+            {name:"page", type: "integer", comment:"分页页码"},
+            {name:"query", type: "integer", comment:"查询内容"},
+            {name:"compat", type: "boolean", comment:"兼容统计"},
+            {name:"join", type: "string", comment:"联表查询"},
+          ];
+        }
+        else if (isSubqueryKey) {
+          App.options = [
+            {name:"from", type: "string", comment:"主表名称"},
+            {name:"count", type: "integer", comment:"每页数量"},
+            {name:"page", type: "integer", comment:"分页页码"},
+            {name:"range", type: "string", comment:"比较范围"},
+            {name:"join", type: "string", comment:"联表查询"},
+          ];
+        }
+        else if (App.isTableKey(table)) {
+          var columnList = App.getColumnListWithModelName(table);
+          if (columnList != null) {
+            for (var j = 0; j < columnList.length; j++) {
+              var column = App.getColumnObj(columnList, j)
+              var name = column == null ? null : column.column_name;
+              if (StringUtil.isEmpty(name, true)) {
+                continue;
+              }
+
+              App.options.push({
+                name: name,
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
+                comment: column.column_comment
+              })
+            }
+          }
+        }
+        else {
+          App.options.push([
+            {name:"format", type: "string", comment:"格式化"},
+            {name:"tag", type: "string", comment:"请求标识"},
+            {name:"version", type: "string", comment:"请求版本"},
+          ])
+        }
+
+        if (App.isTableKey(table) != true) {
+          var tableList = docObj['[]']
+          if (tableList != null) {
+            for (var j = 0; j < tableList.length; j++) {
+              var tableObj = App.getTableObj(j);
+              var name = tableObj == null ? null : App.getModelNameByTableName(tableObj.table_name);
+              if (StringUtil.isEmpty(name, true)) {
+                continue;
+              }
+
+              App.options.push({
+                name: name,
+                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'object'),
+                comment: tableObj.table_comment
+              })
+            }
+          }
+        }
+
+        vOption.focus();
+      }
+
       // 快捷键 CTRL + I 格式化 JSON
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
@@ -8385,10 +8570,73 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var isEnter = keyCode === 13
         var isDel = keyCode === 8 || keyCode === 46 // backspace 和 del
 
-        if (isEnter || isDel) { // enter || delete
+        if (keyCode === 27) {  // ESC
+          if (document.activeElement == vOption || App.options.length > 0) {
+            App.options = [];
+            target.focus();
+          }
+        }
+        else if (keyCode === 40 || keyCode === 38) {  // 方向键 上 和 下
+          if (keyCode === 38) {
+            if (App.selectIndex > 0) {
+              App.selectIndex --
+              App.selectInput(vInput, App.options[App.selectIndex], App.selectIndex)
+            }
+          } else if (App.selectIndex < App.options.length - 1) {
+            App.selectIndex ++
+            App.selectInput(vInput, App.options[App.selectIndex], App.selectIndex)
+          }
+
+          // var options = document.activeElement == vOption || App.options.length > 0 ? App.options : null; // vOption.options : null;
+          // if (options != null) {
+          //   for (var i = 0; i < options.length; i++) {
+          //     var opt = options[i]
+          //     if (opt != null && (opt.selected || i == App.selectIndex)) {
+          //       if (keyCode === 38) {
+          //         if (i > 0) {
+          //           opt.selected = false
+          //           options[i - 1].selected = true
+          //           App.selectInput(vInput, App.options[i - 1], i - 1)
+          //         }
+          //       } else {
+          //         if (i < options.length - 1) {
+          //           opt.selected = false
+          //           options[i + 1].selected = true
+          //           App.selectInput(vInput, App.options[i + 1], i + 1)
+          //         }
+          //       }
+          //
+          //       break
+          //     }
+          //   }
+
+            event.preventDefault();
+          // }
+        }
+        else if (isEnter || isDel) { // enter || delete
+          if (document.activeElement == vOption || App.options.length > 0) { // hasFocus is undefined   vOption.hasFocus()) {
+            if (currentTarget == null) {
+              currentTarget = vInput;
+            }
+
+            var options = vOption.options || App.options
+            if (options != null) {
+              for (var i = 0; i < options.length; i++) {
+                var opt = options[i]
+                if (opt != null && (opt.selected || i == App.selectIndex)) {
+                  App.selectInput(currentTarget, App.options[i], i, true);
+                  break;
+                }
+              }
+            }
+
+            event.preventDefault();
+            return;
+          }
+
           if (target == vUrl) {
           }
-          else {
+          else if (target != vOption) {
             var selectionStart = target.selectionStart;
             var selectionEnd = target.selectionEnd;
 
@@ -8424,10 +8672,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var hasNewKey = null;
             if (isEnter) {
               var tll = lastLine.trimRight();
-              if (tll.endsWith('[') || tfl.startsWith(']')) {
+              if (tll.endsWith('[') || tfl.startsWith(']') || tfl.startsWith('}')) {
                 hasNewKey = false;
               }
-              else if (tfl.startsWith('}') || tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
+              else if (tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
                 hasNewKey = true;
               }
 
@@ -8462,6 +8710,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0);
                 event.preventDefault();
+
+                if (hasNewKey) {
+                  showOptions(target, text, before, after);
+                }
               }
               else if (isDel) {
                 target.value = (selectionStart == selectionEnd ? StringUtil.get(before.substring(0, lastLineStart - 1) + ' ') : before) + after;
