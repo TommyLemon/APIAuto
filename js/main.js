@@ -8380,7 +8380,84 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
         // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
-        if (event.ctrlKey || event.metaKey) {
+        var isEnter = event.keyCode === 13
+        var isDel = event.keyCode === 8 || event.keyCode === 46 // backspace 和 del
+        if (isEnter || isDel) { // enter || delete
+          var target = event.target
+          if (target == vUrl) {
+          }
+          else {
+            var selectionStart = target.selectionStart;
+            var selectionEnd = target.selectionEnd;
+
+            var text = StringUtil.get(target.value);
+            var before = text.substring(0, selectionStart);
+            var after = text.substring(selectionEnd);
+
+            var firstIndex = isEnter ? after.indexOf('\n') : -1;
+            var firstLine = firstIndex <= 0 ? '' : after.substring(0, firstIndex);
+            var tfl = firstLine.trimLeft();
+
+            // var lastLineStart = isEnter && tfl.length > 0 ? -1 : before.lastIndexOf('\n') + 1;
+            var lastLineStart = before.lastIndexOf('\n') + 1;
+            var lastLine = lastLineStart < 0 ? '' : before.substring(lastLineStart);
+
+            var prefixEnd = 0;
+            for (var i = 0; i < lastLine.length; i++) {
+              if (lastLine.charAt(i).trim().length > 0) {
+                if (isDel) {
+                  prefixEnd = 0;
+                }
+                break;
+              }
+
+              prefixEnd += 1;
+            }
+
+
+            var prefix = prefixEnd <= 0 ? '' : lastLine.substring(0, prefixEnd);
+
+            var hasPadding = false;
+            var hasComma = false;
+            if (isEnter) {
+              var tll = lastLine.trimRight();
+              hasPadding = tll.endsWith('{') || tll.endsWith('[')
+
+              tll = before.trimRight();
+              hasComma = tfl.length <= 0 && tll.endsWith(',') != true && (tll.endsWith('{') || tll.endsWith('[')) != true;
+              if (hasComma) {
+                for (var i = before.length; i >= 0; i--) {
+                  if (before.charAt(i).trim().length > 0) {
+                    break;
+                  }
+
+                  selectionStart -= 1;
+                }
+
+                before = tll + ',';
+                selectionStart += 1;
+              }
+            }
+
+            if (prefix.length > 0) {
+              if (isEnter) {
+                target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
+                  + (tfl.startsWith('}') || tfl.startsWith(']') ? after
+                    : (hasPadding ? tfl.trimLeft() : tfl) + '\n' + after.substring(firstIndex + 1)
+                  );
+
+                target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasPadding ? 4 : 0);
+                event.preventDefault();
+              }
+              else if (isDel) {
+                target.value = (selectionStart == selectionEnd ? StringUtil.get(before.substring(0, lastLineStart - 1) + ' ') : before) + after;
+                target.selectionEnd = target.selectionStart = selectionStart == selectionEnd ? lastLineStart - 1 : selectionStart;
+                event.preventDefault();
+              }
+            }
+          }
+        }
+        else if (event.ctrlKey || event.metaKey) {
           var target = event.target;
           var selectionStart = target.selectionStart;
           var selectionEnd = target.selectionEnd;
@@ -8427,19 +8504,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           else if (event.keyCode === 191) {  // Ctrl + '/' 注释与取消注释
             try {
-              var json = StringUtil.get(target.value);
-              var before = json.substring(0, selectionStart);
-              var after = json.substring(selectionEnd);
+              var text = StringUtil.get(target.value);
+              var before = text.substring(0, selectionStart);
+              var after = text.substring(selectionEnd);
 
               var ind = before.lastIndexOf('\n');
               var start = ind < 0 ? 0 : ind + 1;
               ind = after.indexOf('\n');
-              var end = ind < 0 ? json.length : selectionEnd + ind - 1;
+              var end = ind < 0 ? text.length : selectionEnd + ind - 1;
 
-              var selection = json.substring(start, end);
+              var selection = text.substring(start, end);
               var lines = StringUtil.split(selection, '\n');
 
-              var newStr = json.substring(0, start);
+              var newStr = text.substring(0, start);
 
               var commentSign = '//'
               var commentSignLen = commentSign.length
@@ -8470,7 +8547,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
               }
 
-              newStr += json.substring(end);
+              newStr += text.substring(end);
 
               target.value = newStr;
               if (target == vInput) {
