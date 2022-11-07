@@ -8380,8 +8380,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
         // if (event.ctrlKey && event.keyCode === 73) { // KeyI 无效  event.key === 'KeyI' && event.target == vInput){
-        var isEnter = event.keyCode === 13
-        var isDel = event.keyCode === 8 || event.keyCode === 46 // backspace 和 del
+
+        var keyCode = event.keyCode
+        var isEnter = keyCode === 13
+        var isDel = keyCode === 8 || keyCode === 46 // backspace 和 del
         if (isEnter || isDel) { // enter || delete
           var target = event.target
           if (target == vUrl) {
@@ -8454,6 +8456,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 target.selectionEnd = target.selectionStart = selectionStart == selectionEnd ? lastLineStart - 1 : selectionStart;
                 event.preventDefault();
               }
+
+              if (target == vInput) {
+                inputted = target.value;
+              }
             }
           }
         }
@@ -8462,9 +8468,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var selectionStart = target.selectionStart;
           var selectionEnd = target.selectionEnd;
 
-          // 这里拿不到 clipboardData  if (event.keyCode === 86) {
+          // 这里拿不到 clipboardData  if (keyCode === 86) {
 
-          if (event.keyCode === 73) {  // Ctrl + 'I'  格式化
+          if (keyCode === 73) {  // Ctrl + 'I'  格式化
             try {
               if (target == vInput) {
                 var json = JSON.stringify(JSON5.parse(vInput.value), null, '    ');
@@ -8502,7 +8508,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               log(e)
             }
           }
-          else if (event.keyCode === 191) {  // Ctrl + '/' 注释与取消注释
+          else if (keyCode === 191) {  // Ctrl + '/' 注释与取消注释
             try {
               var text = StringUtil.get(target.value);
               var before = text.substring(0, selectionStart);
@@ -8550,6 +8556,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               newStr += text.substring(end);
 
               target.value = newStr;
+              if (target == vInput) {
+                inputted = newStr;
+              }
+            } catch (e) {
+              log(e)
+            }
+          }
+          else if (keyCode == 68) {  // Ctrl + 'D' 删除行
+            try {
+              var text = StringUtil.get(target.value);
+              var before = text.substring(0, selectionStart);
+              var after = text.substring(selectionEnd);
+
+              var lastIndex = before.lastIndexOf('\n');
+              var firstIndex = after.indexOf('\n');
+
+              target.value = (lastIndex < 0 ? '' : before.substring(0, lastIndex)) + '\n' + after.substring(firstIndex + 1);
+              selectionEnd = selectionStart = lastIndex + 1;
+              event.preventDefault();
+
               if (target == vInput) {
                 inputted = newStr;
               }
