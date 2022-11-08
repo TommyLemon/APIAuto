@@ -8312,7 +8312,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             App.options = [{
               name: "{}",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "object"),
+              type: CodeUtil.getType4Language(App.language, "object"),
               comment: (isArrayKey ? '数组 < ' + table + ': ' : '') + StringUtil.trim((App.getTableByModelName(table) || {}).table_comment)
             }]
           }
@@ -8321,7 +8321,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               case '@from@':
                 App.options = [{
                   name: "{}",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "object"),
+                  type: CodeUtil.getType4Language(App.language, "object"),
                   comment: '数据来源'
                 }];
                 break;
@@ -8340,7 +8340,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   if (StringUtil.isNotEmpty(k, true) && (isRaw || (k.startsWith('@') != true && key.indexOf('()') < 0))) {
                     App.options.push({
                       name: quote + k + quote,
-                      type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                      type: CodeUtil.getType4Language(App.language, "string"),
                       comment: isRaw ? '原始SQL片段' : '条件组合'
                     });
 
@@ -8352,7 +8352,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 if (StringUtil.isNotEmpty(ks, true)) {
                   App.options.push({
                     name: quote + ks + quote,
-                    type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                    type: CodeUtil.getType4Language(App.language, "string"),
                     comment: isRaw ? '原始SQL片段' : '条件组合'
                   });
                 }
@@ -8365,7 +8365,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     if (StringUtil.isNotEmpty(sch, true)) {
                       App.options.push({
                         name: quote + sch + quote,
-                        type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                        type: CodeUtil.getType4Language(App.language, "string"),
                         comment: '集合空间(数据库名/模式)'
                       });
                     }
@@ -8375,81 +8375,81 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               case '@database':
                 App.options = [{
                   name: isSingle ? "'MYSQL'" : '"MYSQL"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'MySQL'
                 },{
                   name: isSingle ? "'POSTGRESQL'" : '"POSTGRESQL"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'PostgreSQL'
                 },{
                   name: isSingle ? "'SQLSERVER'" : '"SQLSERVER"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'SQLServer'
                 },{
                   name: isSingle ? "'ORACLE'" : '"ORACLE"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'Oracle'
                 },{
                   name: isSingle ? "'DB2'" : '"DB2"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'DB2'
                 },{
                   name: isSingle ? "'DAMENG'" : '"DAMENG"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '达梦数据库'
                 },{
                   name: isSingle ? "'CLICKHOUSE'" : '"CLICKHOUSE"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'ClickHouse'
                 },{
                   name: isSingle ? "'SQLITE'" : '"SQLITE"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'SQLite'
                 },{
                   name: isSingle ? "'TDENGINE'" : '"TDENGINE"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: 'TDengine'
                 }];
                 break;
               case '@role':
                 App.options = [{
                   name: isSingle ? "'UNKNOWN'" : '"UNKNOWN"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 未登录'
                 },{
                   name: isSingle ? "'LOGIN'" : '"LOGIN"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 已登录'
                 },{
                   name: isSingle ? "'CIRCLE'" : '"CIRCLE"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 圈子成员'
                 },{
                   name: isSingle ? "'CONTACT'" : '"CONTACT"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 联系人'
                 },{
                   name: isSingle ? "'OWNER'" : '"OWNER"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 拥有者'
                 },{
                   name: isSingle ? "'ADMIN'" : '"ADMIN"',
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '来访角色: 管理员'
                 }];
                 break;
               case '@cache':
                 App.options = [{
                   name: "0",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '缓存方式: 全部'
                 },{
                   name: "1",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '缓存方式: 磁盘'
                 },{
                   name: "2",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '缓存方式: 内存'
                 }];
                 break;
@@ -8459,7 +8459,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 for (var i = 0; i < 100; i++) {
                   App.options.push({
                     name: new String(i), // 直接用数字导致重复生成 JSON
-                    type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                    type: CodeUtil.getType4Language(App.language, "int"),
                     comment: isPage ? '分页页码' : '每页数量'
                   });
                 }
@@ -8477,7 +8477,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                     App.options.push({
                       name: isVersion ? item.version : item.tag,
-                      type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                      type: CodeUtil.getType4Language(App.language, "int"),
                       comment: isVersion ? '请求版本' : '请求标识'
                     });
                   }
@@ -8486,58 +8486,59 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               case 'query':
                 App.options = [{
                   name: "0",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '查询内容: 数据'
                 },{
                   name: "1",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '查询内容: 数量'
                 },{
                   name: "2",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"),
+                  type: CodeUtil.getType4Language(App.language, "int"),
                   comment: '查询内容: 全部'
                 }];
                 break;
               case 'range':
                 App.options = [{
                   name: quote + "ANY" + quote,
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '比较范围: 任意'
                 },{
                   name: quote + "ALL" + quote,
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                  type: CodeUtil.getType4Language(App.language, "string"),
                   comment: '比较范围: 全部'
                 }];
+                break;
               case 'compat':
                 App.options = [{
                   name: "true",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '兼容统计: 开启'
                 },{
                   name: "false",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '兼容统计: 关闭'
                 }];
                 break;
               case '@explain':
                 App.options = [{
                   name: "true",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '性能分析: 开启'
                 },{
                   name: "false",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '性能分析: 关闭'
                 }];
                 break;
               case '':
                 App.options = [{
                   name: "true",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '性能分析: 开启'
                 },{
                   name: "false",
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
+                  type: CodeUtil.getType4Language(App.language, "boolean"),
                   comment: '性能分析: 关闭'
                 }];
                 break;
@@ -8546,7 +8547,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   if (key.startsWith('@')) {
                     App.options = [{
                       name: quote + 'fun(arg0,arg1)' + quote,
-                      type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                      type: CodeUtil.getType4Language(App.language, "string"),
                       comment: '存储过程'
                     }];
                   } else {
@@ -8561,7 +8562,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                         App.options.push({
                           name: quote + name + '(' + StringUtil.trim(item.arguments) + ')' + quote,
-                          type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "string"),
+                          type: CodeUtil.getType4Language(App.language, "string"),
                           comment: item.detail
                         });
                       }
@@ -8573,6 +8574,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             var columnList = App.getColumnListWithModelName(table);
             if (columnList != null) {
+              var isHaving = key == '@having';
+              var arr = ['max', 'min', 'sum', 'avg', 'length', 'len', 'json_length'];
+
               var ks = '';
               var first = true;
               for (var j = 0; j < columnList.length; j++) {
@@ -8585,9 +8589,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var k = name;
                 switch (key) {
                   case '@having':
-                    var arr = ['max', 'min', 'sum', 'avg', 'length', 'len', 'json_length'];
                     var which = Math.floor(arr.length*Math.random());
-                    k = arr[which] + '(' + name + ')';
+                    k = arr[which] + '(' + name + ')' + (Math.random() < 0.2 ? '<82010' : (Math.random() < 0.5 ? '>3' : '%2=0'));
                     break;
                   case '@order':
                     k = name + (Math.random() < 0.2 ? '' : (Math.random() < 0.5 ? '-' : '+'));
@@ -8606,17 +8609,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 App.options.push({
                   name: quote + k + quote,
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
+                  type: CodeUtil.getType4Language(App.language, column.column_type),
                   comment: column.column_comment
                 })
 
-                ks += (first ? '' : ',') + k;
+                ks += (first ? '' : (isHaving ? ';' : ',')) + k;
                 first = false;
               }
 
               App.options.push({
                 name: quote + ks + quote,
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'string'),
+                type: CodeUtil.getType4Language(App.language, 'string'),
                 comment: '所有字段组合'
               })
             }
@@ -8626,137 +8629,130 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           App.options = [
             {
               name: "@column",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "返回字段"
             },
-            {name: "@from@", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "object"), comment: "数据来源"},
+            {name: "@from@", type: CodeUtil.getType4Language(App.language, "object"), comment: "数据来源"},
             {
               name: "@group",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "分组方式"
             },
             {
               name: "@having",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "聚合函数"
             },
             {
               name: "@order",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "排序方式"
             },
             {
               name: "@combine",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "条件组合"
             },
             {
               name: "@raw",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "原始SQL片段"
             },
             {
               name: "@json",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "转为JSON"
             },
             {
               name: "@null",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "NULL值字段"
             },
-            {name: "@cast", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "类型转换"},
+            {name: "@cast", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "类型转换"},
             {
               name: "@schema",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "集合空间(数据库名/模式)"
             },
             {
               name: "@database",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "数据库类型"
             },
             {
               name: "@datasource",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "跨数据源"
             },
-            {name: "@role", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "来访角色"},
+            {name: "@role", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "来访角色"},
             {
               name: "@cache",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "缓存方式"
             },
             {
               name: "@explain",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "性能分析"
             },
             {
               name: "key-()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "远程函数: 优先执行"
             },
             {
               name: "key()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "远程函数"
             },
             {
               name: "key+()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "远程函数: 延后执行"
             },
             {
               name: "@key-()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "存储过程: 优先执行"
             },
             {
               name: "@key()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "存储过程"
             },
             {
               name: "@key+()",
-              type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+              type: CodeUtil.getType4Language(App.language, "varchar"),
               comment: "存储过程: 延后执行"
             },
           ];
 
           if (isArrayKey) {
             App.options = [
-              {name: "count", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "每页数量"},
-              {name: "page", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "分页页码"},
-              {name: "query", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "查询内容"},
-              {
-                name: "compat",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "boolean"),
-                comment: "兼容统计"
-              },
-              {
-                name: "join",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
-                comment: "联表查询"
-              },
+              {name: "count", type: CodeUtil.getType4Language(App.language, "int"), comment: "每页数量"},
+              {name: "page", type: CodeUtil.getType4Language(App.language, "int"), comment: "分页页码"},
+              {name: "query", type: CodeUtil.getType4Language(App.language, "int"), comment: "查询内容"},
+              {name: "compat", type: CodeUtil.getType4Language(App.language, "boolean"), comment: "兼容统计"},
+              {name: "join", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "联表查询"},
+              {name: "[]", type: CodeUtil.getType4Language(App.language, "array"), comment: "数组对象"},
             ];
           } else if (isSubqueryKey) {
             App.options = [
               {
                 name: "from",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                type: CodeUtil.getType4Language(App.language, "varchar"),
                 comment: "主表名称"
               },
-              {name: "count", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "每页数量"},
-              {name: "page", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "int"), comment: "分页页码"},
+              {name: "count", type: CodeUtil.getType4Language(App.language, "int"), comment: "每页数量"},
+              {name: "page", type: CodeUtil.getType4Language(App.language, "int"), comment: "分页页码"},
               {
                 name: "range",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                type: CodeUtil.getType4Language(App.language, "varchar"),
                 comment: "比较范围"
               },
               {
                 name: "join",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
+                type: CodeUtil.getType4Language(App.language, "varchar"),
                 comment: "联表查询"
               },
             ];
@@ -8772,24 +8768,33 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 App.options.push({
                   name: name,
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type),
+                  type: CodeUtil.getType4Language(App.language, column.column_type),
+                  comment: column.column_comment
+                })
+              }
+
+              var arr = ['{}', '$', '~', '<>', '>', '<', '<=', '>=', '!', '}{', '%', '&$', '|{}', '!~','+', '-'];
+              for (var j = 0; j < columnList.length; j++) {
+                var column = App.getColumnObj(columnList, j)
+                var name = column == null ? null : column.column_name;
+                if (StringUtil.isEmpty(name, true)) {
+                  continue;
+                }
+
+                var which = Math.floor(arr.length*Math.random());
+                App.options.push({
+                  name: name + arr[which],
+                  type: CodeUtil.getType4Language(App.language, column.column_type),
                   comment: column.column_comment
                 })
               }
             }
           } else {
             App.options.push([
-              {
-                name: "format",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
-                comment: "格式化"
-              },
-              {name: "tag", type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"), comment: "请求标识"},
-              {
-                name: "version",
-                type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, "varchar"),
-                comment: "请求版本"
-              },
+              {name: "format", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "格式化"},
+              {name: "tag", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "请求标识"},
+              {name: "version", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "请求版本"},
+              {name: "[]", type: CodeUtil.getType4Language(App.language, "array"), comment: "数组对象"},
             ])
           }
 
@@ -8805,7 +8810,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 App.options.push({
                   name: name,
-                  type: CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, 'object'),
+                  type: CodeUtil.getType4Language(App.language, 'object'),
                   comment: tableObj.table_comment
                 })
               }
