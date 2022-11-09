@@ -8826,7 +8826,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         }
 
-        vOption.focus();
+        if (App.options.length > 0) {
+          vOption.focus();
+        }
       }
     },
     watch: {
@@ -9126,6 +9128,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var firstLine = firstIndex <= 0 ? '' : after.substring(0, firstIndex);
             var tfl = firstLine.trimLeft();
 
+            var hasRight = tfl.length > 0;
+            if (isEnter && hasRight != true) {
+              var aft = after.substring(firstIndex + 1);
+              var fi = aft.indexOf('\n');
+              tfl = fi < 0 ? aft : aft.substring(0, fi);
+            }
+
             // var lastLineStart = isEnter && tfl.length > 0 ? -1 : before.lastIndexOf('\n') + 1;
             var lastLineStart = before.lastIndexOf('\n') + 1;
             var lastLine = lastLineStart < 0 ? '' : before.substring(lastLineStart);
@@ -9145,22 +9154,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             var prefix = prefixEnd <= 0 ? '' : lastLine.substring(0, prefixEnd);
 
+            var isStart = false;
+            var isEnd = false;
             var hasPadding = false;
             var hasComma = false;
             var hasNewKey = null;
             if (isEnter) {
+              isEnd = tfl.startsWith(']') || tfl.startsWith('}')
               var tll = lastLine.trimRight();
-              if (tll.endsWith('[') || tfl.startsWith(']') || tfl.startsWith('}')) {
+              if (isEnd || hasRight || tll.endsWith('[')) {
                 hasNewKey = false;
               }
               else if (tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
                 hasNewKey = true;
               }
 
-              hasPadding = tll.endsWith('{') || tll.endsWith('[')
+              isStart = tll.endsWith('{') || tll.endsWith('[');
+              hasPadding = hasRight != true && isStart;
 
               tll = before.trimRight();
-              hasComma = tfl.length <= 0 && tll.endsWith(',') != true && (tll.endsWith('{') || tll.endsWith('[')) != true;
+              hasComma = isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
               if (hasComma) {
                 for (var i = before.length; i >= 0; i--) {
                   if (before.charAt(i).trim().length > 0) {
@@ -9182,8 +9195,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (prefix.length > 0) {
               if (isEnter) {
                 target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
-                  + (hasNewKey ? (isSingle ? "'': null" : '"": null') + (hasComma ? '' : ',') : '') + (tfl.startsWith('}') || tfl.startsWith(']') ? after
-                    : (hasPadding ? tfl.trimLeft() : tfl) + '\n' + after.substring(firstIndex + 1)
+                  + (hasNewKey ? (isSingle ? "'': null" : '"": null') + (hasComma || isEnd ? '' : ',') : '')
+                  + (isEnd ? after : (hasRight ? (hasPadding ? tfl.trimLeft() : tfl) : '') + '\n' + after.substring(firstIndex + 1)
                   );
 
                 target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0);
