@@ -1197,7 +1197,7 @@
           this.options = [];
 
           target.focus();
-          selectionStart = target.selectionStart = selectionEnd + (isValue ? 1 : 3);
+          selectionStart = target.selectionStart = selectionEnd + (isValue ? (after.startsWith(',') ? 1 : 0) : 3);
           selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
           // vOption.focusout()
 
@@ -5288,7 +5288,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'page': page,
             'Function': {
               '@order': 'date-,name+',
-              '@column': 'name,arguments,demo,detail,detail:rawDetail',
+              '@column': 'name,arguments,returntype,demo,detail,detail:rawDetail',
               'demo()': 'getFunctionDemo()',
               'detail()': 'getFunctionDetail()',
               'name$': search,
@@ -5501,20 +5501,23 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             for (var i = 0; i < list.length; i++) {
               var item = list[i];
-              if (item == null) {
+              var name = item == null ? null : item.name;
+              if (StringUtil.isEmpty(name, true)) {
                 continue;
               }
               if (DEBUG) {
                 log('getDoc Function[] for i=' + i + ': item = \n' + format(JSON.stringify(item)));
               }
 
-              map[item.name] = item
+              map[name] = item
 
               var demoStr = JSON.stringify(item.demo)
 
               // doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ",'"
               //   + demoStr.replaceAll("'", "\'") + ')">' + demoStr + '</a>';
-              doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ')">' + demoStr + '</a>';
+              doc += '\n' + name + '(' + StringUtil.get(item.arguments) + '): '
+                + CodeUtil.getType4Language(App.language, item.returntype) + ', ' + (item.rawDetail || item.detail)
+                + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ')">' + demoStr + '</a>';
             }
 
             doc += '\n' //避免没数据时表格显示没有网格
@@ -5956,8 +5959,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         "userId": 82001` + (StringUtil.isEmpty(schemaName, true) ? '' : `,
         "@schema": "` + schemaName + '"') + (StringUtil.isEmpty(role, true) ? '' : `,
         "@role": "` + role + '"') + `
-    },
-    "tag": "` + modelName + `",
+    },` + (isHeads ? `
+    "tag": "` + modelName + `",` : '') + `
     "@explain": true
 }`)
       },
@@ -8223,26 +8226,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         isInputValue = isValue;
         selectionStart = target.selectionStart;
         selectionEnd = target.selectionEnd;
-        App.options = []
+        App.options = [];
 
-        var posX = 0, posY = 0;
+        clearTimeout(handler);
 
-        var event = window.event;
-        if (event.pageX || event.pageY) {
-          posX = event.pageX;
-          posY = event.pageY;
-        }
-        else if (event.clientX || event.clientY) {
-          posX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
-          posY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
-        }
-        else if (target.offsetHeight || target.offsetWidth) {
-          // posX = target.offsetHeight;
-          // posY = target.offsetWidth;
-        }
+        // var posX = 0, posY = 0;
 
-        vOption.style.left = posX + 'px';
-        vOption.style.top = posY + 'px';
+        // var event = window.event;
+        // if (event.pageX || event.pageY) {
+        //   posX = event.pageX;
+        //   posY = event.pageY;
+        // }
+        // else if (event.clientX || event.clientY) {
+        //   posX = event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft;
+        //   posY = event.clientY + document.documentElement.scrollTop + document.body.scrollTop;
+        // }
+        // else if (target.offsetHeight || target.offsetWidth) {
+        //   // posX = target.offsetHeight;
+        //   // posY = target.offsetWidth;
+        // }
+        //
+        // vOption.style.left = posX + 'px';
+        // vOption.style.top = posY + 'px';
 
         var quote = isSingle ? "'" : '"';
 
@@ -8562,8 +8567,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                         App.options.push({
                           name: quote + name + '(' + StringUtil.trim(item.arguments) + ')' + quote,
-                          type: CodeUtil.getType4Language(App.language, "string"),
-                          comment: item.detail
+                          type: CodeUtil.getType4Language(App.language, item.returntype),
+                          comment: item.rawDetail || item.detail
                         });
                       }
                     }
@@ -8596,7 +8601,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     k = name + (Math.random() < 0.2 ? '' : (Math.random() < 0.5 ? '-' : '+'));
                     break;
                   case '@cast':
-                    k = name + ':' + StringUtil.toUpperCase(column.column_type);
+                    var t = column.column_type;
+                    var ind = t == null ? -1 : t.indexOf('(');
+                    k = name + ':' + StringUtil.toUpperCase(ind < 0 ? t : t.substring(0, ind));
                     break;
                   // case '@column':
                   // case '@group':
@@ -9175,7 +9182,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (prefix.length > 0) {
               if (isEnter) {
                 target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
-                  + (hasNewKey ? (isSingle ? "'': null," : '"": null,') : '') + (tfl.startsWith('}') || tfl.startsWith(']') ? after
+                  + (hasNewKey ? (isSingle ? "'': null" : '"": null') + (hasComma ? '' : ',') : '') + (tfl.startsWith('}') || tfl.startsWith(']') ? after
                     : (hasPadding ? tfl.trimLeft() : tfl) + '\n' + after.substring(firstIndex + 1)
                   );
 

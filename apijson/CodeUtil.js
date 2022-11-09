@@ -5880,7 +5880,7 @@ var CodeUtil = {
   },
   DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'DAMENG', 'CLICKHOUSE', 'SQLITE', 'TDENGINE'],
 
-  getComment4Function: function (funCallStr, method) {
+  getComment4Function: function (funCallStr, method, language) {
     if (typeof funCallStr != 'string') {
       return '远程函数 value 必须是 String 类型！';
     }
@@ -5928,7 +5928,7 @@ var CodeUtil = {
       throw new Error('远程函数参数数量 ' + argLen + ' 非法！必须是 ' + allowArgLen + ' 个！格式为 ' + fun + '(' + StringUtil.trim(allowArgStr) + ')')
     }
 
-    return funObj.rawDetail || funObj.detail
+    return CodeUtil.getType4Language(language, funObj.returntype) + ', ' + (funObj.rawDetail || funObj.detail)
   },
 
   getFunctionFromList: function (name, method) {
@@ -6086,7 +6086,7 @@ var CodeUtil = {
       var c = ''
       if (StringUtil.isNotEmpty(value)) { // isValueNotEmpty 居然不对
         try {
-          c = CodeUtil.getComment4Function(value, method)
+          c = CodeUtil.getComment4Function(value, method, language)
         } catch (e) {
           return ' ! ' + e.message
         }
@@ -6137,8 +6137,9 @@ var CodeUtil = {
     else if (value instanceof Object) {
       if ((isReq != true || isRestful != true) && StringUtil.isEmpty(key, true)) {
         if (names == null || names.length <= 0) {
-          return isReq != true || isWarning ? '' : '  ' + CodeUtil.getComment('根对象，可在内部加 Table:{}, []:{} 等' +
-            '或 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, ' ');
+          return isReq != true || isWarning ? '' : '  ' + CodeUtil.getComment('根对象，可在内部加 Table:{}'
+            + (method == null || method == 'GET' || method == 'GETS' ? ', []:{}' : (method == 'POST' || method == 'PUT' ? ', []:[{}]' : ''))
+            + ' 等或 format,tag,version,@role,@database,@schema,@datasource,@explain,@cache 等全局关键词键值对', false, ' ');
         }
 
         // 解决 APIJSON 批量 POST/PUT "Table[]": [{ key:value }] 中 {} 不显示注释
