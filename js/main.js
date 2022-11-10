@@ -653,6 +653,7 @@
 
   var currentTarget = vInput;
   var isInputValue = false;
+  var isClickSelectInput = false;
   var selectionStart = 0;
   var selectionEnd = 0;
 
@@ -1176,9 +1177,14 @@
 
       },
 
-      selectInput: function (target, item, index, isDone, isValue) {
-        currentTarget = target;
-        isInputValue = isValue;
+      onClickSelectInput: function (item, index) {
+        isClickSelectInput = true;
+        this.selectInput(item, index, true);
+      },
+      selectInput: function (item, index, isDone) { // , isValue) {
+        var target = currentTarget = currentTarget || vInput; // currentTarget = target;
+        var isValue = isInputValue; // isInputValue = isValue;
+
         // 失去焦点后拿不到有效值
         // var selectionStart = target.selectionStart;
         // var selectionEnd = target.selectionEnd;
@@ -1197,16 +1203,18 @@
           this.options = [];
 
           target.focus();
-          selectionStart = target.selectionStart = selectionEnd + (isValue ? (after.startsWith(',') ? 1 : 0) : 3);
+          selectionStart = target.selectionStart = selectionEnd + (isClickSelectInput ? (name.length - (isValue ? 4 : 0)) : 0) + (isValue ? (after.startsWith(',') ? 1 : 0) : 3);
           selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
+          isClickSelectInput = false;
           // vOption.focusout()
 
-          if (isValue != true) {
+          if (isInputValue != true) {
             App.showOptions(target, text, before + name + (isSingle ? "'" : '"') + ': ', after.substring(3), true);
           }
         } else {
           target.selectionStart = selectionStart;
           selectionEnd = target.selectionEnd = selectionStart + name.length;
+          isClickSelectInput = false;
         }
       },
 
@@ -4848,7 +4856,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
         if (type == 'option') {
           if (keyCode == 13) {
-            this.selectInput(vInput, item);
+            this.selectInput(item);
           }
           return
         }
@@ -8856,6 +8864,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (App.options.length > 0) {
           vOption.focus();
         }
+        else {
+          target.focus();
+        }
       }
     },
     watch: {
@@ -9074,6 +9085,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var isDel = keyCode === 8 || keyCode === 46; // backspace 和 del
         var isChar = (keyCode >= 48 && keyCode <= 90) || (keyCode >= 106 && keyCode <= 111) || (keyCode >= 186 && keyCode <= 222);
 
+        currentTarget = target;
+
         if (keyCode === 27) {  // ESC
           if (document.activeElement == vOption || App.options.length > 0) {
             App.options = [];
@@ -9083,14 +9096,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         else if (keyCode === 40 || keyCode === 38) {  // 方向键 上 和 下
           if (document.activeElement == vOption || App.options.length > 0) {
+            // currentTarget = target;
             if (keyCode === 38) {
               if (App.selectIndex >= 0) {
                 App.selectIndex --
-                App.selectInput(vInput, App.selectIndex < 0 ? null : App.options[App.selectIndex], App.selectIndex, false, isInputValue)
+                App.selectInput(App.selectIndex < 0 ? null : App.options[App.selectIndex], App.selectIndex)
               }
             } else if (App.selectIndex < App.options.length) {
               App.selectIndex ++
-              App.selectInput(vInput, App.selectIndex >= App.options.length ? null : App.options[App.selectIndex], App.selectIndex, false, isInputValue)
+              App.selectInput(App.selectIndex >= App.options.length ? null : App.options[App.selectIndex], App.selectIndex)
             }
 
             // var options = document.activeElement == vOption || App.options.length > 0 ? App.options : null; // vOption.options : null;
@@ -9102,13 +9116,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //         if (i > 0) {
             //           opt.selected = false
             //           options[i - 1].selected = true
-            //           App.selectInput(vInput, App.options[i - 1], i - 1)
+            //           App.selectInput(App.options[i - 1], i - 1)
             //         }
             //       } else {
             //         if (i < options.length - 1) {
             //           opt.selected = false
             //           options[i + 1].selected = true
-            //           App.selectInput(vInput, App.options[i + 1], i + 1)
+            //           App.selectInput(App.options[i + 1], i + 1)
             //         }
             //       }
             //
@@ -9123,9 +9137,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         else if (isEnter || isDel) { // enter || delete
           if (document.activeElement == vOption || App.options.length > 0) { // hasFocus is undefined   vOption.hasFocus()) {
-            if (currentTarget == null) {
-              currentTarget = vInput;
-            }
 
             var options = vOption.options || App.options
             if (options != null && options.length > 0) {
@@ -9137,7 +9148,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var before = text.substring(0, selectionStart);
                 var after = text.substring(selectionEnd);
 
-                App.showOptions(target, text, before, after, isInputValue);
+                App.showOptions(target, text, before, after);
               }
               else {
                 event.preventDefault();
@@ -9145,7 +9156,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 for (var i = 0; i < options.length; i++) {
                   var opt = options[i]
                   if (opt != null && (opt.selected || i == App.selectIndex)) {
-                    App.selectInput(currentTarget, App.options[i], i, true, isInputValue);
+                    // currentTarget = target;
+                    App.selectInput(App.options[i], i, true);
                     return;
                   }
                 }
@@ -9453,7 +9465,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var text = StringUtil.get(target.value);
             var before = text.substring(0, selectionStart);
             var after = text.substring(selectionEnd);
-            text = before + text.substring(selectionStart, selectionEnd) + key + after;
+            var selection = text.substring(selectionStart, selectionEnd);
+            text = before + (isInputValue && selection == 'null' ? '' : selection) + key + after;
 
             target.value = text;
             target.selectionStart = selectionStart;
