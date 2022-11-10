@@ -9470,7 +9470,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             target.value = text;
             target.selectionStart = selectionStart;
-            target.selectionEnd = selectionEnd + key.length;
+            target.selectionEnd = (isInputValue && selection == 'null' ? selectionStart : selectionEnd) + key.length;
             event.preventDefault();
 
             App.showOptions(target, text, before, after, isInputValue, key);
