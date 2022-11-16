@@ -5928,7 +5928,7 @@ var CodeUtil = {
       throw new Error('远程函数参数数量 ' + argLen + ' 非法！必须是 ' + allowArgLen + ' 个！格式为 ' + fun + '(' + StringUtil.trim(allowArgStr) + ')')
     }
 
-    return CodeUtil.getType4Language(language, funObj.returntype) + ', ' + (funObj.rawDetail || funObj.detail)
+    return CodeUtil.getType4Language(language, funObj.returnType) + ', ' + (funObj.rawDetail || funObj.detail)
   },
 
   getFunctionFromList: function (name, method) {

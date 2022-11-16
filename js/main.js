@@ -5296,7 +5296,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'page': page,
             'Function': {
               '@order': 'date-,name+',
-              '@column': 'name,arguments,returntype,demo,detail,detail:rawDetail',
+              '@column': 'name,arguments,returnType,demo,detail,detail:rawDetail',
               'demo()': 'getFunctionDemo()',
               'detail()': 'getFunctionDetail()',
               'name$': search,
@@ -5524,7 +5524,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ",'"
               //   + demoStr.replaceAll("'", "\'") + ')">' + demoStr + '</a>';
               doc += '\n' + name + '(' + StringUtil.get(item.arguments) + '): '
-                + CodeUtil.getType4Language(App.language, item.returntype) + ', ' + (item.rawDetail || item.detail)
+                + CodeUtil.getType4Language(App.language, item.returnType) + ', ' + (item.rawDetail || item.detail)
                 + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ')">' + demoStr + '</a>';
             }
 
@@ -8602,7 +8602,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                           App.options.push({
                             name: quote + name + '(' + StringUtil.trim(item.arguments) + ')' + quote,
-                            type: CodeUtil.getType4Language(App.language, item.returntype),
+                            type: CodeUtil.getType4Language(App.language, item.returnType),
                             comment: item.rawDetail || item.detail
                           });
                         }
