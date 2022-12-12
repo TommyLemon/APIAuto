@@ -448,15 +448,11 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
                   <div v-show="isScriptShow" style="width: 100%; height: 240px; position: relative;" >
                     <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
                       <a href="javascript:void(0)" @click="scriptType = 'case'" :style="{'color': scriptType == 'case' ? 'red' : 'gray'}" style="padding-left: 10px; font-size: medium">用例</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 'account'" :style="{'color': scriptType == 'account' ? 'red' : 'gray'}" style="font-size: medium">账号</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 'global'" :style="{'color': scriptType == 'global' ? 'red' : 'gray'}" style="font-size: medium">全局</a><a href="javascript:void(0)" @click="isPreScript = true" :style="{'color': isPreScript ? 'red' : 'gray'}" style="font-size: medium; padding-left: 10px">前置</a><a>|</a><a href="javascript:void(0)" @click="isPreScript = false" :style="{'color': isPreScript ? 'gray' : 'red'}" style="font-size: medium">后置</a><a style="display: flex;flex-grow: 1;padding-left: 10px;font-size: medium;color: black">执行脚本 JavaScript</a>
-                      <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="var logger = console.log; console.log = function(msg) {
-                        logger(msg);
-                        App.view = 'output';
-                        vOutput.value = StringUtil.get(msg);
-                      } ; eval(vScript.value); console.log = logger;">
+                      <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="onClickTestScript()">
                         <img class="icon" src="img/refresh.png"/>
                       </a>
                       <a class="hint--top @cli-tool" data-hint="添加脚本" style="font-size:xx-large; margin-bottom: 2px; color: black;"
-                         href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
+                         href="javascript:void(0)" @click="showExport(true, true, false, true)"> + </a>
                       <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/分享"  @click="showExport(true, true)">
                         <svg class="icon">
                           <use xlink:href="svg/icon.svg#share"></use>
@@ -469,7 +465,9 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
                       </a>
                     </div>
 
-                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off" v-model="script[scriptType][isPreScript ? 'pre' : 'post']"
+                    <!--        v-model  不允许调用方法            -->
+                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off"
+                              v-model="scripts[scriptType][scriptBelongId][isPreScript ? 'pre' : 'post'].script"
                               placeholder="// JavaScript 脚本
 // 逻辑代码 ..
 
@@ -699,7 +697,7 @@ My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际�
         </svg>
 
         <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
-        <div style="display: inline-block; margin-top: 6px; padding-bottom: 0px"><button @click="exportTxt(0)">{{isExportRemote ? '上传' : '下载'}}</button><button v-show="isExportRemote && (isExportRandom != true || isEditResponse != true)" style="margin-left: 6px" @click="exportTxt(1)">{{isExportRandom ? '发布简单接口' : '分享'}}</button></div>
+        <div style="display: inline-block; margin-top: 6px; padding-bottom: 0px"><button @click="exportTxt(0)">{{isExportRemote ? '上传' : '下载'}}</button><button v-show="isExportRemote && isExportScript != true && (isExportRandom != true || isEditResponse != true)" style="margin-left: 6px" @click="exportTxt(1)">{{isExportRandom ? '发布简单接口' : '分享'}}</button></div>
     </div>
 
     <!--弹出设置文本框-->

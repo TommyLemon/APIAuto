@@ -657,6 +657,57 @@
   var selectionStart = 0;
   var selectionEnd = 0;
 
+  function newDefaultScript() {
+    return { // index.html 中 v-model 绑定，不能为 null
+      case: {
+        0: {
+          pre: { // 可能有 id
+            script: '' // index.html 中 v-model 绑定，不能为 null
+          },
+          post: {
+            script: ''
+          }
+        },
+        1560244940013: {
+          pre: { // 可能有 id
+            script: '' // index.html 中 v-model 绑定，不能为 null
+          },
+          post: {
+            script: ''
+          }
+        }
+      },
+      account: {
+        0: {
+          pre: {
+            script: ''
+          },
+          post: {
+            script: ''
+          }
+        },
+        82001: {
+          pre: {
+            script: ''
+          },
+          post: {
+            script: ''
+          }
+        }
+      },
+      global: {
+        0: {
+          pre: {
+            script: ''
+          },
+          post: {
+            script: ''
+          }
+        }
+      }
+    }
+  }
+
 // APIJSON >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   var App = {
@@ -716,20 +767,8 @@
       testRandomProcess: '',
       compareColor: '#0000',
       scriptType: 'case',
-      script: {
-        'case': {
-          'pre': '',
-          'post': ''
-        },
-        'account': {
-          'pre': '',
-          'post': ''
-        },
-        'global': {
-          'pre': '',
-          'post': ''
-        }
-      },
+      scriptBelongId: 0,
+      scripts: newDefaultScript(),
       isPreScript: true,
       isLoading: false,
       isRandomTest: false,
@@ -738,10 +777,11 @@
       isExportShow: false,
       isExportCheckShow: false,
       isExportRandom: false,
+      isExportScript: false,
       isOptionListShow: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isScriptShow: false,
+      isScriptShow: true, // TODO false,
       isRandomShow: true,  // 默认展示
       isRandomListShow: false,
       isRandomSubListShow: false,
@@ -815,6 +855,7 @@
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
       server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.cn
       // server: 'http://47.74.39.68:9090',  // apijson.org
+      // project: 'http://apijson.cn:8080',  // apijson.cn
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
@@ -1250,12 +1291,13 @@
       },
 
       // 显示导出弹窗
-      showExport: function (show, isRemote, isRandom) {
+      showExport: function (show, isRemote, isRandom, isScript) {
         if (show) {
           // this.isExportCheckShow = isRemote
 
           if (isRemote) { //共享测试用例
             this.isExportRandom = isRandom
+            this.isExportScript = isScript
 
             // if (isRandom != true) {  // 分享搜索关键词和分页信息也挺好 } && this.isTestCaseShow != true) {  // 没有拿到列表，没用
               // setTimeout(function () {
@@ -1274,6 +1316,9 @@
             }
             if (isRandom) {
               this.exTxt.name = '随机配置 ' + this.formatDateTime()
+            }
+            else if (isScript) {
+              this.exTxt.name = '执行脚本 ' + this.formatDateTime()
             }
             else {
               if (this.isEditResponse) {
@@ -1673,7 +1718,8 @@
           request: inputted,
           response: this.jsoncon,
           header: vHeader.value,
-          random: vRandom.value
+          random: vRandom.value,
+          scripts: this.scripts
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
@@ -1759,6 +1805,7 @@
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
           vRandom.value = StringUtil.get(item.random)
+          this.scripts = item.scripts == null ? newDefaultScript() : Object.assign(newDefaultScript(), item.scripts)
           this.onChange(false)
 
           if (isRemote) {
@@ -1929,6 +1976,49 @@
           }
 
           const isExportRandom = this.isExportRandom
+          const isExportScript = this.isExportScript
+
+          const currentAccountId = this.getCurrentAccountId()
+          const doc = (this.currentRemoteItem || {}).Document || {}
+          const tr = (this.currentRemoteItem || {}).TestRecord || {}
+          const did = isExportRandom && btnIndex == 1 ? null : doc.id
+
+          if (isExportScript) {
+            const extName = this.exTxt.name;
+            const scriptType = this.scriptType
+            const script = ((this.scripts[scriptType] || {})[this.getCurrentScriptBelongId()] || {})[this.isPreScript ? 'pre' : 'post'] || {};
+            const sid = script.id
+            const url = sid == null ? '/post' : '/put'
+            const req = {
+              format: false,
+              'Script': Object.assign({
+                'id': sid == null ? undefined : sid,
+                'simple': 1,
+                'documentId': did == null || scriptType != 'case' ? 0 : did,
+                'testAccountId': scriptType == 'global' ? 0 : currentAccountId,
+                'title': extName,
+                'name': '',
+                'script': vScript.value
+              }, script),
+              'tag': 'Script'
+            }
+
+            this.request(true, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+
+              var rpObj = res.data || {}
+              var isPut = url.indexOf('/put') >= 0
+              var ok = JSONResponse.isSuccess(rpObj)
+              alert((isPut ? '修改' : '上传') + (ok ? '成功' : '失败！\n' + StringUtil.get(err != null ? err.message : rpObj.msg)))
+
+              if (ok && ! isPut) {
+                script.id = (rpObj.Script || {}).id
+              }
+            })
+
+            return
+          }
+
           const isEditResponse = this.isEditResponse
           const isReleaseRESTful = isExportRandom && btnIndex == 1 && ! isEditResponse
 
@@ -1958,9 +2048,7 @@
             return
           }
 
-          const doc = (this.currentRemoteItem || {}).Document || {}
-          const tr = (this.currentRemoteItem || {}).TestRecord || {}
-          const did = isExportRandom && btnIndex == 1 ? null : doc.id
+
           if (isExportRandom && btnIndex <= 0 && did == null) {
             alert('请先共享测试用例！')
             return
@@ -1968,7 +2056,6 @@
 
           this.isTestCaseShow = false
 
-          const currentAccountId = this.getCurrentAccountId()
           const currentResponse = this.view != 'code' || StringUtil.isEmpty(this.jsoncon, true) ? {} : this.removeDebugInfo(JSON.parse(this.jsoncon));
 
           const after = isSingle ? this.switchQuote(inputted) : inputted;  // this.toDoubleJSON(inputted);
@@ -3726,6 +3813,20 @@
         return val == null && defaultValue != null ? defaultValue : val
       },
 
+      getCurrentDocumentId: function() {
+        var d = (this.currentRemoteItem || {}).Document
+        return d == null ? null : d.id;
+      },
+      getCurrentRandomId: function() {
+        var r = (this.currentRandomItem || {}).Random
+        return r == null ? null : r.id;
+      },
+      getCurrentScriptBelongId: function() {
+        var st = this.scriptType;
+        return st == 'global' ? 0 : ((st == 'account' ? this.getCurrentAccountId() : this.getCurrentDocumentId()) || 0)
+      },
+
+
       /**登录确认
        */
       confirm: function () {
@@ -4434,7 +4535,8 @@
             'type': this.type,
             'url': '/' + method,
             'request': JSON.stringify(req, null, '    '),
-            'header': vHeader.value
+            'header': vHeader.value,
+            'scripts': this.scripts
           }
         })
         this.saveCache('', 'locals', this.locals)
@@ -4444,10 +4546,110 @@
       request: function (isAdminOperation, type, url, req, header, callback) {
         this.isLoading = true
 
+        const scripts = this.scripts || {}
+        const globalScript = (scripts.global || {})[0] || {}
+        const accountScript = (scripts.account || {})[this.getCurrentAccountId() || 0] || {}
+        const caseScript = (scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+
+        const evalScript = function (isPre, code, res, err) {
+          try {
+//             var s = `(function () {
+// var App = ` + App + `;
+//
+// var type = ` + type + `;
+// var url = ` + url + `;
+// var req = ` + (req == null ? null : JSON.stringify(req)) + `;
+// var header = ` + (header == null ? null : JSON.stringify(header)) + `;
+//
+// ` + (isPre ? '' : `
+// // var res = ` + (res == null ? null : JSON.stringify(res)) + `;
+// var data = ` + (res == null || res.data == null ? null : JSON.stringify(res.data)) + `;
+// var err = ` + (err == null ? null : JSON.stringify(err)) + `;
+//
+// `) + code + `
+//           })()`
+//
+//             eval(s)
+
+            var isTest = false;
+            var data = res == null ? null : res.data
+            eval(code)
+          }
+          catch (e) {
+            this.isLoading = false
+            App.onResponse(url, null, e) // this.onResponse is not a function
+
+            // this.view = 'error'
+            // this.error = {
+            //   msg: e.message
+            // }
+
+            if (callback != null) {
+              callback(url, null, e)
+            }
+          }
+        }
+
+        // const preScript = function () {
+        //   if (isAdminOperation) {
+        //     return
+        //   }
+
+          var preScript = ''
+
+          var globalPreScript = isAdminOperation ? null : StringUtil.trim((globalScript.pre || {}).script)
+          if (StringUtil.isNotEmpty(globalPreScript, true)) {
+            preScript += globalPreScript + '\n\n' // evalScript(true, globalPreScript)
+          }
+
+          var accountPreScript = isAdminOperation ? null : StringUtil.trim((accountScript.pre || {}).script)
+          if (StringUtil.isNotEmpty(accountPreScript, true)) {
+            preScript += accountPreScript + '\n\n' // evalScript(true, accountPreScript)
+          }
+
+          var casePreScript = isAdminOperation ? null : StringUtil.trim((caseScript.pre || {}).script)
+          if (StringUtil.isNotEmpty(casePreScript, true)) {
+            preScript += casePreScript + '\n\n' // evalScript(true, casePreScript)
+          }
+
+          if (StringUtil.isNotEmpty(preScript, true)) {
+            evalScript(true, preScript)
+          }
+
+        // }
+
+        const evalPostScript = function (url, res, err) {
+          if (isAdminOperation) {
+            return
+          }
+
+          var postScript = ''
+          if (StringUtil.isNotEmpty(preScript, true)) {
+            postScript += preScript + '\n\n  // request >>>>>>>>>>>>>>>>>>>>>>>>>> response \n\n' // 如果有副作用参数，则通过 isPre 判断
+          }
+
+          var casePostScript = StringUtil.trim((caseScript.post || {}).script)
+          if (StringUtil.isNotEmpty(casePostScript, true)) {
+            postScript += casePostScript + '\n\n' // evalScript(false, casePostScript, res, err)
+          }
+
+          var accountPostScript = StringUtil.trim((accountScript.post || {}).script)
+          if (StringUtil.isNotEmpty(accountPostScript, true)) {
+            postScript += accountPostScript + '\n\n' // evalScript(false, accountPostScript, res, err)
+          }
+
+          var globalPostScript = StringUtil.trim((globalScript.post || {}).script)
+          if (StringUtil.isNotEmpty(globalPostScript, true)) {
+            postScript += globalPostScript + '\n\n' // evalScript(false, globalPostScript, res, err)
+          }
+
+          evalScript(false, postScript, res, err)
+        }
+
         type = type || REQUEST_TYPE_JSON
         url = StringUtil.noBlank(url)
         if (url.startsWith('/')) {
-          url = (isAdminOperation ? this.server : this.project) + url
+          url = (isAdminOperation ? this.server : this.getBaseUrl()) + url
         }
 
         var isDelegate = (isAdminOperation == false && this.isDelegateEnabled) || (isAdminOperation && url.indexOf('://apijson.cn:9090') > 0)
@@ -4518,6 +4720,7 @@
           // crossDomain: true
         })
           .then(function (res) {
+            evalPostScript(url, res, null)
             App.isLoading = false
             res = res || {}
 
@@ -4560,6 +4763,7 @@
             App.onResponse(url, res, null)
           })
           .catch(function (err) {
+            evalPostScript(url, null, err)
             App.isLoading = false
 
             log('send >> error:\n' + err)
@@ -4596,7 +4800,11 @@
 
         if (err != null) {
           if (IS_BROWSER) {
-            vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
+            // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
+            this.view = 'error';
+            this.error = {
+              msg: "Response:\nurl = " + url + "\nerror = " + err.message
+            }
           }
         }
         else {
@@ -6421,6 +6629,31 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.saveCache(this.server, 'isMLEnabled', enable)
         this.remotes = null
         this.showTestCase(true, false)
+      },
+
+      onClickTestScript() {
+        var logger = console.log;
+        console.log = function(msg) {
+          logger(msg);
+          vOutput.value = StringUtil.get(msg);
+        }
+
+        App.view = 'output';
+        vOutput.value = '';
+
+        try {
+          var isTest = true;
+          eval(vScript.value);
+        }
+        catch(e) {
+          console.log(e);
+          App.view = 'error';
+          App.error = {
+            msg: '执行脚本报错：\n' +  e.message
+          }
+        }
+
+        console.log = logger;
       },
 
       /**参数注入，动态替换键值对
@@ -9351,6 +9584,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           } catch (e) {
             log(e)
           }
+        }
+        else if ((event.ctrlKey || event.metaKey) && keyCode == 83) {
+          App.showSave(true)
+          event.preventDefault()
         }
         else if ((event.ctrlKey || event.metaKey) && ([68, 73, 191].indexOf(keyCode) >= 0 || (isChar != true && event.shiftKey != true))) {
           var selectionStart = target.selectionStart;
