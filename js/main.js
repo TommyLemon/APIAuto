@@ -1402,7 +1402,7 @@
       showConfig: function (show, index) {
         this.isConfigShow = false
         if (this.isTestCaseShow) {
-          if (index == 3 || index == 4 || index == 5 || index == 10) {
+          if (index == 3 || index == 4 || index == 5 || index == 10 || index == 13) {
             this.showTestCase(false, false)
           }
         }
@@ -1545,7 +1545,7 @@
               this.isHeaderShow = show
               this.saveCache('', 'isHeaderShow', show)
               break
-            case 12:
+            case 13:
               this.isScriptShow = show
               this.saveCache('', 'isScriptShow', show)
               this.listScript()
@@ -1600,7 +1600,7 @@
           this.isHeaderShow = show
           this.saveCache('', 'isHeaderShow', show)
         }
-        else if (index == 12) {
+        else if (index == 13) {
           this.isScriptShow = show
           this.saveCache('', 'isScriptShow', show)
         }
@@ -4882,6 +4882,13 @@
 
             if (callback != null) {
               callback(url, null, e)
+            } else {
+              // catch 中也 evalScript 导致死循环
+              // if (isPre != true) {
+              //   throw e
+              // }
+
+              callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
 
             App.onResponse(url, null, e) // this.onResponse is not a function
