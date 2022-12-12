@@ -3318,6 +3318,7 @@
               item.isLoggedIn = false
               App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
               App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+              App.changeScriptType(App.scriptType)
 
               if (callback != null) {
                 callback(false, index, err)
@@ -3330,6 +3331,7 @@
           }
 
           this.currentAccountIndex = index
+          this.changeScriptType(App.scriptType)
           return
         }
 
@@ -3352,6 +3354,7 @@
                 item.isLoggedIn = false
                 App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                 App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+                App.changeScriptType(App.scriptType)
 
                 if (callback != null) {
                   callback(false, index, err)
@@ -3359,6 +3362,7 @@
               });
 
               this.currentAccountIndex = -1
+              this.changeScriptType(App.scriptType)
             }
             else {
               //login
@@ -3380,6 +3384,7 @@
                   App.accounts[App.currentAccountIndex] = item
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
                   App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+                  App.changeScriptType(App.scriptType)
 
                   if (callback != null) {
                       callback(true, index, err)
@@ -3402,6 +3407,7 @@
 
         //切换到这个tab
         this.currentAccountIndex = index
+        this.changeScriptType(App.scriptType)
 
         //目前还没做到同一标签页下测试账号切换后，session也跟着切换，所以干脆每次切换tab就重新登录
         if (item != null) {
@@ -3823,7 +3829,8 @@
       },
       getCurrentScriptBelongId: function() {
         var st = this.scriptType;
-        return st == 'global' ? 0 : ((st == 'account' ? this.getCurrentAccountId() : this.getCurrentDocumentId()) || 0)
+        var bid = st == 'global' ? 0 : ((st == 'account' ? this.getCurrentAccountId() : this.getCurrentDocumentId()) || 0)
+        return bid
       },
 
 
@@ -4451,6 +4458,55 @@
         }
 
         this.onChange(false);
+      },
+
+      changeScriptType: function (type) {
+        this.scriptType = type || 'case'
+        var bid = this.getCurrentScriptBelongId()
+        var scripts = this.scripts
+        if (scripts == null) {
+          scripts = newDefaultScript()
+          this.scripts = scripts
+        }
+        var bs = scripts[bid]
+        if (bs == null) {
+          bs = {
+            pre: { // 可能有 id
+              script: '' // index.html 中 v-model 绑定，不能为 null
+            },
+            post: {
+              script: ''
+            }
+          }
+          scripts[bid] = bs
+        }
+        var pre = bs.pre
+        if (pre == null) {
+          pre = {
+            script: ''
+          }
+          bs.pre = pre
+        }
+        if (pre.script == null) {
+          pre.script = ''
+        }
+
+        var post = bs.post
+        if (post == null) {
+          post = {
+            script: ''
+          }
+          bs.post = post
+        }
+        if (post.script == null) {
+          post.script = ''
+        }
+
+        this.scriptBelongId = bid
+      },
+      changeScriptPriority: function (isPre) {
+        this.isPreScript = isPre == true
+        this.changeScriptType(this.scriptType)
       },
 
       /**
