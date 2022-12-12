@@ -1548,6 +1548,7 @@
             case 12:
               this.isScriptShow = show
               this.saveCache('', 'isScriptShow', show)
+              this.listScript()
               break
             case 5:
               this.isRandomShow = show
@@ -1786,13 +1787,92 @@
       restoreRemote: function (index, item, test) {
         this.currentDocIndex = index
         this.currentRemoteItem = item
-        this.restore((item || {}).Document, ((item || {}).TestRecord || {}).response, true, test)
+        this.restore(item, ((item || {}).TestRecord || {}).response, true, test)
       },
       // 根据历史恢复数据
       restore: function (item, response, isRemote, test) {
         this.isEditResponse = false
 
         item = item || {}
+        var scripts = item.scripts
+        if (isRemote) {
+          var orginItem = item
+          var doc = item.Document || {}
+          var docId = doc.id || 0
+          var pre = Object.assign({
+            'script': ''
+          }, item['Script:pre'] || {})
+          var post = Object.assign({
+            'script': ''
+          }, item['Script:post'] || {})
+          var preId = pre.id
+          var postId = post.id
+          if (docId > 0 && (preId == null || postId == null)) {
+            // var accountId = this.getCurrentAccountId();
+            this.request(true, REQUEST_TYPE_JSON, '/get', {
+              'Script:pre': preId != null ? undefined : {
+                'ahead': 1,
+                // 'testAccountId': 0,
+                'documentId': docId,
+                '@order': 'date-'
+              },
+              'Script:post': postId != null ? undefined : {
+                'ahead': 0,
+                // 'testAccountId': 0,
+                'documentId': docId,
+                '@order': 'date-'
+              }
+            }, {}, function (url, res, err) {
+              var rpObj = res.data
+              if (JSONResponse.isSuccess(rpObj) != true) {
+                App.log(err != null ? err : (rpObj == null ? '' : rpObj.msg))
+                return
+              }
+
+              // var scripts = item.scripts || {}
+              var scripts = orginItem.scripts || {}
+              // var ss = scripts.case
+              // if (ss == null) {
+              //   scripts.case = ss = {}
+              // }
+
+              // var bs = ss[docId]
+              // if (bs == null) {
+              //   ss[docId] = bs = {}
+              // }
+
+              var bs = scripts
+
+              var pre = rpObj['Script:pre']
+              if (pre != null && pre.script != null) {
+                bs.pre = orginItem['Script:pre'] = rpObj['Script:pre']
+              }
+
+              var post = rpObj['Script:post']
+              if (post != null && post.script != null) {
+                bs.post = orginItem['Script:post'] = rpObj['Script:post']
+              }
+
+              orginItem.scripts = scripts
+              App.scripts = Object.assign(newDefaultScript(), {
+                case: {
+                  [docId]: scripts
+                }
+              })
+              App.changeScriptType(App.scriptType)
+            })
+          }
+
+          if (scripts == null) {
+            scripts = {
+              pre: pre,
+              post: post
+            }
+          }
+          item.scripts = scripts
+
+          item = doc
+        }
         // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
@@ -1808,7 +1888,12 @@
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
           vRandom.value = StringUtil.get(item.random)
-          this.scripts = item.scripts == null ? newDefaultScript() : Object.assign(newDefaultScript(), item.scripts)
+          this.scripts = Object.assign(newDefaultScript(), {
+            case: {
+              [docId]: scripts
+            }
+          })
+          this.changeScriptType(this.scriptType)
           this.onChange(false)
 
           if (isRemote) {
@@ -1999,7 +2084,7 @@
                 'simple': 1,
                 'ahead': this.isPreScript ? 1 : 0,
                 'documentId': did == null || scriptType != 'case' ? 0 : did,
-                'testAccountId': scriptType == 'global' ? 0 : currentAccountId,
+                'testAccountId': scriptType != 'account' ? 0 : currentAccountId,
                 'title': extName,
                 'name': '',
                 'script': vScript.value
@@ -3523,6 +3608,18 @@
                 '@order': 'date-',
                 '@column': 'id,userId,documentId,testAccountId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
                 'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
+              },
+              'Script:pre': {
+                'ahead': 1,
+                // 'testAccountId': 0,
+                'documentId@': '/Document/id',
+                '@order': 'date-'
+              },
+              'Script:post': {
+                'ahead': 0,
+                // 'testAccountId': 0,
+                'documentId@': '/Document/id',
+                '@order': 'date-'
               }
             },
             '@role': IS_NODE ? null : 'LOGIN',
@@ -3841,6 +3938,103 @@
         var bid = st == 'global' ? 0 : ((st == 'account' ? this.getCurrentAccountId() : this.getCurrentDocumentId()) || 0)
         return bid
       },
+      listScript: function() {
+        var req = {
+          'Script:pre': {
+            'ahead': 1,
+            'testAccountId': 0,
+            'documentId': 0,
+            '@order': 'date-'
+          },
+          'Script:post': {
+            'ahead': 0,
+            'testAccountId': 0,
+            'documentId': 0,
+            '@order': 'date-'
+          }
+        }
+
+        var accounts = this.accounts || []
+        for (let i = 0; i < accounts.length; i++) {
+          var a = accounts[i]
+          var id = a == null ? null : a.id
+          if (id == null) {
+            continue
+          }
+
+          req['case_' + id] = {
+            'Script:pre': {
+              'ahead': 1,
+              'testAccountId': id,
+              'documentId': 0,
+              '@order': 'date-'
+            },
+            'Script:post': {
+              'ahead': 0,
+              'testAccountId': id,
+              'documentId': 0,
+              '@order': 'date-'
+            }
+          }
+        }
+
+        this.request(true, REQUEST_TYPE_JSON, '/get', req, {}, function (url, res, err) {
+          var rpObj = res.data
+          if (JSONResponse.isSuccess(rpObj) != true) {
+            App.log(err != null ? err : (rpObj == null ? '' : rpObj.msg))
+            return
+          }
+
+          var scripts = App.scripts || {}
+          var ss = scripts.global
+          if (ss == null) {
+            scripts.global = ss = {}
+          }
+
+          var bs = ss['0']
+          if (bs == null) {
+            ss['0'] = bs = {}
+          }
+
+          var pre = rpObj['Script:pre']
+          if (pre != null && pre.script != null) {
+            bs.pre = rpObj['Script:pre']
+          }
+          var post = rpObj['Script:post']
+          if (post != null && post.script != null) {
+            bs.post = rpObj['Script:post']
+          }
+
+          // delete rpObj['Script:pre']
+          // delete rpObj['Script:post']
+
+          var cs = scripts.case
+          if (cs == null) {
+            scripts.case = cs = {}
+          }
+
+          for (let key in rpObj) {
+            var val = rpObj[key]
+            var pre = val == null || key.startsWith('case_') != true ? null : val['Script:pre']
+            if (pre == null) {
+              continue
+            }
+
+            var post = val['Script:post']
+
+            var bs = cs[key.substring('case_'.length)]
+
+            if (pre != null) { // && pre.script != null) {
+              bs.pre = pre
+            }
+            if (post != null) { // && post.script != null) {
+              bs.post = post
+            }
+          }
+
+          App.scripts = Object.assign(newDefaultScript(), scripts)
+        })
+      },
 
 
       /**登录确认
@@ -3948,6 +4142,7 @@
             vInput.value = JSON.stringify(req, null, '    ')
           }
 
+          this.scripts = newDefaultScript()
           this.type = REQUEST_TYPE_JSON
           this.showTestCase(false, this.isLocalShow)
           if (IS_BROWSER) {
@@ -4031,6 +4226,7 @@
       /**注册
        */
       register: function (isAdminOperation) {
+        this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/register')
         vInput.value = JSON.stringify(
           {
@@ -4065,6 +4261,7 @@
       /**重置密码
        */
       resetPassword: function (isAdminOperation) {
+        this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/put/password')
         vInput.value = JSON.stringify(
           {
@@ -4123,6 +4320,7 @@
           })
         }
         else {
+          this.scripts = newDefaultScript()
           this.showUrl(isAdminOperation, '/logout')
           vInput.value = JSON.stringify(req, null, '    ')
           this.type = REQUEST_TYPE_JSON
@@ -4135,6 +4333,7 @@
       /**获取验证码
        */
       getVerify: function (isAdminOperation) {
+        this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/post/verify')
         var type = this.loginType == 'login' ? 0 : (this.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
@@ -4471,8 +4670,16 @@
 
       changeScriptType: function (type) {
         type = type || 'case'
+        if (type == 'account') {
+          var id = this.getCurrentAccountId()
+          if (id == null || id <= 0) {
+            type = 'case'
+          }
+        }
+
         this.scriptType = type
         var bid = this.getCurrentScriptBelongId()
+
         var scripts = this.scripts
         if (scripts == null) {
           scripts = newDefaultScript()
@@ -4666,7 +4873,7 @@
           }
           catch (e) {
             this.isLoading = false
-            App.onResponse(url, null, e) // this.onResponse is not a function
+            // App.onResponse(url, null, e) // this.onResponse is not a function
 
             // this.view = 'error'
             // this.error = {
@@ -4676,6 +4883,8 @@
             if (callback != null) {
               callback(url, null, e)
             }
+
+            App.onResponse(url, null, e) // this.onResponse is not a function
           }
         }
 
@@ -9328,6 +9537,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
 
       this.listHistory()
+      if (this.isScriptShow) {
+        this.listScript()
+      }
 
       var rawReq = getRequestFromURL()
       if (rawReq == null || StringUtil.isEmpty(rawReq.type, true)) {
