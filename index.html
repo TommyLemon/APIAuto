@@ -447,7 +447,14 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
 
                   <div v-show="isScriptShow" style="width: 100%; height: 240px; position: relative;" >
                     <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
-                      <a href="javascript:void(0)" @click="scriptType = 0" :style="{'color': scriptType == 0 ? 'red' : 'gray'}" style="padding-left: 10px; font-size: medium">请求</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 1" :style="{'color': scriptType == 1 ? 'red' : 'gray'}" style="font-size: medium">账号</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 2" :style="{'color': scriptType == 2 ? 'red' : 'gray'}" style="font-size: medium">全局</a><a href="javascript:void(0)" @click="isPreScript = true" :style="{'color': isPreScript ? 'red' : 'gray'}" style="font-size: medium; padding-left: 10px">前置</a><a>|</a><a href="javascript:void(0)" @click="isPreScript = false" :style="{'color': isPreScript ? 'gray' : 'red'}" style="font-size: medium">后置</a><a style="display: flex;flex-grow: 1;padding-left: 10px;font-size: medium;color: black">执行脚本 JavaScript</a>
+                      <a href="javascript:void(0)" @click="scriptType = 'case'" :style="{'color': scriptType == 'case' ? 'red' : 'gray'}" style="padding-left: 10px; font-size: medium">用例</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 'account'" :style="{'color': scriptType == 'account' ? 'red' : 'gray'}" style="font-size: medium">账号</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 'global'" :style="{'color': scriptType == 'global' ? 'red' : 'gray'}" style="font-size: medium">全局</a><a href="javascript:void(0)" @click="isPreScript = true" :style="{'color': isPreScript ? 'red' : 'gray'}" style="font-size: medium; padding-left: 10px">前置</a><a>|</a><a href="javascript:void(0)" @click="isPreScript = false" :style="{'color': isPreScript ? 'gray' : 'red'}" style="font-size: medium">后置</a><a style="display: flex;flex-grow: 1;padding-left: 10px;font-size: medium;color: black">执行脚本 JavaScript</a>
+                      <a class="hint--top @cli-tool" style="font-size: small;" data-hint="测试" href="javascript:void(0)" @click="var logger = console.log; console.log = function(msg) {
+                        logger(msg);
+                        App.view = 'output';
+                        vOutput.value = StringUtil.get(msg);
+                      } ; eval(vScript.value); console.log = logger;">
+                        <img class="icon" src="img/refresh.png"/>
+                      </a>
                       <a class="hint--top @cli-tool" data-hint="添加脚本" style="font-size:xx-large; margin-bottom: 2px; color: black;"
                          href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
                       <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/分享"  @click="showExport(true, true)">
@@ -462,7 +469,7 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
                       </a>
                     </div>
 
-                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off"
+                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off" v-model="script[scriptType][isPreScript ? 'pre' : 'post']"
                               placeholder="// JavaScript 脚本
 // 逻辑代码 ..
 
@@ -919,6 +926,7 @@ My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际�
   var vWarning = document.getElementById("vWarning");
   var vComment = document.getElementById("vComment");
   var vHeader = document.getElementById("vHeader");
+  var vScript = document.getElementById("vScript");
   var vRandom = document.getElementById("vRandom");
   var vOutput = document.getElementById("vOutput");
 

@@ -715,8 +715,22 @@
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
-      scriptType: 0,
-      isPreScript: false,
+      scriptType: 'case',
+      script: {
+        'case': {
+          'pre': '',
+          'post': ''
+        },
+        'account': {
+          'pre': '',
+          'post': ''
+        },
+        'global': {
+          'pre': '',
+          'post': ''
+        }
+      },
+      isPreScript: true,
       isLoading: false,
       isRandomTest: false,
       isDelayShow: false,
@@ -9091,6 +9105,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // alert(event.key) 小写字母 i 而不是 KeyI
 
         var target = event.target;
+
         var keyCode = event.keyCode;
         var isEnter = keyCode === 13;
         var isDel = keyCode === 8 || keyCode === 46; // backspace 和 del
@@ -9181,7 +9196,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return;
           }
 
-          if (target == vUrl) {
+          if (target == vUrl || target == vScript) {
           }
           else if (target != vOption) {
             var selectionStart = target.selectionStart;
