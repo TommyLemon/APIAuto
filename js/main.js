@@ -736,18 +736,21 @@
       logoutSummary: {},
       accounts: [
         {
+          'id': 82001,
           'isLoggedIn': false,
           'name': '测试账号1',
           'phone': '13000082001',
           'password': '123456'
         },
         {
+          'id': 82002,
           'isLoggedIn': false,
           'name': '测试账号2',
           'phone': '13000082002',
           'password': '123456'
         },
         {
+          'id': 82003,
           'isLoggedIn': false,
           'name': '测试账号3',
           'phone': '13000082003',
@@ -1994,6 +1997,7 @@
               'Script': Object.assign({
                 'id': sid == null ? undefined : sid,
                 'simple': 1,
+                'ahead': this.isPreScript ? 1 : 0,
                 'documentId': did == null || scriptType != 'case' ? 0 : did,
                 'testAccountId': scriptType == 'global' ? 0 : currentAccountId,
                 'title': extName,
@@ -3377,9 +3381,11 @@
                   }
                 }
                 else {
+                  item.id = user.id
                   item.name = user.name
                   item.remember = data.remember
                   item.isLoggedIn = true
+                  item.cookie = res.cookie || (res.headers || {}).cookie
 
                   App.accounts[App.currentAccountIndex] = item
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
@@ -3828,7 +3834,10 @@
         return r == null ? null : r.id;
       },
       getCurrentScriptBelongId: function() {
-        var st = this.scriptType;
+        return this.getScriptBelongId(this.scriptType)
+      },
+      getScriptBelongId: function(scriptType) {
+        var st = scriptType;
         var bid = st == 'global' ? 0 : ((st == 'account' ? this.getCurrentAccountId() : this.getCurrentDocumentId()) || 0)
         return bid
       },
@@ -4461,14 +4470,38 @@
       },
 
       changeScriptType: function (type) {
-        this.scriptType = type || 'case'
+        type = type || 'case'
+        this.scriptType = type
         var bid = this.getCurrentScriptBelongId()
         var scripts = this.scripts
         if (scripts == null) {
           scripts = newDefaultScript()
           this.scripts = scripts
         }
-        var bs = scripts[bid]
+        var ss = scripts[type]
+        if (ss == null) {
+          ss = {
+            0: {
+              pre: { // 可能有 id
+                script: '' // index.html 中 v-model 绑定，不能为 null
+              },
+              post: {
+                script: ''
+              }
+            },
+            [bid]: {
+              pre: { // 可能有 id
+                script: '' // index.html 中 v-model 绑定，不能为 null
+              },
+              post: {
+                script: ''
+              }
+            }
+          }
+          scripts[type] = ss
+        }
+
+        var bs = ss[bid]
         if (bs == null) {
           bs = {
             pre: { // 可能有 id
@@ -4478,7 +4511,7 @@
               script: ''
             }
           }
-          scripts[bid] = bs
+          ss[bid] = bs
         }
         var pre = bs.pre
         if (pre == null) {
