@@ -116,6 +116,7 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)参数注入 Random Test' : '显示(编辑)参数注入 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ (isHeaderShow ? '隐藏(固定)' : '显示(编辑)') + (isEditResponse ? '响应头 Response Header' : '请求头 Request Header' ) }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isScriptShow, 12)">{{ (isScriptShow ? '隐藏(固定)' : '显示(编辑)') + '执行脚本 JavaScript' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析) : {{ language || '例如 Java' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型 Database: {{ database || '例如 MYSQL' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库名/模式 Schema: {{ schema || '例如 sys' }}</a>
@@ -444,6 +445,36 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
                         </textarea>
                     </div>
 
+                  <div v-show="isScriptShow" style="width: 100%; height: 240px; position: relative;" >
+                    <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
+                      <a href="javascript:void(0)" @click="scriptType = 0" :style="{'color': scriptType == 0 ? 'red' : 'gray'}" style="padding-left: 10px; font-size: medium">请求</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 1" :style="{'color': scriptType == 1 ? 'red' : 'gray'}" style="font-size: medium">账号</a><a>|</a><a href="javascript:void(0)" @click="scriptType = 2" :style="{'color': scriptType == 2 ? 'red' : 'gray'}" style="font-size: medium">全局</a><a href="javascript:void(0)" @click="isPreScript = true" :style="{'color': isPreScript ? 'red' : 'gray'}" style="font-size: medium; padding-left: 10px">前置</a><a>|</a><a href="javascript:void(0)" @click="isPreScript = false" :style="{'color': isPreScript ? 'gray' : 'red'}" style="font-size: medium">后置</a><a style="display: flex;flex-grow: 1;padding-left: 10px;font-size: medium;color: black">执行脚本 JavaScript</a>
+                      <a class="hint--top @cli-tool" data-hint="添加脚本" style="font-size:xx-large; margin-bottom: 2px; color: black;"
+                         href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
+                      <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/分享"  @click="showExport(true, true)">
+                        <svg class="icon">
+                          <use xlink:href="svg/icon.svg#share"></use>
+                        </svg>
+                      </a>
+                      <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right; padding: 8px; margin-top: 2px; height: 100%"  href="javascript:void(0)" @click="showConfig(false, 12)">
+                        <svg class="icon close-icon"  >
+                          <use xlink:href="svg/icon.svg#close"></use>
+                        </svg>
+                      </a>
+                    </div>
+
+                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off"
+                              placeholder="// JavaScript 脚本
+// 逻辑代码 ..
+
+function fun(arg0, arg1, arg2..) {
+  // TODO 获取 token 或 自定义断言 等逻辑
+}
+fun(true, 1, 'a'..);
+
+// .. 逻辑代码
+">
+                        </textarea>
+                  </div>
 
                     <div v-show="isHeaderShow" style="width: 100%; height: 150px; position: relative;" >
                         <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">

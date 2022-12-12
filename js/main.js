@@ -715,6 +715,8 @@
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
+      scriptType: 0,
+      isPreScript: false,
       isLoading: false,
       isRandomTest: false,
       isDelayShow: false,
@@ -725,6 +727,7 @@
       isOptionListShow: false,
       isTestCaseShow: false,
       isHeaderShow: false,
+      isScriptShow: false,
       isRandomShow: true,  // 默认展示
       isRandomListShow: false,
       isRandomSubListShow: false,
@@ -1480,6 +1483,10 @@
               this.isHeaderShow = show
               this.saveCache('', 'isHeaderShow', show)
               break
+            case 12:
+              this.isScriptShow = show
+              this.saveCache('', 'isScriptShow', show)
+              break
             case 5:
               this.isRandomShow = show
               this.saveCache('', 'isRandomShow', show)
@@ -1529,6 +1536,10 @@
         else if (index == 4) {
           this.isHeaderShow = show
           this.saveCache('', 'isHeaderShow', show)
+        }
+        else if (index == 12) {
+          this.isScriptShow = show
+          this.saveCache('', 'isScriptShow', show)
         }
         else if (index == 5) {
           this.isRandomShow = show
