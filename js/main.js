@@ -1266,7 +1266,8 @@
           this.options = [];
 
           target.focus();
-          selectionStart = target.selectionStart = selectionEnd + (isClickSelectInput ? (name.length - (isValue ? 4 : 0)) : 0) + (isValue ? (after.startsWith(',') ? 1 : 0) : 3);
+          selectionStart = target.selectionStart = selectionEnd + (isClickSelectInput ? (name.length - (isValue ? 4 : 0)) : 0)
+            + (isValue ? (after.startsWith(',') ? 1 : 0) : (target == vInput || target == vScript ? 3 : 2));
           selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
           isClickSelectInput = false;
           // vOption.focusout()
@@ -8914,6 +8915,125 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         else {
           App.options = [];
 
+          var stringType = CodeUtil.getType4Language(App.language, "string")
+          var objectType = CodeUtil.getType4Language(App.language, "object")
+          var arrayType = CodeUtil.getType4Language(App.language, "array")
+          var varcharType = CodeUtil.getType4Language(App.language, "varchar")
+          var intType = CodeUtil.getType4Language(App.language, "int")
+          var booleanType = CodeUtil.getType4Language(App.language, "boolean")
+
+          if (target == vScript) {
+            App.options = isValue != true ? [] : [
+              {
+                name: "type",
+                type: stringType,
+                comment: '请求格式类型：PARAM, JSON, FORM, DATA'
+              },{
+                name: "url",
+                type: stringType,
+                comment: '请求地址，例如 http://localhost:8080/get '
+              },{
+                name: "req",
+                type: objectType,
+                comment: '请求参数，例如 { format: true, "User": { "id": 82001 } } '
+              },{
+                name: "header",
+                type: objectType,
+                comment: '请求头，例如 Cookie: abc123 '
+              },{
+                name: "callback",
+                type: objectType,
+                comment: '回调函数 function(url, res, err) {} '
+              },{
+                name: "sendRequest",
+                type: objectType,
+                comment: '真正发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
+              },{
+                name: "App.request",
+                type: objectType,
+                comment: '包装发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
+              },{
+                name: "{}", type: objectType, comment: '对象'
+              },{
+                name: "[]", type: arrayType, comment: '数组'
+              },{
+                name: "undefined", comment: '未定义'
+              }];
+          }
+          else if (target == vRandom) {
+            if (isValue != true) {
+              var standardObj = null;
+              try {
+                var currentItem = App.isTestCaseShow ? App.remotes[App.currentDocIndex] : App.currentRemoteItem;
+                standardObj = JSON.parse(((currentItem || {}).TestRecord || {}).standard);
+              } catch (e3) {
+                log(e3)
+              }
+              var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
+              var isRestful = ! JSONObject.isAPIJSONPath(method);
+              var ind = method == null ? -1 : method.lastIndexOf('/');
+              var ind2 = ind < 0 ? -1 : method.substring(0, ind).lastIndexOf('/');
+              var table = method == null ? null : (ind < 0 ? method : (isRestful
+                ? StringUtil.firstCase(method.substring(ind2+1, ind), true) : method.substring(ind+1))
+              );
+
+              var json = App.getRequest(vInput.value, {})
+              for (k in json) {
+                var v = json[k]
+                var t = v == null ? null : CodeUtil.getType4Request(v)
+                App.options.push({
+                  name: k,
+                  type: t == null ? null : (t == 'string' ? stringType : (t == 'integer' ? intType : CodeUtil.getType4Language(App.language, t))),
+                  comment: CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table
+                    , isRestful ? k : null, method, App.database, App.language
+                    , true, false, k, isRestful, v, true, standardObj
+                  )
+                })
+              }
+            }
+            else {
+              App.options = [
+                {
+                  name: "ORDER_DB(-10, 100000, 'comment', 'id')",
+                  type: stringType,
+                  comment: "从数据库顺序取值 function(min:Integer, max:Integer, table:String, column:String) 可使用 ORDER_DB+2(0, 100) 间隔 step = 2 位来升序取值"
+                }, {
+                  name: "ORDER_IN(true, 1, 'a')",
+                  type: stringType,
+                  comment: "从选项内顺序取值 function(val0:Any, val1:Any ...) 可使用 ORDER_INT-3(0, 100) 间隔 step = -3 位来降序取值"
+                }, {
+                  name: "ORDER_INT(-10, 100)",
+                  type: stringType,
+                  comment: "从范围内顺序取值 function(min:Integer, max:Integer) 可使用 ORDER_IN+(0, 100) 间隔 step = 1 位来升序取值"
+                }, {
+                  name: "RANDOM_DB(-10, 100000, 'comment', 'id')",
+                  type: stringType,
+                  comment: "从数据库随机取值 function(min:Integer, max:Integer, table:String, column:String)"
+                }, {
+                  name: "RANDOM_IN(true, 1, 'a')",
+                  type: stringType,
+                  comment: "从选项内随机取值 function(val0:Any, val1:Any ...)"
+                }, {
+                  name: "RANDOM_INT(-10, 100)",
+                  type: stringType,
+                  comment: "从范围内随机取整数 function(min:Integer, max:Integer)"
+                }, {
+                  name: "RANDOM_NUM(-9.9, 99.99)",
+                  type: stringType,
+                  comment: "从范围内随机取小数 function(min:Number, max:Number, precision:Integer)"
+                }, {
+                  name: "RANDOM_STR()",
+                  type: stringType,
+                  comment: "从长度范围内随机取字符串 function(minLength:Integer, maxLength:Integer, regexp:String)"
+                }, {
+                  name: "undefined", comment: '未定义'
+                }, {
+                  name: "Math.round(100*Math.random())", type: stringType, comment: '自定义代码'
+                }
+              ]
+            }
+          }
+          else if (target == vInput) {
           var quote = isSingle ? "'" : '"';
 
           var table = null;
@@ -8980,7 +9100,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               App.options = [{
                 name: "{}",
-                type: CodeUtil.getType4Language(App.language, "object"),
+                type: objectType,
                 comment: (isArrayKey ? '数组 < ' + table + ': ' : '') + StringUtil.trim((App.getTableByModelName(table) || {}).table_comment)
               }]
             } else {
@@ -8988,7 +9108,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 case '@from@':
                   App.options = [{
                     name: "{}",
-                    type: CodeUtil.getType4Language(App.language, "object"),
+                    type: objectType,
                     comment: '数据来源'
                   }];
                   break;
@@ -9018,7 +9138,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                       App.options.push({
                         name: quote + k + quote,
-                        type: CodeUtil.getType4Language(App.language, "string"),
+                        type: stringType,
                         comment: isRaw ? '原始SQL片段' : '条件组合'
                       });
 
@@ -9031,7 +9151,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   if (StringUtil.isNotEmpty(ks, true)) {
                     App.options.push({
                       name: quote + ks + quote,
-                      type: CodeUtil.getType4Language(App.language, "string"),
+                      type: stringType,
                       comment: isRaw ? '原始SQL片段' : '条件组合'
                     });
                   }
@@ -9044,7 +9164,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       if (StringUtil.isNotEmpty(sch, true)) {
                         App.options.push({
                           name: quote + sch + quote,
-                          type: CodeUtil.getType4Language(App.language, "string"),
+                          type: stringType,
                           comment: '集合空间(数据库名/模式)'
                         });
                       }
@@ -9054,81 +9174,81 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 case '@database':
                   App.options = [{
                     name: isSingle ? "'MYSQL'" : '"MYSQL"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'MySQL'
                   }, {
                     name: isSingle ? "'POSTGRESQL'" : '"POSTGRESQL"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'PostgreSQL'
                   }, {
                     name: isSingle ? "'SQLSERVER'" : '"SQLSERVER"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'SQLServer'
                   }, {
                     name: isSingle ? "'ORACLE'" : '"ORACLE"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'Oracle'
                   }, {
                     name: isSingle ? "'DB2'" : '"DB2"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'DB2'
                   }, {
                     name: isSingle ? "'DAMENG'" : '"DAMENG"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '达梦数据库'
                   }, {
                     name: isSingle ? "'CLICKHOUSE'" : '"CLICKHOUSE"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'ClickHouse'
                   }, {
                     name: isSingle ? "'SQLITE'" : '"SQLITE"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'SQLite'
                   }, {
                     name: isSingle ? "'TDENGINE'" : '"TDENGINE"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: 'TDengine'
                   }];
                   break;
                 case '@role':
                   App.options = [{
                     name: isSingle ? "'UNKNOWN'" : '"UNKNOWN"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 未登录'
                   }, {
                     name: isSingle ? "'LOGIN'" : '"LOGIN"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 已登录'
                   }, {
                     name: isSingle ? "'CIRCLE'" : '"CIRCLE"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 圈子成员'
                   }, {
                     name: isSingle ? "'CONTACT'" : '"CONTACT"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 联系人'
                   }, {
                     name: isSingle ? "'OWNER'" : '"OWNER"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 拥有者'
                   }, {
                     name: isSingle ? "'ADMIN'" : '"ADMIN"',
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '来访角色: 管理员'
                   }];
                   break;
                 case '@cache':
                   App.options = [{
                     name: "0",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '缓存方式: 全部'
                   }, {
                     name: "1",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '缓存方式: 磁盘'
                   }, {
                     name: "2",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '缓存方式: 内存'
                   }];
                   break;
@@ -9138,7 +9258,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   for (var i = 0; i < 100; i++) {
                     App.options.push({
                       name: new String(i), // 直接用数字导致重复生成 JSON
-                      type: CodeUtil.getType4Language(App.language, "int"),
+                      type: intType,
                       comment: isPage ? '分页页码' : '每页数量'
                     });
                   }
@@ -9156,7 +9276,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                       App.options.push({
                         name: isVersion ? item.version : item.tag,
-                        type: CodeUtil.getType4Language(App.language, "int"),
+                        type: intType,
                         comment: isVersion ? '请求版本' : '请求标识'
                       });
                     }
@@ -9165,59 +9285,59 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 case 'query':
                   App.options = [{
                     name: "0",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '查询内容: 数据'
                   }, {
                     name: "1",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '查询内容: 数量'
                   }, {
                     name: "2",
-                    type: CodeUtil.getType4Language(App.language, "int"),
+                    type: intType,
                     comment: '查询内容: 全部'
                   }];
                   break;
                 case 'range':
                   App.options = [{
                     name: quote + "ANY" + quote,
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '比较范围: 任意'
                   }, {
                     name: quote + "ALL" + quote,
-                    type: CodeUtil.getType4Language(App.language, "string"),
+                    type: stringType,
                     comment: '比较范围: 全部'
                   }];
                   break;
                 case 'compat':
                   App.options = [{
                     name: "true",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '兼容统计: 开启'
                   }, {
                     name: "false",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '兼容统计: 关闭'
                   }];
                   break;
                 case '@explain':
                   App.options = [{
                     name: "true",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '性能分析: 开启'
                   }, {
                     name: "false",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '性能分析: 关闭'
                   }];
                   break;
                 case '':
                   App.options = [{
                     name: "true",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '性能分析: 开启'
                   }, {
                     name: "false",
-                    type: CodeUtil.getType4Language(App.language, "boolean"),
+                    type: booleanType,
                     comment: '性能分析: 关闭'
                   }];
                   break;
@@ -9226,7 +9346,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     if (key.startsWith('@')) {
                       App.options = [{
                         name: quote + 'fun(arg0,arg1)' + quote,
-                        type: CodeUtil.getType4Language(App.language, "string"),
+                        type: stringType,
                         comment: '存储过程'
                       }];
                     } else {
@@ -9300,7 +9420,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 App.options.push({
                   name: quote + ks + quote,
-                  type: CodeUtil.getType4Language(App.language, 'string'),
+                  type: stringType,
                   comment: '所有字段组合'
                 })
               }
@@ -9309,130 +9429,114 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             App.options = [
               {
                 name: "@column",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "返回字段"
               },
-              {name: "@from@", type: CodeUtil.getType4Language(App.language, "object"), comment: "数据来源"},
+              {name: "@from@", type: objectType, comment: "数据来源"},
               {
                 name: "@group",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "分组方式"
-              },
-              {
+              }, {
                 name: "@having",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "聚合函数"
-              },
-              {
+              }, {
                 name: "@order",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "排序方式"
-              },
-              {
+              }, {
                 name: "@combine",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "条件组合"
-              },
-              {
+              }, {
                 name: "@raw",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "原始SQL片段"
-              },
-              {
+              }, {
                 name: "@json",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "转为JSON"
-              },
-              {
+              }, {
                 name: "@null",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "NULL值字段"
               },
-              {name: "@cast", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "类型转换"},
+              {name: "@cast", type: varcharType, comment: "类型转换"},
               {
                 name: "@schema",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "集合空间(数据库名/模式)"
-              },
-              {
+              }, {
                 name: "@database",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "数据库类型"
-              },
-              {
+              }, {
                 name: "@datasource",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "跨数据源"
               },
-              {name: "@role", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "来访角色"},
+              {name: "@role", type: varcharType, comment: "来访角色"},
               {
                 name: "@cache",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "缓存方式"
-              },
-              {
+              }, {
                 name: "@explain",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "性能分析"
-              },
-              {
+              }, {
                 name: "key-()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "远程函数: 优先执行"
-              },
-              {
+              }, {
                 name: "key()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "远程函数"
-              },
-              {
+              }, {
                 name: "key+()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "远程函数: 延后执行"
-              },
-              {
+              }, {
                 name: "@key-()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "存储过程: 优先执行"
-              },
-              {
+              }, {
                 name: "@key()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "存储过程"
-              },
-              {
+              }, {
                 name: "@key+()",
-                type: CodeUtil.getType4Language(App.language, "varchar"),
+                type: varcharType,
                 comment: "存储过程: 延后执行"
               },
             ];
 
             if (isArrayKey) {
               App.options = [
-                {name: "count", type: CodeUtil.getType4Language(App.language, "int"), comment: "每页数量"},
-                {name: "page", type: CodeUtil.getType4Language(App.language, "int"), comment: "分页页码"},
-                {name: "query", type: CodeUtil.getType4Language(App.language, "int"), comment: "查询内容"},
-                {name: "compat", type: CodeUtil.getType4Language(App.language, "boolean"), comment: "兼容统计"},
-                {name: "join", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "联表查询"},
-                {name: "[]", type: CodeUtil.getType4Language(App.language, "array"), comment: "数组对象"},
+                {name: "count", type: intType, comment: "每页数量"},
+                {name: "page", type: intType, comment: "分页页码"},
+                {name: "query", type: intType, comment: "查询内容"},
+                {name: "compat", type: booleanType, comment: "兼容统计"},
+                {name: "join", type: varcharType, comment: "联表查询"},
+                {name: "[]", type: arrayType, comment: "数组对象"},
               ];
             } else if (isSubqueryKey) {
               App.options = [
                 {
                   name: "from",
-                  type: CodeUtil.getType4Language(App.language, "varchar"),
+                  type: varcharType,
                   comment: "主表名称"
                 },
-                {name: "count", type: CodeUtil.getType4Language(App.language, "int"), comment: "每页数量"},
-                {name: "page", type: CodeUtil.getType4Language(App.language, "int"), comment: "分页页码"},
+                {name: "count", type: intType, comment: "每页数量"},
+                {name: "page", type: intType, comment: "分页页码"},
                 {
                   name: "range",
-                  type: CodeUtil.getType4Language(App.language, "varchar"),
+                  type: varcharType,
                   comment: "比较范围"
-                },
-                {
+                }, {
                   name: "join",
-                  type: CodeUtil.getType4Language(App.language, "varchar"),
+                  type: varcharType,
                   comment: "联表查询"
                 },
               ];
@@ -9471,10 +9575,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
             } else {
               App.options.push([
-                {name: "format", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "格式化"},
-                {name: "tag", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "请求标识"},
-                {name: "version", type: CodeUtil.getType4Language(App.language, "varchar"), comment: "请求版本"},
-                {name: "[]", type: CodeUtil.getType4Language(App.language, "array"), comment: "数组对象"},
+                {name: "format", type: varcharType, comment: "格式化"},
+                {name: "tag", type: varcharType, comment: "请求标识"},
+                {name: "version", type: varcharType, comment: "请求版本"},
+                {name: "[]", type: arrayType, comment: "数组对象"},
               ])
             }
 
@@ -9490,13 +9594,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                   App.options.push({
                     name: name,
-                    type: CodeUtil.getType4Language(App.language, 'object'),
+                    type: objectType,
                     comment: tableObj.table_comment
                   })
                 }
               }
             }
 
+          }
           }
         }
 
@@ -9814,7 +9919,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return;
           }
 
-          if (target == vUrl || target == vScript) {
+          if (target == vUrl) {
           }
           else if (target != vOption) {
             var selectionStart = target.selectionStart;
@@ -9862,18 +9967,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (isEnter) {
               isEnd = tfl.startsWith(']') || tfl.startsWith('}')
               var tll = lastLine.trimRight();
-              if (isEnd || hasRight || tll.endsWith('[')) {
+              if (target != vInput) {
+                hasNewKey = ! hasRight;
+              }
+              else if (isEnd || hasRight || tll.endsWith('[')) {
                 hasNewKey = false;
               }
-              else if (tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
+              // else if (tll.indexOf('":') > 1 || tll.indexOf("':") > 1) {
+              else if (tll.indexOf(':') > 1) { // (target == vInput ? 1 : 0) || (target == vScript && tll.indexOf('=') > 0)) {
                 hasNewKey = true;
               }
+              // else {
+              //   var ind = tll.indexOf(':')
+              //   if (ind > 0) {
+              //     var ind2 = tll.indexOf('"')
+              //   }
+              // }
 
               isStart = tll.endsWith('{') || tll.endsWith('[');
               hasPadding = hasRight != true && isStart;
 
               tll = before.trimRight();
-              hasComma = isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
+              hasComma = target == vInput && isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
               if (hasComma) {
                 for (var i = before.length; i >= 0; i--) {
                   if (before.charAt(i).trim().length > 0) {
@@ -9892,14 +10007,25 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
             }
 
-            if (prefix.length > 0) {
+            if (prefix.length > 0 || (isEnter && target != vInput)) {
               if (isEnter) {
-                target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
-                  + (hasNewKey ? (isSingle ? "'': null" : '"": null') + (hasComma || isEnd ? '' : ',') : '')
-                  + (isEnd ? after : (hasRight ? (hasPadding ? tfl.trimLeft() : tfl) : '') + '\n' + after.substring(firstIndex + 1)
-                  );
+                // if (target == vScript) {
+                //   hasNewKey = false // TODO 把全局定义的 function, variable 等放到 options。 var value = fun()
+                //   target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
+                //     + (isEnd ? after : (hasRight ? (hasPadding ? tfl : tfl) : '') + '\n' + after.substring(firstIndex + 1)
+                //     );
+                //   target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasPadding ? 4 : 0);
+                // }
+                // else {
+                  target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
+                    + (hasNewKey ? (target != vInput ? (target == vScript ? 'var ' : '') : (isSingle ? "''" : '""'))
+                      + (target == vScript ? ' = ' : ': ') + (target == vHeader ? '' : 'null') + (hasComma || isEnd || target != vInput ? '' : ',') : '')
+                    + (isEnd ? after : (hasRight ? (hasPadding ? tfl.trimLeft() : tfl) : '') + '\n' + after.substring(firstIndex + 1)
+                    );
 
-                target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasComma ? 1 : 0) + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0);
+                  target.selectionEnd = target.selectionStart = selectionStart + prefix.length + (hasComma && target == vInput ? 1 : 0)
+                    + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0) + (target == vScript ? 4 : (target == vInput ? 1 : 0));
+                // }
                 event.preventDefault();
 
                 if (hasNewKey) {
