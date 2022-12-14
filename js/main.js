@@ -8869,6 +8869,34 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         })
       },
 
+      toPathValuePairMap: function (json, path, map) {
+        if (json == null) {
+          return null
+        }
+
+        if (map == null) {
+           map = {}
+        }
+
+        if (json instanceof Array) {
+          for (var i = 0; i < json.length; i++) {
+            var p = StringUtil.isEmpty(path) ? '' + i : path + '/' + i
+            map = this.toPathValuePairMap(json[i], p, map)
+          }
+        }
+        else if (json instanceof Object) {
+          for (var k in json) {
+            var p = StringUtil.isEmpty(path) ? k : path + '/' + k
+            map = this.toPathValuePairMap(json[k], p, map)
+          }
+        }
+        else {
+          map[path == null ? '' : path] = json
+        }
+
+        return map
+      },
+
       showOptions: function(target, text, before, after, isValue, filter) {
         currentTarget = target;
         isInputValue = isValue;
@@ -8962,6 +8990,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           else if (target == vRandom) {
             if (isValue != true) {
+              var isReq = App.isEditResponse != true
+
               var standardObj = null;
               try {
                 var currentItem = App.isTestCaseShow ? App.remotes[App.currentDocIndex] : App.currentRemoteItem;
@@ -8977,16 +9007,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 ? StringUtil.firstCase(method.substring(ind2+1, ind), true) : method.substring(ind+1))
               );
 
-              var json = App.getRequest(vInput.value, {})
-              for (k in json) {
-                var v = json[k]
+              var json = App.getRequest(vInput.value)
+              var map = App.toPathValuePairMap(json) || {}
+              for (var path in map) {
+                if (StringUtil.isEmpty(path)) {
+                  continue
+                }
+
+                var ks = StringUtil.split(path, '/')
+                var tbl = ks.length < 2 ? table : ks[ks.length - 2]
+
+                var v = map[path]
                 var t = v == null ? null : CodeUtil.getType4Request(v)
+                var k = ks[ks.length - 1]
+
                 App.options.push({
-                  name: k,
+                  name: path,
                   type: t == null ? null : (t == 'string' ? stringType : (t == 'integer' ? intType : CodeUtil.getType4Language(App.language, t))),
-                  comment: CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table
-                    , isRestful ? k : null, method, App.database, App.language
-                    , true, false, k, isRestful, v, true, standardObj
+                  comment: CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], tbl
+                    , k, method, App.database, App.language
+                    , isRestful, isReq, ks, isRestful, v, true, standardObj
                   )
                 })
               }
