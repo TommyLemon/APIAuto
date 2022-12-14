@@ -641,6 +641,8 @@
   }
   //这些全局变量不能放在data中，否则会报undefined错误
 
+  var BREAK_ALL = 'BREAK_ALL'
+  var BREAK_LAST = 'BREAK_LAST'
 
   var baseUrl
   var inputted
@@ -3962,7 +3964,7 @@
             continue
           }
 
-          req['case_' + id] = {
+          req['account_' + id] = {
             'Script:pre': {
               'ahead': 1,
               'testAccountId': id,
@@ -4008,21 +4010,21 @@
           // delete rpObj['Script:pre']
           // delete rpObj['Script:post']
 
-          var cs = scripts.case
+          var cs = scripts.account
           if (cs == null) {
-            scripts.case = cs = {}
+            scripts.account = cs = {}
           }
 
           for (let key in rpObj) {
             var val = rpObj[key]
-            var pre = val == null || key.startsWith('case_') != true ? null : val['Script:pre']
+            var pre = val == null || key.startsWith('account_') != true ? null : val['Script:pre']
             if (pre == null) {
               continue
             }
 
             var post = val['Script:post']
 
-            var bs = cs[key.substring('case_'.length)]
+            var bs = cs[key.substring('account_'.length)]
 
             if (pre != null) { // && pre.script != null) {
               bs.pre = pre
@@ -4219,6 +4221,8 @@
 
             App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
             App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+
+            App.listScript()
           }
         }
       },
@@ -4815,9 +4819,10 @@
         vOutput.value = "requesting... \nURL = " + url
         this.view = 'output';
 
+        var caseScript = (this.scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
 
         this.setBaseUrl()
-        this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback)
+        this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback, caseScript)
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
@@ -4839,15 +4844,116 @@
       },
 
       //请求
-      request: function (isAdminOperation, type, url, req, header, callback) {
+      request: function (isAdminOperation, type, url, req, header, callback, caseScript_) {
         this.isLoading = true
 
-        const scripts = this.scripts || {}
-        const globalScript = (scripts.global || {})[0] || {}
-        const accountScript = (scripts.account || {})[this.getCurrentAccountId() || 0] || {}
-        const caseScript = (scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+        const scripts = (isAdminOperation || caseScript_ == null ? null : this.scripts) || {}
+        const globalScript = (isAdminOperation ? null : (scripts.global || {})[0]) || {}
+        const accountScript = (isAdminOperation ? null : (scripts.account || {})[this.getCurrentAccountId() || 0]) || {}
+        const caseScript = (isAdminOperation ? null : caseScript_) || {}
 
-        const evalScript = function (isPre, code, res, err) {
+        var evalPostScript = function () {}
+
+        var sendRequest = function (isAdminOperation, type, url, req, header, callback) {
+          // axios.defaults.withcredentials = true
+          axios({
+            method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
+            url: (isDelegate
+                ? (
+                  this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
+                  + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
+                ) : (
+                  this.isEncodeEnabled ? encodeURI(url) : url
+                )
+            ),
+            params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
+            data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
+            headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
+            withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
+            // crossDomain: true
+          })
+            .then(function (res) {
+              var postEvalResult = evalPostScript(url, res, null)
+              if (postEvalResult == BREAK_ALL) {
+                return
+              }
+
+              App.isLoading = false
+              res = res || {}
+
+              if (isDelegate) {
+                var hs = res.headers || {}
+                var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
+                if (delegateId != null && delegateId != App.delegateId) {
+                  App.delegateId = delegateId
+                  App.saveCache(App.server, 'delegateId', delegateId)
+                }
+              }
+
+              //any one of then callback throw error will cause it calls then(null)
+              // if ((res.config || {}).method == 'options') {
+              //   return
+              // }
+              log('send >> success:\n' + JSON.stringify(res.data, null, '    '))
+
+              //未登录，清空缓存
+              if (res.data != null && res.data.code == 407) {
+                // alert('request res.data != null && res.data.code == 407 >> isAdminOperation = ' + isAdminOperation)
+                if (isAdminOperation) {
+                  // alert('request App.User = {} App.server = ' + App.server)
+
+                  App.clearUser()
+                }
+                else {
+                  // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
+
+                  if (App.accounts[App.currentAccountIndex] != null) {
+                    App.accounts[App.currentAccountIndex].isLoggedIn = false
+                  }
+                }
+              }
+
+              if (postEvalResult == BREAK_LAST) {
+                return
+              }
+
+              if (callback != null) {
+                callback(url, res, null)
+                return
+              }
+              App.onResponse(url, res, null)
+            })
+            .catch(function (err) {
+              var postEvalResult = evalPostScript(url, null, err)
+              if (postEvalResult == BREAK_ALL) {
+                return
+              }
+
+              App.isLoading = false
+
+              log('send >> error:\n' + err)
+              if (isAdminOperation) {
+                App.delegateId = null
+              }
+
+              if (postEvalResult == BREAK_LAST) {
+                return
+              }
+
+              if (callback != null) {
+                callback(url, {request: {url: url, headers: header, data: req}}, err)
+                return
+              }
+
+              if (typeof App.autoTestCallback == 'function') {
+                App.autoTestCallback('Error when testing: ' + err + '.\nurl: ' + url + ' \nrequest: \n' + JSON.stringify(req, null, '    '), err)
+              }
+
+              App.onResponse(url, {request: {url: url, headers: header, data: req}}, err)
+            })
+        }
+
+        var evalScript = isAdminOperation || caseScript_ == null ? function () {} : function (isPre, code, res, err) {
           try {
 //             var s = `(function () {
 // var App = ` + App + `;
@@ -4869,12 +4975,10 @@
 
             var isTest = false;
             var data = res == null ? null : res.data
-            eval(code)
+            return eval(code)
           }
           catch (e) {
             this.isLoading = false
-            // App.onResponse(url, null, e) // this.onResponse is not a function
-
             // this.view = 'error'
             // this.error = {
             //   msg: e.message
@@ -4888,11 +4992,15 @@
               //   throw e
               // }
 
+              // App.onResponse(url, res, err) // this.onResponse is not a function
               callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
 
+            // TODO 右侧底部新增断言列表
             App.onResponse(url, null, e) // this.onResponse is not a function
           }
+
+          return null
         }
 
         // const preScript = function () {
@@ -4902,32 +5010,29 @@
 
           var preScript = ''
 
-          var globalPreScript = isAdminOperation ? null : StringUtil.trim((globalScript.pre || {}).script)
+          var globalPreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((globalScript.pre || {}).script)
           if (StringUtil.isNotEmpty(globalPreScript, true)) {
             preScript += globalPreScript + '\n\n' // evalScript(true, globalPreScript)
           }
 
-          var accountPreScript = isAdminOperation ? null : StringUtil.trim((accountScript.pre || {}).script)
+          var accountPreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((accountScript.pre || {}).script)
           if (StringUtil.isNotEmpty(accountPreScript, true)) {
             preScript += accountPreScript + '\n\n' // evalScript(true, accountPreScript)
           }
 
-          var casePreScript = isAdminOperation ? null : StringUtil.trim((caseScript.pre || {}).script)
+          var casePreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((caseScript.pre || {}).script)
           if (StringUtil.isNotEmpty(casePreScript, true)) {
             preScript += casePreScript + '\n\n' // evalScript(true, casePreScript)
           }
 
+          var preEvalResult = null;
           if (StringUtil.isNotEmpty(preScript, true)) {
-            evalScript(true, preScript)
+            preEvalResult = evalScript(true, preScript)
           }
 
         // }
 
-        const evalPostScript = function (url, res, err) {
-          if (isAdminOperation) {
-            return
-          }
-
+        evalPostScript = isAdminOperation || caseScript_ == null ? function () {} : function (url, res, err) {
           var postScript = ''
           if (StringUtil.isNotEmpty(preScript, true)) {
             postScript += preScript + '\n\n  // request >>>>>>>>>>>>>>>>>>>>>>>>>> response \n\n' // 如果有副作用参数，则通过 isPre 判断
@@ -4948,7 +5053,15 @@
             postScript += globalPostScript + '\n\n' // evalScript(false, globalPostScript, res, err)
           }
 
-          evalScript(false, postScript, res, err)
+          if (StringUtil.isNotEmpty(postScript, true)) {
+            return evalScript(false, postScript, res, err)
+          }
+
+          return null;
+        }
+
+        if (preEvalResult == BREAK_ALL) {
+          return
         }
 
         type = type || REQUEST_TYPE_JSON
@@ -5007,86 +5120,11 @@
           // JSON.parse = CircularJSON.parse;
         }
 
-        // axios.defaults.withcredentials = true
-        axios({
-          method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-          url: (isDelegate
-              ? (
-                this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
-                + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
-              ) : (
-                this.isEncodeEnabled ? encodeURI(url) : url
-              )
-          ),
-          params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
-          data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
-          headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
-          withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
-          // crossDomain: true
-        })
-          .then(function (res) {
-            evalPostScript(url, res, null)
-            App.isLoading = false
-            res = res || {}
+        if (preEvalResult == BREAK_LAST) {
+          return
+        }
 
-            if (isDelegate) {
-              var hs = res.headers || {}
-              var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
-              if (delegateId != null && delegateId != App.delegateId) {
-                App.delegateId = delegateId
-                App.saveCache(App.server, 'delegateId', delegateId)
-              }
-            }
-
-	          //any one of then callback throw error will cause it calls then(null)
-            // if ((res.config || {}).method == 'options') {
-            //   return
-            // }
-            log('send >> success:\n' + JSON.stringify(res.data, null, '    '))
-
-            //未登录，清空缓存
-            if (res.data != null && res.data.code == 407) {
-              // alert('request res.data != null && res.data.code == 407 >> isAdminOperation = ' + isAdminOperation)
-              if (isAdminOperation) {
-                // alert('request App.User = {} App.server = ' + App.server)
-
-                App.clearUser()
-              }
-              else {
-                // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
-
-                if (App.accounts[App.currentAccountIndex] != null) {
-                  App.accounts[App.currentAccountIndex].isLoggedIn = false
-                }
-              }
-            }
-
-            if (callback != null) {
-              callback(url, res, null)
-              return
-            }
-            App.onResponse(url, res, null)
-          })
-          .catch(function (err) {
-            evalPostScript(url, null, err)
-            App.isLoading = false
-
-            log('send >> error:\n' + err)
-            if (isAdminOperation) {
-              App.delegateId = null
-            }
-
-            if (callback != null) {
-              callback(url, {request: {url: url, headers: header, data: req}}, err)
-              return
-            }
-
-            if (typeof App.autoTestCallback == 'function') {
-              App.autoTestCallback('Error when testing: ' + err + '.\nurl: ' + url + ' \nrequest: \n' + JSON.stringify(req, null, '    '), err)
-            }
-
-            App.onResponse(url, {request: {url: url, headers: header, data: req}}, err)
-          })
+        sendRequest(isAdminOperation, type, url, req, header, callback)
       },
 
 
@@ -7134,7 +7172,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   App.send(false, cb);
                 }
                 else {
-                  App.request(false, type, url, constJson, header, cb);
+                  var caseScript = (this.scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+                  App.request(false, type, url, constJson, header, cb, caseScript);
                 }
               }
 
@@ -7816,6 +7855,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             App.compareResponse(allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
+          }, {
+            pre: item['Script:pre'],
+            post: item['Script:post']
           })
         }
 
@@ -9893,7 +9935,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             log(e)
           }
         }
-        else if ((event.ctrlKey || event.metaKey) && keyCode == 83) {
+        else if ((event.ctrlKey || event.metaKey) && keyCode == 83) { // Ctrl + S 保存
           App.showSave(true)
           event.preventDefault()
         }
