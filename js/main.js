@@ -4860,10 +4860,10 @@
             method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
             url: (isDelegate
                 ? (
-                  this.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
-                  + (StringUtil.isEmpty(this.delegateId, true) ? '' : '$_delegate_id=' + this.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
+                  App.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
+                  + (StringUtil.isEmpty(App.delegateId, true) ? '' : '$_delegate_id=' + App.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
                 ) : (
-                  this.isEncodeEnabled ? encodeURI(url) : url
+                  App.isEncodeEnabled ? encodeURI(url) : url
                 )
             ),
             params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
