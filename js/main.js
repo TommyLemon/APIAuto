@@ -1322,8 +1322,8 @@
             if (isRandom) {
               this.exTxt.name = '随机配置 ' + this.formatDateTime()
             }
-            else if (isScript) {
-              this.exTxt.name = '执行脚本 ' + this.formatDateTime()
+            else if (isScript) { // 避免 APIJSON 启动报错  '执行脚本 ' + this.formatDateTime()
+              this.exTxt.name = this.scriptType + (this.isPreScript ? 'Pre' : 'Post') + this.getCurrentScriptBelongId()
             }
             else {
               if (this.isEditResponse) {
@@ -1801,12 +1801,14 @@
           var orginItem = item
           var doc = item.Document || {}
           var docId = doc.id || 0
+
           var pre = Object.assign({
             'script': ''
           }, item['Script:pre'] || {})
           var post = Object.assign({
             'script': ''
           }, item['Script:post'] || {})
+
           var preId = pre.id
           var postId = post.id
           if (docId > 0 && (preId == null || postId == null)) {
@@ -1856,12 +1858,9 @@
               }
 
               orginItem.scripts = scripts
-              App.scripts = Object.assign(newDefaultScript(), {
-                case: {
-                  [docId]: scripts
-                }
-              })
+
               App.changeScriptType(App.scriptType)
+              App.scripts.case[docId] = scripts
             })
           }
 
@@ -1890,12 +1889,9 @@
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
           vRandom.value = StringUtil.get(item.random)
-          this.scripts = Object.assign(newDefaultScript(), {
-            case: {
-              [docId]: scripts
-            }
-          })
           this.changeScriptType(this.scriptType)
+          this.scripts.case[docId] = scripts
+
           this.onChange(false)
 
           if (isRemote) {
@@ -2087,8 +2083,7 @@
                 'ahead': this.isPreScript ? 1 : 0,
                 'documentId': did == null || scriptType != 'case' ? 0 : did,
                 'testAccountId': scriptType != 'account' ? 0 : currentAccountId,
-                'title': extName,
-                'name': '',
+                'name': extName,
                 'script': vScript.value
               }, script),
               'tag': 'Script'
@@ -3964,7 +3959,7 @@
             continue
           }
 
-          req['account_' + id] = {
+          req['account_' + id] = { // 用数字被居然强制格式化到 JSON 最前
             'Script:pre': {
               'ahead': 1,
               'testAccountId': id,
@@ -4819,7 +4814,7 @@
         vOutput.value = "requesting... \nURL = " + url
         this.view = 'output';
 
-        var caseScript = (this.scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+        var caseScript = ((this.scripts || {}).case || {})[this.getCurrentDocumentId() || 0] || {}
 
         this.setBaseUrl()
         this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback, caseScript)
@@ -4924,7 +4919,9 @@
               App.onResponse(url, res, null)
             })
             .catch(function (err) {
-              var postEvalResult = evalPostScript(url, null, err)
+              var res = {request: {url: url, headers: header, data: req}}
+
+              var postEvalResult = evalPostScript(url, res, err)
               if (postEvalResult == BREAK_ALL) {
                 return
               }
@@ -4941,7 +4938,7 @@
               }
 
               if (callback != null) {
-                callback(url, {request: {url: url, headers: header, data: req}}, err)
+                callback(url, res, err)
                 return
               }
 
@@ -5000,7 +4997,7 @@
             }
 
             if (callback != null) {
-              callback(url, null, e)
+              callback(url, res, e)
             } else {
               // catch 中也 evalScript 导致死循环
               // if (isPre != true) {
@@ -5047,9 +5044,6 @@
 
         evalPostScript = isAdminOperation || caseScript_ == null ? function () {} : function (url, res, err) {
           var postScript = ''
-          if (StringUtil.isNotEmpty(preScript, true)) {
-            postScript += preScript + '\n\n  // request >>>>>>>>>>>>>>>>>>>>>>>>>> response \n\n' // 如果有副作用参数，则通过 isPre 判断
-          }
 
           var casePostScript = StringUtil.trim((caseScript.post || {}).script)
           if (StringUtil.isNotEmpty(casePostScript, true)) {
@@ -5067,6 +5061,10 @@
           }
 
           if (StringUtil.isNotEmpty(postScript, true)) {
+            if (StringUtil.isNotEmpty(preScript, true)) { // 如果有副作用代码，则通过判断 if (isPre) {..} 在里面执行
+              postScript = preScript + '\n\n// request >>>>>>>>>>>>>>>>>>>>>>>>>> response \n\n' + postScript
+            }
+
             return evalScript(false, postScript, res, err)
           }
 
@@ -7120,16 +7118,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             App[testSubList ? 'currentRandomSubIndex' : 'currentRandomIndex'] = index
             this.testRandomSingle(show, false, itemAllCount > 1 && ! testSubList, item, this.type, url, json, header, isCross, function (url, res, err) {
+              var data = null
               if (res instanceof Object) {  // 可能通过 onTestResponse 返回的是 callback(true, 18, null)
+                data = res.data
                 try {
                   App.onResponse(url, res, err)
-                  App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                  App.log('test  App.request >> res.data = ' + (data == null ? 'null' : JSON.stringify(data, null, '  ')))
                 } catch (e) {
                   App.log('test  App.request >> } catch (e) {\n' + e.message)
                 }
               }
 
-              App.compareResponse(allCount, list, index, item, res.data, true, App.currentAccountIndex, false, err, null, isCross, callback)
+              App.compareResponse(allCount, list, index, item, data, true, App.currentAccountIndex, false, err, null, isCross, callback)
               return true
             })
           }
@@ -7206,7 +7206,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   App.send(false, cb);
                 }
                 else {
-                  var caseScript = (this.scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+                  var caseScript = ((App.scripts || {}).case || {})[App.getCurrentDocumentId() || 0] || {}
                   App.request(false, type, url, constJson, header, cb, caseScript);
                 }
               }
