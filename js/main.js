@@ -9007,6 +9007,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 ? StringUtil.firstCase(method.substring(ind2+1, ind), true) : method.substring(ind+1))
               );
 
+              var tableList = docObj == null ? null : docObj['[]']
+              var isAPIJSONRouter = false // TODO
+
               var json = App.getRequest(vInput.value)
               var map = App.toPathValuePairMap(json) || {}
               for (var path in map) {
@@ -9024,10 +9027,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.options.push({
                   name: path,
                   type: t == null ? null : (t == 'string' ? stringType : (t == 'integer' ? intType : CodeUtil.getType4Language(App.language, t))),
-                  comment: CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], tbl
-                    , k, method, App.database, App.language
-                    , isRestful, isReq, ks, isRestful, v, true, standardObj
-                  )
+                  comment: CodeUtil.getComment4Request(tableList, tbl, k, v, method, false, App.database, App.language
+                    , isReq, ks, isRestful, standardObj, false, isAPIJSONRouter)
                 })
               }
             }
