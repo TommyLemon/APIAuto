@@ -4954,6 +4954,15 @@
         }
 
         var evalScript = isAdminOperation || caseScript_ == null ? function () {} : function (isPre, code, res, err) {
+          var logger = console.log
+          console.log = function(msg) {
+            logger(msg)
+            vOutput.value = StringUtil.get(msg)
+          }
+
+          App.view = 'output'
+          vOutput.value = ''
+
           try {
 //             var s = `(function () {
 // var App = ` + App + `;
@@ -4975,14 +4984,20 @@
 
             var isTest = false;
             var data = res == null ? null : res.data
-            return eval(code)
+            var result = eval(code)
+            console.log = logger
+            return result
           }
           catch (e) {
-            this.isLoading = false
-            // this.view = 'error'
-            // this.error = {
-            //   msg: e.message
-            // }
+            console.log(e);
+            console.log = logger
+
+            App.isLoading = false
+            // TODO if (isPre) {
+            App.view = 'error'
+            App.error = {
+              msg: '执行脚本报错：\n' + e.message
+            }
 
             if (callback != null) {
               callback(url, null, e)
@@ -4992,15 +5007,13 @@
               //   throw e
               // }
 
-              // App.onResponse(url, res, err) // this.onResponse is not a function
-              callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
+              // TODO 右侧底部新增断言列表
+              App.onResponse(url, null, new Error('执行脚本报错：\n' + e.message)) // this.onResponse is not a function
+              // callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
-
-            // TODO 右侧底部新增断言列表
-            App.onResponse(url, null, e) // this.onResponse is not a function
           }
 
-          return null
+          return BREAK_ALL
         }
 
         // const preScript = function () {
@@ -6975,28 +6988,49 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       onClickTestScript() {
-        var logger = console.log;
+        var logger = console.log
         console.log = function(msg) {
-          logger(msg);
-          vOutput.value = StringUtil.get(msg);
+          logger(msg)
+          vOutput.value = StringUtil.get(msg)
         }
 
-        App.view = 'output';
-        vOutput.value = '';
+        this.view = 'output'
+        vOutput.value = ''
 
         try {
-          var isTest = true;
+          var isTest = true
+          var isPre = this.isPreScript
+
+          var isAdminOperation = false
+          var type = this.type
+          var url = this.getUrl()
+          var req = this.getRequest(vInput.value, {})
+          var header = this.getHeader(vHeader.value)
+          var callback = null
+
+          var data = isPre ? undefined : (this.jsoncon == null ? null : JSON.parse(this.jsoncon))
+          var res = isPre ? undefined : {
+            data: data
+          }
+          var err = isPre ? undefined : null
+
+          var sendRequest = function (isAdminOperation, type, url, req, header, callback) {
+            App.request(isAdminOperation, type, url, req, header, callback)
+          }
+
           eval(vScript.value);
         }
         catch(e) {
           console.log(e);
-          App.view = 'error';
-          App.error = {
-            msg: '执行脚本报错：\n' +  e.message
+          console.log = logger
+
+          this.view = 'error'
+          this.error = {
+            msg: '执行脚本报错：\n' + e.message
           }
         }
 
-        console.log = logger;
+        console.log = logger
       },
 
       /**参数注入，动态替换键值对
@@ -9587,6 +9621,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       this.listHistory()
       if (this.isScriptShow) {
+        this.changeScriptType()
         this.listScript()
       }
 
