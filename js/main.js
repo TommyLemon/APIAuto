@@ -8949,56 +8949,68 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var varcharType = CodeUtil.getType4Language(App.language, "varchar")
           var intType = CodeUtil.getType4Language(App.language, "int")
           var booleanType = CodeUtil.getType4Language(App.language, "boolean")
+          var isReq = App.isEditResponse != true
 
-          if (target == vScript) {
-            App.options = isValue != true ? [] : [
-              {
-                name: "type",
-                type: stringType,
-                comment: '请求格式类型：PARAM, JSON, FORM, DATA'
-              },{
-                name: "url",
-                type: stringType,
-                comment: '请求地址，例如 http://localhost:8080/get '
-              },{
-                name: "req",
-                type: objectType,
-                comment: '请求参数，例如 { format: true, "User": { "id": 82001 } } '
-              },{
-                name: "header",
-                type: objectType,
-                comment: '请求头，例如 Cookie: abc123 '
-              },{
-                name: "callback",
-                type: objectType,
-                comment: '回调函数 function(url, res, err) {} '
-              },{
-                name: "sendRequest",
-                type: objectType,
-                comment: '真正发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
-              },{
-                name: "App.request",
-                type: objectType,
-                comment: '包装发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
-              },{
-                name: "{}", type: objectType, comment: '对象'
-              },{
-                name: "[]", type: arrayType, comment: '数组'
-              },{
-                name: "undefined", comment: '未定义'
-              }];
-          }
-          else if (target == vRandom) {
+          if (target == vRandom || target == vScript) {
+            if (target == vScript) {
+              App.options = [
+                {
+                  name: "type",
+                  type: stringType,
+                  comment: '请求格式类型：PARAM, JSON, FORM, DATA'
+                },{
+                  name: "url",
+                  type: stringType,
+                  comment: '请求地址，例如 http://localhost:8080/get '
+                },{
+                  name: "req",
+                  type: objectType,
+                  comment: '请求参数，例如 { format: true, "User": { "id": 82001 } } '
+                },{
+                  name: "header",
+                  type: objectType,
+                  comment: '请求头，例如 Cookie: abc123 '
+                },{
+                  name: "callback",
+                  type: objectType,
+                  comment: '回调函数 function(url, res, err) {} '
+                },{
+                  name: "sendRequest",
+                  type: objectType,
+                  comment: '真正发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
+                },{
+                  name: "App.request",
+                  type: objectType,
+                  comment: '包装发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
+                }];
+
+              if (isValue) {
+                App.options.push({
+                  name: "{}", type: objectType, comment: '对象'
+                })
+                App.options.push({
+                    name: "[]", type: arrayType, comment: '数组'
+                })
+                App.options.push({
+                    name: "undefined", comment: '未定义'
+                })
+              }
+            }
+
             if (isValue != true) {
-              var isReq = App.isEditResponse != true
-
               var standardObj = null;
               try {
                 var currentItem = App.isTestCaseShow ? App.remotes[App.currentDocIndex] : App.currentRemoteItem;
-                standardObj = JSON.parse(((currentItem || {}).TestRecord || {}).standard);
+                standardObj = JSON.parse(((currentItem || {})[isReq ? 'Document' : 'TestRecord'] || {}).standard);
               } catch (e3) {
                 log(e3)
               }
+              if (standardObj == null) {
+                standardObj = JSONResponse.updateStandard({},
+                  isReq ? App.getRequest(vRequest.value) : App.jsoncon == null ? null : JSON.parse(App.jsoncon)
+                )
+              }
+
               var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
               var isRestful = ! JSONObject.isAPIJSONPath(method);
               var ind = method == null ? -1 : method.lastIndexOf('/');
@@ -9025,14 +9037,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var k = ks[ks.length - 1]
 
                 App.options.push({
-                  name: path,
+                  name: target != vScript ? path : JSONResponse.formatKey(ks.join('_'), true, true, true, true, true, true),
                   type: t == null ? null : (t == 'string' ? stringType : (t == 'integer' ? intType : CodeUtil.getType4Language(App.language, t))),
                   comment: CodeUtil.getComment4Request(tableList, tbl, k, v, method, false, App.database, App.language
                     , isReq, ks, isRestful, standardObj, false, isAPIJSONRouter)
                 })
               }
             }
-            else {
+            else if (target == vRandom) {
               App.options = [
                 {
                   name: "ORDER_DB(-10, 100000, 'comment', 'id')",
@@ -9072,6 +9084,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   name: "Math.round(100*Math.random())", type: stringType, comment: '自定义代码'
                 }
               ]
+            }
+            else {
+              App.options.push({
+                name: isSingle ? "res.key" : "res['key']", type: stringType, comment: '从上个请求的结果中取值'
+              })
             }
           }
           else if (target == vInput) {
@@ -10058,11 +10075,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //   target.selectionEnd = target.selectionStart = selectionStart + prefix.length + 1 + (hasPadding ? 4 : 0);
                 // }
                 // else {
-                  target.value = before + '\n' + prefix + (hasPadding ? '    ' : '')
+                  var newText = before + '\n' + prefix + (hasPadding ? '    ' : '')
                     + (hasNewKey ? (target != vInput ? (target == vScript ? 'var ' : '') : (isSingle ? "''" : '""'))
                       + (target == vScript ? ' = ' : ': ') + (target == vHeader ? '' : 'null') + (hasComma || isEnd || target != vInput ? '' : ',') : '')
                     + (isEnd ? after : (hasRight ? (hasPadding ? tfl.trimLeft() : tfl) : '') + '\n' + after.substring(firstIndex + 1)
                     );
+                  target.value = newText
+                  if (target == vScript) { // 不这样会自动回滚
+                    App.scripts[App.scriptType][App.getCurrentScriptBelongId()][App.isPreScript ? 'pre' : 'post'].script = newText
+                  }
 
                   target.selectionEnd = target.selectionStart = selectionStart + prefix.length + (hasComma && target == vInput ? 1 : 0)
                     + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0) + (target == vScript ? 4 : (target == vInput ? 1 : 0));
