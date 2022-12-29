@@ -1258,7 +1258,10 @@
 
         var name = item == null ? '' : StringUtil.get(item.name);
         target.value = text = before + name + after
-        if (target == vInput) {
+        if (target == vScript) { // 不这样会自动回滚
+          App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = text
+        }
+        else if (target == vInput) {
           inputted = target.value;
         }
 
@@ -10082,7 +10085,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     );
                   target.value = newText
                   if (target == vScript) { // 不这样会自动回滚
-                    App.scripts[App.scriptType][App.getCurrentScriptBelongId()][App.isPreScript ? 'pre' : 'post'].script = newText
+                    App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newText
                   }
 
                   target.selectionEnd = target.selectionStart = selectionStart + prefix.length + (hasComma && target == vInput ? 1 : 0)
@@ -10099,7 +10102,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
               }
               else if (isDel) {
-                target.value = (selectionStart == selectionEnd ? StringUtil.get(before.substring(0, lastLineStart - 1) + ' ') : before) + after;
+                var newStr = (selectionStart == selectionEnd ? StringUtil.get(before.substring(0, lastLineStart - 1) + ' ') : before) + after;
+                target.value = newStr;
+                if (target == vScript) { // 不这样会自动回滚
+                  App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newStr
+                }
+
                 target.selectionEnd = target.selectionStart = selectionStart == selectionEnd ? lastLineStart - 1 : selectionStart;
                 event.preventDefault();
               }
@@ -10147,6 +10155,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             newStr += text.substring(end);
 
             target.value = newStr;
+            if (target == vScript) { // 不这样会自动回滚
+              App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newStr
+            }
+
             event.preventDefault();
             if (target == vInput) {
               inputted = newStr;
@@ -10200,7 +10212,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
 
-                target.value = StringUtil.trim(newStr);
+                newStr = StringUtil.trim(newStr);
+                target.value = newStr;
+                if (target == vScript) { // 不这样会自动回滚
+                  App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newStr
+                }
               }
             } catch (e) {
               log(e)
@@ -10260,6 +10276,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               newStr += text.substring(end);
 
               target.value = newStr;
+              if (target == vScript) { // 不这样会自动回滚
+                App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newStr
+              }
+
               if (target == vInput) {
                 inputted = newStr;
               }
@@ -10276,7 +10296,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var lastIndex = before.lastIndexOf('\n');
               var firstIndex = after.indexOf('\n');
 
-              target.value = (lastIndex < 0 ? '' : before.substring(0, lastIndex)) + '\n' + after.substring(firstIndex + 1);
+              var newStr = (lastIndex < 0 ? '' : before.substring(0, lastIndex)) + '\n' + after.substring(firstIndex + 1);
+              target.value = newStr;
+              if (target == vScript) { // 不这样会自动回滚
+                App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newStr
+              }
+
               selectionEnd = selectionStart = lastIndex + 1;
               event.preventDefault();
 
@@ -10305,6 +10330,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             text = before + (isInputValue && selection == 'null' ? '' : selection) + key + after;
 
             target.value = text;
+            if (target == vScript) { // 不这样会自动回滚
+              App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = text
+            }
+
             target.selectionStart = selectionStart;
             target.selectionEnd = (isInputValue && selection == 'null' ? selectionStart : selectionEnd) + key.length;
             event.preventDefault();
