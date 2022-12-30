@@ -8986,10 +8986,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   type: stringType,
                   comment: "数据类型"
                 }, {
-                  name: "Content-Type",
-                  type: stringType,
-                  comment: "数据类型"
-                }, {
                   name: "Accept",
                   type: stringType,
                   comment: "接收格式"
