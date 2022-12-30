@@ -4777,7 +4777,7 @@
 
       /**发送请求
        */
-      send: function(isAdminOperation, callback) {
+      send: function(isAdminOperation, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
         if (this.isTestCaseShow) {
           alert('请先输入请求内容！')
           return
@@ -4818,10 +4818,10 @@
         vOutput.value = "requesting... \nURL = " + url
         this.view = 'output';
 
-        var caseScript = ((this.scripts || {}).case || {})[this.getCurrentDocumentId() || 0] || {}
+        var caseScript = (caseScript_ != null ? caseScript_ : ((this.scripts || {}).case || {})[this.getCurrentDocumentId() || 0]) || {}
 
         this.setBaseUrl()
-        this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback, caseScript)
+        this.request(isAdminOperation, this.type, url, req, isAdminOperation ? {} : header, callback, caseScript, accountScript_, globalScript_, ignorePreScript)
 
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
@@ -4843,12 +4843,12 @@
       },
 
       //请求
-      request: function (isAdminOperation, type, url, req, header, callback, caseScript_) {
+      request: function (isAdminOperation, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
         this.isLoading = true
 
         const scripts = (isAdminOperation || caseScript_ == null ? null : this.scripts) || {}
-        const globalScript = (isAdminOperation ? null : (scripts.global || {})[0]) || {}
-        const accountScript = (isAdminOperation ? null : (scripts.account || {})[this.getCurrentAccountId() || 0]) || {}
+        const globalScript = (isAdminOperation ? null : (globalScript_ != null ? globalScript_ : (scripts.global || {})[0])) || {}
+        const accountScript = (isAdminOperation ? null : (accountScript_ != null ? accountScript_ : (scripts.account || {})[this.getCurrentAccountId() || 0])) || {}
         const caseScript = (isAdminOperation ? null : caseScript_) || {}
 
         var evalPostScript = function () {}
@@ -5024,17 +5024,17 @@
 
           var preScript = ''
 
-          var globalPreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((globalScript.pre || {}).script)
+          var globalPreScript = isAdminOperation || ignorePreScript || caseScript_ == null ? null : StringUtil.trim((globalScript.pre || {}).script)
           if (StringUtil.isNotEmpty(globalPreScript, true)) {
             preScript += globalPreScript + '\n\n' // evalScript(true, globalPreScript)
           }
 
-          var accountPreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((accountScript.pre || {}).script)
+          var accountPreScript = isAdminOperation || ignorePreScript || caseScript_ == null ? null : StringUtil.trim((accountScript.pre || {}).script)
           if (StringUtil.isNotEmpty(accountPreScript, true)) {
             preScript += accountPreScript + '\n\n' // evalScript(true, accountPreScript)
           }
 
-          var casePreScript = isAdminOperation || caseScript_ == null ? null : StringUtil.trim((caseScript.pre || {}).script)
+          var casePreScript = isAdminOperation || ignorePreScript || caseScript_ == null ? null : StringUtil.trim((caseScript.pre || {}).script)
           if (StringUtil.isNotEmpty(casePreScript, true)) {
             preScript += casePreScript + '\n\n' // evalScript(true, casePreScript)
           }
@@ -7145,6 +7145,32 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       testRandomSingle: function (show, testList, testSubList, item, type, url, json, header, isCross, callback) {
         item = item || {}
+
+        // 保证能调用自定义函数等 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        const scripts = this.scripts || {}
+        const globalScript = (scripts.global || {})[0] || {}
+        const accountScript = (scripts.account || {})[this.getCurrentAccountId() || 0] || {}
+        const caseScript = (scripts.case || {})[this.getCurrentDocumentId() || 0] || {}
+
+        var preScript = ''
+
+        var globalPreScript = StringUtil.trim((globalScript.pre || {}).script)
+        if (StringUtil.isNotEmpty(globalPreScript, true)) {
+          preScript += globalPreScript + '\n\n'
+        }
+
+        var accountPreScript = StringUtil.trim((accountScript.pre || {}).script)
+        if (StringUtil.isNotEmpty(accountPreScript, true)) {
+          preScript += accountPreScript + '\n\n'
+        }
+
+        var casePreScript = StringUtil.trim((caseScript.pre || {}).script)
+        if (StringUtil.isNotEmpty(casePreScript, true)) {
+          preScript += casePreScript + '\n\n'
+        }
+        // 保证能调用自定义函数等 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
         var random = item.Random = item.Random || {}
         var subs = item['[]'] || []
         var existCount = subs.length
@@ -7207,11 +7233,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 if (show == true) {
                   vInput.value = JSON.stringify(constJson, null, '    ');
-                  App.send(false, cb);
+                  App.send(false, cb, caseScript, null, null, true);
                 }
                 else {
-                  var caseScript = ((App.scripts || {}).case || {})[App.getCurrentDocumentId() || 0] || {}
-                  App.request(false, type, url, constJson, header, cb, caseScript);
+                  App.request(false, type, url, constJson, header, cb, caseScript, null, null, true);
                 }
               }
 
@@ -7228,10 +7253,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.testRandom(false, false, true, count, isCross, callback)
               }
 
-            }
+            },
+            preScript
           );
 
-        }  //for
+        }  // for
 
     },
 
@@ -7352,7 +7378,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback) {
+      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback, preScript) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
           // return null;
@@ -7662,7 +7688,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           }
 
-          invoke(eval(toEval), which, p_k, pathKeys, key, lastKeyInPath);
+          var isPre = true;
+          var isTest = false;
+          var res = {};
+          var data = res.data;
+          var err = null;
+          invoke(eval(StringUtil.trim(preScript) + '\n' + toEval), which, p_k, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
@@ -9133,7 +9164,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             else if (target == vRandom) {
               App.options = [
                 {
-                  name: "ORDER_DB(-10, 100000, 'comment', 'id')",
+                  name: "ORDER_DB(-10, 100000, 'Comment', 'id')",
                   type: stringType,
                   comment: "从数据库顺序取值 function(min:Integer, max:Integer, table:String, column:String) 可使用 ORDER_DB+2(0, 100) 间隔 step = 2 位来升序取值"
                 }, {
@@ -9145,7 +9176,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   type: stringType,
                   comment: "从范围内顺序取值 function(min:Integer, max:Integer) 可使用 ORDER_IN+(0, 100) 间隔 step = 1 位来升序取值"
                 }, {
-                  name: "RANDOM_DB(-10, 100000, 'comment', 'id')",
+                  name: "RANDOM_DB(-10, 100000, 'Comment', 'id')",
                   type: stringType,
                   comment: "从数据库随机取值 function(min:Integer, max:Integer, table:String, column:String)"
                 }, {
