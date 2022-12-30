@@ -8973,21 +8973,39 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   name: "header",
                   type: objectType,
                   comment: '请求头，例如 Cookie: abc123 '
-                },{
-                  name: "callback",
-                  type: objectType,
-                  comment: '回调函数 function(url, res, err) {} '
-                },{
-                  name: "sendRequest",
-                  type: objectType,
-                  comment: '真正发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
-                },{
-                  name: "App.request",
-                  type: objectType,
-                  comment: '包装发送请求函数 function(isAdminOperation, type, url, req, header, callback) {} '
                 }];
 
               if (isValue) {
+                App.options.push({
+                  name: "callback(url, res, err)",
+                  type: objectType,
+                  comment: '回调函数'
+                })
+                App.options.push({
+                  name: "sendRequest(isAdminOperation, type, url, req, header, callback)",
+                  type: objectType,
+                  comment: '真正发送请求函数'
+                })
+                App.options.push({
+                  name: "App.request(isAdminOperation, type, url, req, header, callback)",
+                  type: objectType,
+                  comment: '包装发送请求函数'
+                })
+                App.options.push({
+                  name: "if () {\n    \n} else if () {\n    \n} else {\n    \n}",
+                  type: objectType,
+                  comment: '包装发送请求函数'
+                })
+                App.options.push({
+                  name: "switch () {\n    case 1:\n        \n        break\n    case 2:\n        \n        break\n    default:\n        \n        break\n}",
+                  type: objectType,
+                  comment: '包装发送请求函数'
+                })
+                App.options.push({
+                  name: "try {\n    \n} catch(e) {\n    console.log(e)\n}",
+                  type: objectType,
+                  comment: '包装发送请求函数'
+                })
                 App.options.push({
                   name: "{}", type: objectType, comment: '对象'
                 })
@@ -8996,6 +9014,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 })
                 App.options.push({
                     name: "undefined", comment: '未定义'
+                })
+              }
+              else {
+                App.options.push({
+                  name: "callback",
+                  type: objectType,
+                  comment: '回调函数 function(url, res, err) {} '
                 })
               }
             }
@@ -10024,6 +10049,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var isEnd = false;
             var hasPadding = false;
             var hasComma = false;
+            var isVar = false;
+            var isJSON = false;
             var hasNewKey = null;
             if (isEnter) {
               isEnd = tfl.startsWith(']') || tfl.startsWith('}')
@@ -10045,11 +10072,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               //   }
               // }
 
+              var lastInd = tfl.lastIndexOf('(');
+              isVar = target == vScript && (before.indexOf('{') < 0 || (lastInd > 0 && tfl.endsWith('{') && tfl.lastIndexOf(')') > lastInd));
+              isJSON = target == vInput || (isVar != true && target == vScript);
+
               isStart = tll.endsWith('{') || tll.endsWith('[');
               hasPadding = hasRight != true && isStart;
 
               tll = before.trimRight();
-              hasComma = target == vInput && isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
+              hasComma = isJSON && isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
               if (hasComma) {
                 for (var i = before.length; i >= 0; i--) {
                   if (before.charAt(i).trim().length > 0) {
@@ -10066,6 +10097,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (hasNewKey == null) {
                 hasNewKey = tll.endsWith('{');
               }
+
             }
 
             if (prefix.length > 0 || (isEnter && target != vInput)) {
@@ -10079,8 +10111,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 // }
                 // else {
                   var newText = before + '\n' + prefix + (hasPadding ? '    ' : '')
-                    + (hasNewKey ? (target != vInput ? (target == vScript ? 'var ' : '') : (isSingle ? "''" : '""'))
-                      + (target == vScript ? ' = ' : ': ') + (target == vHeader ? '' : 'null') + (hasComma || isEnd || target != vInput ? '' : ',') : '')
+                    + (hasNewKey ? (isJSON != true ? (isVar ? 'var ' : '') : (isSingle ? "''" : '""'))
+                      + (isVar ? ' = ' : ': ') + (target == vHeader ? '' : 'null') + (hasComma || isEnd || isJSON != true ? '' : ',') : '')
                     + (isEnd ? after : (hasRight ? (hasPadding ? tfl.trimLeft() : tfl) : '') + '\n' + after.substring(firstIndex + 1)
                     );
                   target.value = newText
@@ -10088,8 +10120,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = newText
                   }
 
-                  target.selectionEnd = target.selectionStart = selectionStart + prefix.length + (hasComma && target == vInput ? 1 : 0)
-                    + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0) + (target == vScript ? 4 : (target == vInput ? 1 : 0));
+                  target.selectionEnd = target.selectionStart = selectionStart + prefix.length + (hasComma && isJSON ? 1 : 0)
+                    + (hasNewKey ? 1 : 0) + (hasPadding ? 4 : 0) + (isVar ? 4 : (isJSON ? 1 : 0));
                 // }
                 event.preventDefault();
 
