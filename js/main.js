@@ -9075,7 +9075,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     name: "[]", type: arrayType, comment: '数组'
                 })
                 App.options.push({
-                    name: "undefined", comment: '未定义'
+                    name: "undefined", name: "undefined", comment: '未定义'
                 })
               }
               else {
@@ -9097,7 +9097,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
               if (standardObj == null) {
                 standardObj = JSONResponse.updateStandard({},
-                  isReq ? App.getRequest(vRequest.value) : App.jsoncon == null ? null : JSON.parse(App.jsoncon)
+                  isReq ? App.getRequest(vInput.value) : App.jsoncon == null ? null : JSON.parse(App.jsoncon)
                 )
               }
 
@@ -9169,7 +9169,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   type: stringType,
                   comment: "从长度范围内随机取字符串 function(minLength:Integer, maxLength:Integer, regexp:String)"
                 }, {
-                  name: "undefined", comment: '未定义'
+                  name: "undefined", type: "undefined", comment: '未定义'
                 }, {
                   name: "Math.round(100*Math.random())", type: stringType, comment: '自定义代码'
                 }
