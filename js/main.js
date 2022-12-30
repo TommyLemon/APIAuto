@@ -8954,7 +8954,69 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var booleanType = CodeUtil.getType4Language(App.language, "boolean")
           var isReq = App.isEditResponse != true
 
-          if (target == vRandom || target == vScript) {
+          if (target == vHeader) {
+            if (isValue != true) {
+              App.options = [
+                {
+                  name: "Cookie",
+                  type: stringType,
+                  comment: "指定 Cookie"
+                }, {
+                  name: "Set-Cookie",
+                  type: stringType,
+                  comment: "设置 Cookie"
+                }, {
+                  name: "Add-Cookie",
+                  type: stringType,
+                  comment: "添加 Cookie"
+                }, {
+                  name: "Token",
+                  type: stringType,
+                  comment: "指定 Token"
+                }, {
+                  name: "Authorization",
+                  type: stringType,
+                  comment: "授权"
+                }, {
+                  name: "Authentication",
+                  type: stringType,
+                  comment: "鉴权"
+                }, {
+                  name: "Content-Type",
+                  type: stringType,
+                  comment: "数据类型"
+                }, {
+                  name: "Content-Type",
+                  type: stringType,
+                  comment: "数据类型"
+                }, {
+                  name: "Accept",
+                  type: stringType,
+                  comment: "接收格式"
+                }, {
+                  name: "Accept-Encoding",
+                  type: stringType,
+                  comment: "接收编码"
+                }, {
+                  name: "Accept-Language",
+                  type: stringType,
+                  comment: "接收语言"
+                }, {
+                  name: "Cache-Control",
+                  type: stringType,
+                  comment: "缓存控制"
+                }, {
+                  name: "Connection",
+                  type: stringType,
+                  comment: "连接控制"
+                }, {
+                  name: "Keep-Alive",
+                  type: stringType,
+                  comment: "保持连接"
+                }];
+            }
+          }
+          else if (target == vRandom || target == vScript) {
             if (target == vScript) {
               App.options = [
                 {
