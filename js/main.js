@@ -7688,7 +7688,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           }
 
-          var isPre = true;
+          var isPre = false; // 避免执行副作用代码 true;
           var isTest = false;
           var res = {};
           var data = res.data;
