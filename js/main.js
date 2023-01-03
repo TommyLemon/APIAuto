@@ -786,7 +786,7 @@
       isOptionListShow: false,
       isTestCaseShow: false,
       isHeaderShow: false,
-      isScriptShow: true, // TODO false,
+      isScriptShow: false,
       isRandomShow: true,  // 默认展示
       isRandomListShow: false,
       isRandomSubListShow: false,
@@ -3992,7 +3992,7 @@
             scripts.global = ss = {}
           }
 
-          var bs = ss['0']
+          var bs = ss['0'] || {}
           if (bs == null) {
             ss['0'] = bs = {}
           }
@@ -4680,6 +4680,7 @@
           }
         }
 
+        this.scriptBelongId = 0 // 解决可能的报错
         this.scriptType = type
         var bid = this.getCurrentScriptBelongId()
 
