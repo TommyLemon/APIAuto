@@ -3592,6 +3592,7 @@
             '[]': {
               'count': this.testCaseCount || 100, //200 条测试直接卡死 0,
               'page': this.testCasePage || 0,
+              'join': '@/TestRecord,@/Script:pre,@/Script:post',
               'Document': {
                 '@order': 'version-,date-',
                 'userId': this.User.id,
