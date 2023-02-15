@@ -16,7 +16,7 @@
 
 ---
 敏捷开发最强大易用的 HTTP 接口工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释。<br />
-提供集 文档、测试、Mock、调试、管理 于一体的一站式体验，还有一键 格式化、注释/取消注释 等高效易用的快捷键。<br />
+集 文档、测试、Mock、调试、管理 于一体的一站式体验，还有一键 格式化、注释/取消注释 等高效易用的快捷键。<br />
 在常用功能上远超 Postman, Swagger, YApi, Rap 等其它各种 开源、商业 的 API 文档/测试 工具。<br />
 支持 HTTP GET/POST API，智能显示和切换；支持一键导入 Swagger, Rap, YApi 的用例和文档。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
