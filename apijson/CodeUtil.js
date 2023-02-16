@@ -72,7 +72,7 @@ var CodeUtil = {
     var reqObj = JSON5.parse(reqStr);
 
     var methodInfo = JSONObject.parseUri(method, isReq) || {};
-    var method = methodInfo.method;
+    method = methodInfo.method;
     var isRestful = methodInfo.isRestful;
     var tag = methodInfo.tag;
     var startName = methodInfo.table;
@@ -95,18 +95,21 @@ var CodeUtil = {
       }
     };
 
+    var cc = isRestful == true ? '//' : ' //'; // 对 APIJSON API 要求严格些，因为本来就有字段注释
+    var ccLen = cc.length;
+
     for (var i = 0; i < lines.length; i ++) {
       var line = lines[i].trim() || '';
 
       //每一种都要提取:左边的key
       var index = line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
       var key = index < 0 ? (depth <= 1 && startName != null ? startName : '') : line.substring(1, index - 1);
-      var cIndex = line.indexOf('  //');
+      var cIndex = line.lastIndexOf(cc);
 
       var comment = '';
       if (cIndex >= 0) {
         if (isExtract && standardObj != null && (depth != 1 || (key != 'code' && key != 'throw'))) {
-          comment = line.substring(cIndex + '  //'.length).trim();
+          comment = line.substring(cIndex + ccLen).trim();
           // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
         }
 
@@ -3008,7 +3011,7 @@ var CodeUtil = {
       }
     }
 
-    return '? = null' + (isSmart ? '' : '  //' + CodeUtil.initEmptyValue4Type(type, true, isKotlin));
+    return '? = null' + (isSmart ? '' : ' //' + CodeUtil.initEmptyValue4Type(type, true, isKotlin));
   },
 
   getCode4JavaArgValues: function (reqObj, useVar4ComplexValue) {
