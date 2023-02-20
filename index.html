@@ -110,6 +110,7 @@
                 </a>
                 <ul class="themes pop" style="z-index: 200;padding: 0px;margin-top: 8px;width: 300px">
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isDelegateEnabled, 9)">托管服务器代理: {{ isDelegateEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isEnvCompareEnabled, 14)">对比其它环境结果:  {{ isEnvCompareEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isEncodeEnabled, 12)">自动 URL 转义:  {{ isEncodeEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isPreviewEnabled, 10)">预览左侧输入框:  {{ isPreviewEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isEditResponse, 11)">当前编辑模式:  {{ isEditResponse ? 'Response 后端响应结果' : 'Request 前端请求参数' }}</a>
@@ -121,6 +122,7 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型 Database: {{ database || '例如 MYSQL' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库名/模式 Schema: {{ schema || '例如 sys' }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 7)">使用的请求类型: {{ types == null || types.length <= 0 ? '点击设置' : (types instanceof Array ? types.join() : types) }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 15)">其它环境地址 URL: {{ otherEnv || '点击设置' }}</a>
                   <a v-show="User.id == null || User.id <= 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 6)">托管服务器地址 URL: {{ server || '点击设置' }}</a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 8)">导入第三方文档(平台名 URL): <br/>{{ thirdParty || '点击设置' }}</a>
                 </ul>
@@ -540,7 +542,7 @@ fun(true, 1, 'a'..);
               </a>
               <ul class="historys pop" style="width: 304px"> <!-- 没必要太长，遮挡范围过大 // 490 刚好与 URL 输入框左对齐 -->
                   <li v-for="(his, index) in historys">
-                    <a href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
+                    <a style="padding: 0px" href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
 
                     <svg class="icon" @click="remove(his, index, false)">
                       <use xlink:href="svg/icon.svg#trash"></use>
@@ -692,7 +694,7 @@ fun(true, 1, 'a'..);
             <use xlink:href="svg/icon.svg#close"></use>
         </svg>
 
-        <input type="text" placeholder="请输入名称" v-model="history.name" />
+        <input type="text" placeholder="请输入" v-model="history.name" />
         <button   @click="save()" >保存</button>
     </div>
 
@@ -716,7 +718,7 @@ fun(true, 1, 'a'..);
             <use xlink:href="svg/icon.svg#close"></use>
         </svg>
 
-        <input type="text" placeholder="请输入名称" v-model="exTxt.name" />
+        <input type="text" placeholder="请输入" v-model="exTxt.name" />
         <button @click="saveConfig()">{{ exTxt.button || '切换' }}</button>
     </div>
 

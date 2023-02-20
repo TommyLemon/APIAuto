@@ -863,6 +863,7 @@ https://github.com/Tencent/APIJSON/issues
       isCrossEnabled: false,
       isMLEnabled: false,
       isDelegateEnabled: false,
+      isEnvCompareEnabled: false,
       isPreviewEnabled: false,
       isEncodeEnabled: true,
       isEditResponse: false,
@@ -893,6 +894,7 @@ https://github.com/Tencent/APIJSON/issues
       host: '',
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
+      otherEnv: '',  // 其它环境服务地址，用来对比当前的
       server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.cn
       // server: 'http://47.74.39.68:9090',  // apijson.org
       // project: 'http://apijson.cn:8080',  // apijson.cn
@@ -1458,8 +1460,9 @@ https://github.com/Tencent/APIJSON/issues
             case 6:
             case 7:
             case 8:
-              this.exTxt.name = index == 0 ? this.database : (index == 1 ? this.schema : (index == 2
-                ? this.language : (index == 6 ? this.server : (index == 8 ? this.thirdParty : (this.types || []).join()))))
+            case 15:
+              this.exTxt.name = index == 0 ? this.database : (index == 1 ? this.schema : (index == 2 ? this.language
+                  : (index == 6 ? this.server : (index == 8 ? this.thirdParty : (index == 15 ? this.otherEnv : (this.types || []).join())))))
               this.isConfigShow = true
 
               if (index == 0) {
@@ -1599,6 +1602,10 @@ https://github.com/Tencent/APIJSON/issues
               this.isDelegateEnabled = show
               this.saveCache('', 'isDelegateEnabled', show)
               break
+            case 14:
+              this.isEnvCompareEnabled = show
+              this.saveCache('', 'isEnvCompareEnabled', show)
+              break
             case 10:
               this.isPreviewEnabled = show
               this.saveCache('', 'isPreviewEnabled', show)
@@ -1657,6 +1664,10 @@ https://github.com/Tencent/APIJSON/issues
           this.isPreviewEnabled = show
           this.saveCache('', 'isPreviewEnabled', show)
           // vRequestMarkdown.innerHTML = ''
+        }
+        else if (index == 14) {
+          this.isEnvCompareEnabled = show
+          this.saveCache('', 'isEnvCompareEnabled', show)
         }
         else if (index == 12) {
           this.isEncodeEnabled = show
@@ -2638,6 +2649,10 @@ https://github.com/Tencent/APIJSON/issues
           case 7:
             this.types = StringUtil.split(this.exTxt.name)
             this.saveCache('', 'types', this.types)
+            break
+          case 15:
+            this.otherEnv = StringUtil.get(this.exTxt.name)
+            this.saveCache('', 'otherEnv', this.otherEnv)
             break
           case 8:
             var thirdParty = this.exTxt.name

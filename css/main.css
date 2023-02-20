@@ -328,6 +328,10 @@ textarea {
   border-top: 0;
 }
 
+.pop a {
+  padding: 10px;
+}
+
 .pop-btn {
   display: inline-block;
   position: relative
