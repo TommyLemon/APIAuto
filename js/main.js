@@ -1677,6 +1677,7 @@ https://github.com/Tencent/APIJSON/issues
         else if (index == 14) {
           this.isEnvCompareEnabled = show
           this.saveCache('', 'isEnvCompareEnabled', show)
+          this.enableML(this.isMLEnabled)
         }
         else if (index == 12) {
           this.isEncodeEnabled = show
