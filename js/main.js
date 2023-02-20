@@ -758,7 +758,7 @@ https://github.com/Tencent/APIJSON/issues
       error: {},
       requestVersion: 3,
       requestCount: 1,
-      urlComment: '一对多关联查询 Comment.userId = User.id',
+      urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
       options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],

@@ -141,7 +141,7 @@
             <button v-show="types != null && types.length > 1" class="transfer" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type) }}</button>
             <div style="height: 100%;display: flex;flex-grow: 1">
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
-                <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址" style="z-index: 0; background: #0000;" />
+                <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址，可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value" style="z-index: 0; background: #0000;" />
             </div>
             <button class="send" id="vSend" @click="onClickSend()">{{ isEditResponse ? '模拟返回' : '发送请求' }}</button>
         </div>
