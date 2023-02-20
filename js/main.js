@@ -452,6 +452,41 @@
 
 // APIJSON <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  var ERR_MSG = `
+  
+可能出现了一些问题，可以按照以下步骤解决：
+1.检查网络连接是否畅通，可用浏览器打开右侧地址 https://www.baidu.com/s?wd=%22APIJSON%22 
+2.检查 URL 是否为一个可用的 域名/IPV4 地址，可用浏览器打开试试，正常返回结果 或 非 GET 请求返回 Whitelabel Error Page 一般都没问题
+3.开启或关闭 右上方 设置>托管服务器代理，然后再试：如果开启后才通应该是 CORS 跨域问题，关闭后才通应该是用外网服务代理来访问内网导致
+4.Disable 关闭 VPN 等 电脑/手机/平板 上的网络代理软件 App 客户端，或者切换代理服务器地址，然后再试
+5.按 Fn+F12 或 右键网页>Inspect 检查 查看 Network 接口调用信息和 Console 控制台日志
+6.查看请求目标服务器上的日志，优先找异常报错内容
+7.改用 Postman 等其它 HTTP API 接口工具测试同一个接口
+8.再试一次
+
+# 问题与解答大全(可截屏后 New issue 上报问题等待解答)：
+https://github.com/TommyLemon/APIAuto/issues
+
+如果是请求 APIJSON 后端服务，则使用以下链接：
+https://github.com/Tencent/APIJSON/issues
+
+There may be something wrong, you can follow by the steps:
+1. Check whether the network connection is available, you can open the address with a browser: https://www.google.com/search?q=%22APIJSON%22
+2. Check whether the URL is an available domain name/IPV4 address, try opening it with a browser, and return the result normally or return a Whitelabel Error Page for a non-GET request. Generally, there is no problem
+3. Turn it on or off at the top right, Settings>Server Proxy, and try again: If it is enabled, it should be a CORS cross-domain problem, and if it is turned off, it should be caused by using an external network service proxy to access the intranet
+4. Disable the network proxy software App client on the computer/phone/tablet such as VPN, or switch the proxy server address, and then try again
+5. Press Fn+F12 or right-click the webpage>Inspect to view the Network interface call information and Console console log
+6. Check the log on the request target server, and give priority to find the abnormal error content
+7. Use other HTTP API tools such as Postman to test the same interface
+8. Try again
+
+# Questions and answers (you can report the problem after taking a screenshot and wait for the answer):
+https://github.com/TommyLemon/APIAuto/issues
+
+If you are requesting an APIJSON backend service, use the following link:
+https://github.com/Tencent/APIJSON/issues
+`;
+
 
   function getRequestFromURL(url_, tryParse) {
     var url = url_ || window.location.search;
@@ -4817,7 +4852,8 @@
 
         var url = this.getUrl()
 
-        vOutput.value = "requesting... \nURL = " + url
+        vOutput.value = "requesting... \nURL = " + url + ERR_MSG
+
         this.view = 'output';
 
         var caseScript = (caseScript_ != null ? caseScript_ : ((this.scripts || {}).case || {})[this.getCurrentDocumentId() || 0]) || {}
@@ -5163,7 +5199,7 @@
             // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
             this.view = 'error';
             this.error = {
-              msg: "Response:\nurl = " + url + "\nerror = " + err.message
+              msg: "Response:\nurl = " + url + "\nerror = " + err.message + ERR_MSG
             }
           }
         }
