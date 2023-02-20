@@ -982,6 +982,73 @@ var JSONResponse = {
   },
 
 
+  updateFullStandard: function (standard, currentResponse, isML) {
+    if (currentResponse == null) {
+      return standard;
+    }
+
+    if (standard == null) {
+      standard = {};
+    }
+
+    var code = currentResponse.code;
+    var thrw = currentResponse.throw;
+    var msg = currentResponse.msg;
+
+    var hasCode = standard.code != null;
+    var isCodeChange = standard.code != code;
+    var exceptions = standard.exceptions || [];
+
+    delete currentResponse.code; //code必须一致
+    delete currentResponse.throw; //throw必须一致
+
+    var find = false;
+    if (isCodeChange && hasCode) {  // 走异常分支
+      for (var i = 0; i < exceptions.length; i++) {
+        var ei = exceptions[i];
+        if (ei != null && ei.code == code && ei.throw == thrw) {
+          find = true;
+          ei.repeat = (ei.repeat || 0) + 1;  // 统计重复出现次数
+          break;
+        }
+      }
+
+      if (find) {
+        delete currentResponse.msg;
+      }
+    }
+
+    var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
+
+    currentResponse.code = code;
+    currentResponse.throw = thrw;
+
+    if (isCodeChange) {
+      if (hasCode != true) {  // 走正常分支
+        stddObj.code = code;
+        stddObj.throw = thrw;
+      }
+      else {  // 走异常分支
+        currentResponse.msg = msg;
+
+        if (find != true) {
+          exceptions.push({
+            code: code,
+            'throw': thrw,
+            msg: msg
+          })
+
+          stddObj.exceptions = exceptions;
+        }
+      }
+    }
+    else {
+      stddObj.repeat = (stddObj.repeat || 0) + 1;  // 统计重复出现次数
+    }
+
+    return stddObj;
+  },
+
   /**更新测试标准，通过原来的标准与最新的数据合并来实现
    */
   updateStandard: function(target, real, exceptKeys, ignoreTrend) {
