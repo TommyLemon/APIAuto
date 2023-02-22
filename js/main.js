@@ -518,6 +518,7 @@ https://github.com/Tencent/APIJSON/issues
           v = JSON.parse(v)
         }
         catch (e) {
+          this.log(e)
         }
       }
 
@@ -529,7 +530,7 @@ https://github.com/Tencent/APIJSON/issues
 
 
   function markdownToHTML(md, isRequest) {
-    if (editormd == null) {
+    if (typeof editormd == 'undefined' || editormd == null) {
       return;
     }
 
@@ -794,6 +795,7 @@ https://github.com/Tencent/APIJSON/issues
           'password': '123456'
         }
       ],
+      otherEnvCookieMap: {},
       allSummary: {},
       currentAccountIndex: 0,
       currentDocIndex: -1,
@@ -1779,6 +1781,7 @@ https://github.com/Tencent/APIJSON/issues
         }
         var val = {
           name: this.history.name,
+          detail: this.history.name,
           type: this.type,
           url: '/' + this.getMethod(),
           request: inputted,
@@ -3282,7 +3285,7 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
-      generateValue: function (t, n) {
+      generateValue: function (t, n, isSQL) {
         if (t == 'boolean') {
           return true
         }
@@ -3342,7 +3345,7 @@ https://github.com/Tencent/APIJSON/issues
 
             if (isJSONEmpty) {
               req += '\n    "' + n + '": ' + val + (k < parameters.length - 1 ? ',' : '')
-                + '  // ' + (paraItem.required ? '必填。 ' : '') + StringUtil.trim(paraItem.description)
+                + ' // ' + (paraItem.required ? '必填。 ' : '') + StringUtil.trim(paraItem.description)
             } else {
               url += (k <= 0 && url.indexOf('?') < 0 ? '?' : '&') + n + '=' + (val == null ? '' : val)
             }
@@ -3527,11 +3530,13 @@ https://github.com/Tencent/APIJSON/issues
                   }
                 }
                 else {
+                  var headers = res.headers || {}
+
                   item.id = user.id
                   item.name = user.name
                   item.remember = data.remember
                   item.isLoggedIn = true
-                  item.cookie = res.cookie || (res.headers || {}).cookie
+                  item.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
 
                   App.accounts[App.currentAccountIndex] = item
                   App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
@@ -4223,6 +4228,14 @@ https://github.com/Tencent/APIJSON/issues
 
             App.request(isAdminOperation, REQUEST_TYPE_JSON, App.getBaseUrl(App.otherEnv) + '/login'
                 , req, App.getHeader(vHeader.value), function (url_, res_, err_) {
+                  var data = res_.data
+                  var user = JSONResponse.isSuccess(data) ? data.user : null
+                  if (user != null) {
+                    var headers = res.headers || {}
+                    App.otherEnvCookieMap[req.phone] = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
+                    App.saveCache(App.otherEnv, 'otherEnvCookieMap', App.otherEnvCookieMap)
+                  }
+
                   if (callback) {
                     callback(url, res, err)
                     return
@@ -4230,7 +4243,7 @@ https://github.com/Tencent/APIJSON/issues
 
                   App.onResponse(url_, res_, err_);
                   App.onLoginResponse(isAdminOperation, req, url, res, err)
-            })
+            }, App.scripts)
 
           })
         }
@@ -4941,6 +4954,8 @@ https://github.com/Tencent/APIJSON/issues
       request: function (isAdminOperation, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
         this.isLoading = true
 
+        const isEnvCompare = this.isEnvCompareEnabled
+
         const scripts = (isAdminOperation || caseScript_ == null ? null : this.scripts) || {}
         const globalScript = (isAdminOperation ? null : (globalScript_ != null ? globalScript_ : (scripts.global || {})[0])) || {}
         const accountScript = (isAdminOperation ? null : (accountScript_ != null ? accountScript_ : (scripts.account || {})[this.getCurrentAccountId() || 0])) || {}
@@ -4978,9 +4993,19 @@ https://github.com/Tencent/APIJSON/issues
               if (isDelegate) {
                 var hs = res.headers || {}
                 var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
-                if (delegateId != null && delegateId != App.delegateId) {
-                  App.delegateId = delegateId
-                  App.saveCache(App.server, 'delegateId', delegateId)
+
+                if (delegateId != null) {
+                  if (isEnvCompare) {
+                    if (delegateId != App.otherEnvDelegateId) {
+                      App.otherEnvDelegateId = delegateId
+                      App.saveCache(App.server, 'otherEnvDelegateId', delegateId)
+                    }
+                  } else {
+                    if (delegateId != App.delegateId) {
+                      App.delegateId = delegateId
+                      App.saveCache(App.server, 'delegateId', delegateId)
+                    }
+                  }
                 }
               }
 
@@ -5192,22 +5217,23 @@ https://github.com/Tencent/APIJSON/issues
           }
         } else if (IS_NODE) {
           var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
-          if (curUser != null && curUser.cookie != null) {
+          if (curUser != null && curUser[isEnvCompare ? 'phone' : 'cookie'] != null) {
             if (header == null) {
               header = {}
             }
 
             // Node 环境内通过 headers 设置 Cookie 无效
-            header.Cookie = curUser.cookie
+            header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone] : curUser.cookie
             document.cookie = header.Cookie
           }
         }
 
-        if (isDelegate && this.delegateId != null && (header == null || header['Apijson-Delegate-Id'] == null)) {
+        var delegateId = isEnvCompare ? this.otherEnvDelegateId : this.delegateId
+        if (isDelegate && delegateId != null && (header == null || header['Apijson-Delegate-Id'] == null)) {
           if (header == null) {
             header = {};
           }
-          header['Apijson-Delegate-Id'] = this.delegateId
+          header['Apijson-Delegate-Id'] = delegateId
         }
 
 
@@ -5857,8 +5883,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       getDoc: function (callback) {
 
-        var isTSQL = ['ORACLE', 'DAMENG'].indexOf(this.database) >= 0
-        var isNotTSQL = !isTSQL
+      	var isTSQL = ['ORACLE', 'DAMENG'].indexOf(this.database) >= 0
+      	var isNotTSQL = ! isTSQL
 
         var count = this.count || 100  //超过就太卡了
         var page = this.page || 0
@@ -5946,7 +5972,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 "@order": this.database != 'SQLSERVER' ? null : "table_name+",
                 '@column': this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
-                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_comment:column_comment'
+                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_default:column_default,column_comment:column_comment'
               },
               'PgAttribute': this.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
@@ -6143,7 +6169,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               for (var j = 0; j < columnList.length; j++) {
-                var column = (columnList[j] || {}).Column;
+                var column = (columnList[j] || {})[App.database != 'SQLSERVER' ? 'Column' : 'SysColumn'];
                 var name = column == null ? null : column.column_name;
                 if (name == null) {
                   continue;
@@ -6164,6 +6190,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       : column
                   );
                 var column_comment = (o || {}).column_comment
+                var column_default = column.column_default
 
                 // column.column_comment = column_comment
                 doc += '\n' + ' <a href="javascript:void(0)" onclick="window.App.onClickColumn(' + i + ",'" + modelName + "'," + j + ",'" + name + "'" + ')">' + name + '</a>'
@@ -6263,28 +6290,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             callback(doc);
           }
 
-//      log('getDoc  callback(doc); = \n' + doc);
+//      	  log('getDoc  callback(doc); = \n' + doc);
       },
 
-      getTableKey(database) {
+      getTableKey: function(database) {
         database = database || this.database
         return this.database == 'SQLSERVER' ? 'SysTable' : (['ORALCE', 'DAMENG'].indexOf(database) >= 0 ? 'AllTable' : 'Table')
       },
-      getColumnKey(database) {
+      getColumnKey: function(database) {
         database = database || this.database
         return this.database == 'SQLSERVER' ? 'SysColumn' : (['ORALCE', 'DAMENG'].indexOf(database) >= 0 ? 'AllColumn' : 'Column')
       },
-      getTableObj(tableIndex) {
+      getTableObj: function(tableIndex) {
         var list = docObj == null ? null : docObj['[]']
         var item = list == null ? null : list[tableIndex]
         return item == null ? null : item[this.getTableKey()];
       },
-      getColumnList(tableIndex) {
+      getColumnList: function(tableIndex) {
         var list = docObj == null ? null : docObj['[]']
         var item = list == null ? null : list[tableIndex]
         return item == null ? null : item['[]']
       },
-      getColumnListWithModelName(modelName, schemaName) {
+      getColumnListWithModelName: function(modelName, schemaName) {
         var list = docObj == null ? null : docObj['[]']
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
@@ -6297,7 +6324,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         return null
       },
-      getTableByName(tableName, schemaName) {
+      getTableByName: function(tableName, schemaName) {
         var list = docObj == null ? null : docObj['[]']
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
@@ -6311,7 +6338,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         return null
       },
-      getTableByModelName(modelName, schemaName) {
+      getTableByModelName: function(modelName, schemaName) {
         var list = docObj == null ? null : docObj['[]']
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
@@ -6324,7 +6351,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         return null
       },
-      getColumnTypeWithModelName(columnName, modelName, schemaName) {
+      getColumnTypeWithModelName: function(columnName, modelName, schemaName) {
         var columnList = this.getColumnListWithModelName(modelName, schemaName)
         if (columnList != null) {
           for (var j = 0; j < columnList.length; j++) {
@@ -6336,18 +6363,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         return null
       },
-      getColumnObj(columnList, columnIndex) {
+      getColumnObj: function(columnList, columnIndex) {
         return columnList == null ? null : (columnList[columnIndex] || {})[this.getColumnKey()];
       },
-      getAccessObj(index) {
+      getAccessObj: function(index) {
         var list = docObj == null ? null : docObj['Access[]']
         return list == null ? null : list[index];
       },
-      getFunctionObj(index) {
+      getFunctionObj: function(index) {
         var list = docObj == null ? null : docObj['Function[]']
         return list == null ? null : list[index];
       },
-      getFunctionByName(functionName) {
+      getFunctionByName: function(functionName) {
         var list = docObj == null ? null : docObj['Function[]']
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
@@ -6359,11 +6386,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         return null
       },
-      getRequestObj(index) {
+      getRequestObj: function(index) {
         var list = docObj == null ? null : docObj['Request[]']
         return list == null ? null : list[index];
       },
-      getRequestBy(method, tag, version) {
+      getRequestBy: function(method, tag, version) {
         var list = docObj == null ? null : docObj['Request[]']
         if (list != null) {
           for (var i = 0; i < list.length; i++) {
@@ -6376,7 +6403,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         return null
       },
-      getSchemaName(tableIndex) {
+      getSchemaName: function(tableIndex) {
         var table = this.getTableObj(tableIndex)
         var sch = table == null ? null : table.table_shema
         if (StringUtil.isNotEmpty(sch)) {
@@ -6386,15 +6413,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
         return schemas == null || schemas.length != 1 ? null : this.schema
       },
-      getTableName(tableIndex) {
+      getTableName: function(tableIndex) {
         var table = this.getTableObj(tableIndex)
         return table == null ? '' : table.table_name
       },
-      getColumnName(columnList, columnIndex) {
+      getColumnName: function(columnList, columnIndex) {
         var column = this.getColumnObj(columnList, columnIndex)
         return column == null ? '' : column.column_name
       },
-      getModelName(tableIndex) {
+      getModelName: function(tableIndex) {
         var table = this.getTableObj(tableIndex)
         var table_name = table == null ? null : table.table_name
 
@@ -6404,7 +6431,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         return StringUtil.isEmpty(alias, true) ? StringUtil.firstCase(table_name, true) : alias
       },
-      getModelNameByTableName(tableName, schemaName) {
+      getModelNameByTableName: function(tableName, schemaName) {
         var table = this.getTableByName(tableName, schemaName)
         var table_name = table == null ? null : table.table_name
 
@@ -8032,7 +8059,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
           const curEnvUrl = baseUrl + document.url
 
-          this.request(false, type,  isEnvCompare ? otherEnvUrl : curEnvUrl, req, header, function (url, res, err) {
+          this.request(false, type, isEnvCompare ? otherEnvUrl : curEnvUrl, req, header, function (url, res, err) {
             try {
               App.onResponse(url, res, err)
               if (DEBUG) {
@@ -9950,6 +9977,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\nvar accounts = this.getCache(URL_BASE, accounts)' +
           '\n} catch (e) {\n' + e.message)
       }
+      try { //这里是初始化，不能出错
+        var otherEnvCookieMap = this.getCache(App.otherEnv, 'otherEnvCookieMap')
+        if (otherEnvCookieMap != null) {
+          this.otherEnvCookieMap = otherEnvCookieMap
+        }
+      } catch (e) {
+        console.log('created  try { ' +
+            '\nvar accounts = this.getCache(URL_BASE, accounts)' +
+            '\n} catch (e) {\n' + e.message)
+      }
 
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         this.User = this.getCache(this.server, 'User', {})
@@ -9967,6 +10004,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.randomSubPage = this.getCache(this.server, 'randomSubPage', this.randomSubPage)
         this.randomSubCount = this.getCache(this.server, 'randomSubCount', this.randomSubCount)
         this.delegateId = this.getCache(this.server, 'delegateId', this.delegateId)
+        this.otherEnvDelegateId = this.getCache(this.server, 'otherEnvDelegateId', this.otherEnvDelegateId)
 
         CodeUtil.thirdPartyApiMap = this.getCache(this.thirdParty, 'thirdPartyApiMap')
       } catch (e) {

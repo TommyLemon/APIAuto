@@ -28,6 +28,8 @@ if (typeof window == 'undefined') {
  */
 var CodeUtil = {
   TAG: 'CodeUtil',
+  APP_NAME: 'SQLAuto',
+  DIVIDER: '/',
 
   LANGUAGE_KOTLIN: 'Kotlin',
   LANGUAGE_JAVA: 'Java',
@@ -698,12 +700,12 @@ var CodeUtil = {
 
       url = url || '';
 
-      var lastIndex = url.lastIndexOf('/');
+      var lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
       var methodUri = url; // lastIndex < 0 ? url : url.substring(lastIndex);
       var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
 
       url = url.substring(0, lastIndex);
-      lastIndex = url.lastIndexOf('/');
+      lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
       var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
       var modelName = StringUtil.firstCase(varName, true);
 
@@ -1045,12 +1047,12 @@ var CodeUtil = {
 
       url = url || '';
 
-      var lastIndex = url.lastIndexOf('/');
+      var lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
       var methodUri = url; // lastIndex < 0 ? url : url.substring(lastIndex);
       var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
 
       url = url.substring(0, lastIndex);
-      lastIndex = url.lastIndexOf('/');
+      lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
       var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
       var modelName = StringUtil.firstCase(varName, true);
 
@@ -3294,12 +3296,12 @@ var CodeUtil = {
 
     url = url || '';
 
-    var lastIndex = url.lastIndexOf('/');
+    var lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
     var methodUri = lastIndex < 0 ? url : url.substring(lastIndex);
     var methodName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
 
     url = url.substring(0, lastIndex);
-    lastIndex = url.lastIndexOf('/');
+    lastIndex = url.lastIndexOf(CodeUtil.DIVIDER);
     var varName = JSONResponse.getVariableName(lastIndex < 0 ? url : url.substring(lastIndex + 1));
     var modelName = StringUtil.firstCase(varName, true);
 
@@ -3832,7 +3834,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage apijson.demo.server.model;\n\n\n'
@@ -3951,7 +3953,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 C++ Struct\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 C++ Struct\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 namespace \n *2.#include 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */\n'
           + '\n#include <string>'
@@ -4069,7 +4071,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage apijson.demo.server.model;\n\n\n'
@@ -4190,7 +4192,7 @@ var CodeUtil = {
 
         doc += '<?php'
           + '\n/**'
-          + '\n *APIAuto 自动生成 PHP 实体类代码\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 PHP 实体类代码\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 namespace \n *2.use 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\n\nnamespace apijson\\demo\\server\\model;\n\n\n'
@@ -4309,7 +4311,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 Go struct\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage model\n\n\n'
@@ -4392,7 +4394,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 C# Bean\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 C# Bean\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 namespace \n *2. using 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */\n'
           + '\nnamespace apijson.demo.server.model'
@@ -4485,7 +4487,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 TypeScript Entity\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 TypeScript Entity\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n */\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
@@ -4568,7 +4570,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 Python Entity\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 Python Entity\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage apijson.demo.server.model;\n\n\n'
@@ -4682,7 +4684,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 Swift Struct\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 Swift Struct\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage apijson.demo.server.model\n\n\n'
@@ -4759,7 +4761,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 JavaScript Entity\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 JavaScript Entity\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n */\n\n\n'
           + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
           + '\n@MethodAccess'
@@ -4853,7 +4855,7 @@ var CodeUtil = {
 
 
         doc += '/**'
-          + '\n *APIAuto 自动生成 Kotlin Data Class\n *主页: https://github.com/TommyLemon/APIAuto'
+          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 Kotlin Data Class\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
           + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
           + '\n */'
           + '\npackage apijson.demo.server.model\n\n\n'
@@ -6670,6 +6672,44 @@ var CodeUtil = {
       }
       else {
         //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+        if (columnName.endsWith("()")) {//方法，查询完后处理，先用一个Map<key,function>保存？
+          if (['GET', 'HEAD'].indexOf(method) < 0) {
+            return ' ! 远程函数只能用于 GET,HEAD 请求！！';
+          }
+
+          if (value != null && valuesIsNotString) {
+            return ' ! value必须是String类型！';
+          }
+          if (value != null) {
+            var startIndex = value.indexOf("(");
+            if (startIndex <= 0 || value.endsWith(")") == false) {
+              return ' ! value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+            }
+            var fun = value.substring(0, startIndex);
+            if (StringUtil.isName(fun) != true) {
+              return '! 函数名' + fun + '不合法！value必须符合 fun(arg0,arg1..) 这种格式！且不要有任何多余的空格！';
+            }
+          }
+
+          if (isWarning) {
+            return ' ';
+          }
+
+          var priority = '';
+          if (columnName.endsWith("-()")) {
+            priority = ' < 在解析所在对象前优先执行';
+          }
+          else if (columnName.endsWith("+()")) {
+            priority = ' < 在解析所在对象后滞后执行';
+          }
+          else {
+            priority = '，执行时机在解析所在对象后，解析子对象前，可以在 () 前用 + - 设置优先级，例如 key-() 优先执行';
+          }
+
+          return '远程函数' + (isValueNotEmpty ? '，触发调用后端对应的方法/函数' + priority : '，例如 "isContain(praiseUserIdList,userId)"');
+        }
+
         var hasAt = false;
         if (columnName.endsWith("@")) {//引用，引用对象查询完后处理。fillTarget中暂时不用处理，因为非GET请求都是由给定的id确定，不需要引用
           // 没传 value 进来，不好解析，而且太长导致后面的字段属性被遮住
