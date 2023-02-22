@@ -28,7 +28,7 @@ if (typeof window == 'undefined') {
  */
 var CodeUtil = {
   TAG: 'CodeUtil',
-  APP_NAME: 'SQLAuto',
+  APP_NAME: 'APIAuto',
   DIVIDER: '/',
 
   LANGUAGE_KOTLIN: 'Kotlin',
