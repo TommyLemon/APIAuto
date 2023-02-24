@@ -23,6 +23,8 @@
 腾讯内部用户包括 IEG 互动娱乐事业群、TEG 技术工程事业群、CSIG 云与智慧事业群 等， <br />
 外部用户包含 工商银行某地分行、500强上市公司传音、跨境电商龙头 SHEIN、行业领头羊社保科技 等。
 
+![](https://user-images.githubusercontent.com/5738175/145665502-94231804-5ea8-4784-b30d-d5558aad0f8d.jpeg)
+
 <h3 align="center" style="text-align:center;">
 腾讯 AI 测试圈子演讲(部分)
 </h3>
