@@ -1858,11 +1858,14 @@ https://github.com/Tencent/APIJSON/issues
         this.isEditResponse = false
 
         item = item || {}
+        var doc = item
+        var docId = doc.id || 0
+
         var scripts = item.scripts
         if (isRemote) {
           var orginItem = item
-          var doc = item.Document || {}
-          var docId = doc.id || 0
+          doc = item.Document || {}
+          docId = doc.id || 0
 
           var pre = Object.assign({
             'script': ''
@@ -1935,7 +1938,12 @@ https://github.com/Tencent/APIJSON/issues
           item.scripts = scripts
 
           item = doc
+          this.scripts.case[docId] = scripts
         }
+        else {
+          this.scripts = scripts
+        }
+
         // localforage.getItem(item.key || '', function (err, value) {
           var branch = new String(item.url || '/get')
           if (branch.startsWith('/') == false) {
@@ -1952,7 +1960,6 @@ https://github.com/Tencent/APIJSON/issues
           vHeader.value = StringUtil.get(item.header)
           vRandom.value = StringUtil.get(item.random)
           this.changeScriptType(this.scriptType)
-          this.scripts.case[docId] = scripts
 
           this.onChange(false)
 
