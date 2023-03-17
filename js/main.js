@@ -681,6 +681,7 @@ https://github.com/Tencent/APIJSON/issues
   var baseUrl
   var inputted
   var handler
+  var errHandler
   var docObj
   var doc
   var output
@@ -3055,7 +3056,7 @@ https://github.com/Tencent/APIJSON/issues
 
             var val = paraItem.value
             header += (k <= 0 ? '' : '\n') + name + ': ' + (val == null ? '' : val)
-                + (StringUtil.isEmpty(paraItem.description, true) ? '' : '  // ' + paraItem.description)
+                + (StringUtil.isEmpty(paraItem.description, true) ? '' : ' // ' + paraItem.description)
           }
         }
 
@@ -6050,7 +6051,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         var ad = ''
-        list = docObj == null ? null : docObj['Access[]'];
+        var list = docObj == null ? null : docObj['Access[]'];
         CodeUtil.accessList = list;
         if (list != null) {
           if (DEBUG) {
@@ -6113,7 +6114,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var doc = '';
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          var list = docObj == null ? null : docObj['[]'];
+          list = docObj == null ? null : docObj['[]'];
           map = {};
           CodeUtil.tableList = list;
           if (list != null) {
