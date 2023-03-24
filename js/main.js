@@ -21,6 +21,7 @@
         var vComment = {value: ''};
         var vHeader = {value: ''};
         var vRandom = {value: ''};
+        var vScript = {value: ''};
         var vOutput = {value: ''};
 
         var vAccount = {value: ''};
@@ -210,23 +211,28 @@
                 if (JSONObject.isTableKey(firstKey, val, isRestful)) {
                   // var newVal = JSON.parse(JSON.stringify(val[i]))
 
-                  var newVal = {}
-                  for (var k in val[i]) {
-                    newVal[k] = val[i][k] //提升性能
-                    delete val[i][k]
+                  var vi = val[i]
+                  if (vi == null) {
+                    continue
                   }
 
-                  val[i]._$_this_$_ = JSON.stringify({
+                  var newVal = {}
+                  for (var k in vi) {
+                    newVal[k] = vi[k] //提升性能
+                    delete vi[k]
+                  }
+
+                  vi._$_this_$_ = JSON.stringify({
                     path: cPath + '/' + i,
                     table: firstKey
                   })
 
                   for (var k in newVal) {
-                    val[i][k] = newVal[k]
+                    vi[k] = newVal[k]
                   }
                 }
                 else {
-                  this.onRenderJSONItem(val[i], '' + i, cPath);
+                  this.onRenderJSONItem(vi, '' + i, cPath);
                 }
 
                 // this.$children[i]._$_this_$_ = key
@@ -263,7 +269,11 @@
 
 
         } catch (e) {
-          alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+          if (DEBUG) {
+            alert('onRenderJSONItem  try { ... } catch (e) {\n' + e.message)
+          } else {
+            console.log(e)
+          }
         }
 
         return true
@@ -2215,6 +2225,8 @@ https://github.com/Tencent/APIJSON/issues
           const after = isSingle ? this.switchQuote(inputted) : inputted;  // this.toDoubleJSON(inputted);
           const inputObj = this.getRequest(after, {});
 
+          const rawInputStr = JSON.stringify(inputObj)
+
           var commentObj = null;
           if (isExportRandom != true) {
             var m = this.getMethod();
@@ -2234,10 +2246,11 @@ https://github.com/Tencent/APIJSON/issues
             inputObj.code = code_
           }
 
+          var rawRspStr = JSON.stringify(currentResponse || {})
           const code = currentResponse.code;
           const thrw = currentResponse.throw;
-          delete currentResponse.code; //code必须一致
-          delete currentResponse.throw; //throw必须一致
+          delete currentResponse.code; // currentResponse.code = null; //code必须一致
+          delete currentResponse.throw; // currentResponse.throw = null; // throw必须一致
 
           const isML = this.isMLEnabled;
           const stddObj = isML ? JSONResponse.updateStandard({}, currentResponse) : {};
@@ -2353,7 +2366,7 @@ https://github.com/Tencent/APIJSON/issues
                 config: config
               },
               'TestRecord': {
-                'response': JSON.stringify(currentResponse),
+                'response': rawRspStr,
                 'standard': isML ? JSON.stringify(stddObj) : null
               },
               'tag': 'Random'
@@ -2376,7 +2389,7 @@ https://github.com/Tencent/APIJSON/issues
                 'randomId': 0,
                 'host': baseUrl,
 //                'testAccountId': currentAccountId,
-                'response': JSON.stringify(isEditResponse ? inputObj : currentResponse),
+                'response': isEditResponse ? rawInputStr : rawRspStr,
                 'standard': isML || isEditResponse ? JSON.stringify(isEditResponse ? commentObj : stddObj) : undefined,
                 // 没必要，直接都在请求中说明，查看也方便 'detail': (isEditResponse ? App.getExtraComment() : null) || ((App.currentRemoteItem || {}).TestRecord || {}).detail,
               },
@@ -2567,10 +2580,10 @@ https://github.com/Tencent/APIJSON/issues
             if (isId) {
               config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -2596,16 +2609,16 @@ https://github.com/Tencent/APIJSON/issues
                 var hasDot = String(value).indexOf('.') >= 0
 
                 if (value < 0) {
-                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
-                else if (value > 0 && value < 1) {  // 0-1 比例
-                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
+                else if (value > 0 && value < 1) { // 0-1 比例
+                  config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
-                else if (value >= 0 && value <= 100) {  // 10% 百分比
-                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
+                else if (value >= 0 && value <= 100) { // 10% 百分比
+                  config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n  // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -4166,6 +4179,7 @@ https://github.com/Tencent/APIJSON/issues
       login: function (isAdminOperation, callback) {
         this.isLoginShow = false
         this.isEditResponse = false
+        var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
 
         const req = {
           type: 0, // 登录方式，非必须 0-密码 1-验证码
@@ -4179,7 +4193,7 @@ https://github.com/Tencent/APIJSON/issues
             key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
           } : {
             '@database': StringUtil.isEmpty(this.database, true) ? undefined : this.database,
-            '@schema': StringUtil.isEmpty(this.schema, true) ? undefined : this.schema
+            '@schema': schemas == null || schemas.length != 1 ? undefined : this.schema
           }
         }
 
@@ -8634,6 +8648,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
         ] || {}
 
+        var rawRspStr = JSON.stringify(currentResponse)
+
         const list = isRandom ? (random.toId == null || random.toId <= 0 ? this.randoms : this.randomSubs) : this.testCases
 
         var isBefore = item.showType == 'before'
@@ -8641,8 +8657,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           item.showType = isBefore ? 'after' : 'before'
           Vue.set(list, index, item);
 
-          var res = isBefore ? JSON.stringify(currentResponse) : testRecord.response
-
+          var res = isBefore ? rawRspStr : testRecord.response
           this.view = 'code'
           this.jsoncon = res || ''
         }
@@ -8690,7 +8705,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 item.TestRecord = null
               }
 
-              App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true, App.currentAccountIndex, isCross)
+              App.updateTestRecord(0, list, index, item, JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
             })
           }
           else { //上传新的校验标准
@@ -8737,7 +8752,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             else {
               standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {}
-              stddObj = JSONResponse.updateFullStandard(standard, currentResponse, isML)
+              stddObj = JSONResponse.updateFullStandard(standard, JSON.parse(rawRspStr), isML)
             }
 
             const isNewRandom = isRandom && random.id <= 0
@@ -8767,7 +8782,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 host: this.getBaseUrl(),
                 testAccountId: this.getCurrentAccountId(),
                 compare: JSON.stringify(testRecord.compare || {}),
-                response: JSON.stringify(currentResponse || {}),
+                response: rawRspStr,
                 standard: isML ? JSON.stringify(stddObj) : null
               },
               tag: isNewRandom ? 'Random' : 'TestRecord'
@@ -8811,7 +8826,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     code: 0,
                     msg: '结果正确'
                   }
-                  testRecord.response = JSON.stringify(currentResponse)
+                  testRecord.response = rawRspStr
                   // testRecord.standard = stdd
                 }
 
@@ -8840,7 +8855,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //   }
                 // }
 
-                App.updateTestRecord(0, list, index, item, currentResponse, isRandom, true, App.currentAccountIndex, isCross)
+                App.updateTestRecord(0, list, index, item, JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
               }
 
             })
