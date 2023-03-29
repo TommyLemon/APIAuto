@@ -343,6 +343,7 @@ var JSONResponse = {
   COMPARE_ERROR: -2,
   COMPARE_NO_STANDARD: -1,
   COMPARE_EQUAL: 0,
+  COMPARE_VALUE_REPEAT: 0, // 通过后置脚本改为 1/2 来开启。场景太少了，除了分布式 id 外，即便是订单状态，那也是有一段时间内停留在同一个状态，而且最多存 20 个值，也很难命中各种结果  1 // 2
   COMPARE_KEY_MORE: 1,
   COMPARE_VALUE_MORE: 1,
   COMPARE_EQUAL_EXCEPTION: 1,
@@ -815,13 +816,21 @@ var JSONResponse = {
     else { // Boolean, Number, String
       log('compareWithStandard  type == boolean | number | string >> ');
 
-      var valueCompare = max.code >= JSONResponse.COMPARE_VALUE_CHANGE ? 0 : JSONResponse.compareValue(valueLevel, values, real, target.trend);
+      var valueCompare = max.code >= JSONResponse.COMPARE_VALUE_CHANGE
+          ? 0 : JSONResponse.compareValue(valueLevel, values, real, target.trend, target.repeat);
+
       if (valueCompare > 0) {
         max.code = valueCompare;
         max.path = folder;
         max.value = real;
 
-        if (target.valueLevel != 1 || CodeUtil.isTypeMatch('number', target.type) != true) {
+        var isNum = CodeUtil.isTypeMatch('number', type)
+
+        if (isNum && valueCompare == JSONResponse.COMPARE_VALUE_REPEAT && (target.repeat == null || target.repeat <= 0)
+            && values != null && values.indexOf(real) >= 0) {
+          max.msg = '值与历史值重复：' + real;
+        }
+        else if (target.valueLevel != 1 || isNum != true) {
           max.msg = '值超出范围';
         }
         else if (valueCompare == JSONResponse.COMPARE_VALUE_MORE) {
@@ -874,10 +883,10 @@ var JSONResponse = {
   },
 
 
-  isValueCorrect: function(level, target, real, trend) {
-    return JSONResponse.compareValue(level, target, real, trend) <= 0;
+  isValueCorrect: function(level, target, real, trend, repeat) {
+    return JSONResponse.compareValue(level, target, real, trend, repeat) <= 0;
   },
-  compareValue: function(level, target, real, trend) {
+  compareValue: function(level, target, real, trend, repeat) {
     log('isValueCorrect  \nlevel = ' + level + '; \ntarget = ' + JSON.stringify(target)
       + '\nreal = ' + JSON.stringify(real, null, '    '));
     if (target == null || real == null) {
@@ -887,12 +896,17 @@ var JSONResponse = {
     if (level == null) {
       level = 0;
     }
+    if (repeat == null) {
+      repeat = 0;
+    }
 
     if (level == 0) {
       if (target.indexOf(real) < 0) { // 'key{}': [0, 1]
         log('isValueCorrect  target.indexOf(real) < 0 >>  return false;');
         return JSONResponse.COMPARE_VALUE_CHANGE;
       }
+
+      return repeat <= 0 && typeof real == 'number' ? JSONResponse.COMPARE_VALUE_REPEAT : 0;
     }
     else if (level == 1) { //real <= max; real >= min
       if (target.length <= 0) {
@@ -944,7 +958,8 @@ var JSONResponse = {
         return 0;
       }
 
-      return target.indexOf(real) >= 0 ? 0 : JSONResponse.COMPARE_VALUE_MORE; // 为了提示上传新值，方便以后校验
+      return target.indexOf(real) < 0 ? JSONResponse.COMPARE_VALUE_MORE
+          : (repeat <= 0 && typeof real == 'number' ? JSONResponse.COMPARE_VALUE_REPEAT : 0); // 为了提示上传新值，方便以后校验
     }
     else if (level == 2) {
       for (var i = 0; i < target.length; i ++) {
@@ -1513,6 +1528,10 @@ var JSONResponse = {
 
           if (origin.indexOf(real) < 0) {
             origin.push(real);
+          }
+          else {
+            var repeat = target.repeat == null ? 0 : target.repeat
+            target.repeat = repeat + 1
           }
         }
 
