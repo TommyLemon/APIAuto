@@ -44,7 +44,7 @@
         var vRandomSubCount = {value: '100'};
         var vRandomSubSearch = {value: ''};
 
-        var Vue = require('vue');
+        var Vue = require('./vue.min'); // 某些版本不兼容 require('vue');
         var StringUtil = require('../apijson/StringUtil');
         var CodeUtil = require('../apijson/CodeUtil');
         var JSONObject = require('../apijson/JSONObject');
@@ -208,10 +208,10 @@
               for (var i = 0; i < val.length; i++) {
                 var cPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
 
+                var vi = val[i]
+
                 if (JSONObject.isTableKey(firstKey, val, isRestful)) {
                   // var newVal = JSON.parse(JSON.stringify(val[i]))
-
-                  var vi = val[i]
                   if (vi == null) {
                     continue
                   }
@@ -5250,7 +5250,7 @@ https://github.com/Tencent/APIJSON/issues
             header['Set-Cookie'] = header.Cookie
             delete header.Cookie
           }
-          else {
+          else if (IS_BROWSER) {
             document.cookie = header.Cookie
           }
         } else if (IS_NODE) {
@@ -5262,7 +5262,6 @@ https://github.com/Tencent/APIJSON/issues
 
             // Node 环境内通过 headers 设置 Cookie 无效
             header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone] : curUser.cookie
-            document.cookie = header.Cookie
           }
         }
 
