@@ -8366,8 +8366,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return true
           }
 
-          App.randomDoneCount = 0
-          // App.randomAllCount = 0
+          App.randomDoneCount = App.randomAllCount
 
           App.deepDoneCount ++
           const deepDoneCount = App.deepDoneCount
@@ -8508,6 +8507,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       updateSummary: function (item, change, key) {
+        if (change == null || key == null) {
+          return item
+        }
+
         if (item == null) {
           item = {}
         }
@@ -8565,12 +8568,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           var curRandom = this.isRandomListShow || this.currentRandomItem == null ? null : this.currentRandomItem.Random
           var isTemp = curRandom != null && (curRandom.id == null || curRandom.id < 0)
-          var cri = this.updateSummary(isTemp ? this.currentRandomItem : this.currentRemoteItem)  // this.getCurrentRandomSummary())
+          var cri = this.updateSummary(isTemp ? this.currentRandomItem : this.currentRemoteItem, change, key)  // this.getCurrentRandomSummary())
 
           if (isTemp) {
             this.currentRandomItem = cri
+            this.updateSummary(this.currentRemoteItem, change, key)
           } else {
             this.currentRemoteItem = cri
+            Vue.set(this.testCases, this.currentDocIndex, cri)
           }
 
           var toId = random.toId
