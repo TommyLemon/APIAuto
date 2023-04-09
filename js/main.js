@@ -3783,8 +3783,8 @@ https://github.com/Tencent/APIJSON/issues
               continue
             }
 
-            var count = isRandom && obj != null && obj.Random != null ? obj.Random.count : null
-            if (count != null && count > 1) {
+            var count = isRandom && obj.Random != null ? obj.Random.count : (isRandom ? null : obj.totalCount)
+            if (count != null && count > (isRandom ? 1 : 0)) {
               var sum = obj[color + 'Count']
               if (sum != null && sum > 0) {
                 list.push(obj)
