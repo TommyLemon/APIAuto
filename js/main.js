@@ -7283,11 +7283,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           this.testRandomProcess = '正在测试: ' + 0 + '/' + allCount
+          var summaryItem = (testSubList ? this.currentRandomItem : this.currentRemoteItem) || {}
           if (isManual) {
-            var summaryItem = this.getCurrentRandomSummary()
-            this.resetCount(summaryItem, true, testSubList, App.currentAccountIndex)
-            summaryItem.totalCount = allCount
+            this.resetCount(summaryItem, true, testSubList, this.currentAccountIndex)
+          } else {
+            summaryItem.whiteCount = 0
+            summaryItem.greenCount = 0
+            summaryItem.blueCount = 0
+            summaryItem.orangeCount = 0
+            summaryItem.redCount = 0
           }
+          summaryItem.totalCount = allCount
 
           var json = this.getRequest(vInput.value, {})
           var url = this.getUrl()
@@ -7447,7 +7453,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
 
-                if (testSubList && respCount >= count) { // && which >= count - 1) {
+                if (testSubList && respCount >= count) {  // && which >= count - 1) {
                   if (App.currentRandomItem == null) {
                     App.currentRandomItem = {}
                   }
@@ -7457,7 +7463,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     App.resetCount(item, true, false, App.currentAccountIndex)
                     item.subs = subs
                   }
-                  App.testRandom(false, false, true, count, isCross, isManual, callback)
+                  if (respCount == count) {
+                    App.testRandom(false, false, true, count, isCross, isManual, callback)
+                  }
                 }
 
               },
@@ -7569,9 +7577,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (accountIndex < num) {
           var als = this.getAllSummary()
           // 不知道为啥总是不对
-          if (als != null && (als != item || als.id != item.id)) {
-            this.resetParentCount(item, als, false, accountIndex)
-          }
+          // if (als != null && (als != item || als.id != item.id)) {
+          //   this.resetParentCount(item, als, false, accountIndex)
+          // }
 
           // 改用以下方式
           var whiteCount = 0
@@ -8539,7 +8547,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               log(e)
             }
 
-            App.testRandom(! App.isRandomListShow && ! App.isRandomSubListShow, App.isRandomListShow, App.isRandomSubListShow, null, isCross, false, callback)
+            App.testRandom(false, true, false, null, isCross, false, callback)
           })
         } catch (e2) {
           log(e2)
