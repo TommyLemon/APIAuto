@@ -5001,13 +5001,25 @@ https://github.com/Tencent/APIJSON/issues
         var evalPostScript = function () {}
 
         var sendRequest = function (isAdminOperation, type, url, req, header, callback) {
+          var hs = ""
+          if (isDelegate && header != null) {
+            for (var k in header) {
+                var v = k == null ? null : header[k]
+                if (k == null || k.toLowerCase() == 'apijson-delegate-id') {
+                    continue
+                }
+                hs += '\n' + k + ': ' + (v instanceof Object ? JSON.stringify(v) : v)
+            }
+          }
+
           // axios.defaults.withcredentials = true
           axios({
             method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
-            url: (isDelegate
-                ? (
+            url: (isDelegate ? (
                   App.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
-                  + (StringUtil.isEmpty(App.delegateId, true) ? '' : '$_delegate_id=' + App.delegateId + '&') + '$_delegate_url=' + encodeURIComponent(url)
+                  + (StringUtil.isEmpty(App.delegateId, true) ? '' : '$_delegate_id=' + App.delegateId + '&')
+                  + '$_delegate_url=' + encodeURIComponent(url)
+                  + (StringUtil.isEmpty(hs, true) ? '' : '&$_headers=' + encodeURIComponent(hs.trim()))
                 ) : (
                   App.isEncodeEnabled ? encodeURI(url) : url
                 )
