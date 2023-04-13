@@ -155,15 +155,19 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
 **建议使用已 [内置 APIAuto](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static) 的 [APIJSONBoot-MultiDataSource](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource)，可以避免以下常见问题 1, 3, 4**
 
+<br />
+
 ### 新增测试用例
+
 可以使用以下几种方式：
+
 #### 1.从 Postman/Swagger/YApi/Rap 等其它接口工具/平台一键导入
 点右上角登录 > 点右上角设置 > 导入第三方文档(平台 URL) > 如果默认设置不符你的需求，可以在弹窗内修改 > 点上传按钮
 
 #### 2.从浏览器 Network 接口信息界面或 Charles 等抓包工具复制后粘贴到 URL 输入框
 https://github.com/TommyLemon/APIAuto/issues/16
 
-#### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、相应等信息
+#### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、响应等信息
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource#%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E5%8F%8A%E5%BD%95%E5%88%B6%E6%B5%81%E9%87%8F
 
 #### 4.打开分享链接来自动填充 URL、参数 JSON、请求头、参数注入配置、设置项 等
@@ -173,6 +177,8 @@ http://apijson.cn/api/?send=true&type=JSON&url=http%3A%2F%2Fapijson.cn%3A8080%2F
 #### 5.在界面手动填写 URL、参数 JSON、请求头 等再点击上传/分享按钮
 可点击分享按钮生成分享链接，用浏览器打开即可自动填充。 <br />
 退出登录后可设置 使用的请求类型，全部类型为 PARAM,JSON,FORM,DATA,GRPC 
+
+<br />
 
 ### 后台 Headless 无 UI 模式回归测试
 Jenkins、蓝盾 等 CI/CD 等流水线不支持带 UI 测试，所以提供了这个模式， <br />
