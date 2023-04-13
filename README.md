@@ -165,7 +165,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 点右上角登录 > 点右上角设置 > 导入第三方文档(平台 URL) > 如果默认设置不符你的需求，可以在弹窗内修改 > 点上传按钮
 
 #### 2.从浏览器 Network 接口信息界面或 Charles 等抓包工具复制后粘贴到 URL 输入框
-https://github.com/TommyLemon/APIAuto/issues/16
+https://github.com/TommyLemon/APIAuto#%E7%99%BE%E5%BA%A6%E6%90%9C%E7%8B%97%E6%8A%96%E9%9F%B3%E5%85%AC%E7%BD%91%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E6%BC%94%E7%A4%BA
 
 #### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、响应等信息
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource#%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E5%8F%8A%E5%BD%95%E5%88%B6%E6%B5%81%E9%87%8F
