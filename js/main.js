@@ -577,6 +577,19 @@ https://github.com/Tencent/APIJSON/issues
   var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
   var REQUEST_TYPE_GRPC = 'GRPC'  // POST application/json
+  var REQUEST_TYPE_GET = 'GET'  // GET ?a=1&b=c&key=value
+  var REQUEST_TYPE_POST = 'POST'  // POST application/json
+  var REQUEST_TYPE_PUT = 'PUT'  // PUT
+  var REQUEST_TYPE_PATCH = 'PATCH'  // PATCH
+  var REQUEST_TYPE_DELETE = 'DELETE'  // DELETE
+  var REQUEST_TYPE_HEAD = 'HEAD'  // HEAD
+  var REQUEST_TYPE_OPTIONS = 'OPTIONS'  // OPTIONS
+  var REQUEST_TYPE_TRACE = 'TRACE'  // TRACE
+  var HTTP_METHODS = [REQUEST_TYPE_GET, REQUEST_TYPE_POST, REQUEST_TYPE_PUT, REQUEST_TYPE_PATCH, REQUEST_TYPE_DELETE, REQUEST_TYPE_HEAD, REQUEST_TYPE_OPTIONS, REQUEST_TYPE_TRACE]
+  var HTTP_POST_TYPES = [REQUEST_TYPE_POST, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA, REQUEST_TYPE_GRPC]
+  var HTTP_URL_ARG_TYPES = [REQUEST_TYPE_GET, REQUEST_TYPE_PARAM, REQUEST_TYPE_FORM]
+  var HTTP_JSON_TYPES = [REQUEST_TYPE_POST, REQUEST_TYPE_JSON, REQUEST_TYPE_GRPC]
+  var HTTP_FORM_DATA_TYPES = [REQUEST_TYPE_DATA, REQUEST_TYPE_PUT, REQUEST_TYPE_DELETE]
 
   var CONTENT_TYPE_MAP = {
     // 'PARAM': 'plain/text',
@@ -900,8 +913,10 @@ https://github.com/Tencent/APIJSON/issues
         id: 0,
         balance: null //点击更新提示需要判空 0.00
       },
+      method: REQUEST_TYPE_POST,
+      methods: HTTP_METHODS,
       type: REQUEST_TYPE_JSON,
-      types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON],  // 很多人喜欢用 GET 接口测试，默认的 JSON 看不懂 , REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
+      types: [ REQUEST_TYPE_PARAM, REQUEST_TYPE_JSON, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA],  // 很多人喜欢用 GET 接口测试，默认的 JSON 看不懂 , REQUEST_TYPE_FORM, REQUEST_TYPE_DATA,  REQUEST_TYPE_GRPC ],  //默认展示
       host: '',
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
@@ -1463,7 +1478,7 @@ https://github.com/Tencent/APIJSON/issues
       showConfig: function (show, index) {
         this.isConfigShow = false
         if (this.isTestCaseShow) {
-          if (index == 3 || index == 4 || index == 5 || index == 10 || index == 13) {
+          if (index == 3 || index == 4 || index == 5 || index == 10 || index == 13 || index == 16) {
             this.showTestCase(false, false)
           }
         }
@@ -1476,11 +1491,13 @@ https://github.com/Tencent/APIJSON/issues
             case 1:
             case 2:
             case 6:
+            case 16:
             case 7:
             case 8:
             case 15:
               this.exTxt.name = index == 0 ? this.database : (index == 1 ? this.schema : (index == 2 ? this.language
-                  : (index == 6 ? this.server : (index == 8 ? this.thirdParty : (index == 15 ? this.otherEnv : (this.types || []).join())))))
+                  : (index == 6 ? this.server : (index == 8 ? this.thirdParty : (index == 15 ? this.otherEnv
+                   : (index == 16 ? (this.methods || []).join() : (this.types || []).join()))))))
               this.isConfigShow = true
 
               if (index == 0) {
@@ -1488,6 +1505,9 @@ https://github.com/Tencent/APIJSON/issues
               }
               else if (index == 2) {
                 alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
+              }
+              else if (index == 16) {
+                alert('多个方法用 , 隔开，可填方法: ' + HTTP_METHODS.join())
               }
               else if (index == 7) {
                 alert('多个类型用 , 隔开，可填类型:\nPARAM(GET ?a=1&b=c&key=value),\nJSON(POST application/json),\nFORM(POST x-www-form-urlencoded),\nDATA(POST form-data),\nGRPC(POST application/json 需要 GRPC 服务开启反射)')
@@ -2676,6 +2696,10 @@ https://github.com/Tencent/APIJSON/issues
             this.server = this.exTxt.name
             this.saveCache('', 'server', this.server)
             this.logout(true)
+            break
+          case 16:
+            this.methods = StringUtil.split(this.exTxt.name)
+            this.saveCache('', 'methods', this.methods)
             break
           case 7:
             this.types = StringUtil.split(this.exTxt.name)
@@ -4758,11 +4782,28 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
+      /**请求类型切换
+       */
+      changeMethod: function () {
+        var methods = this.methods || []
+        var count = methods == null ? 0 : methods.length
+        if (count > 1) {
+          var index = methods.indexOf(this.method) + 1
+          CodeUtil.method = this.method = methods[index % count]
+        }
+        this.onChange(false);
+      },
+
       /**获取显示的请求类型名称
        */
       getTypeName: function (type) {
         var ts = this.types
         var t = type || REQUEST_TYPE_JSON
+
+        var methods = this.methods
+        if (methods != null && methods.length > 1) {
+          return t
+        }
         if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
           return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
         }
@@ -4991,6 +5032,8 @@ https://github.com/Tencent/APIJSON/issues
       request: function (isAdminOperation, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
         this.isLoading = true
 
+        const method = this.method //FIXME 从上面传参
+        const methods = this.methods || []
         const isEnvCompare = this.isEnvCompareEnabled
 
         const scripts = (isAdminOperation || caseScript_ == null ? null : this.scripts) || {}
@@ -5012,9 +5055,29 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
+          if (req != null) { // 支持 URL 里有 Path Variable，例如 http://apijson.cn:8080/{method}/{table}
+            var ind = url.indexOf('?')
+            var uri = ind < 0 ? url : url.substring(0, ind)
+
+            var newReq = {}
+            for (var k in req) {
+                var v = k == null ? null : req[k]
+                var kind = uri.indexOf('{' + k + '}')
+                if (kind >= 0) {
+                   uri = uri.replaceAll('{' + k + '}', v)
+                   continue
+                }
+
+                newReq[k] = v
+            }
+
+            url = uri + (ind < 0 ? '' : url.substring(ind))
+            req = newReq
+          }
+
           // axios.defaults.withcredentials = true
           axios({
-            method: (type == REQUEST_TYPE_PARAM ? 'get' : 'post'),
+            method: method != null && methods != null && methods.length > 1 ? method : (HTTP_METHODS.indexOf(type) >= 0 ? type.toLowerCase() : (type == REQUEST_TYPE_PARAM ? 'get' : 'post')),
             url: (isDelegate ? (
                   App.server + '/delegate?' + (type == REQUEST_TYPE_GRPC ? '$_type=GRPC&' : '')
                   + (StringUtil.isEmpty(App.delegateId, true) ? '' : '$_delegate_id=' + App.delegateId + '&')
@@ -5024,8 +5087,8 @@ https://github.com/Tencent/APIJSON/issues
                   App.isEncodeEnabled ? encodeURI(url) : url
                 )
             ),
-            params: (type == REQUEST_TYPE_PARAM || type == REQUEST_TYPE_FORM ? req : null),
-            data: (type == REQUEST_TYPE_JSON || type == REQUEST_TYPE_GRPC ? req : (type == REQUEST_TYPE_DATA ? toFormData(req) : null)),
+            params: HTTP_URL_ARG_TYPES.indexOf(type) >= 0 ? req : null,
+            data: HTTP_JSON_TYPES.indexOf(type) >= 0 ? req : (HTTP_FORM_DATA_TYPES.indexOf(type) ? toFormData(req) : null),
             headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
             withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
             // crossDomain: true
@@ -10153,6 +10216,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var language = this.getCache('', 'language')
         if (StringUtil.isEmpty(language, true) == false) {
           this.language = CodeUtil.language = language
+        }
+        var methods = this.getCache('', 'methods')
+        if (methods != null && methods.length > 0) {
+          this.methods = methods instanceof Array ? methods : StringUtil.split(methods)
         }
         var types = this.getCache('', 'types')
         if (types != null && types.length > 0) {
