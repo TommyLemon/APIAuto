@@ -141,8 +141,8 @@
     <div class="side-left">
         <div v-show="! isTestCaseShow" class="left-bar" >
             <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
-            <button v-show="methods != null && methods.length > 1" class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ method }}</button>
-            <button v-show="types != null && types.length > 1" class="transfer" style="width: 54px" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type) }}</button>
+            <button v-show="isShowMethod()" class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ getMethodName(method, type) }}</button>
+            <button v-show="isShowType()" class="transfer" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type, method) }}</button>
             <div style="height: 100%;display: flex;flex-grow: 1">
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  />
                 <input class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)" placeholder="请输入请求的接口地址，可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value" style="z-index: 0; background: #0000;" />
@@ -186,7 +186,8 @@
             <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
                 <li v-for="(item, index) in testCases" :id="'docItem' + index" >
                     <div style="display: inline-table">
-                        <button v-show="types != null && types.length > 1" style="width: 48px;margin-right: 6px;padding: 0px;position: relative" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type) }}</button>
+                        <button v-show="isShowMethod()" style="width: 60px; margin-right: 0px;padding: 0px;" id="vDocMethod" @click="restoreRemoteAndTest(index, item)">{{ getMethodName(item.Document.method, item.Document.type) }}</button>
+                        <button v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
                         <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
                         <div style="position: absolute; right: 36px; top: 8px; display: inline-flex">
                             <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item)" >

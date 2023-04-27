@@ -141,8 +141,12 @@ var StringUtil = {
   },
 
   split: function (s, separator, trim) {
-    if (s == null) {
+    if (StringUtil.isEmpty(s, trim)) {
       return null;
+    }
+
+    if (trim) {
+      s = s.trim();
     }
 
     if (separator == null) {
