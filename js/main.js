@@ -4851,15 +4851,15 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
 
-        var methods = this.methods
-        if (this.isShowMethod()) {
-          return t
-        }
-
-        var ts = this.types
-        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
-          return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
-        }
+//        var methods = this.methods
+//        if (this.isShowMethod()) {
+//          return t
+//        }
+//
+//        var ts = this.types
+//        if (ts == null || ts.length <= 1 || (ts.length <= 2 && ts.indexOf(REQUEST_TYPE_PARAM) >= 0 && ts.indexOf(REQUEST_TYPE_GRPC) < 0)) {
+//          return t == REQUEST_TYPE_PARAM ? 'GET' : 'POST'
+//        }
         return t
       },
       /**请求类型切换
