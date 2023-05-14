@@ -3,7 +3,7 @@ const Koa = require('koa');
 const {getRequestFromURL, App} = require('./main');
 // const { createBundleRenderer } = require('vue-server-renderer')
 
-// const JSONResponse = require('../apijson/JSONResponse');
+const JSONResponse = require('../apijson/JSONResponse');
 const StringUtil = require('../apijson/StringUtil');
 
 var isCrossEnabled = true; // false;
@@ -66,14 +66,29 @@ function update() {
 const PORT = 3000;
 
 const app = new Koa();
+var done = false;
+
 app.use(async ctx => {
-  console.log(ctx)
+  console.log(ctx);
+  var origin = ctx.get('Origin') || ctx.get('origin');
+  console.log('origin = ' + origin);
+  ctx.set('Access-Control-Max-Age', "1000000"); // "-1");
+  ctx.set('Access-Control-Allow-Origin', origin);
+  ctx.set('Access-Control-Allow-Headers', "*");
+  ctx.set('Access-Control-Allow-Credentials', 'true');
+  ctx.set('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,DELETE,OPTIONS,TRACE');
+//    ctx.set('Access-Control-Expose-Headers', "*");
+
+  if (ctx.method == null || ctx.method.toUpperCase() == 'OPTIONS') {
+     ctx.status = 200;
+     return;
+  }
 
   if (ctx.path == '/test/start' || (isLoading != true && ctx.path == '/test')) {
     if (isLoading && ctx.path == '/test/start') {
-      ctx.body = 'Already started auto testing in node, please wait for minutes...';
-      ctx.status = 200
-      return
+      ctx.status = 200;
+      ctx.body = ctx.response.body = 'Already started auto testing in node, please wait for minutes...';
+      return;
     }
 
     App.isCrossEnabled = isCrossEnabled; // isCrossEnabled = App.isCrossEnabled;
@@ -115,7 +130,7 @@ app.use(async ctx => {
     isCrossEnabled = App.isCrossEnabled;
 
     ctx.status = ctx.response.status = 200; // 302;
-    ctx.body = 'Auto testing in node...';
+    ctx.body = ctx.response.body = 'Auto testing in node...';
 
     // setTimeout(function () {  // 延迟无效
     ctx.redirect('/test/status');
@@ -129,7 +144,42 @@ app.use(async ctx => {
     }
 
     ctx.status = ctx.response.status = 200;  // progress >= 1 ? 200 : 302;
-    ctx.body = (message || (progress < 1 || isLoading ? 'Auto testing in node...' : 'Done auto testing in node.')) + timeMsg + progressMsg;
+    ctx.body = ctx.response.body = (message || (progress < 1 || isLoading ? 'Auto testing in node...' : 'Done auto testing in node.')) + timeMsg + progressMsg;
+  }
+  else if (ctx.path == '/test/compare' || ctx.path == '/test/ml') {
+    done = false;
+    var json = '';
+    ctx.req.addListener('data', (data) => {
+  		json += data;
+  	})
+  	ctx.req.addListener('end', function() {
+  		console.log(json);
+//  	})
+
+        var body = JSON.parse(json) || ctx.body || ctx.req.body || ctx.request.body || {};
+        console.log(body);
+        var isML = ctx.path == '/test/ml' || body.isML;
+        var res = body.response;
+        var stdd = body.standard;
+
+        var response = typeof res != 'string' ? res : (StringUtil.isEmpty(res, true) ? null : JSON.parse(res));
+        var standard = typeof stdd != 'string' ? stdd : (StringUtil.isEmpty(stdd, true) ? null : JSON.parse(stdd));
+
+        console.log('\n\nresponse = ' + JSON.stringify(response));
+        console.log('\n\nstdd = ' + JSON.stringify(stdd));
+        var compare = JSONResponse.compareResponse(standard, response || {}, '', isML, null, null, false) || {}
+        console.log('\n\ncompare = ' + JSON.stringify(compare));
+
+        ctx.status = ctx.response.status = 200;
+        ctx.body = ctx.response.body = compare == null ? '' : JSON.stringify(compare);
+        done = true;
+    })
+
+    while (true) {
+        if (done) {
+           break;
+        }
+    }
   }
 });
 
