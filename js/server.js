@@ -1,4 +1,7 @@
 const Koa = require('koa');
+//const cors = require('koa2-cors');
+//const bodyParser = require('koa-bodyparser');
+
 // const Vue = require('vue');
 const {getRequestFromURL, App} = require('./main');
 // const { createBundleRenderer } = require('vue-server-renderer')
@@ -66,6 +69,20 @@ function update() {
 const PORT = 3000;
 
 const app = new Koa();
+
+//app.use(cors({
+//  origin: function(ctx) {
+//    return '*';
+//   },
+//   maxAge: 5,
+//   credentials: true,
+//   allowMethods: ['GET', 'HEAD ', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+//   exposeHeaders: ['WWW-Authenticate', 'Server-Authorization']
+//}));
+
+//app.use(bodyParser());
+
 var done = false;
 
 app.use(async ctx => {
