@@ -8292,11 +8292,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 continue;
               }
 
+              var args = StringUtil.split(value.substring(start + 1, end))
+
               toEval = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : (fun == ORDER_BAD_BOOL ? 'orderBadBool' : (fun == ORDER_BAD_NUM
                ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
-                + '(' + (fun == ORDER_BAD ? 'BADS' : '') + isDesc + ', ' + step*getOrderIndex(
+                + '(' + (fun == ORDER_BAD ? 'BADS, ' : '') + isDesc + ', ' + step*getOrderIndex(
                   randomId, line
-                  , (fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length)
+                  , (fun == ORDER_INT || args == null ? 0 : args.length)
                   + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
                    ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : BADS.length)))))
                 ) + ', ' + value.substring(start + 1);
