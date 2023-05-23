@@ -346,7 +346,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                               <img class="icon" src="img/refresh.png"/>
                             </a>
                             <a class="hint--top @cli-tool" data-hint="添加配置" style="font-size:xx-large; margin-bottom: 2px; color: black;"
-                               href="javascript:void(0)" @click="if(isRandomListShow || isRandomSubListShow) { randomTestTitle = null; isRandomListShow = false; isRandomSubListShow = false; } else { showExport(true, true, true) }"> + </a>
+                               href="javascript:void(0)" @click="onClickAddRandom()"> + </a>
                             <a v-show="false" href="javascript:void(0)" style="font-size: small;" class="hint--top"  data-hint="上传/分享"  @click="showExport(true, true)">
                                 <svg class="icon">
                                     <use xlink:href="svg/icon.svg#share"></use>

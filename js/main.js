@@ -2482,39 +2482,49 @@ https://github.com/Tencent/APIJSON/issues
                   //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
 
                   const isGenerate = StringUtil.isEmpty(config, true);
+                  var configs = []
                   if (isGenerate) {
                     var req = isReleaseRESTful ? mapReq : App.getRequest(vInput.value, {})
-                    config = StringUtil.trim(App.newRandomConfig(null, '', req))
+                    var config = StringUtil.trim(App.newRandomConfig(null, '', req, false))
 
                     if (StringUtil.isEmpty(config, true)) {
                       return;
                     }
+
+                    configs.push(config)
+                    config2 = StringUtil.trim(App.newRandomConfig(null, '', req, true))
+                    if (StringUtil.isNotEmpty(config2, true)) {
+                      configs.push(config2)
+                    }
                   }
 
-                  App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : App.server) + '/post', {
-                    format: false,
-                    'Random': {
-                      documentId: rpObj.Document.id,
-                      count: App.requestCount,
-                      name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
-                      config: config
-                    },
-                    TestRecord: {
-                      host: baseUrl,
-                      response: ''
-                    },
-                    'tag': 'Random'
-                  }, {}, function (url, res, err) {
-                    if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
-                      alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
-                      App.isRandomListShow = true
-                    }
-                    else {
-                      alert((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
-                      vRandom.value = config
-                    }
-                    App.onResponse(url, res, err)
-                  })
+                  for (var i = 0; i < configs.length; i ++) {
+                      const config = configs[i]
+                      App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : App.server) + '/post', {
+                        format: false,
+                        'Random': {
+                          documentId: rpObj.Document.id,
+                          count: App.requestCount,
+                          name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
+                          config: config
+                        },
+                        TestRecord: {
+                          host: baseUrl,
+                          response: ''
+                        },
+                        'tag': 'Random'
+                      }, {}, function (url, res, err) {
+                        if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
+                          alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
+                          App.isRandomListShow = true
+                        }
+                        else {
+                          alert((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
+                          vRandom.value = config
+                        }
+                        App.onResponse(url, res, err)
+                      })
+                  }
                 }
               }
             })
@@ -2531,7 +2541,20 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
-      newRandomConfig: function (path, key, value) {
+      onClickAddRandom: function () {
+         if (this.isRandomListShow || this.isRandomSubListShow) {
+            this.randomTestTitle = null;
+            this.isRandomListShow = false;
+            this.isRandomSubListShow = false;
+         } else if (StringUtil.isEmpty(vRandom.value, true)) {
+            var req = this.getRequest(vInput.value, {})
+            vRandom.value = this.newRandomConfig(null, '', req, Math.random() >= 0.5)
+         } else {
+            this.showExport(true, true, true)
+         }
+      },
+
+      newRandomConfig: function (path, key, value, isRand) {
         if (key == null) {
           return ''
         }
@@ -2559,7 +2582,7 @@ https://github.com/Tencent/APIJSON/issues
               val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[value.length - 1]]) + ', ' + JSON.stringify([value[Math.floor(value.length / 2)]]) + ', ' + JSON.stringify(value)
             }
           }
-          config += prefix + 'ORDER_IN(undefined, null, []' + val + ')'
+          config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, []' + val + ')'
         }
         else if (value instanceof Object) {
           for(var k in value) {
@@ -2575,21 +2598,21 @@ https://github.com/Tencent/APIJSON/issues
 
               prefix = '\n' + (childPath == null || childPath == '' ? '' : childPath + '/') + k + '/'
               if (v.hasOwnProperty('page')) {
-                config += prefix + 'page: ' + 'ORDER_INT(0, 10)'
+                config += prefix + 'page: ' + (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 10)'
                 delete v.page
               }
               if (v.hasOwnProperty('count')) {
-                config += prefix + 'count: ' + 'ORDER_IN(undefined, null, 0, 1, 5, 10, 20'
+                config += prefix + 'count: ' + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, 0, 1, 5, 10, 20'
                   + ([0, 1, 5, 10, 20].indexOf(v.count) >= 0 ? ')' : ', ' + v.count + ')')
                 delete v.count
               }
               if (v.hasOwnProperty('query')) {
-                config += prefix + 'query: ' + 'ORDER_IN(undefined, null, 0, 1, 2)'
+                config += prefix + 'query: ' + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, 0, 1, 2)'
                 delete v.query
               }
             }
 
-            config += this.newRandomConfig(childPath, k, v)
+            config += this.newRandomConfig(childPath, k, v, isRand)
           }
         }
         else {
@@ -2599,12 +2622,12 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           if (typeof value == 'boolean') {
-            config += prefix + 'ORDER_IN(undefined, null, false, true)'
+            config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, false, true)'
           }
           else if (typeof value == 'number') {
             var isId = key == 'id' || key.endsWith('Id') || key.endsWith('_id') || key.endsWith('_ID')
             if (isId) {
-              config += prefix + 'ORDER_IN(undefined, null, ' + value + ')'
+              config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
                 config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
@@ -2629,7 +2652,7 @@ https://github.com/Tencent/APIJSON/issues
               }
               else {
                 config += prefix + (dotIndex < 0 && value <= 10
-                      ? 'ORDER_INT(0, 10)'
+                      ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 10)'
                       : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + (hasDot ? ', ' + keep + ')' : ')'))
                   )
                 var hasDot = String(value).indexOf('.') >= 0
@@ -2644,7 +2667,7 @@ https://github.com/Tencent/APIJSON/issues
                   config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? 'ORDER_INT(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -2655,10 +2678,10 @@ https://github.com/Tencent/APIJSON/issues
               return config
             }
 
-            config += prefix + 'ORDER_IN(undefined, null, ""' + (value == '' ? ')' : ', "' + value + '")')
+            config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, ""' + (value == '' ? ')' : ', "' + value + '")')
           }
           else {
-            config += prefix + 'ORDER_IN(undefined, null' + (value == null ? ')' : ', ' + JSON.stringify(value) + ')')
+            config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null' + (value == null ? ')' : ', ' + JSON.stringify(value) + ')')
           }
 
         }
