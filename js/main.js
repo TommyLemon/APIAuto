@@ -615,13 +615,60 @@ https://github.com/Tencent/APIJSON/issues
   var RANDOM_INT = 'RANDOM_INT'
   var RANDOM_NUM = 'RANDOM_NUM'
   var RANDOM_STR = 'RANDOM_STR'
+  var RANDOM_BAD = 'RANDOM_BAD'
+  var RANDOM_BAD_BOOL = 'RANDOM_BAD_BOOL'
+  var RANDOM_BAD_NUM = 'RANDOM_BAD_NUM'
+  var RANDOM_BAD_STR = 'RANDOM_BAD_STR'
+  var RANDOM_BAD_IN = 'RANDOM_BAD_IN'
+  var RANDOM_BAD_ARR = 'RANDOM_BAD_ARR'
+  var RANDOM_BAD_OBJ = 'RANDOM_BAD_OBJ'
 
   var ORDER_DB = 'ORDER_DB'
   var ORDER_IN = 'ORDER_IN'
   var ORDER_INT = 'ORDER_INT'
+  var ORDER_BAD = 'ORDER_BAD'
+  var ORDER_BAD_BOOL = 'ORDER_BAD_BOOL'
+  var ORDER_BAD_NUM = 'ORDER_BAD_NUM'
+  var ORDER_BAD_STR = 'ORDER_BAD_STR'
+  var ORDER_BAD_IN = 'ORDER_BAD_IN'
+  var ORDER_BAD_ARR = 'ORDER_BAD_ARR'
+  var ORDER_BAD_OBJ = 'ORDER_BAD_OBJ'
 
   var ORDER_MAP = {}
 
+  var BAD_BOOLS = [null, undefined, false, true, -1, 0, 1, 2, 3.14, 'null', 'undefined', 'None', 'nil', 'false', 'true',
+   '-1', '0', '1', '2', '3.14', '', ' ', '\\t', '\\r', '\\n', '\\a', '\\b', '\\v', '\\f', 'a', 'dY', [], {}, '[]', '{}']
+  var BAD_NUMS = BAD_BOOLS.concat([
+   -2049, -1025, -13, 13, 1025, 2049, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.MIN_SAFE_INTEGER,
+   Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER + 1,
+   '-2049', '-1025', '-13', '13', '1025', '2049', 'Number.NaN', 'Number.POSITIVE_INFINITY', 'Number.NEGATIVE_INFINITY',
+    'Number.MIN_SAFE_INTEGER', 'Number.MAX_SAFE_INTEGER', '' + Number.MIN_SAFE_INTEGER, '' + Number.MAX_SAFE_INTEGER
+  ])
+  var BAD_STRS = BAD_NUMS.concat([
+     '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=', '+', '[', ']', '{', '}', ';', ':',
+     "'", '\\"', ',', '.', '<', '>', '/', '?', '\\t\\r\\n\\a\\b\\v\\f', '`~!@#$%^&*()-_=+[]{};:\'\\",.<>/?',
+     'qwertyuiopasdfghjklzxcvbnm', 'MNBVCZLKJHGFDSAPOIUYTREWQ', 'ä½ å¥½', 'ÄãºÃ', '浣犲ソ', '�����',
+     '鐢辨湀瑕佸ソ濂藉涔犲ぉ澶╁悜涓?', '����Ҫ�¨²�ѧϰ������', 'ç”±æœˆè¦�å¥½å¥½å­¦ä¹ å¤©å¤©å�‘ä¸Š', 'ÓÉÔÂÒªºÃºÃÑ§Ï°ÌìÌìÏòÉÏ',
+     '由月要好好学习天天向??', '锟斤拷锟斤拷要锟矫猴拷学习锟斤拷锟斤拷锟斤拷'
+  ])
+  var BAD_ARRS = []
+  for (var i = 0; i < BAD_STRS.length; i ++) {
+    BAD_ARRS.push([BAD_STRS[i]])
+  }
+
+  var BAD_OBJS = []
+  for (var i = 0; i < BAD_STRS.length; i ++) {
+    for (var j = 0; j < BAD_STRS.length; j ++) {
+        BAD_OBJS[new String(BAD_STRS[j])] = BAD_STRS[i]
+    }
+  }
+
+  var BADS = BAD_STRS.concat(BAD_ARRS).concat(BAD_OBJS)
+
+  var PRIME_INTS = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
+  function randomPrimeInt() {
+    return PRIME_INTS[randomInt(0, PRIME_INTS.length - 1)]
+  }
   function randomInt(min, max) {
     return randomNum(min, max, 0);
   }
@@ -640,13 +687,44 @@ https://github.com/Tencent/APIJSON/issues
       precision = 2
     }
 
-    return + ((max - min)*Math.random() + min).toFixed(precision);
+    return + ((max - min)*Math.random() + min).toFixed(precision)
   }
   function randomStr(minLength, maxLength, availableChars) {
-    return 'Ab_Cd' + randomNum();
+    return 'Ab_Cd' + randomNum()
   }
   function randomIn(...args) {
-    return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)];
+    return args == null || args.length <= 0 ? null : args[randomInt(0, args.length - 1)]
+  }
+  function randomBad(defaultArgs, ...args) {
+    if (defaultArgs == null) {
+      defaultArgs = BADS
+    }
+
+    if (args == null || args.length <= 0) {
+      return defaultArgs[randomInt(0, defaultArgs.length - 1)]
+    }
+
+    args = []
+    for (var i = 0; i < defaultArgs.length; i++) {
+      args.push(defaultArgs[i])
+    }
+
+    return args[randomInt(0, args.length - 1)]
+  }
+  function randomBadBool(...args) {
+    return randomBad(BAD_BOOLS, args)
+  }
+  function randomBadNum(...args) {
+    return randomBad(BAD_NUMS, args)
+  }
+  function randomBadStr(...args) {
+    return randomBad(BAD_STRS, args)
+  }
+  function randomBadArr(...args) {
+    return randomBad(BAD_ARRS, args)
+  }
+  function randomBadObj(...args) {
+    return randomBad(BAD_OBJS, args)
   }
 
   function orderInt(desc, index, min, max) {
@@ -666,6 +744,39 @@ https://github.com/Tencent/APIJSON/issues
     // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
     index = index || 0;
     return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
+  }
+  function orderBad(defaultArgs, desc, index, ...args) {
+    // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
+    if (defaultArgs == null) {
+      defaultArgs = BADS
+    }
+
+    index = index || 0;
+    if (args == null || args.length <= 0) {
+      return defaultArgs[desc ? defaultArgs.length - index : index]
+    }
+
+    args = []
+    for (var i = 0; i < defaultArgs.length; i++) {
+      args.push(defaultArgs[i])
+    }
+
+    return args[desc ? args.length - index : index]
+  }
+  function orderBadBool(desc, index, ...args) {
+    return orderBad(BAD_BOOLS, desc, index, ...args)
+  }
+  function orderBadNum(desc, index, ...args) {
+    return orderBad(BAD_NUMS, desc, index, ...args)
+  }
+  function orderBadStr(desc, index, ...args) {
+    return orderBad(BAD_STRS, desc, index, ...args)
+  }
+  function orderBadArr(desc, index, ...args) {
+    return orderBad(BAD_ARRS, desc, index, ...args)
+  }
+  function orderBadObj(desc, index, ...args) {
+    return orderBad(BAD_OBJS, desc, index, ...args)
   }
 
   function getOrderIndex(randomId, line, argCount) {
@@ -2548,13 +2659,13 @@ https://github.com/Tencent/APIJSON/issues
             this.isRandomSubListShow = false;
          } else if (StringUtil.isEmpty(vRandom.value, true)) {
             var req = this.getRequest(vInput.value, {})
-            vRandom.value = this.newRandomConfig(null, '', req, Math.random() >= 0.5)
+            vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req, Math.random() >= 0.5, Math.random() >= 0.3, Math.random() >= 0.8))
          } else {
             this.showExport(true, true, true)
          }
       },
 
-      newRandomConfig: function (path, key, value, isRand) {
+      newRandomConfig: function (path, key, value, isRand, isBad, noDeep) {
         if (key == null) {
           return ''
         }
@@ -2564,32 +2675,59 @@ https://github.com/Tencent/APIJSON/issues
 
         var config = ''
         var childPath = path == null || path == '' ? key : path + '/' + key
-        var prefix = '\n' + childPath + ': '
+        var prefix = childPath + ': '
 
         if (value instanceof Array) {
-          var val
-          if (value.length <= 0) {
-            val = ''
+          if (isBad && noDeep && StringUtil.isNotEmpty(childPath, true)) {
+            return prefix + (isRand ? 'RANDOM_BAD_ARR' : 'ORDER_BAD_ARR+' + randomPrimeInt()) + '()'
+          }
+
+          if (Math.random() >= 7) {
+              var val
+              if (value.length <= 0) {
+                val = ''
+              }
+              else {
+                if (value.length <= 1) {
+                  val = ', ' + JSON.stringify(value)
+                }
+                else if (value.length <= 2) {
+                  val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[1]]) + ', ' + JSON.stringify(value)
+                }
+                else {
+                  val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[value.length - 1]]) + ', ' + JSON.stringify([value[Math.floor(value.length / 2)]]) + ', ' + JSON.stringify(value)
+                }
+              }
+
+              config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, []' + val + ')'
           }
           else {
-            if (value.length <= 1) {
-              val = ', ' + JSON.stringify(value)
-            }
-            else if (value.length <= 2) {
-              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[1]]) + ', ' + JSON.stringify(value)
-            }
-            else {
-              val = ', ' + JSON.stringify([value[0]]) + ', ' + JSON.stringify([value[value.length - 1]]) + ', ' + JSON.stringify([value[Math.floor(value.length / 2)]]) + ', ' + JSON.stringify(value)
-            }
+              config += prefix + '[]'
+
+              var l = randomInt(0, 13)
+              for (var i = 0; i < l; i ++) {
+                 var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep)
+                 if (StringUtil.isEmpty(cfg, true)) {
+                   break
+                 }
+
+                 config += '\n' + cfg
+              }
           }
-          config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, []' + val + ')'
+
+          return config
         }
         else if (value instanceof Object) {
-          for(var k in value) {
+          if (isBad && noDeep && StringUtil.isNotEmpty(childPath, true)) {
+            return prefix + (isRand ? 'RANDOM_BAD_OBJ' : 'ORDER_BAD_OBJ+' + randomPrimeInt()) + '()'
+          }
+
+          for (var k in value) {
             var v = value[k]
 
             var isAPIJSONArray = v instanceof Object && v instanceof Array == false
               && k.startsWith('@') == false && (k.endsWith('[]') || k.endsWith('@'))
+
             if (isAPIJSONArray) {
               if (k.endsWith('@')) {
                 delete v.from
@@ -2612,8 +2750,13 @@ https://github.com/Tencent/APIJSON/issues
               }
             }
 
-            config += this.newRandomConfig(childPath, k, v, isRand)
+            var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep)
+            if (StringUtil.isNotEmpty(cfg, true)) {
+              config += '\n' + cfg
+            }
           }
+
+          return config
         }
         else {
           //自定义关键词
@@ -2622,17 +2765,25 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           if (typeof value == 'boolean') {
+            if (isBad) {
+              return prefix + (isRand ? 'RANDOM_BAD_BOOL' : 'ORDER_BAD_BOOL+' + randomPrimeInt()) + '()'
+            }
+
             config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, false, true)'
           }
           else if (typeof value == 'number') {
+            if (isBad) {
+              return prefix + (isRand ? 'RANDOM_BAD_NUM' : 'ORDER_BAD_NUM+' + randomPrimeInt()) + '()'
+            }
+
             var isId = key == 'id' || key.endsWith('Id') || key.endsWith('_id') || key.endsWith('_ID')
             if (isId) {
               config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -2658,21 +2809,25 @@ https://github.com/Tencent/APIJSON/issues
                 var hasDot = String(value).indexOf('.') >= 0
 
                 if (value < 0) {
-                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) { // 0-1 比例
-                  config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) { // 10% 百分比
-                  config += '\n // 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n // 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
           }
           else if (typeof value == 'string') {
+            if (isBad) {
+              return prefix + (isRand ? 'RANDOM_BAD_STR' : 'ORDER_BAD_STR+' + randomPrimeInt()) + '()'
+            }
+
             //引用赋值 || 远程函数 || 匹配条件范围
             if (key.endsWith('@') || key.endsWith('()') || key.endsWith('{}')) {
               return config
@@ -2681,6 +2836,10 @@ https://github.com/Tencent/APIJSON/issues
             config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, ""' + (value == '' ? ')' : ', "' + value + '")')
           }
           else {
+            if (isBad) {
+              return prefix + (isRand ? 'RANDOM_BAD' : 'ORDER_BAD+' + randomPrimeInt()) + '()'
+            }
+
             config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null' + (value == null ? ')' : ', ' + JSON.stringify(value) + ')')
           }
 
@@ -8112,7 +8271,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
 
-            if ([ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
+            if (fun.startsWith('ORDER_') && /^[_A-Z]+$/g.test(fun)) { // [ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
               var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
               var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
 
@@ -8121,9 +8280,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               ) {
                 throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
                   + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
-                  + '\n  ODER_REAL+step(arg0, arg1...)\n  ODER_REAL-step(arg0, arg1...)'
-                  + '\n  ODER_INT+step(arg0, arg1...)\n  ODER_INT-step(arg0, arg1...)'
-                  + '\n  ODER_IN+step(start, end)\n  ODER_IN-step(start, end)'
+                  + '\n  ORDER_DB+step(arg0, arg1...)\n  ORDER_DB-step(arg0, arg1...)'
+                  + '\n  ORDER_INT+step(arg0, arg1...)\n  ORDER_INT-step(arg0, arg1...)'
+                  + '\n  ORDER_IN+step(start, end)\n  ORDER_IN-step(start, end)'
                   + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
                   + '\n+，-，step 前后都不能有空格等其它字符！');
               }
@@ -8133,10 +8292,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 continue;
               }
 
-              toEval = (fun == ORDER_IN ? 'orderIn' : 'orderInt')
-                + '(' + isDesc + ', ' + step*getOrderIndex(
+              toEval = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : (fun == ORDER_BAD_BOOL ? 'orderBadBool' : (fun == ORDER_BAD_NUM
+               ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
+                + '(' + (fun == ORDER_BAD ? 'BADS' : '') + isDesc + ', ' + step*getOrderIndex(
                   randomId, line
-                  , fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length
+                  , (fun == ORDER_INT ? 0 : StringUtil.split(value.substring(start + 1, end)).length)
+                  + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
+                   ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : BADS.length)))))
                 ) + ', ' + value.substring(start + 1);
             }
             else {  //随机函数
@@ -8159,6 +8321,24 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               else if (fun == RANDOM_STR) {
                 toEval = 'randomStr' + value.substring(start);
               }
+              else if (fun == RANDOM_BAD) {
+                toEval = 'randomBad' + value.substring(start);
+              }
+              else if (fun == RANDOM_BAD_BOOL) {
+                toEval = 'randomBadBool' + value.substring(start);
+              }
+              else if (fun == RANDOM_BAD_NUM) {
+                toEval = 'randomBadNum' + value.substring(start);
+              }
+              else if (fun == RANDOM_BAD_STR) {
+                toEval = 'randomBadStr' + value.substring(start);
+              }
+              else if (fun == RANDOM_BAD_ARR) {
+                toEval = 'randomBadArr' + value.substring(start);
+              }
+              else if (fun == RANDOM_BAD_OBJ) {
+                toEval = 'randomBadObj' + value.substring(start);
+              }
 
             }
 
@@ -8169,7 +8349,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var res = {};
           var data = res.data;
           var err = null;
-          invoke(eval(StringUtil.trim(preScript) + '\n' + toEval), which, p_k, pathKeys, key, lastKeyInPath);
+          invoke(eval(StringUtil.trim(preScript) + '\n(' + toEval + ')'), which, p_k, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
