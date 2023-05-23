@@ -17,7 +17,7 @@
 ---
 敏捷开发最强大易用的 HTTP 接口工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释。<br />
 集 文档、测试、Mock、调试、管理 于一体的一站式体验，还有一键 格式化、注释/取消注释 等高效易用的快捷键。<br />
-在常用功能上远超 Postman, Swagger, YApi 等各种 开源、商业 的 API 文档/测试 工具并能一键导入用例和文档。<br />
+在常用功能上远超 Postman, Swagger, YApi 等各种 开源、商业 的 API 文档/测试 工具，并能一键导入用例和文档。<br />
 支持 GET, POST, PUT, PATCH, DELETE, HEAD 等各种 HTTP Method 及 Content-Type, URL /{Path}/{Variable}。<br />
 不仅适用于 RESTful、类 RESTful、GRPC 的 API，还是腾讯 [APIJSON](https://github.com/Tencent/APIJSON) 官方建议的文档与测试工具。<br />
 腾讯内部用户包括 IEG 互动娱乐事业群、TEG 技术工程事业群、CSIG 云与智慧事业群 等， <br />
