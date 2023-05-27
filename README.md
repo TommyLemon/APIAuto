@@ -6,7 +6,7 @@
 
 <p align="center" >
   <a href="https://github.com/TommyLemon/APIAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
-  <a href="https://space.bilibili.com/437134249/search/video?keyword=apiauto">视频教程</a>
+  <a href="https://search.bilibili.com/all?keyword=APIAuto">视频教程</a>
   <a href="http://apijson.cn/api">在线体验</a>
 </p>
 
@@ -106,8 +106,13 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 [QECon 大会-腾讯 Tommy-零代码开发和测试](https://github.com/TommyLemon/StaticResources/tree/master/APIAuto/Share)
 
 ### 视频教程
-[Bilibili](https://space.bilibili.com/437134249/search/video?keyword=apiauto) <br />
-[优酷](https://i.youku.com/i/UNTg1NzI1MjQ4MA==)
+Bilibili：https://search.bilibili.com/all?keyword=APIAuto
+<img width="1020" alt="image" src="https://github.com/TommyLemon/APIAuto/assets/5738175/662603f2-75a2-4480-b329-faebf303a13d">
+
+<br />
+优酷：https://i.youku.com/i/UNTg1NzI1MjQ4MA==
+<img width="1207" alt="image" src="https://github.com/TommyLemon/APIAuto/assets/5738175/11ff5315-23a2-4301-8b67-83fac0b7a369">
+
 
 ### 相关推荐
 [别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg)
