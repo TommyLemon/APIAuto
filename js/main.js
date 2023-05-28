@@ -658,14 +658,37 @@ https://github.com/Tencent/APIJSON/issues
 
   var BAD_OBJS = []
   for (var i = 0; i < BAD_STRS.length; i ++) {
+    var k = BAD_STRS[i]
+    var key = k == undefined ? 'undefined' : (typeof k == 'string' ? k : JSON.stringify(k))
     for (var j = 0; j < BAD_STRS.length; j ++) {
-        BAD_OBJS[new String(BAD_STRS[j])] = BAD_STRS[i]
+        BAD_OBJS.push({[key]: BAD_STRS[j]})
     }
   }
 
   var BADS = BAD_STRS.concat(BAD_ARRS).concat(BAD_OBJS)
 
-  var PRIME_INTS = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
+  var PRIME_INTS = [
+  1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97
+  , 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199
+  , 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293
+  , 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397
+  , 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499
+  , 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599
+  , 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691
+  , 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797
+  , 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887
+  , 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997
+  , 1009, 1013, 1019, 1021, 1031, 1033, 1039, 1049, 1051, 1061, 1063, 1069, 1087, 1091, 1093, 1097
+  , 1103, 1109, 1117, 1123, 1129, 1151, 1153, 1163, 1171, 1181, 1187, 1193
+  , 1201, 1213, 1217, 1223, 1229, 1231, 1237, 1249, 1259, 1277, 1279, 1283, 1289, 1291, 1297
+  , 1301, 1303, 1307, 1319, 1321, 1327, 1361, 1367, 1373, 1381, 1399
+  , 1409, 1423, 1427, 1429, 1433, 1439, 1447, 1451, 1453, 1459, 1471, 1481, 1483, 1487, 1489, 1493, 1499
+  , 1511, 1523, 1531, 1543, 1549, 1553, 1559, 1567, 1571, 1579, 1583, 1597
+  , 1601, 1607, 1609, 1613, 1619, 1621, 1627, 1637, 1657, 1663, 1667, 1669, 1693, 1697, 1699
+  , 1709, 1721, 1723, 1733, 1741, 1747, 1753, 1759, 1777, 1783, 1787, 1789
+  , 1801, 1811, 1823, 1831, 1847, 1861, 1867, 1871, 1873, 1877, 1879, 1889
+  , 1901, 1907, 1913, 1931, 1933, 1949, 1951, 1973, 1979, 1987, 1993, 1997, 1999
+  ]
   function randomPrimeInt() {
     return PRIME_INTS[randomInt(0, PRIME_INTS.length - 1)]
   }
@@ -779,7 +802,7 @@ https://github.com/Tencent/APIJSON/issues
     return orderBad(BAD_OBJS, desc, index, ...args)
   }
 
-  function getOrderIndex(randomId, line, argCount) {
+  function getOrderIndex(randomId, line, argCount, step) {
     // alert('randomId = ' + randomId + '; line = ' + line + '; argCount = ' + argCount);
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
 
@@ -802,7 +825,8 @@ https://github.com/Tencent/APIJSON/issues
 
     orderIndex ++
     orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
-    ORDER_MAP[randomId][line] = orderIndex;
+    orderIndex = step == null ? orderIndex : step*orderIndex%argCount;
+    ORDER_MAP[randomId][line] = orderIndex >= 0 ? orderIndex : argCount + orderIndex;
 
     // alert('orderIndex = ' + orderIndex)
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
@@ -2677,9 +2701,12 @@ https://github.com/Tencent/APIJSON/issues
         var childPath = path == null || path == '' ? key : path + '/' + key
         var prefix = childPath + ': '
 
+        var isPositive = Math.random() >= 0.3
+        var offset = (isPositive ? '+' : '') + (isPositive ? 1 : -1)*randomPrimeInt()
+
         if (value instanceof Array) {
           if (isBad && noDeep && StringUtil.isNotEmpty(childPath, true)) {
-            return prefix + (isRand ? 'RANDOM_BAD_ARR' : 'ORDER_BAD_ARR+' + randomPrimeInt()) + '()'
+            return prefix + (isRand ? 'RANDOM_BAD_ARR' : 'ORDER_BAD_ARR' + offset) + '()'
           }
 
           if (Math.random() >= 7) {
@@ -2719,7 +2746,7 @@ https://github.com/Tencent/APIJSON/issues
         }
         else if (value instanceof Object) {
           if (isBad && noDeep && StringUtil.isNotEmpty(childPath, true)) {
-            return prefix + (isRand ? 'RANDOM_BAD_OBJ' : 'ORDER_BAD_OBJ+' + randomPrimeInt()) + '()'
+            return prefix + (isRand ? 'RANDOM_BAD_OBJ' : 'ORDER_BAD_OBJ' + offset) + '()'
           }
 
           for (var k in value) {
@@ -2766,14 +2793,14 @@ https://github.com/Tencent/APIJSON/issues
 
           if (typeof value == 'boolean') {
             if (isBad) {
-              return prefix + (isRand ? 'RANDOM_BAD_BOOL' : 'ORDER_BAD_BOOL+' + randomPrimeInt()) + '()'
+              return prefix + (isRand ? 'RANDOM_BAD_BOOL' : 'ORDER_BAD_BOOL' + offset) + '()'
             }
 
             config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, false, true)'
           }
           else if (typeof value == 'number') {
             if (isBad) {
-              return prefix + (isRand ? 'RANDOM_BAD_NUM' : 'ORDER_BAD_NUM+' + randomPrimeInt()) + '()'
+              return prefix + (isRand ? 'RANDOM_BAD_NUM' : 'ORDER_BAD_NUM' + offset) + '()'
             }
 
             var isId = key == 'id' || key.endsWith('Id') || key.endsWith('_id') || key.endsWith('_ID')
@@ -2825,7 +2852,7 @@ https://github.com/Tencent/APIJSON/issues
           }
           else if (typeof value == 'string') {
             if (isBad) {
-              return prefix + (isRand ? 'RANDOM_BAD_STR' : 'ORDER_BAD_STR+' + randomPrimeInt()) + '()'
+              return prefix + (isRand ? 'RANDOM_BAD_STR' : 'ORDER_BAD_STR' + offset) + '()'
             }
 
             //引用赋值 || 远程函数 || 匹配条件范围
@@ -2837,7 +2864,7 @@ https://github.com/Tencent/APIJSON/issues
           }
           else {
             if (isBad) {
-              return prefix + (isRand ? 'RANDOM_BAD' : 'ORDER_BAD+' + randomPrimeInt()) + '()'
+              return prefix + (isRand ? 'RANDOM_BAD' : 'ORDER_BAD' + offset) + '()'
             }
 
             config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null' + (value == null ? ')' : ', ' + JSON.stringify(value) + ')')
@@ -8044,7 +8071,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (line.length <= 0) {
             respCount ++;
             if (i >= lines.length - 1 && respCount >= reqCount) {
-              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
+              var cn = randomNameKeys.join(', ')
+              if (cn.length > 50) {
+                cn = cn.substring(0, 30) + ' ..' + randomNameKeys.length + '.. ' + cn.substring(cn.length - 12)
+              }
+              callback(cn, constConfigLines.join('\n'), json);
             }
             continue;
           }
@@ -8089,28 +8120,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   configVal = '"' + val + '"';
                 }
                 else {
-                  configVal = val
+                  configVal = val;
                 }
                 constConfigLines[which] = p_k + ': ' + configVal;
               }
 
               if (generateName) {
-                var valStr;
+                var s = val == undefined ? 'undefined' : (typeof val == 'string' && val != '' ? val : JSON.stringify(val)); // null 可以正常转为字符串
                 if (val instanceof Array) {
-                  valStr = val.length <= 0 ? '[]' : '[..' + val.length + '..]';
+                  valStr = val.length <= 1 ? s : '[' + val.length + ' .. ' + s.substring(1, s.length - 1) + ']';
                 }
                 else if (val instanceof Object) {
-                  var kl = Object.keys(val).length
-                  valStr = kl <= 0 ? '{}' : '{..' + kl + '..}';
-                }
-                else if (typeof val == 'boolean') {
-                  valStr = '' + val;
+                  var kl = Object.keys(val).length;
+                  valStr = kl <= 1 ? s : '{' + kl + ' .. ' + s.substring(1, s.length - 1) + '}';
                 }
                 else {
-                  valStr = new String(val);
-                  if (valStr.length > 13) {
-                    valStr = valStr.substring(0, 5) + '...';
-                  }
+                  valStr = s;
+                }
+
+                if (valStr.length > 13) {
+                  valStr = valStr.substring(0, 5) + '..';
                 }
                 randomNameKeys[which] = valStr;
               }
@@ -8151,7 +8180,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             respCount ++;
             if (respCount >= reqCount) {
-              callback(randomNameKeys.join(', '), constConfigLines.join('\n'), json);
+              var cn = randomNameKeys.join(', ')
+              if (cn.length > 50) {
+                cn = cn.substring(0, 30) + ' ..' + randomNameKeys.length + '.. ' + cn.substring(cn.length - 12)
+              }
+              callback(cn, constConfigLines.join('\n'), json);
             }
           };
 
@@ -8296,11 +8329,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               toEval = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : (fun == ORDER_BAD_BOOL ? 'orderBadBool' : (fun == ORDER_BAD_NUM
                ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
-                + '(' + (fun == ORDER_BAD ? 'BADS, ' : '') + isDesc + ', ' + step*getOrderIndex(
+                + '(' + (fun == ORDER_BAD ? 'BADS, ' : '') + isDesc + ', ' + getOrderIndex(
                   randomId, line
                   , (fun == ORDER_INT || args == null ? 0 : args.length)
                   + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
                    ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : BADS.length)))))
+                  , step
                 ) + ', ' + value.substring(start + 1);
             }
             else {  //随机函数
