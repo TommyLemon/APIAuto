@@ -652,42 +652,46 @@ https://github.com/Tencent/APIJSON/issues
      '由月要好好学习天天向??', '锟斤拷锟斤拷要锟矫猴拷学习锟斤拷锟斤拷锟斤拷'
   ])
   // FIXME 打开时直接卡死崩溃
-//  for (var i = 0; i < BAD_STRS.length; i ++) {
-//     var v = BAD_STRS[i]
-//     for (var j = 0; j < BAD_STRS.length; j ++) {
-//         BAD_STRS.push(v + BAD_STRS[j])
-//     }
-//  }
-//  for (var i = 0; i < BAD_STRS.length; i ++) {
-//      var v = BAD_STRS[i]
-//      for (var j = 0; j < BAD_STRS.length; j ++) {
-//          var v2 = v + BAD_STRS[j]
-//          for (var k = 0; k < BAD_STRS.length; k ++) {
-//            BAD_STRS.push(v2 + BAD_STRS[k])
-//          }
-//      }
-//  }
+  var sl = Math.min(10, Math.floor(BAD_STRS.length/5))
+  for (var i = 0; i < sl; i ++) {
+     var v = BAD_STRS[i]
+     for (var j = 0; j < sl; j ++) {
+         BAD_STRS.push(v + BAD_STRS[j])
+     }
+  }
+  var sl2 = Math.min(5, Math.floor(sl/5))
+  for (var i = 0; i < sl2; i ++) {
+      var v = BAD_STRS[i]
+      for (var j = 0; j < sl2; j ++) {
+          var v2 = v + BAD_STRS[j]
+          for (var k = 0; k < sl2; k ++) {
+            BAD_STRS.push(v2 + BAD_STRS[k])
+          }
+      }
+  }
 
   var BAD_ARRS = []
   for (var i = 0; i < BAD_STRS.length; i ++) {
     BAD_ARRS.push([BAD_STRS[i]])
   }
   // FIXME 打开时直接卡死崩溃
-//  for (var i = 0; i < BAD_STRS.length; i ++) {
-//      var v = BAD_STRS[i]
-//      for (var j = 0; j < BAD_STRS.length; j ++) {
-//        BAD_ARRS.push([v, BAD_STRS[j]])
-//      }
-//  }
-//  for (var i = 0; i < BAD_STRS.length; i ++) {
-//      var v = BAD_STRS[i]
-//      for (var j = 0; j < BAD_STRS.length; j ++) {
-//          var v2 = BAD_STRS[j]
-//          for (var k = 0; k < BAD_STRS.length; k ++) {
-//            BAD_ARRS.push([v, v2, BAD_STRS[k]])
-//          }
-//      }
-//  }
+  var al = Math.min(10, Math.floor(BAD_STRS.length/5))
+  for (var i = 0; i < al; i ++) {
+      var v = BAD_STRS[i]
+      for (var j = 0; j < al; j ++) {
+        BAD_ARRS.push([v, BAD_STRS[j]])
+      }
+  }
+  var al2 = Math.min(3, Math.floor(al/5))
+  for (var i = 0; i < al2; i ++) {
+      var v = BAD_STRS[i]
+      for (var j = 0; j < al2; j ++) {
+          var v2 = BAD_STRS[j]
+          for (var k = 0; k < al2; k ++) {
+            BAD_ARRS.push([v, v2, BAD_STRS[k]])
+          }
+      }
+  }
 
   var BAD_OBJS = []
   for (var i = 0; i < BAD_STRS.length; i ++) {
@@ -698,18 +702,36 @@ https://github.com/Tencent/APIJSON/issues
     }
   }
   // FIXME 打开时直接卡死崩溃
-//  for (var i = 0; i < BAD_OBJS.length; i ++) {
-//      var v = BAD_OBJS[i]
-//      for (var j = 0; j < BAD_OBJS.length; j ++) {
-//        BAD_OBJS.push(Object.assign(v, BAD_OBJS[j]))
+  var ol = Math.min(10, Math.floor(BAD_STRS.length/5))
+  for (var i = 0; i < ol; i ++) {
+    var k = BAD_STRS[i]
+    var key = k == undefined ? 'undefined' : (typeof k == 'string' ? k : JSON.stringify(k))
+    for (var j = 0; j < ol; j ++) {
+      var val = BAD_STRS[j]
+
+      for (var i2 = 0; i2 < ol; i2 ++) {
+        var k2 = BAD_STRS[i2]
+        var key2 = k2 == undefined ? 'undefined' : (typeof k2 == 'string' ? k2 : JSON.stringify(k))
+        for (var j2 = 0; j2 < ol; j2 ++) {
+            BAD_OBJS.push({[key]: val, [key2]: BAD_STRS[j2]})
+        }
+      }
+    }
+  }
+//  var ol = Math.min(10, Math.floor(BAD_OBJS.length/5))
+//  for (var i = 0; i < ol; i ++) {
+//      var v = BAD_OBJS[BAD_OBJS.length - i]
+//      for (var j = 0; j < ol; j ++) {
+//        BAD_OBJS.push(Object.assign(v, BAD_OBJS[BAD_OBJS.length - j]))
 //      }
 //  }
-//  for (var i = 0; i < BAD_OBJS.length; i ++) {
-//      var v = BAD_OBJS[i]
-//      for (var j = 0; j < BAD_OBJS.length; j ++) {
-//          var v2 = Object.assign(v, BAD_OBJS[j])
-//          for (var k = 0; k < BAD_OBJS.length; k ++) {
-//            BAD_OBJS.push(Object.assign(v2, BAD_OBJS[k]))
+//  var ol2 = Math.min(2, Math.floor(ol/5))
+//  for (var i = 0; i < ol2; i ++) {
+//      var v = BAD_OBJS[BAD_OBJS.length - i]
+//      for (var j = 0; j < ol2; j ++) {
+//          var v2 = Object.assign(v, BAD_OBJS[BAD_OBJS.length - j])
+//          for (var k = 0; k < ol2; k ++) {
+//            BAD_OBJS.push(Object.assign(v2, BAD_OBJS[BAD_OBJS.length - k]))
 //          }
 //      }
 //  }
