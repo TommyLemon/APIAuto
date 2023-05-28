@@ -651,10 +651,43 @@ https://github.com/Tencent/APIJSON/issues
      '鐢辨湀瑕佸ソ濂藉涔犲ぉ澶╁悜涓?', '����Ҫ�¨²�ѧϰ������', 'ç”±æœˆè¦�å¥½å¥½å­¦ä¹ å¤©å¤©å�‘ä¸Š', 'ÓÉÔÂÒªºÃºÃÑ§Ï°ÌìÌìÏòÉÏ',
      '由月要好好学习天天向??', '锟斤拷锟斤拷要锟矫猴拷学习锟斤拷锟斤拷锟斤拷'
   ])
+  // FIXME 打开时直接卡死崩溃
+//  for (var i = 0; i < BAD_STRS.length; i ++) {
+//     var v = BAD_STRS[i]
+//     for (var j = 0; j < BAD_STRS.length; j ++) {
+//         BAD_STRS.push(v + BAD_STRS[j])
+//     }
+//  }
+//  for (var i = 0; i < BAD_STRS.length; i ++) {
+//      var v = BAD_STRS[i]
+//      for (var j = 0; j < BAD_STRS.length; j ++) {
+//          var v2 = v + BAD_STRS[j]
+//          for (var k = 0; k < BAD_STRS.length; k ++) {
+//            BAD_STRS.push(v2 + BAD_STRS[k])
+//          }
+//      }
+//  }
+
   var BAD_ARRS = []
   for (var i = 0; i < BAD_STRS.length; i ++) {
     BAD_ARRS.push([BAD_STRS[i]])
   }
+  // FIXME 打开时直接卡死崩溃
+//  for (var i = 0; i < BAD_STRS.length; i ++) {
+//      var v = BAD_STRS[i]
+//      for (var j = 0; j < BAD_STRS.length; j ++) {
+//        BAD_ARRS.push([v, BAD_STRS[j]])
+//      }
+//  }
+//  for (var i = 0; i < BAD_STRS.length; i ++) {
+//      var v = BAD_STRS[i]
+//      for (var j = 0; j < BAD_STRS.length; j ++) {
+//          var v2 = BAD_STRS[j]
+//          for (var k = 0; k < BAD_STRS.length; k ++) {
+//            BAD_ARRS.push([v, v2, BAD_STRS[k]])
+//          }
+//      }
+//  }
 
   var BAD_OBJS = []
   for (var i = 0; i < BAD_STRS.length; i ++) {
@@ -664,6 +697,22 @@ https://github.com/Tencent/APIJSON/issues
         BAD_OBJS.push({[key]: BAD_STRS[j]})
     }
   }
+  // FIXME 打开时直接卡死崩溃
+//  for (var i = 0; i < BAD_OBJS.length; i ++) {
+//      var v = BAD_OBJS[i]
+//      for (var j = 0; j < BAD_OBJS.length; j ++) {
+//        BAD_OBJS.push(Object.assign(v, BAD_OBJS[j]))
+//      }
+//  }
+//  for (var i = 0; i < BAD_OBJS.length; i ++) {
+//      var v = BAD_OBJS[i]
+//      for (var j = 0; j < BAD_OBJS.length; j ++) {
+//          var v2 = Object.assign(v, BAD_OBJS[j])
+//          for (var k = 0; k < BAD_OBJS.length; k ++) {
+//            BAD_OBJS.push(Object.assign(v2, BAD_OBJS[k]))
+//          }
+//      }
+//  }
 
   var BADS = BAD_STRS.concat(BAD_ARRS).concat(BAD_OBJS)
 
