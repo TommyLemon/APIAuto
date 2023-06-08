@@ -694,15 +694,15 @@ https://github.com/Tencent/APIJSON/issues
   }
 
   var BAD_OBJS = []
-  for (var i = 0; i < BAD_STRS.length; i ++) {
+  var ol = Math.min(10, Math.floor(BAD_STRS.length/5))
+  for (var i = 10; i < ol; i ++) { // 太多就导致 RANDOM_BAD 基本每次随机出来都是对象
     var k = BAD_STRS[i]
     var key = k == undefined ? 'undefined' : (typeof k == 'string' ? k : JSON.stringify(k))
-    for (var j = 0; j < BAD_STRS.length; j ++) {
+    for (var j = 0; j < ol; j ++) {
         BAD_OBJS.push({[key]: BAD_STRS[j]})
     }
   }
   // FIXME 打开时直接卡死崩溃
-  var ol = Math.min(10, Math.floor(BAD_STRS.length/5))
   for (var i = 0; i < ol; i ++) {
     var k = BAD_STRS[i]
     var key = k == undefined ? 'undefined' : (typeof k == 'string' ? k : JSON.stringify(k))
@@ -1387,10 +1387,10 @@ https://github.com/Tencent/APIJSON/issues
       getExtraComment: function(json) {
         var it = json != null ? json : StringUtil.trim(vInput.value);
 
-        var start = it.lastIndexOf('\n\/*');
-        var end = it.lastIndexOf('\n*\/');
+        var start = it.lastIndexOf('\n/*');
+        var end = it.lastIndexOf('\n*/');
 
-        return start < 0 || end <= start ? null : it.substring(start + '\n\/*'.length, end);
+        return start < 0 || end <= start ? null : it.substring(start + '\n/*'.length, end);
       },
 
       getHeader: function (text) {
@@ -2443,7 +2443,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           if (isExportRandom && btnIndex <= 0 && did == null) {
-            alert('请先共享测试用例！')
+            alert('请先上传测试用例！')
             return
           }
 
@@ -2512,7 +2512,7 @@ https://github.com/Tencent/APIJSON/issues
                   continue;
                 }
 
-                var k = cfgLine.substring(0, ind).replace(/\//g, '.'); // .trim();
+                var k = cfgLine.substring(0, ind).replaceAll('/', '.'); // .trim();
                 var ks = StringUtil.split(k, '.')
                 var p = inputObj;
                 for (var j = 0; j < ks.length - 1; j ++) {
@@ -2565,7 +2565,7 @@ https://github.com/Tencent/APIJSON/issues
             //         continue;
             //       }
             //
-            //       var k = cfgLine.substring(0, ind).replace(/\//g, '.'); // .trim();
+            //       var k = cfgLine.substring(0, ind).replaceAll('/', '.'); // .trim();
             //       var v = cfgLine.substring(ind + 1).trim();
             //       try {
             //         v = JSON.parse(v);
@@ -2587,6 +2587,7 @@ https://github.com/Tencent/APIJSON/issues
             const extName = App.exTxt.name;
             const baseUrl = App.getBaseUrl();
             const url = (isReleaseRESTful ? baseUrl : App.server) + (isExportRandom || isEditResponse || did == null ? '/post' : '/put')
+            const reqObj = btnIndex <= 0 ? constJson : mapReq
             const req = isExportRandom && btnIndex <= 0 ? {
               format: false,
               'Random': {
@@ -2606,11 +2607,12 @@ https://github.com/Tencent/APIJSON/issues
               'Document': isEditResponse ? null : {
                 'id': did == null ? undefined : did,
 //                'testAccountId': currentAccountId,
+                'operation': CodeUtil.getOperation(method, reqObj),
                 'name': extName,
                 'method': method,
                 'type': App.type,
                 'url': '/' + path, // 'url': isReleaseRESTful ? ('/' + methodInfo.method + '/' + methodInfo.tag) : ('/' + path),
-                'request': JSON.stringify(btnIndex <= 0 ? constJson : mapReq, null, '    '),
+                'request': JSON.stringify(reqObj, null, '    '),
                 'apijson': btnIndex <= 0 ? undefined : JSON.stringify(constJson, null, '    '),
                 'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
                 'header': vHeader.value,
@@ -2797,7 +2799,7 @@ https://github.com/Tencent/APIJSON/issues
                 }
               }
 
-              config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, []' + val + ')'
+              config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, false, true, -1025, 0, [], {}, 1, 3.14, "null", "undefined", Number.MAX_SAFE_INTEGER, "-1025", "0", "" + Number.MAX_SAFE_INTEGER, "[", "]", "{", "}", "1", "3.14", "true", "false"' + val + ')'
           }
           else {
               config += prefix + '[]'
@@ -2809,7 +2811,7 @@ https://github.com/Tencent/APIJSON/issues
                    break
                  }
 
-                 config += '\n' + cfg
+                 config += '\n' + cfg.trim()
               }
           }
 
@@ -3223,7 +3225,7 @@ https://github.com/Tencent/APIJSON/issues
                       continue
                     }
 
-                    // var p = listItem1.path == null ? null : StringUtil.noBlank(listItem1.path).replace(/\/\//g, '/')
+                    // var p = listItem1.path == null ? null : StringUtil.noBlank(listItem1.path).replaceAll('//', '/')
                     // if (p == null) {
                     //   continue
                     // }
@@ -3707,13 +3709,14 @@ https://github.com/Tencent/APIJSON/issues
             'creator': creator,
             'testAccountId': currentAccountId,
             'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
+            'operation': CodeUtil.getOperation(method, reqObj),
             'type': type,
             'name': StringUtil.get(name),
             'url': this.getBranchUrl(url),
             'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
             'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
-            'detail': StringUtil.trim(description).replace(/\*\//g, '* /')
+            'detail': StringUtil.trim(description).replaceAll('*/', '* /')
           },
           'TestRecord': {
             'randomId': 0,
@@ -3997,8 +4000,9 @@ https://github.com/Tencent/APIJSON/issues
                 '@order': 'version-,date-',
                 'userId': this.User.id,
                 'name$': search,
+                'operation$': search,
                 'url$': search,
-                '@combine':  search == null ? null : 'name$,url$',
+                '@combine':  search == null ? null : 'name$,operation$,url$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
                 '@null': 'sqlauto' //'sqlauto{}': '=null'
@@ -4995,9 +4999,9 @@ https://github.com/Tencent/APIJSON/issues
             try {
               // 去掉前面的 JSON
               var raw = StringUtil.trim(isSingle ? vInput.value : vComment.value);
-              var start = raw.lastIndexOf('\n\/*')
-              var end = raw.lastIndexOf('\n*\/')
-              var ct = start < 0 || end <= start ? '' : StringUtil.trim(raw.substring(start + '\n\/*'.length, end))
+              var start = raw.lastIndexOf('\n/*')
+              var end = raw.lastIndexOf('\n*/')
+              var ct = start < 0 || end <= start ? '' : StringUtil.trim(raw.substring(start + '\n/*'.length, end))
 
               markdownToHTML('```js\n' + (start < 0 || end <= start ? raw : raw.substring(0, start)) + '\n```\n'
                 + (StringUtil.isEmpty(ct, true) ? '' : ct + '\n\n```js\n' + ct + '\n```\n'), true);
@@ -5358,6 +5362,7 @@ https://github.com/Tencent/APIJSON/issues
           'Document': {
             'userId': this.User.id,
             'name': this.formatDateTime() + ' ' + (this.urlComment || StringUtil.trim(req.tag)),
+            'operation': CodeUtil.getOperation(method, req),
             'method': method,
             'type': this.type,
             'url': '/' + path,
@@ -8611,9 +8616,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (allCount <= 0) {
           if (callback) {
-            callback('请先获取测试用例文档\n点击[查看共享]图标按钮')
+            callback('请先获取测试用例文档\n点击[查看用例列表]图标按钮')
           } else {
-            alert('请先获取测试用例文档\n点击[查看共享]图标按钮')
+            alert('请先获取测试用例文档\n点击[查看用例列表]图标按钮')
           }
           return
         }

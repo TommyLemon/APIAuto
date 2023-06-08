@@ -288,6 +288,35 @@ var CodeUtil = {
   },
 
 
+  getOperation: function (method, json) {
+        var method = StringUtil.toLowerCase(method)
+        if (method.startsWith('insert') || method.startsWith('post') || method.startsWith('add')
+          || method.startsWith('pub') || method.startsWith('write')) {
+          return 'INSERT'
+        }
+        if (method.startsWith('update') || method.startsWith('edit') || method.startsWith('put')
+          || method.startsWith('patch') || method.startsWith('mutate') || method.startsWith('mod')) { // modify
+          return 'UPDATE'
+        }
+        if (method.startsWith('del') || method.startsWith('remove') || method.startsWith('rmv')
+          || method.startsWith('clear') || method.startsWith('clean') || method.startsWith('release')) {
+          return 'DELETE'
+        }
+        if (method.startsWith('get') || method.startsWith('find') || method.startsWith('query') || method.startsWith('list')
+          || method.startsWith('search') || method.startsWith('select') || method.startsWith('read')
+          || method.startsWith('retrieve') || method.startsWith('fetch')) {
+          return 'SELECT'
+        }
+        if (JSONResponse.getType(json) == 'object') {
+          for (var key in json) {
+              var k = key == null ? null : k.replaceAll('_', '').toLowerCase()
+              if (k.startsWith('page') || json.size != null || json.orderby != null) {
+                 return 'SELECT'
+              }
+          }
+        }
+        return null // 'SELECT'
+  },
 
   /**生成封装 Unity3D-C# 请求 JSON 的代码
    * 只需要把所有 对象标识{} 改为数组标识 []
