@@ -309,7 +309,7 @@ var CodeUtil = {
         }
         if (JSONResponse.getType(json) == 'object') {
           for (var key in json) {
-              var k = key == null ? null : k.replaceAll('_', '').toLowerCase()
+              var k = key == null ? '' : key.replaceAll('_', '').toLowerCase()
               if (k.startsWith('page') || json.size != null || json.orderby != null) {
                  return 'SELECT'
               }

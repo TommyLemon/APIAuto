@@ -2607,7 +2607,7 @@ https://github.com/Tencent/APIJSON/issues
               'Document': isEditResponse ? null : {
                 'id': did == null ? undefined : did,
 //                'testAccountId': currentAccountId,
-                'operation': CodeUtil.getOperation(method, reqObj),
+                'operation': CodeUtil.getOperation(path, reqObj),
                 'name': extName,
                 'method': method,
                 'type': App.type,
@@ -3703,16 +3703,17 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         var currentAccountId = this.getCurrentAccountId()
+        var path = this.getBranchUrl(url)
         this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
           format: false,
           'Document': {
             'creator': creator,
             'testAccountId': currentAccountId,
             'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
-            'operation': CodeUtil.getOperation(method, reqObj),
+            'operation': CodeUtil.getOperation(path.substring(1), reqObj),
             'type': type,
             'name': StringUtil.get(name),
-            'url': this.getBranchUrl(url),
+            'url': path,
             'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
             'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
@@ -5362,7 +5363,7 @@ https://github.com/Tencent/APIJSON/issues
           'Document': {
             'userId': this.User.id,
             'name': this.formatDateTime() + ' ' + (this.urlComment || StringUtil.trim(req.tag)),
-            'operation': CodeUtil.getOperation(method, req),
+            'operation': CodeUtil.getOperation(path, req),
             'method': method,
             'type': this.type,
             'url': '/' + path,
