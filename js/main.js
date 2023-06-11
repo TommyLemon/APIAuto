@@ -2696,38 +2696,11 @@ https://github.com/Tencent/APIJSON/issues
                   //自动生成随机配置（遍历 JSON，对所有可变值生成配置，排除 @key, key@, key() 等固定值）
 
                   const isGenerate = StringUtil.isEmpty(config, true);
-                  var configs = []
-                  if (isGenerate) {
-                    var req = isReleaseRESTful ? mapReq : App.getRequest(vInput.value, {})
-                    var config = StringUtil.trim(App.newRandomConfig(null, '', req, false))
+                  var req = isGenerate != true ? null : (isReleaseRESTful ? mapReq : App.getRequest(vInput.value, {}))
+                  App.newAndUploadRandomConfig(baseUrl, req, (rpObj.Document || {}).id, config, App.requestCount, function (url, res, err) {
 
-                    if (StringUtil.isEmpty(config, true)) {
-                      return;
-                    }
 
-                    configs.push(config)
-                    config2 = StringUtil.trim(App.newRandomConfig(null, '', req, true))
-                    if (StringUtil.isNotEmpty(config2, true)) {
-                      configs.push(config2)
-                    }
-                  }
 
-                  for (var i = 0; i < configs.length; i ++) {
-                      const config = configs[i]
-                      App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : App.server) + '/post', {
-                        format: false,
-                        'Random': {
-                          documentId: rpObj.Document.id,
-                          count: App.requestCount,
-                          name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
-                          config: config
-                        },
-                        TestRecord: {
-                          host: baseUrl,
-                          response: ''
-                        },
-                        'tag': 'Random'
-                      }, {}, function (url, res, err) {
                         if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
                           alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
                           App.isRandomListShow = true
@@ -2737,8 +2710,7 @@ https://github.com/Tencent/APIJSON/issues
                           vRandom.value = config
                         }
                         App.onResponse(url, res, err)
-                      })
-                  }
+                  }, isReleaseRESTful)
                 }
               }
             })
@@ -2752,6 +2724,41 @@ https://github.com/Tencent/APIJSON/issues
             callback(null, null, inputObj)
           }
 
+        }
+      },
+      newAndUploadRandomConfig: function(baseUrl, req, documentId, config, count, callback, isReleaseRESTful) {
+                  if (documentId == null) {
+                     return
+                  }
+                  const isGenerate = StringUtil.isEmpty(config, true);
+                  var configs = isGenerate ? [] : [config]
+                  if (isGenerate) {
+                    var config = StringUtil.trim(this.newRandomConfig(null, '', req, false))
+                    if (StringUtil.isEmpty(config, true)) {
+                      return;
+                    }
+                    configs.push(config)
+                    config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
+                    if (StringUtil.isNotEmpty(config2, true)) {
+                      configs.push(config2)
+                    }
+                  }
+                  for (var i = 0; i < configs.length; i ++) {
+                      const config = configs[i]
+                      this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : this.server) + '/post', {
+                        format: false,
+                        'Random': {
+                          documentId: documentId,
+                          count: count,
+                          name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
+                          config: config
+                        },
+                        TestRecord: {
+                          host: baseUrl,
+                          response: ''
+                        },
+                        'tag': 'Random'
+                      }, {}, callback)
         }
       },
 
@@ -3658,7 +3665,7 @@ https://github.com/Tencent/APIJSON/issues
         if (typeof json == 'string') {
           json = JSON.parse(json)
         }
-        var reqObj = json || {}
+        const reqObj = json || {}
 
         var req = '{'
 
@@ -3709,7 +3716,8 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         var currentAccountId = this.getCurrentAccountId()
-        var path = this.getBranchUrl(url)
+        const baseUrl = this.getBaseUrl(url)
+        const path = this.getBranchUrl(url)
         this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
           format: false,
           'Document': {
@@ -3727,23 +3735,28 @@ https://github.com/Tencent/APIJSON/issues
           },
           'TestRecord': {
             'randomId': 0,
-            'host': this.getBaseUrl(url),
+            'host': baseUrl,
             'testAccountId': currentAccountId,
             'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
           },
           'tag': 'Document'
         }, {}, function (url, res, err) {
           //太卡 App.onResponse(url, res, err)
-          if (res.data != null && res.data.Document != null && JSONResponse.isSuccess(res.data.Document)) {
+          var rpObj = res.data
+          if (rpObj != null && rpObj.Document != null && JSONResponse.isSuccess(res.data.Document)) {
             App.uploadDoneCount ++
           } else {
             App.uploadFailCount ++
           }
 
+          App.newAndUploadRandomConfig(baseUrl, reqObj, (rpObj.Document || {}).id, null, 5)
           App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
           if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
             alert('导入完成')
             App.isSyncing = false
+            App.testCasePage = 0
+            App.isRandomShow = true
+            App.isRandomListShow = true
             App.showTestCase(false, false)
             App.remotes = []
             App.showTestCase(true, false)
