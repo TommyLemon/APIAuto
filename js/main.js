@@ -1104,6 +1104,7 @@ https://github.com/Tencent/APIJSON/issues
       uploadTotal: 0,
       uploadDoneCount: 0,
       uploadFailCount: 0,
+      uploadRandomCount: 0,
       exTxt: {
         name: 'APIJSON测试',
         label: '发布简单接口',
@@ -3050,9 +3051,7 @@ https://github.com/Tencent/APIJSON/issues
                   }
                   App.exTxt.button = '...'
 
-                  App.uploadTotal = 0 // apis.length || 0
-                  App.uploadDoneCount = 0
-                  App.uploadFailCount = 0
+                  App.resetUploading()
 
                   var item
                   // var i = 0
@@ -3110,9 +3109,7 @@ https://github.com/Tencent/APIJSON/issues
                 }
 
                 if (isJSONData) {
-                  App.uploadTotal = 0 // apis.length || 0
-                  App.uploadDoneCount = 0
-                  App.uploadFailCount = 0
+                  App.resetUploading()
 
                   itemCallback(itemUrl, { data: jsonData }, null)
                 }
@@ -3133,9 +3130,7 @@ https://github.com/Tencent/APIJSON/issues
                     }
                     App.exTxt.button = '...'
 
-                    App.uploadTotal = 0 // apis.length || 0
-                    App.uploadDoneCount = 0
-                    App.uploadFailCount = 0
+                    App.resetUploading()
 
                     if (isPostman) {
                       itemCallback(itemUrl, { data: res.data }, null)
@@ -3171,6 +3166,12 @@ https://github.com/Tencent/APIJSON/issues
 
             break
         }
+      },
+      resetUploading: function() {
+        App.uploadTotal = 0 // apis.length || 0
+        App.uploadDoneCount = 0
+        App.uploadFailCount = 0
+        App.uploadRandomCount = 0
       },
 
       getThirdPartyApiList: function (thirdParty, listCallback, itemCallback) {
@@ -3720,6 +3721,7 @@ https://github.com/Tencent/APIJSON/issues
 
         var commentObj = JSONResponse.updateStandard({}, reqObj);
         CodeUtil.parseComment(req, null, url, this.database, this.language, true, commentObj, true)
+        var standard = this.isMLEnabled ? JSONResponse.updateStandard({}, rspObj) : null
 
         name = StringUtil.get(name)
         if (name.length > 100) {
@@ -3735,20 +3737,20 @@ https://github.com/Tencent/APIJSON/issues
             const isRandom = did != null && did > 0
             var config = isRandom ? StringUtil.trim(App.newRandomConfig(null, '', reqObj, false, null, null, true)) : null
             App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, App.server + '/post', {
-          format: false,
+              format: false,
               'Document': isRandom ? undefined : {
-            'creator': creator,
-            'testAccountId': currentAccountId,
-            'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
-            'operation': CodeUtil.getOperation(path.substring(1), reqObj),
-            'type': type,
-            'name': StringUtil.get(name),
-            'url': path,
-            'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
-            'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
-            'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
-            'detail': StringUtil.trim(description).replaceAll('*/', '* /')
-          },
+                'creator': creator,
+                'testAccountId': currentAccountId,
+                'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
+                'operation': CodeUtil.getOperation(path.substring(1), reqObj),
+                'type': type,
+                'name': StringUtil.get(name),
+                'url': path,
+                'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
+                'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
+                'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
+                'detail': StringUtil.trim(description).replaceAll('*/', '* /')
+              },
               'Random': isRandom ? {
                 toId: 0,
                 documentId: did,
@@ -3756,29 +3758,33 @@ https://github.com/Tencent/APIJSON/issues
                 name: '常量取值 ' + App.formatDateTime(),
                 config: config
               } : undefined,
-          'TestRecord': {
-            'randomId': 0,
-            'host': baseUrl,
-            'testAccountId': currentAccountId,
-            'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
-          },
+              'TestRecord': {
+                'randomId': 0,
+                'host': baseUrl,
+                'testAccountId': currentAccountId,
+                'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
+                'standard': standard == null ? '' : JSON.stringify(standard, null, '    '),
+              },
               'tag': isRandom ? 'Random' : 'Document'
-        }, {}, function (url, res, err) {
-          //太卡 App.onResponse(url, res, err)
+            }, {}, function (url, res, err) {
+              //太卡 App.onResponse(url, res, err)
               var rpObj = res.data || {}
               var tblObj = isRandom ? rpObj.Random : rpObj.Document
               if (tblObj.id != null && tblObj.id > 0) {
-            App.uploadDoneCount ++
-          } else {
-            App.uploadFailCount ++
-          }
+                App.uploadDoneCount ++
+                if (isRandom) {
+                  App.uploadRandomCount ++
+                }
+              } else {
+                App.uploadFailCount ++
+              }
 
               if (isRandom != true) {
                 App.newAndUploadRandomConfig(baseUrl, reqObj, tblObj.id, null, 5)
               }
           App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
           if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
-            alert('导入完成')
+            alert('导入完成，其中 ' + App.uploadRandomCount + ' 个接口已存在，改为生成和上传了参数注入配置')
             App.isSyncing = false
             App.testCasePage = 0
             App.isRandomShow = true
