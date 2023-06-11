@@ -372,7 +372,7 @@ var JSONResponse = {
         path: ''
       }
     }
-    codeName = StringUtil.isEmpty(codeName, true) ? 'code' : codeName;
+    codeName = StringUtil.isEmpty(codeName, true) ? JSONResponse.KEY_CODE : codeName;
     var tCode = (target || {})[codeName];
     var rCode = (real || {})[codeName];
 
