@@ -2747,7 +2747,7 @@ https://github.com/Tencent/APIJSON/issues
                       const config = configs[i]
                       this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : this.server) + '/post', {
                         format: false,
-                        'Random': {
+                        Random: {
                           documentId: documentId,
                           count: count,
                           name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
@@ -2757,7 +2757,7 @@ https://github.com/Tencent/APIJSON/issues
                           host: baseUrl,
                           response: ''
                         },
-                        'tag': 'Random'
+                        tag: 'Random'
                       }, {}, callback)
         }
       },
@@ -2775,7 +2775,7 @@ https://github.com/Tencent/APIJSON/issues
          }
       },
 
-      newRandomConfig: function (path, key, value, isRand, isBad, noDeep) {
+      newRandomConfig: function (path, key, value, isRand, isBad, noDeep, isConst) {
         if (key == null) {
           return ''
         }
@@ -2791,6 +2791,14 @@ https://github.com/Tencent/APIJSON/issues
         var offset = (isPositive ? '+' : '') + (isPositive ? 1 : -1)*randomPrimeInt()
 
         if (value instanceof Array) {
+          if (isConst) {
+               config += prefix + '[]'
+               for (var i = 0; i < value.length; i ++) {
+                  var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst)
+                  config += '\n' + (StringUtil.isEmpty(cfg, true) ? 'null' : cfg.trim())
+               }
+               return config
+          }
           if (isBad && noDeep && StringUtil.isNotEmpty(childPath, true)) {
             return prefix + (isRand ? 'RANDOM_BAD_ARR' : 'ORDER_BAD_ARR' + offset) + '()'
           }
@@ -2819,7 +2827,7 @@ https://github.com/Tencent/APIJSON/issues
 
               var l = randomInt(0, 13)
               for (var i = 0; i < l; i ++) {
-                 var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep)
+                 var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst)
                  if (StringUtil.isEmpty(cfg, true)) {
                    break
                  }
@@ -2838,7 +2846,7 @@ https://github.com/Tencent/APIJSON/issues
           for (var k in value) {
             var v = value[k]
 
-            var isAPIJSONArray = v instanceof Object && v instanceof Array == false
+            var isAPIJSONArray = isConst == false && v instanceof Object && v instanceof Array == false
               && k.startsWith('@') == false && (k.endsWith('[]') || k.endsWith('@'))
 
             if (isAPIJSONArray) {
@@ -2863,7 +2871,7 @@ https://github.com/Tencent/APIJSON/issues
               }
             }
 
-            var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep)
+            var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep, isConst)
             if (StringUtil.isNotEmpty(cfg, true)) {
               config += '\n' + cfg
             }
@@ -2872,6 +2880,9 @@ https://github.com/Tencent/APIJSON/issues
           return config
         }
         else {
+          if (isConst) {
+            return prefix + JSON.stringify(value) // 会自动给 String 加 ""
+          }
           //自定义关键词
           if (key.startsWith('@')) {
             return config
@@ -3718,9 +3729,14 @@ https://github.com/Tencent/APIJSON/issues
         var currentAccountId = this.getCurrentAccountId()
         const baseUrl = this.getBaseUrl(url)
         const path = this.getBranchUrl(url)
-        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
+        var callback = function (url, res, err) {
+            var data = res.data
+            var did = data.Document == null ? null : data.Document.id
+            const isRandom = did != null && did > 0
+            var config = isRandom ? StringUtil.trim(App.newRandomConfig(null, '', reqObj, false, null, null, true)) : null
+            App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, App.server + '/post', {
           format: false,
-          'Document': {
+              'Document': isRandom ? undefined : {
             'creator': creator,
             'testAccountId': currentAccountId,
             'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
@@ -3733,23 +3749,33 @@ https://github.com/Tencent/APIJSON/issues
             'header': StringUtil.isEmpty(header, true) ? null : StringUtil.trim(header),
             'detail': StringUtil.trim(description).replaceAll('*/', '* /')
           },
+              'Random': isRandom ? {
+                toId: 0,
+                documentId: did,
+                count: 1,
+                name: '常量取值 ' + App.formatDateTime(),
+                config: config
+              } : undefined,
           'TestRecord': {
             'randomId': 0,
             'host': baseUrl,
             'testAccountId': currentAccountId,
             'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
           },
-          'tag': 'Document'
+              'tag': isRandom ? 'Random' : 'Document'
         }, {}, function (url, res, err) {
           //太卡 App.onResponse(url, res, err)
-          var rpObj = res.data
-          if (rpObj != null && rpObj.Document != null && JSONResponse.isSuccess(res.data.Document)) {
+              var rpObj = res.data || {}
+              var tblObj = isRandom ? rpObj.Random : rpObj.Document
+              if (tblObj.id != null && tblObj.id > 0) {
             App.uploadDoneCount ++
           } else {
             App.uploadFailCount ++
           }
 
-          App.newAndUploadRandomConfig(baseUrl, reqObj, (rpObj.Document || {}).id, null, 5)
+              if (isRandom != true) {
+                App.newAndUploadRandomConfig(baseUrl, reqObj, tblObj.id, null, 5)
+              }
           App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
           if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
             alert('导入完成')
@@ -3762,6 +3788,16 @@ https://github.com/Tencent/APIJSON/issues
             App.showTestCase(true, false)
           }
         })
+        }
+        if (JSONObject.isAPIJSONPath(path)) {
+          callback(url, {}, null)
+        }
+        else {
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get/Document?format=false&@role=OWNER', {
+               url: path,
+               method: StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase()
+            }, {}, callback)
+        }
 
         return true
       },
