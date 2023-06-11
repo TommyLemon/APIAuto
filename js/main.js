@@ -1060,6 +1060,7 @@ https://github.com/Tencent/APIJSON/issues
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
+      currentHttpResponse: {},
       currentDocItem: {},
       currentRemoteItem: {
         "Document":  {
@@ -2483,6 +2484,7 @@ https://github.com/Tencent/APIJSON/issues
 
           const isML = this.isMLEnabled;
           const stddObj = isML ? JSONResponse.updateStandard({}, currentResponse) : {};
+          stddObj.status = (this.currentHttpResponse || {}).status || 200;
           stddObj.code = code;
           stddObj.throw = thrw;
           currentResponse.code = code;
@@ -3951,7 +3953,7 @@ https://github.com/Tencent/APIJSON/issues
                 continue
               }
 
-              this.compareResponse(allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
+              this.compareResponse(null, allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
             }
           }
         }
@@ -4165,7 +4167,7 @@ https://github.com/Tencent/APIJSON/issues
 
               var subCount = r.count || 0
               if (subCount == 1) {
-                this.compareResponse(randomCount, randoms, i, item, tests[r.id], true, accountIndex, true)
+                this.compareResponse(null, randomCount, randoms, i, item, tests[r.id], true, accountIndex, true)
               }
               else if (subCount > 1) {
                 var subRandoms = item['[]'] || []
@@ -4177,7 +4179,7 @@ https://github.com/Tencent/APIJSON/issues
                     continue
                   }
 
-                  this.compareResponse(subSize, subRandoms, j, subItem, tests[sr.id > 0 ? sr.id : (sr.toId + '' + sr.id)], true, accountIndex, true)
+                  this.compareResponse(null, subSize, subRandoms, j, subItem, tests[sr.id > 0 ? sr.id : (sr.toId + '' + sr.id)], true, accountIndex, true)
                 }
               }
             }
@@ -5439,6 +5441,7 @@ https://github.com/Tencent/APIJSON/issues
             // crossDomain: true
           })
             .then(function (res) {
+              App.currentHttpResponse = res
               clearTimeout(errHandler)
               var postEvalResult = evalPostScript(url, res, null)
               if (postEvalResult == BREAK_ALL) {
@@ -5503,7 +5506,9 @@ https://github.com/Tencent/APIJSON/issues
               App.onResponse(url, res, null)
             })
             .catch(function (err) {
-              var res = {request: {url: url, headers: header, data: req}}
+              var errObj = err instanceof Array == false && err instanceof Object ? err : {}
+              var res = {status: errObj.status || (errObj.response || {}).status, request: {url: url, headers: header, data: req}, data: (errObj.response || {}).data}
+              App.currentHttpResponse = res
 
               var postEvalResult = evalPostScript(url, res, err)
               if (postEvalResult == BREAK_ALL) {
@@ -7766,12 +7771,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
 
-                App.compareResponse(allCount, list, index, item, data, true, App.currentAccountIndex, false, err, null, isCross, callback)
+                App.compareResponse(res, allCount, list, index, item, data, true, App.currentAccountIndex, false, err, null, isCross, callback)
                 return true
               })
             }
             catch (e) {
-              this.compareResponse(allCount, list, index, item, data, true, this.currentAccountIndex, false, e, null, isCross, callback)
+              this.compareResponse(res, allCount, list, index, item, data, true, this.currentAccountIndex, false, e, null, isCross, callback)
             }
           }
         }
@@ -8718,7 +8723,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             if (isEnvCompare != true) {
-              App.compareResponse(allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
+              App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
               return
             }
 
@@ -8742,7 +8747,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              App.compareResponse(allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback)
+              App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback)
             }, caseScript)
 
           }, caseScript)
@@ -8750,7 +8755,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       },
 
-      compareResponse: function (allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback) {
+      compareResponse: function (res, allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback) {
         var it = item || {} //请求异步
         var d = (isRandom ? (this.currentRemoteItem || {}).Document : it.Document) || {} //请求异步
         var r = isRandom ? it.Random : null //请求异步
@@ -8765,8 +8770,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             throw new Error("response['time:start|duration|end|parse|sql'] is null!");
           }
 
-          var di = durationInfo.substring(durationInfo.indexOf('\|') + 1)
-          it.duration = di.substring(0, di.indexOf('\|') || di.length) || 0
+          var di = durationInfo.substring(durationInfo.indexOf('|') + 1)
+          it.duration = di.substring(0, di.indexOf('|') || di.length) || 0
           var dt = + it.duration
           it.duration = dt
           it.durationShowStr = dt <= 0 ? '' : (dt < 1000 ? dt + 'ms' : (dt < 1000*60 ? (dt/1000).toFixed(1) + 's' : (dt <= 1000*60*60 ? (dt/1000/60).toFixed(1) + 'm' : '>1h')))
@@ -8784,10 +8789,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         if (err != null) {
+          var status = res == null ? null : res.status
           tr.compare = {
             code: JSONResponse.COMPARE_ERROR, //请求出错
             msg: '请求出错！',
-            path: err.message + '\n\n'
+            path: (status != null && status != 200 ? status + ' ' : '') + err.message
           }
         }
         else {
@@ -8799,16 +8805,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           
           var standard = typeof stdd != 'string' ? stdd : (StringUtil.isEmpty(stdd, true) ? null : JSON.parse(stdd))
-          tr.compare = JSONResponse.compareResponse(standard, this.removeDebugInfo(response) || {}, '', isML, null, null, ignoreTrend) || {}
+          tr.compare = JSONResponse.compareResponse(res, standard, this.removeDebugInfo(response) || {}, '', isML, null, null, ignoreTrend) || {}
           tr.compare.duration = it.durationHint
         }
 
-        this.onTestResponse(allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback);
+        this.onTestResponse(res, allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback);
       },
 
-      onTestResponse: function(allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback) {
+      onTestResponse: function(res, allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback) {
         tr = tr || {}
         tr.compare = cmp;
+        var status = res == null ? null : res.status
 
         it = it || {}
         it.compareType = tr.compare.code;
@@ -8816,7 +8823,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         switch (it.compareType) {
           case JSONResponse.COMPARE_ERROR:
             it.compareColor = 'red'
-            it.compareMessage = '请求出错！'
+            it.compareMessage = (status != null && status != 200 ? status + ' ' : '') + '请求出错！'
             break;
           case JSONResponse.COMPARE_NO_STANDARD:
             it.compareColor = 'green'
@@ -8835,8 +8842,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             it.compareMessage = '缺少字段/整数变小数 等'
             break;
           case JSONResponse.COMPARE_TYPE_CHANGE:
+            var code = response == null ? null : response[JSONResponse.KEY_CODE]
             it.compareColor = 'red'
-            it.compareMessage = '状态码/异常/值类型 改变等'
+            it.compareMessage = (code != null && code != JSONResponse.CODE_SUCCESS
+             ? code + ' ' : (status != null && status != 200 ? status + ' ' : '')) + '状态码/异常/值类型 改变等'
             break;
           default:
             it.compareColor = 'white'
@@ -9524,7 +9533,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           item.TestRecord = data.TestRecord
-          App.compareResponse(allCount, list, index, item, response, isRandom, accountIndex, true, err, ignoreTrend, isCross);
+          App.compareResponse(res, allCount, list, index, item, response, isRandom, accountIndex, true, err, ignoreTrend, isCross);
         })
       },
 

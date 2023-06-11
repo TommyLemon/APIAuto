@@ -66,6 +66,9 @@ function log(msg) {
 var JSONResponse = {
   TAG: 'JSONResponse',
 
+  KEY_CODE: 'code',
+  KEY_MSG: 'msg',
+  CODE_SUCCESS: 200,
   /**是否成功
    * @param code
    * @return
@@ -75,14 +78,11 @@ var JSONResponse = {
       return false
     }
 
-    if (typeof obj == 'number') {
-      return obj == CODE_SUCCESS;
-    }
-    if (obj instanceof Object && obj instanceof Array == false) {
-      return obj.code == CODE_SUCCESS;
+    if (obj instanceof Array == false && obj instanceof Object) {
+      return obj[JSONResponse.KEY_CODE] == JSONResponse.CODE_SUCCESS;
     }
 
-    return false
+    return obj == JSONResponse.CODE_SUCCESS
   },
 
   /**校验服务端是否存在table
@@ -362,7 +362,16 @@ var JSONResponse = {
    3-对象缺少字段/整数变小数，黄色；
    4-code/值类型 改变，红色；
    */
-  compareResponse: function(target, real, folder, isMachineLearning, codeName, exceptKeys, ignoreTrend) {
+  compareResponse: function(res, target, real, folder, isMachineLearning, codeName, exceptKeys, ignoreTrend) {
+    var tStatus = (target || {}).status || 200;
+    var rStatus = (res || {}).status;
+    if (rStatus != null && rStatus != tStatus) {
+      return {
+        code: JSONResponse.COMPARE_CODE_CHANGE,
+        msg: 'HTTP Status Code 改变！' + tStatus + ' -> ' + rStatus,
+        path: ''
+      }
+    }
     codeName = StringUtil.isEmpty(codeName, true) ? 'code' : codeName;
     var tCode = (target || {})[codeName];
     var rCode = (real || {})[codeName];
@@ -380,7 +389,7 @@ var JSONResponse = {
       if (typeof rCode == 'number' && (rCode%10 != 0 || (rCode >= 400 && rCode < 600))) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且状态码在 [400, 599] 内或不是 0, 200 等以 0 结尾的数',
+          msg: '没有校验标准，且状态码 ' + rCode + ' 在 [400, 599] 内或不是 0, 200 等以 0 结尾的数',
           path: folder == null ? '' : folder
         };
       }
@@ -388,7 +397,7 @@ var JSONResponse = {
       if (real != null && real.throw != null) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且 throw 不是 null',
+          msg: '没有校验标准，且 throw 不是 null，而是 ' + real.throw,
           path: folder == null ? '' : folder
         };
       }
@@ -426,18 +435,18 @@ var JSONResponse = {
       if (find != null) {
         return {
           code: JSONResponse.COMPARE_EQUAL_EXCEPTION,
-          msg: '符合异常分支 ' + codeName + ':' + rCode + (StringUtil.isEmpty(rThrw) ? '' : ', throw:' + rThrw) + ', msg:' + StringUtil.trim(find.msg),
+          msg: '符合异常分支 ' + rCode + (StringUtil.isEmpty(rThrw) ? '' : ' ' + rThrw + ':') + ' ' + StringUtil.trim(find.msg),
           path: folder == null ? '' : folder
         };
       }
 
       return rCode != tCode ? {
         code: JSONResponse.COMPARE_CODE_CHANGE,
-        msg: '状态码 ' + codeName + ' 改变！',
+        msg: '状态码 ' + codeName + ' 改变！' + tCode + ' -> ' + rCode,
         path: folder == null ? '' : folder
       } : {
         code: JSONResponse.COMPARE_THROW_CHANGE,
-        msg: '异常 throw 改变！',
+        msg: '异常 throw 改变！' + tThrw + ' -> ' + rThrw,
         path: folder == null ? '' : folder
       };
     }
@@ -516,7 +525,7 @@ var JSONResponse = {
       if (type != "integer" || realType != "number") {
         return {
           code: JSONResponse.COMPARE_TYPE_CHANGE,
-          msg: '值类型改变',
+          msg: '值类型改变！' + type + " -> " + realType,
           path: folder,
           value: real
         };
