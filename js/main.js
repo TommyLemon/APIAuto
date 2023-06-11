@@ -2087,9 +2087,13 @@ https://github.com/Tencent/APIJSON/issues
         this.restoreRemote(index, item, true)
       },
       // 根据测试用例/历史记录恢复数据
-      restoreRemote: function (index, item, test) {
+      restoreRemote: function (index, item, test, showRandom) {
         this.currentDocIndex = index
         this.currentRemoteItem = item
+        if (showRandom != null) {
+           this.isRandomShow = showRandom
+           this.isRandomListShow = showRandom
+        }
         this.restore(item, ((item || {}).TestRecord || {}).response, true, test)
       },
       // 根据历史恢复数据
@@ -9262,6 +9266,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var random = item.Random = item.Random || {}
         var document;
         if (isRandom) {
+          this.isRandomShow = true
+          this.isRandomListShow = true
           if ((random.count || 0) > 1) {
             this.currentRandomIndex = index
             // this.currentRandomSubIndex = -1
