@@ -3782,18 +3782,18 @@ https://github.com/Tencent/APIJSON/issues
               if (isRandom != true) {
                 App.newAndUploadRandomConfig(baseUrl, reqObj, tblObj.id, null, 5)
               }
-          App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
-          if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
-            alert('导入完成，其中 ' + App.uploadRandomCount + ' 个接口已存在，改为生成和上传了参数注入配置')
-            App.isSyncing = false
-            App.testCasePage = 0
-            App.isRandomShow = true
-            App.isRandomListShow = true
-            App.showTestCase(false, false)
-            App.remotes = []
-            App.showTestCase(true, false)
-          }
-        })
+              App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
+              if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
+                alert('导入完成，其中 ' + App.uploadRandomCount + ' 个接口已存在，改为生成和上传了参数注入配置')
+                App.isSyncing = false
+                App.testCasePage = 0
+                App.isRandomShow = true
+                App.isRandomListShow = true
+                App.showTestCase(false, false)
+                App.remotes = []
+                App.showTestCase(true, false)
+              }
+            })
         }
         if (JSONObject.isAPIJSONPath(path)) {
           callback(url, {}, null)
@@ -5176,7 +5176,7 @@ https://github.com/Tencent/APIJSON/issues
           return method
         }
 
-        return (REQUEST_TYPE_GET, REQUEST_TYPE_PARAM).indexOf(type) < 0 ? REQUEST_TYPE_POST : REQUEST_TYPE_GET
+        return [REQUEST_TYPE_GET, REQUEST_TYPE_PARAM].indexOf(type) < 0 ? REQUEST_TYPE_POST : REQUEST_TYPE_GET
       },
       /**获取显示的请求类型名称
        */
@@ -5494,7 +5494,7 @@ https://github.com/Tencent/APIJSON/issues
                 )
             ),
             params: HTTP_URL_ARG_TYPES.indexOf(type) >= 0 ? req : null,
-            data: HTTP_JSON_TYPES.indexOf(type) >= 0 ? req : (HTTP_FORM_DATA_TYPES.indexOf(type) ? toFormData(req) : null),
+            data: HTTP_JSON_TYPES.indexOf(type) >= 0 ? req : (HTTP_FORM_DATA_TYPES.indexOf(type) >= 0 ? toFormData(req) : null),
             headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
             withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
             // crossDomain: true
