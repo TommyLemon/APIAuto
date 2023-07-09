@@ -5811,12 +5811,15 @@ https://github.com/Tencent/APIJSON/issues
         if (err != null) {
           if (IS_BROWSER) {
             var errObj = err instanceof Array == false && err instanceof Object ? err : {}
-            var msg = (errObj.response || {}).data
+            var data = (errObj.response || {}).data
+            var msg = typeof data == 'string' ? StringUtil.trim(data) : JSON.stringify(data, null, '    ')
+            msg = "Response:\nurl = " + url + "\nerror = " + err.message + (StringUtil.isEmpty(msg) ? '' : '\n\n' + msg) + '\n\n' + ERR_MSG
             // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
             this.view = 'error';
             this.error = {
-              msg: "Response:\nurl = " + url + "\nerror = " + err.message + '\n\n' + ERR_MSG + '\n\n' + StringUtil.trim(msg)
+              msg: msg
             }
+            this.output = msg
           }
         }
         else {
