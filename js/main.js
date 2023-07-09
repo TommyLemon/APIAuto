@@ -1253,8 +1253,14 @@ https://github.com/Tencent/APIJSON/issues
           } else {
             this.view = 'code'
 
-            if (isSingle) {
-              this.jsonhtml = jsonlint.parse(this.jsoncon)
+            var ret = this.jsoncon
+            try {
+              ret = jsonlint.parse(this.jsoncon)
+            } catch (ex) {
+              log(ex)
+            }
+            if (isSingle || ret instanceof Array || (ret instanceof Object == false)) {
+              this.jsonhtml = ret
             }
             else {
               this.jsonhtml = Object.assign({
@@ -1262,7 +1268,7 @@ https://github.com/Tencent/APIJSON/issues
                   path: null,
                   table: null
                 })
-              }, jsonlint.parse(this.jsoncon))
+              }, ret)
             }
 
           }
@@ -5804,23 +5810,26 @@ https://github.com/Tencent/APIJSON/issues
 
         if (err != null) {
           if (IS_BROWSER) {
+            var errObj = err instanceof Array == false && err instanceof Object ? err : {}
+            var msg = (errObj.response || {}).data
             // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
             this.view = 'error';
             this.error = {
-              msg: "Response:\nurl = " + url + "\nerror = " + err.message + '\n\n' + ERR_MSG
+              msg: "Response:\nurl = " + url + "\nerror = " + err.message + '\n\n' + ERR_MSG + '\n\n' + StringUtil.trim(msg)
             }
           }
         }
         else {
           if (IS_BROWSER) {
             var data = res.data || {}
-            if (isSingle && JSONResponse.isSuccess(data)) { //不格式化错误的结果
+            var isStr = typeof data == 'string'
+            if (isSingle && (isStr != true) && data instanceof Object && (data instanceof Array == false) && JSONResponse.isSuccess(data)) { //不格式化错误的结果
               data = JSONResponse.formatObject(data);
             }
-            this.jsoncon = JSON.stringify(data, null, '    ');
-            this.view = 'code';
+            this.jsoncon = isStr ? data : JSON.stringify(data, null, '    ')
+            this.view = 'code' // isStr ? 'output' : 'code'
 
-            vOutput.value = '';
+            vOutput.value = isStr ? data : ''
           }
 
           // 会导致断言用了这个
