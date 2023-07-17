@@ -115,20 +115,25 @@ var CodeUtil = {
       }
     };
 
-    var cc = isRestful == true ? '//' : ' //'; // 对 APIJSON API 要求严格些，因为本来就有字段注释
-    var ccLen = cc.length;
+//    var cc = isRestful == true ? '//' : ' //'; // 对 APIJSON API 要求严格些，因为本来就有字段注释
+//    var ccLen = cc.length;
 
     for (var i = 0; i < lines.length; i ++) {
       var line = lines[i].trim() || '';
 
       //每一种都要提取:左边的key
-      var index = line.indexOf(': '); //可能是 ' 或 "，所以不好用 ': , ": 判断
+      var index = line.indexOf(':'); //可能是 ' 或 "，所以不好用 ': , ": 判断
       var key = index < 0 ? (depth <= 1 && startName != null ? startName : '') : line.substring(1, index - 1);
-      var cIndex = line.lastIndexOf(cc);
+      var cIndex = line.lastIndexOf(' //');
+      var ccLen = cIndex < 0 ? 2 : 3;
+      if (cIndex < 0) {
+        cIndex = line.lastIndexOf('//');
+      }
 
       var comment = '';
       if (cIndex >= 0) {
-        if (isExtract && standardObj != null && (depth != 1 || (key != 'code' && key != 'throw'))) {
+        if (isExtract && standardObj != null && (depth != 1
+          || (isReq != true && [JSONResponse.KEY_CODE, JSONResponse.KEY_MSG, JSONResponse.KEY_THROW].indexOf(key) < 0))) {
           comment = line.substring(cIndex + ccLen).trim();
           // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
         }

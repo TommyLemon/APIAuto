@@ -68,6 +68,7 @@ var JSONResponse = {
 
   KEY_CODE: 'code',
   KEY_MSG: 'msg',
+  KEY_THROW: 'throw',
   CODE_SUCCESS: 200,
   /**是否成功
    * @param code

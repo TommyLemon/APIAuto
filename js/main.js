@@ -7948,10 +7948,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 else {
                   if (show == true) {
                     vInput.value = JSON.stringify(constJson, null, '    ');
-                    App.send(false, cb, caseScript, null, null, true);
+                    App.send(false, cb, caseScript);
                   }
                   else {
-                    App.request(false, method, type, url, constJson, header, cb, caseScript, null, null, true);
+                    App.request(false, method, type, url, constJson, header, cb, caseScript);
                   }
                 }
 
@@ -8538,7 +8538,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var res = {};
           var data = res.data;
           var err = null;
-          invoke(eval(StringUtil.trim(preScript) + '\n(' + toEval + ')'), which, p_k, pathKeys, key, lastKeyInPath);
+          invoke(eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')'), which, p_k, pathKeys, key, lastKeyInPath);
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
