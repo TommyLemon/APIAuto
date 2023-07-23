@@ -5467,7 +5467,7 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
-          if (req != null) { // 支持 URL 里有 Path Variable，例如 http://apijson.cn:8080/{method}/{table}
+          if (req != null && JSONResponse.getType(req) == 'object') { // 支持 URL 里有 Path Variable，例如 http://apijson.cn:8080/{method}/{table}
             var ind = url.indexOf('?')
             var uri = ind < 0 ? url : url.substring(0, ind)
 
@@ -5634,6 +5634,7 @@ https://github.com/Tencent/APIJSON/issues
 //             eval(s)
 
             var isTest = false;
+            var isInject = false;
             var data = res == null ? null : res.data
             var result = eval(code)
             console.log = logger
@@ -8533,8 +8534,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           }
 
+          var isInject = true;
           var isPre = false; // 避免执行副作用代码 true;
           var isTest = false;
+          var method = null;
+          var type = null;
+          var url = null;
+          var req = null;
+          var header = null;
           var res = {};
           var data = res.data;
           var err = null;
