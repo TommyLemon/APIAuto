@@ -5791,10 +5791,17 @@ var CodeUtil = {
    * @param depth
    * @return {string}
    */
-  getBlank: function(depth) {
+  getBlank: function(depth, unit) {
     var s = '';
+    var one = '    ';
+    if (unit != null && unit > 0 && unit != 4) {
+        one = ''
+        for (var i = 0; i < unit; i ++) {
+            one += ' ';
+        }
+    }
     for (var i = 0; i < depth; i ++) {
-      s += '    ';
+      s += one;
     }
     return s;
   },

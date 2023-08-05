@@ -175,6 +175,9 @@ var StringUtil = {
 
   join: function (arr, separator) {
     return arr == null ? '' : arr.join(separator)
+  },
+  length: function (s) {
+    return s == null ? 0 : s.length
   }
 
 };

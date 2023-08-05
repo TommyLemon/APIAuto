@@ -1296,7 +1296,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         vUrlComment.value = isSingle || StringUtil.isEmpty(this.urlComment, true)
-          ? '' : vUrl.value + CodeUtil.getComment(this.urlComment, false, ' ')
+          ? '' : CodeUtil.getBlank(StringUtil.length(vUrl.value), 1) + CodeUtil.getComment(this.urlComment, false, ' ')
           + ' - ' + (this.requestVersion > 0 ? 'V' + this.requestVersion : 'V*');
       },
 
@@ -5039,7 +5039,7 @@ https://github.com/Tencent/APIJSON/issues
               + '                                                                                                       \n';  //解决遮挡
 
             vUrlComment.value = isSingle || StringUtil.isEmpty(this.urlComment, true)
-              ? '' : vUrl.value + CodeUtil.getComment(this.urlComment, false, ' ')
+              ? '' : CodeUtil.getBlank(StringUtil.length(vUrl.value), 1) + CodeUtil.getComment(this.urlComment, false, ' ')
               + ' - ' + (this.requestVersion > 0 ? 'V' + this.requestVersion : 'V*');
 
             if (! isSingle) {
@@ -5053,7 +5053,7 @@ https://github.com/Tencent/APIJSON/issues
               var name = api == null ? null : api.name;
               if (StringUtil.isEmpty(name, true) == false) {
                 this.urlComment = name;
-                vUrlComment.value = vUrl.value + CodeUtil.getComment(this.urlComment, false, ' ')
+                vUrlComment.value = CodeUtil.getBlank(StringUtil.length(vUrl.value), 1) + CodeUtil.getComment(this.urlComment, false, ' ')
               }
             }
 
@@ -6127,6 +6127,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           if (type == null) {
+// 无效，这时已经换行了           if (event.target == vUrl) {
+//               event.preventDefault();
+//            }
             this.send(false);
             return
           }
@@ -8487,7 +8490,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   randomId, line
                   , (fun == ORDER_INT || args == null ? 0 : args.length)
                   + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
-                   ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : BADS.length)))))
+                   ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : (fun == ORDER_BAD ? BADS.length : 0))))))
                   , step
                 ) + ', ' + value.substring(start + 1);
             }
@@ -10904,6 +10907,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var keyCode = event.keyCode;
         var isEnter = keyCode === 13;
+        if (isEnter && target == vUrl) {
+          App.send(false);
+          event.preventDefault();
+          return
+        }
         var isDel = keyCode === 8 || keyCode === 46; // backspace 和 del
         var isChar = (keyCode >= 48 && keyCode <= 90) || (keyCode >= 106 && keyCode <= 111) || (keyCode >= 186 && keyCode <= 222);
 
