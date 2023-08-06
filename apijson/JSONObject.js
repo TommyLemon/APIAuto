@@ -78,6 +78,10 @@ var JSONObject = {
     method = method || 'get';
     var isRestful = true;
 
+    var ind = method.indexOf('?');
+    if (ind >= 0) {
+      method = method.substring(0, ind);
+    }
     if (method.startsWith("/")) {
       method = method.substring(1);
     }
