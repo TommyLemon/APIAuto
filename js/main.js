@@ -2358,7 +2358,9 @@ https://github.com/Tencent/APIJSON/issues
                 s += '(PHP):\n\n' + CodeUtil.parsePHPResponse('', res, 0, isSingle)
                 break;
               case CodeUtil.LANGUAGE_PYTHON:
-                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', res, 0, isSingle)
+                var isML = this.isMLEnabled
+                var stddObj = isML ? JSONResponse.updateFullStandard(parseJSON(((this.currentRemoteItem || {}).TestRecord || {}).standard), res, isML) : null
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', isML ? stddObj : res, 0, isSingle, isML)
                 break;
               default:
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';
@@ -2910,10 +2912,10 @@ https://github.com/Tencent/APIJSON/issues
             if (isId) {
               config += prefix + (isRand ? 'RANDOM_IN' : 'ORDER_IN') + '(undefined, null, ' + value + ')'
               if (value >= 1000000000) { //PHP 等语言默认精确到秒 1000000000000) {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix + 'RANDOM_INT(' + Math.round(0.9 * value) + ', ' + Math.round(1.1 * value) + ')'
               }
               else {
-                config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(1, ' + (10 * value) + ')'
+                config += '\n// 可替代上面的 ' + prefix + 'RANDOM_INT(1, ' + (10 * value) + ')'
               }
             }
             else {
@@ -2939,16 +2941,16 @@ https://github.com/Tencent/APIJSON/issues
                 var hasDot = String(value).indexOf('.') >= 0
 
                 if (value < 0) {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
+                  config += '\n// 可替代上面的 ' + prefix + (hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(' + (100 * value) + ', 0)'
                 }
                 else if (value > 0 && value < 1) { // 0-1 比例
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_NUM(0, 1)'
+                  config += '\n// 可替代上面的 ' + prefix + 'RANDOM_NUM(0, 1)'
                 }
                 else if (value >= 0 && value <= 100) { // 10% 百分比
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + 'RANDOM_INT(0, 100)'
+                  config += '\n// 可替代上面的 ' + prefix + 'RANDOM_INT(0, 100)'
                 }
                 else {
-                  config += '\n// 可替代上面的 ' + prefix.substring(1) + (hasDot != true && value < 10 ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
+                  config += '\n// 可替代上面的 ' + prefix + (hasDot != true && value < 10 ? (isRand ? 'RANDOM_INT' : 'ORDER_INT') + '(0, 9)' : ((hasDot ? 'RANDOM_NUM' : 'RANDOM_INT') + '(0, ' + 100 * value + ')'))
                 }
               }
             }
@@ -3680,7 +3682,7 @@ https://github.com/Tencent/APIJSON/issues
       //上传第三方平台的 API 至 APIAuto
       uploadThirdPartyApi: function(method, type, name, url, parameters, json, header, description, creator, rspObj) {
         if (typeof json == 'string') {
-          json = JSON.parse(json)
+          json = parseJSON(json)
         }
         const reqObj = json || {}
 
@@ -9773,12 +9775,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       toPathValuePairMap: function (json, path, map) {
-        if (json == null) {
-          return null
-        }
-
         if (map == null) {
-           map = {}
+          map = {}
+        }
+        if (json == null) {
+          return map
         }
 
         if (json instanceof Array) {

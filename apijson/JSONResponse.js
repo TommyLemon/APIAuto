@@ -1238,7 +1238,8 @@ var JSONResponse = {
    */
   getStandardByPath: function(target, pathKeys) {
     if (target instanceof Array) { // JSONArray
-      throw new Error('Standard 语法错误，' + key + ': value 中 value 类型不应该是 Array！');
+      var path = pathKeys == null ? null : path.join('/')
+      throw new Error('Standard 语法错误，' + path + ': value 中 value 类型不应该是 Array！');
     }
     if (target == null) {
       return null;

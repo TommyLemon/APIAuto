@@ -255,18 +255,17 @@ function log(tag, msg) {
  * @param s
  */
 function parseJSON(s) {
-  if (s instanceof Object) {
-    alertOfDebug("parseJSON  s instanceof JSON >> return s;");
-    return s;
-  }
-
   if (typeof s != "string") {
     alertOfDebug("parseJSON  typeof json != string >> s = \"\" + s;");
-    s = "" + s;
+    return s;
   }
   // alertOfDebug("parseJSON  s = \n" + s);
 
-  return JSON.parse(s);
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return JSON5.parse(s)
+  }
 }
 
 /**测试用的提示
