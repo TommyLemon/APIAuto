@@ -674,7 +674,7 @@ var JSONResponse = {
    3-缺少字段/整数变小数，黄色；
    4-类型/code 改变，红色；
    */
-  compareWithStandard: function(target, real, folder, exceptKeys, ignoreTrend) {
+  compareWithStandard: function(target, real, folder, exceptKeys, ignoreTrend, callback) {
     folder = folder == null ? '' : folder;
 
     if (target == null) {
@@ -703,8 +703,9 @@ var JSONResponse = {
 
     var values = target.values;
     log('compareWithStandard  values = target.values = ' + JSON.stringify(values, null, '    ') + ' >>');
+    var firstVal = values == null || values.length <= 0 ? null : values[0];
 
-    if ((values == null || values[0] == null) && (type == 'object' || type == 'array')) {
+    if (firstVal == null && (type == 'object' || type == 'array')) {
       if (notnull == true) { // values{} values&{}
         throw new Error('Standard 在 ' + folder + ' 语法错误，Object 或 Array 在 notnull: true 时 values 必须为有值的数组 !');
       }
@@ -727,8 +728,6 @@ var JSONResponse = {
         value: real
       };
     }
-
-
 
     var realType = JSONResponse.getType(real);
     if (type != realType && (type != 'number' || realType != 'integer')) { //类型改变
@@ -756,7 +755,7 @@ var JSONResponse = {
       for (var i = 0; i < real.length; i ++) { //检查real的每一项
         log('compareWithStandard  for i = ' + i + ' >> ');
 
-        each = JSONResponse.compareWithStandard(values[0], real[i], JSONResponse.getAbstractPath(folder, i), exceptKeys);
+        each = JSONResponse.compareWithStandard(firstVal, real[i], JSONResponse.getAbstractPath(folder, i), exceptKeys);
 
         if (max.code < each.code) {
           max = each;
@@ -782,7 +781,7 @@ var JSONResponse = {
     else if (type == 'object') { // JSONObject
       log('compareWithStandard  type == object >> ');
 
-      var tks = values == null ? [] : Object.keys(values[0]);
+      var tks = values == null ? [] : Object.keys(firstVal);
       var tk;
       for (var i = 0; i < tks.length; i++) { //遍历并递归下一层
         tk = tks[i];
@@ -791,7 +790,7 @@ var JSONResponse = {
         }
         log('compareWithStandard  for tk = ' + tk + ' >> ');
 
-        each = JSONResponse.compareWithStandard(values[0][tk], real[tk], JSONResponse.getAbstractPath(folder,  tk), exceptKeys);
+        each = JSONResponse.compareWithStandard(firstVal[tk], real[tk], JSONResponse.getAbstractPath(folder,  tk), exceptKeys);
         if (max.code < each.code) {
           max = each;
         }
@@ -802,14 +801,14 @@ var JSONResponse = {
       }
 
 
-      //不能注释，前面在 JSONResponse.compareWithStandard(values[0][tk], real[tk]  居然没有判断出来 COMPARE_KEY_MORE
+      //不能注释，前面在 JSONResponse.compareWithStandard(firstVal[tk], real[tk]  居然没有判断出来 COMPARE_KEY_MORE
       if (max.code < JSONResponse.COMPARE_KEY_MORE) { //多出key
         log('compareWithStandard  max < COMPARE_KEY_MORE >> ');
 
         for (var k in real) {
           log('compareWithStandard  for k = ' + k + ' >> ');
 
-          if (k != null && real[k] != null && (values == null || values[0] == null || values[0][k] == null)
+          if (k != null && real[k] != null && (firstVal == null || firstVal[k] == null)
             && (exceptKeys == null || exceptKeys.indexOf(tk) >= 0)) { //解决 null 值总是提示是新增的，且无法纠错 tks.indexOf(k) < 0) {
             log('compareWithStandard  k != null && tks.indexOf(k) < 0 >> max = COMPARE_KEY_MORE;');
 
@@ -848,7 +847,7 @@ var JSONResponse = {
         }
         else {  // 刚上传完是不是不应该对比？还是 ignoreTrend = ">,<,!" 忽略特定的对比？因为很可能是原来的
           var select = ignoreTrend ? null : (target.trend || {}).select;
-          var maxVal = values == null || values.length <= 0 ? null : values[0];
+          var maxVal = firstVal;
           var minVal = values == null || values.length <= 0 ? null : values[values.length - 1];
 
           if (select == '>') {
