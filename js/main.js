@@ -2359,8 +2359,10 @@ https://github.com/Tencent/APIJSON/issues
                 break;
               case CodeUtil.LANGUAGE_PYTHON:
                 var isML = this.isMLEnabled
-                var stddObj = isML ? JSONResponse.updateFullStandard(parseJSON(((this.currentRemoteItem || {}).TestRecord || {}).standard), res, isML) : null
-                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', isML ? stddObj : res, 0, isSingle, isML)
+                var tr = (this.currentRemoteItem || {}).TestRecord || {}
+                var stddObj = isML ? JSONResponse.updateFullStandard(parseJSON(tr.standard), res, isML) : null
+                var resObj = isML ? stddObj : (res || parseJSON(tr.response))
+                s += '(Python):\n\n' + CodeUtil.parsePythonResponse('', resObj, 0, ! isSingle, isML)
                 break;
               default:
                 s += ':\n没有生成代码，可能生成代码(封装,解析)的语言配置错误。 \n';

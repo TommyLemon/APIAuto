@@ -2399,7 +2399,7 @@ var CodeUtil = {
         }
 
         var funName = 'is_' + varName;
-        if (funNames.indexOf(funName) < 0) {
+        if (isSmart && funNames.indexOf(funName) < 0) {
           var funDef = 'def ' + funName + '(' + varName + ': ' + type + ', strict: bool = False) -> bool:'
               + '\n    if is_' + (type == 'str' ? 'blank' : 'empty') + '(' + varName + '):'
               + '\n        return not strict'
@@ -2486,8 +2486,8 @@ var CodeUtil = {
     })
 
     if (depth <= 0) {
-      str = `def asserts(rsp):
-rsp_data = rsp.json()
+      str = `def asserts(res):
+res_data = rep.json()
 
 ` + str;
 
@@ -2514,10 +2514,14 @@ rsp_data = rsp.json()
       throw new Error('Standard 在 ' + name + ' 语法错误，不应该有 array！');
     }
 
+
     log('\n\n\n\n\nparsePythonResponseByStandard <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n' +
         ' \ntarget = ' + JSON.stringify(target, null, '    ') + '\n\n\nreal = ' + JSON.stringify(real, null, '    '));
 
     depth = depth == null || depth < 0 ? 0 : depth;
+
+    funDefs = funDefs == null ? [] : funDefs;
+    funNames = funNames == null ? [] : funNames;
 
     var quote = isSmart ? "'" : '"';
 
@@ -2533,14 +2537,9 @@ rsp_data = rsp.json()
     var padding = '\n' + CodeUtil.getBlank(depth);
     var innerPadding = padding + CodeUtil.getBlank(1);
 
-    var s = ''
-    if (isRoot) {
-      s += 'def asserts(rsp):'
-    }
-
-    s += padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
+    var s = padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
         StringUtil.isEmpty(key, true)
-            ? 'rsp.json()'
+            ? 'res.json()'
             : (isSmart ? ('get_val(' + name + ', ') : (name + '[')) + quote + key + quote + (isSmart ? ')' : ']')
     );
 
@@ -2551,25 +2550,48 @@ rsp_data = rsp.json()
       s += ' or []'
     }
 
-    var prefix = padding + 'assert ';
-
-    s += prefix + 'is_' + type + '(' + varName + ')';
-
     var notnull = target.notnull;
     log('parsePythonResponseByStandard  notnull = target.notnull = ' + notnull + ' >>');
-    if (notnull) {
-      s += prefix + 'not_none(' + varName + ')';
+
+    var prefix = padding + 'assert ';
+    var prefix2 = genFunDef ? '\n    ' : prefix;
+
+    var funName = 'is_' + (isRoot ? '' : name + '_') + varName;
+    var genFunDef = isSmart && funNames.indexOf(funName) < 0;
+    var funDef = ''
+    if (isSmart) {
+      if (genFunDef) {
+        funDef = 'def ' + funName + '(' + varName + ': ' + type + ', strict: bool = False) -> bool:'
+            + '\n    if is_' + (type == 'str' ? 'blank' : 'empty') + '(' + varName + '):'
+            + '\n        return not strict'
+            + '\n    if not is_' + type + '(' + varName + ', strict):'
+            + '\n        return false\n'
+      }
+      s += prefix + funName + '(' + varName + ', ' + notnull + ')';
+    } else {
+      if (notnull) {
+        s += prefix + 'not_none(' + varName + ')';
+      }
+      s += prefix + 'is_' + type + '(' + varName + ')';
     }
 
     var lengths = target.lengths;
     if (lengths != null && lengths.length > 0) {
       var lengthLevel = target.lengthLevel;
 
-      s += prefix + varName + 'Len = 0 if ' + varName + ' is None else len(' + varName + ')'
+      var as = prefix2 + varName + 'Len = 0 if ' + varName + ' is None else len(' + varName + ')'
       if (lengthLevel == 0 || lengths.length <= 1) {
-        s += prefix + varName + 'Len in ' + JSON.stringify(lengths);
+        as += prefix2 + varName + 'Len in ' + JSON.stringify(lengths);
       } else {
-        s += prefix + varName + 'Len >= ' + lengths[lengths.length - 1] + ' and ' + varName + 'Len <= ' + lengths[0];
+        as += prefix2 + varName + 'Len >= ' + lengths[lengths.length - 1] + ' and ' + varName + 'Len <= ' + lengths[0];
+      }
+
+      if (isSmart) {
+        if (genFunDef) {
+          funDef += as;
+        }
+      } else {
+        s += as;
       }
     }
 
@@ -2609,35 +2631,56 @@ rsp_data = rsp.json()
       } else { // Boolean, Number, String
         log('parsePythonResponseByStandard  type == boolean | number | string >> ');
 
+        var as = '';
         if (type_ == 'number' || type_ == 'integer') {
           var select = (target.trend || {}).select;
           var maxVal = firstVal;
           var minVal = values == null || values.length <= 0 ? null : values[values.length - 1];
 
           if (select == '>') {
-            s += prefix + varName + ' > ' + maxVal;
+            as = prefix2 + varName + ' > ' + maxVal;
           } else if (select == '>=') {
-            s += prefix + varName + ' >= ' + maxVal;
+            as = prefix2 + varName + ' >= ' + maxVal;
           } else if (select == '<') {
-            s += prefix + varName + ' < ' + minVal;
+            as = prefix2 + varName + ' < ' + minVal;
           } else if (select == '<=') {
-            s += prefix + varName + ' <= ' + minVal;
+            as = prefix2 + varName + ' <= ' + minVal;
           } else if (select == '%') {
-            s += prefix + varName + ' >= ' + minVal + ' and ' + varName + ' <= ' + maxVal;
+            as = prefix2 + varName + ' >= ' + minVal + ' and ' + varName + ' <= ' + maxVal;
           } else {
-            s += prefix + varName + ' in ' + JSON.stringify(values);
+            as = prefix2 + varName + ' in ' + JSON.stringify(values);
           }
         } else {
-          s += prefix + varName + ' in ' + JSON.stringify(values);
+          as = prefix2 + varName + ' in ' + JSON.stringify(values);
+        }
+
+        if (isSmart) {
+          if (genFunDef) {
+            funDef += as;
+          }
+        } else {
+          s += as;
         }
       }
 
     }
 
-    if (isSmart) {
-      s = 'def is_' + varName + '(' + varName + ': ' + type + ', strict: bool = False):'
-        + '\n' + s
-        + '    return true'
+    if (isSmart && genFunDef) {
+      funDef += '\n    return true'
+      funDefs.push(funDef);
+      funNames.push(funName);
+    }
+
+    if (isRoot) {
+      s = 'def asserts(res):'
+          + '\n' + s
+          + '\n    return res'
+
+      if (funDefs.length > 0) {
+        s += '\n\n\n# TODO 把这些通用函数放到专门的一个 asserter.py 文件中 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n'
+            + funDefs.join('\n\n\n')
+            + '\n\n# TODO 把这些通用函数放到专门的一个 asserter.py 文件中 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>';
+      }
     }
 
     log('\nparsePythonResponseByStandard >> return s = ' + s + '\n >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> \n\n\n\n\n');
