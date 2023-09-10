@@ -178,7 +178,167 @@ var StringUtil = {
   },
   length: function (s) {
     return s == null ? 0 : s.length
-  }
+  },
+
+  isUri: function (s) {
+    var ind = s == null ? -1 : s.indexOf('://');
+    return ind > 0;
+  },
+  isUrl: function (s, schemas) {
+    var ind = s == null ? -1 : s.indexOf('://');
+    if (ind <= 0) {
+      return false;
+    }
+    var schema = s.substring(0, ind);
+    if (schemas != null && schemas.indexOf(schema) < 0) {
+      return false;
+    }
+
+    var rest = s.substring(ind + 3);
+    var ind2 = rest.indexOf('/');
+    ind2 = ind2 >= 0 ? ind2 : rest.indexOf('?');
+    var host = ind2 < 0 ? rest : rest.substring(0, ind2);
+    var arr = StringUtil.split(host, '.');
+    if (arr == null || arr.length <= 1) {
+      return false;
+    }
+
+    for (var i = 0; i < arr.length; i ++) {
+      if (StringUtil.isName(arr[i]) != true) {
+        return false;
+      }
+    }
+
+    return true;
+  },
+
+  isHttpUrl: function (s) {
+    return StringUtil.isUrl(s, ['http', 'https']);
+  },
+  isRpcUrl: function (s) {
+    return StringUtil.isUrl(s) && ! this.isHttpUrl(s);
+  },
+  isFileUrl: function (s) {
+    return StringUtil.isUrl(s, ['file']);
+  },
+  isPath: function (s) {
+    var arr = StringUtil.split(s, '/');
+    if (arr == null || arr.length <= 1) {
+      return false;
+    }
+
+    for (var i = 0; i < arr.length; i ++) {
+      if (StringUtil.isName(arr[i]) != true) {
+        return false;
+      }
+    }
+
+    return true;
+  },
+  isPackage: function (s) {
+    var arr = StringUtil.split(s, '.');
+    if (arr == null || arr.length <= 1) {
+      return false;
+    }
+
+    for (var i = 0; i < arr.length; i ++) {
+      if (StringUtil.isName(arr[i]) != true) {
+        return false;
+      }
+    }
+
+    return true;
+  },
+  isMonth: function (s) {
+    try {
+      var date = new Date(s);
+      return date.getMonth() > 0 && date.getDay() == 0 && date.getHours() == 0
+          && date.getMinutes() == 0 && date.getSeconds() == 0 && date.getMilliseconds() == 0;
+    }
+    catch (e) {
+      log(e)
+    }
+    return false;
+  },
+  isDate: function (s) {
+    try {
+      var date = new Date(s);
+      return date.getDay() > 0 && date.getHours() == 0
+          && date.getMinutes() == 0 && date.getSeconds() == 0 && date.getMilliseconds() == 0;
+    }
+    catch (e) {
+      log(e)
+    }
+    return false;
+  },
+  isTime: function (s) {
+    try {
+      var date = new Date(s);
+      return date.getDay() <= 0 && date.getTime() % 60*60*60*1000 > 0;
+    }
+    catch (e) {
+      log(e)
+    }
+    return false;
+  },
+  isDatetime: function (s) {
+    try {
+      var date = new Date(s);
+      return date.getDay() > 0 && date.getTime() % 60*60*60*1000 > 0;
+    }
+    catch (e) {
+      log(e)
+    }
+    return false;
+  },
+  isFileUri: function (s) {
+    return s != null && s.startsWith('file://') && StringUtil.isPath(s.substring('file://'.length));
+  },
+  isFile: function (s) {
+    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var prefix = s.substring(0, ind);
+    var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
+    return StringUtil.isName(suffix) && StringUtil.isNotEmpty(prefix, true);
+  },
+  isImage: function (s) {
+    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var prefix = s.substring(0, ind);
+    var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
+
+    return ['jpg', 'jpeg', 'png', 'bmp', 'gif'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
+  },
+  isAudio: function (s) {
+    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var prefix = s.substring(0, ind);
+    var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
+
+    return ['mp3', 'wav', 'flac', 'ogg', 'aiff'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
+  },
+  isVideo: function (s) {
+    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var prefix = s.substring(0, ind);
+    var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
+
+    return ['mp4', 'mov', 'flv', 'rm', 'fmvb', 'wmv', 'asf', 'asx', '3gp', 'dvd', 'avi'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
+  },
+  isImageHttpUrl: function (s) {
+    return StringUtil.isImage(s) && StringUtil.isHttpUrl(s);
+  },
+  isAudioHttpUrl: function (s) {
+    return StringUtil.isAudio(s) && StringUtil.isHttpUrl(s);
+  },
+  isVideoHttpUrl: function (s) {
+    return StringUtil.isVideo(s) && StringUtil.isHttpUrl(s);
+  },
+  isImageFilePath: function (s) {
+    return StringUtil.isImage(s) && StringUtil.isFileUrl(s);
+  },
+  isAudioFilePath: function (s) {
+    return StringUtil.isAudio(s) && StringUtil.isFileUrl(s);
+  },
+  isVideoFilePath: function (s) {
+    return StringUtil.isVideo(s) && StringUtil.isFileUrl(s);
+  },
 
 };
 

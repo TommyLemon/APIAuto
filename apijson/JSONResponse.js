@@ -22,6 +22,7 @@ if (typeof window == 'undefined') {
     eval(`
       var StringUtil = require("./StringUtil");
       var JSONObject = require("./JSONObject");
+      var JSONRequest = require("./JSONRequest");
       var CodeUtil = require("./CodeUtil");
     `)
   } catch (e) {
@@ -57,6 +58,116 @@ const KEY_ID = "id";
 const KEY_ID_IN = KEY_ID + "{}";
 const KEY_COUNT = "count";
 const KEY_TOTAL = "total";
+
+var FORMAT_ANY = '';
+var FORMAT_MONTH = 'YYYY-MM';
+var FORMAT_DATE = 'YYYY-MM-DD';
+var FORMAT_TIME = 'hh:mm:ss';
+var FORMAT_DATETIME = 'YYYY-MM-DD hh:mm:ss';
+var FORMAT_URL = 'URL';
+var FORMAT_URI = 'URI';
+var FORMAT_FILE_URI = 'file://a/b';
+var FORMAT_HTTP = 'http://a.b';
+var FORMAT_RPC = 'rpc://a.b';
+var FORMAT_PATH = 'root/folder';
+var FORMAT_PACKAGE = 'com.package';
+var FORMAT_NAME = 'NAME';
+var FORMAT_CONST_NAME = 'NAME:CONST';
+var FORMAT_BIG_NAME = 'NAME:Big';
+var FORMAT_SMALL_NAME = 'NAME:small';
+var FORMAT_FILE = '.file';
+var FORMAT_IMAGE = '.image';
+var FORMAT_AUDIO = '.audio';
+var FORMAT_VIDEO = '.video';
+var FORMAT_IMAGE_HTTP = 'http://?.image';
+var FORMAT_AUDIO_HTTP = 'http://?.audio';
+var FORMAT_VIDEO_HTTP = 'http://?.video';
+var FORMAT_IMAGE_FILE = 'file://?.image';
+var FORMAT_AUDIO_FILE = 'file://?.audio';
+var FORMAT_VIDEO_FILE = 'file://?.video';
+var FORMAT_PRIORITY_ANY = 0;
+var FORMAT_PRIORITY_MONTH = 3;
+var FORMAT_PRIORITY_DATE = 2;
+var FORMAT_PRIORITY_TIME = 2;
+var FORMAT_PRIORITY_DATETIME = 1;
+var FORMAT_PRIORITY_URL = 2;
+var FORMAT_PRIORITY_URI = 1;
+var FORMAT_PRIORITY_FILE_URI = 2;
+var FORMAT_PRIORITY_HTTP = 2;
+var FORMAT_PRIORITY_RPC = 2;
+var FORMAT_PRIORITY_PATH = 1;
+var FORMAT_PRIORITY_PACKAGE = 1;
+var FORMAT_PRIORITY_NAME = 1;
+var FORMAT_PRIORITY_CONST_NAME = 2;
+var FORMAT_PRIORITY_BIG_NAME = 2;
+var FORMAT_PRIORITY_SMALL_NAME = 2;
+var FORMAT_PRIORITY_FILE = 1;
+var FORMAT_PRIORITY_IMAGE = 2;
+var FORMAT_PRIORITY_AUDIO = 2;
+var FORMAT_PRIORITY_VIDEO = 2;
+var FORMAT_PRIORITY_IMAGE_HTTP = 3;
+var FORMAT_PRIORITY_AUDIO_HTTP = 3;
+var FORMAT_PRIORITY_VIDEO_HTTP = 3;
+var FORMAT_PRIORITY_IMAGE_FILE = 3;
+var FORMAT_PRIORITY_AUDIO_FILE = 3;
+var FORMAT_PRIORITY_VIDEO_FILE = 3;
+
+var FORMAT_PRIORITIES = { // 在 JSONResponse 中定义，会导致存不进值，因为 FORMAT_ANY 等 key 还没初始化
+  [FORMAT_ANY]: FORMAT_PRIORITY_ANY,
+  [FORMAT_MONTH]: FORMAT_PRIORITY_MONTH,
+  [FORMAT_DATE]: FORMAT_PRIORITY_DATE,
+  [FORMAT_TIME]: FORMAT_PRIORITY_TIME,
+  [FORMAT_DATETIME]: FORMAT_PRIORITY_DATETIME,
+  [FORMAT_URL]: FORMAT_PRIORITY_URL,
+  [FORMAT_URI]: FORMAT_PRIORITY_URI,
+  [FORMAT_FILE_URI]: FORMAT_PRIORITY_FILE_URI,
+  [FORMAT_RPC]: FORMAT_PRIORITY_RPC,
+  [FORMAT_HTTP]: FORMAT_PRIORITY_HTTP,
+  [FORMAT_PATH]: FORMAT_PRIORITY_PATH,
+  [FORMAT_PACKAGE]: FORMAT_PRIORITY_PACKAGE,
+  [FORMAT_NAME]: FORMAT_PRIORITY_NAME,
+  [FORMAT_BIG_NAME]: FORMAT_PRIORITY_BIG_NAME,
+  [FORMAT_SMALL_NAME]: FORMAT_PRIORITY_SMALL_NAME,
+  [FORMAT_PRIORITY_CONST_NAME]:  FORMAT_PRIORITY_CONST_NAME,
+  [FORMAT_FILE]: FORMAT_PRIORITY_FILE,
+  [FORMAT_IMAGE]: FORMAT_PRIORITY_IMAGE,
+  [FORMAT_AUDIO]: FORMAT_PRIORITY_AUDIO,
+  [FORMAT_VIDEO]: FORMAT_PRIORITY_VIDEO,
+  [FORMAT_IMAGE_HTTP]: FORMAT_PRIORITY_IMAGE_HTTP,
+  [FORMAT_AUDIO_HTTP]: FORMAT_PRIORITY_AUDIO_HTTP,
+  [FORMAT_VIDEO_HTTP]: FORMAT_PRIORITY_VIDEO_HTTP,
+  [FORMAT_IMAGE_FILE]: FORMAT_PRIORITY_IMAGE_FILE,
+  [FORMAT_AUDIO_FILE]: FORMAT_PRIORITY_AUDIO_FILE,
+  [FORMAT_VIDEO_FILE]: FORMAT_PRIORITY_VIDEO_FILE,
+};
+
+var FORMAT_VERIFIERS = {
+  [FORMAT_IMAGE_HTTP]: StringUtil.isImageHttpUrl,
+  [FORMAT_AUDIO_HTTP]: StringUtil.isAudioHttpUrl,
+  [FORMAT_VIDEO_HTTP]: StringUtil.isVideoHttpUrl,
+  [FORMAT_IMAGE_FILE]: StringUtil.isImageFilePath,
+  [FORMAT_AUDIO_FILE]: StringUtil.isAudioFilePath,
+  [FORMAT_VIDEO_FILE]: StringUtil.isVideoFilePath,
+  [FORMAT_MONTH]: StringUtil.isMonth,
+  [FORMAT_DATE]: StringUtil.isDate,
+  [FORMAT_TIME]: StringUtil.isTime,
+  [FORMAT_DATETIME]: StringUtil.isDatetime,
+  [FORMAT_FILE_URI]: StringUtil.isFileUri,
+  [FORMAT_RPC]: StringUtil.isRpcUrl,
+  [FORMAT_HTTP]: StringUtil.isHttpUrl,
+  [FORMAT_URL]: StringUtil.isUrl,
+  [FORMAT_URI]: StringUtil.isUri,
+  [FORMAT_PATH]: StringUtil.isPath,
+  [FORMAT_PACKAGE]: StringUtil.isPackage,
+  [FORMAT_IMAGE]: StringUtil.isImage,
+  [FORMAT_AUDIO]: StringUtil.isAudio,
+  [FORMAT_VIDEO]: StringUtil.isVideo,
+  [FORMAT_FILE]: StringUtil.isFile,
+  [FORMAT_BIG_NAME]: StringUtil.isBigName,
+  [FORMAT_SMALL_NAME]: StringUtil.isSmallName,
+  [FORMAT_NAME]: StringUtil.isName,
+};
+
 
 
 function log(msg) {
@@ -351,6 +462,7 @@ var JSONResponse = {
   COMPARE_LENGTH_CHANGE: 2,
   COMPARE_VALUE_CHANGE: 2,
   COMPARE_KEY_LESS: 3,
+  COMPARE_FORMAT_CHANGE: 3,
   COMPARE_TYPE_CHANGE: 4,
   COMPARE_NUMBER_TYPE_CHANGE: 3,
   COMPARE_CODE_CHANGE: 4,
@@ -755,7 +867,7 @@ var JSONResponse = {
       for (var i = 0; i < real.length; i ++) { //检查real的每一项
         log('compareWithStandard  for i = ' + i + ' >> ');
 
-        each = JSONResponse.compareWithStandard(firstVal, real[i], JSONResponse.getAbstractPath(folder, i), exceptKeys);
+        each = JSONResponse.compareWithStandard(firstVal, real[i], JSONResponse.getAbstractPath(folder, i), exceptKeys, ignoreTrend);
 
         if (max.code < each.code) {
           max = each;
@@ -824,6 +936,31 @@ var JSONResponse = {
     }
     else { // Boolean, Number, String
       log('compareWithStandard  type == boolean | number | string >> ');
+
+      if (max.code < JSONResponse.COMPARE_TYPE_CHANGE && type == 'string') {
+        var format = target.format;
+        if (typeof format == 'string' && FORMAT_PRIORITIES[format] != null) {
+          var verifier = max.code < JSONResponse.COMPARE_FORMAT_CHANGE && StringUtil.isNotEmpty(format, true)
+              ? FORMAT_VERIFIERS[format] : null;
+          if (typeof verifier == 'function' && verifier(real) != true) {
+              max.code = JSONResponse.COMPARE_FORMAT_CHANGE;
+              max.msg = '不是 ' + format + " 格式！";
+              max.path = folder;
+              max.value = real;
+          }
+        }
+        else if (format instanceof Array == false && format instanceof Object) {
+          try {
+            var realObj = JSON.parse(real);
+            var result = JSONResponse.compareWithStandard(format, realObj, folder, exceptKeys, ignoreTrend);
+            if (result.code > max.code) {
+              max = result;
+            }
+          } catch (e) {
+            log(e)
+          }
+        }
+      }
 
       var valueCompare = max.code >= JSONResponse.COMPARE_VALUE_CHANGE
           ? 0 : JSONResponse.compareValue(valueLevel, values, real, target.trend, target.repeat);
@@ -1214,11 +1351,60 @@ var JSONResponse = {
     }
     else {
       log('updateStandard  type == other >> ');
+      if (type == 'string') {
+        var format = target.format;
+        try {
+          var priority = format == null ? null : FORMAT_PRIORITIES[format]
+          if (priority == null) {
+            priority = Number.MAX_SAFE_INTEGER;
+          }
+
+          var format2 = null;
+          var priorities = FORMAT_PRIORITIES;
+          var verifiers = FORMAT_VERIFIERS;
+          for (var fmt in verifiers) {
+            try {
+              var verifier = verifiers[fmt];
+              var pty = priorities[fmt];
+              if (pty == null) {
+                pty = Number.MAX_SAFE_INTEGER - 1;
+              }
+
+              if (pty < priority && typeof verifier == 'function' && (
+                  priorities[format2] == null || pty > priorities[format2])
+              ) {
+                if (verifier(real)) {
+                  target.format = format2 = fmt;
+                }
+              }
+            }
+            catch (e) {
+              log(e)
+            }
+          }
+
+          if (priority > 0 && format2 == null) {
+            throw new Error("try other format");
+          }
+        } catch (e) {
+          log(e)
+          try {
+            var realObj = JSON.parse(real);
+            var format2 = JSONResponse.updateStandard(target.format, realObj, exceptKeys, ignoreTrend);
+            if (format2 != null) {
+              target.format = format2;
+            }
+          } catch (e2) {
+            log(e2)
+            target.format = ''
+          }
+        }
+      }
 
       if (values == null) {
         values = [];
       }
-      if (valueLevel < 1 && type == 'number' && String(real).indexOf('.') >= 0) { //double 1.23
+      if (valueLevel < 1 && type == 'number' && ! Number.isSafeInteger(real)) { //double 1.23
         valueLevel = 1;
       }
       target.values = values;
@@ -1231,7 +1417,6 @@ var JSONResponse = {
 
     return target;
   },
-
 
   /**根据路径精准地更新测试标准中的键值对
    */

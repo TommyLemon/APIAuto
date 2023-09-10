@@ -2329,7 +2329,9 @@ var CodeUtil = {
   },
 
   PYTHON_KEY_WORDS: [
-      'bool', 'int', 'float', 'str', 'list', 'dict', 'is', 'as', 'type', 'import', 'from', 'def', 'assert', 'return', 'None', 'False', 'True'
+    'bool', 'int', 'float', 'str', 'list', 'dict', 'is', 'as', 'type', 'import', 'from', 'def', 'assert', 'return',
+    'None', 'False', 'True', 'null', 'false', 'true', 'print', 'for', 'in', 'range', 'yield', 'async', 'await',
+    'if', 'elif', 'else', 'eval', 'exec', 'tuple', 'object', 'req', 'res', 'res_data', 'and', 'or', 'not'
   ],
 
 
@@ -2394,8 +2396,8 @@ var CodeUtil = {
         var type = value == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
-        if (CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
-          varName = varName + '_'
+        if (/0-9/.test(varName.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
+          varName = '_' + varName // { '1': 0, '2': true ... } '1' -> '_1'
         }
 
         var funName = 'is_' + varName;
@@ -2422,8 +2424,8 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key, 'array');
-        if (CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
-          k = k + '_';
+        if (/0-9/.test(k.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
+          k = '_' + k;
         }
 
         var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
@@ -2453,7 +2455,7 @@ var CodeUtil = {
 
         //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
         if (value[0] instanceof Object) {
-          s += CodeUtil.parsePythonResponse(itemName, value[0], depth + 1, isSmart, isML, funDefs);
+          s += CodeUtil.parsePythonResponse(itemName, value[0], depth + 1, isSmart, isML, funDefs, funNames);
         }
         // }
 
@@ -2465,8 +2467,8 @@ var CodeUtil = {
       onParseJSONObject: function (key, value, index) {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
-        if (CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
-          k = k + '_';
+        if (/0-9/.test(k.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
+          k = '_' + k;
         }
 
         var s = '\n' + padding + '# ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
@@ -2477,7 +2479,7 @@ var CodeUtil = {
         // s += padding + 'if ' + k + ' == None:';
         // s += padding + '    ' + k + ' = {}\n';
 
-        s += CodeUtil.parsePythonResponse(k, value, depth, isSmart, isML, funDefs);
+        s += CodeUtil.parsePythonResponse(k, value, depth, isSmart, isML, funDefs, funNames);
 
         s += padding + '# ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
 
@@ -2501,7 +2503,7 @@ res_data = rep.json()
     return str;
   },
 
-  parsePythonResponseByStandard: function(name, key, target, real, depth, isSmart, funDefs, funNames) {
+  parsePythonResponseByStandard: function(name, key, target, real, depth, isSmart, isArrItem, funDefs, funNames) {
     var isRoot = depth <= 1 && StringUtil.isEmpty(name, true);
     name = name == null ? 'res_data' : name;
     if (target == null) {
@@ -2530,24 +2532,26 @@ res_data = rep.json()
     var type = type_ == null ? 'any' : CodeUtil.getPythonTypeFromJSType(key, null, type_);
 
     var varName = JSONResponse.getVariableName(StringUtil.isEmpty(key, true) ? 'res_data' : key, 'array');
-    if (CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
-      varName += '_';
+    if (/0-9/.test(varName.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
+      varName = '_' + varName;
     }
 
     var padding = '\n' + CodeUtil.getBlank(depth);
     var innerPadding = padding + CodeUtil.getBlank(1);
 
-    var s = padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
+    var s = isArrItem ? '' : (padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
         StringUtil.isEmpty(key, true)
             ? 'res.json()'
             : (isSmart ? ('get_val(' + name + ', ') : (name + '[')) + quote + key + quote + (isSmart ? ')' : ']')
-    );
+    ));
 
-    if (type_ == 'object') {
-      s += ' or {}'
-    }
-    else if (type_ == 'array') {
-      s += ' or []'
+    if (isArrItem != true) {
+      if (type_ == 'object') {
+        s += ' or {}'
+      }
+      else if (type_ == 'array') {
+        s += ' or []'
+      }
     }
 
     var notnull = target.notnull;
@@ -2579,7 +2583,7 @@ res_data = rep.json()
     if (lengths != null && lengths.length > 0) {
       var lengthLevel = target.lengthLevel;
 
-      var as = prefix2 + varName + 'Len = 0 if ' + varName + ' is None else len(' + varName + ')'
+      var as = (genFunDef ? '\n    ' : padding) + varName + 'Len = 0 if ' + varName + ' is None else len(' + varName + ')'
       if (lengthLevel == 0 || lengths.length <= 1) {
         as += prefix2 + varName + 'Len in ' + JSON.stringify(lengths);
       } else {
@@ -2614,7 +2618,7 @@ res_data = rep.json()
         s += innerPadding + 'assert not_none(' + itemName + ')';
         s += innerPadding + '# if ' + itemName + ' is None:';
         s += innerPadding + '#     continue';
-        s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, itemName, firstVal, null, depth + 1, isSmart, funDefs, funNames);
+        s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, itemName, firstVal, null, depth + 1, isSmart, true, funDefs, funNames);
       } else if (type_ == 'object') { // JSONObject
         log('parsePythonResponseByStandard  type == object >> ');
 
@@ -2626,7 +2630,7 @@ res_data = rep.json()
             continue;
           }
           log('parsePythonResponseByStandard  for tk = ' + tk + ' >> ');
-          s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, tk, firstVal[tk], null, depth, isSmart, funDefs, funNames);
+          s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, tk, firstVal[tk], null, depth, isSmart, false, funDefs, funNames);
         }
       } else { // Boolean, Number, String
         log('parsePythonResponseByStandard  type == boolean | number | string >> ');
@@ -2645,7 +2649,7 @@ res_data = rep.json()
             as = prefix2 + varName + ' < ' + minVal;
           } else if (select == '<=') {
             as = prefix2 + varName + ' <= ' + minVal;
-          } else if (select == '%') {
+          } else if (select == '%' || (valueLevel == 1 || values.length >= 2)) {
             as = prefix2 + varName + ' >= ' + minVal + ' and ' + varName + ' <= ' + maxVal;
           } else {
             as = prefix2 + varName + ' in ' + JSON.stringify(values);
