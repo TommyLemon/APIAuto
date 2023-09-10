@@ -251,6 +251,10 @@ var StringUtil = {
   },
   isMonth: function (s) {
     try {
+      if (/\d{4}-\d{1,2}/g.test(s) != true) {
+        return false;
+      }
+
       var date = new Date(s);
       return date.getMonth() > 0 && date.getDay() == 0 && date.getHours() == 0
           && date.getMinutes() == 0 && date.getSeconds() == 0 && date.getMilliseconds() == 0;
@@ -262,6 +266,21 @@ var StringUtil = {
   },
   isDate: function (s) {
     try {
+      if (/\d{4}-\d{1,2}-\d{1,2}/g.test(s) != true) {
+        return false;
+      }
+
+      var arr = StringUtil.split(s, '-');
+      if (arr == null || arr.length != 3) {
+        return false;
+      }
+
+      for (var i = 0; i < arr.length; i ++) {
+        if ([null, 0].indexOf(Number.parseInt(arr[i])) >= 0) {
+          return false;
+        }
+      }
+
       var date = new Date(s);
       return date.getDay() > 0 && date.getHours() == 0
           && date.getMinutes() == 0 && date.getSeconds() == 0 && date.getMilliseconds() == 0;
@@ -271,10 +290,28 @@ var StringUtil = {
     }
     return false;
   },
+  isMinute: function (s) {
+    try {
+      if (/\d{1,2}:\d{1,2}/g.test(s) != true) {
+        return false;
+      }
+
+      var date = new Date(s);
+      return date.getDay() <= 0 && date.getTime() % 60*1000 == 0;
+    }
+    catch (e) {
+      log(e)
+    }
+    return false;
+  },
   isTime: function (s) {
     try {
+      if (/\d{1,2}:\d{1,2}:\d{1,2}/g.test(s) != true) {
+        return false;
+      }
+
       var date = new Date(s);
-      return date.getDay() <= 0 && date.getTime() % 60*60*60*1000 > 0;
+      return date.getDay() <= 0 && date.getTime() % 1000 > 0;
     }
     catch (e) {
       log(e)
@@ -284,7 +321,7 @@ var StringUtil = {
   isDatetime: function (s) {
     try {
       var date = new Date(s);
-      return date.getDay() > 0 && date.getTime() % 60*60*60*1000 > 0;
+      return date.getDay() > 0 && date.getTime() % 1000 > 0;
     }
     catch (e) {
       log(e)
