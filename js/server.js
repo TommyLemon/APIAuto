@@ -163,8 +163,13 @@ app.use(async ctx => {
         var standard = typeof stdd != 'string' ? stdd : (StringUtil.isEmpty(stdd, true) ? null : JSON.parse(stdd));
         console.log('\n\nresponse = ' + JSON.stringify(response));
         console.log('\n\nstdd = ' + JSON.stringify(stdd));
-        var compare = JSONResponse.compareResponse(standard, response || {}, '', isML, null, null, false) || {}
+        var compare = JSONResponse.compareResponse(null, standard, response || {}, '', isML, null, null, false) || {}
+
+        if (body.newStandard) {
+          compare.newStandard = JSONResponse.updateFullStandard(standard, response, isML)
+        }
         console.log('\n\ncompare = ' + JSON.stringify(compare));
+
         ctx.status = ctx.response.status = 200;
         ctx.body = ctx.response.body = compare == null ? '' : JSON.stringify(compare);
         done = true;
