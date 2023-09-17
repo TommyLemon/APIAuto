@@ -292,7 +292,8 @@ var JSONResponse = {
     if (JSONObject.isArrayKey(fullName)) {
       fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
-    return JSONResponse.formatKey(fullName, true, true, true, true, true, true);
+    var n = JSONResponse.formatKey(fullName, true, true, true, true, true, true);
+    return /0-9/.test(n.substring(0, 1)) ? '_' + n : n;
   },
 
   /**格式化数组的名称 key[] => keyList; key:alias[] => aliasList; Table-column[] => tableColumnList

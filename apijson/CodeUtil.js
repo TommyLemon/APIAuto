@@ -2347,7 +2347,7 @@ var CodeUtil = {
       depth = 0;
     }
     if (depth <= 0) {
-      return CodeUtil.parsePythonResponseByStandard('', name_, resObj, null, 1, isSmart, funDefs, funNames);
+      return CodeUtil.parsePythonResponseByStandard('', name_, resObj, null, 1, isSmart, false, funDefs, funNames);
     }
 
     if (funDefs == null) {
@@ -2396,7 +2396,7 @@ var CodeUtil = {
         var type = value == null ? 'any' : CodeUtil.getPythonTypeFromJS(key, value);
         var padding = '\n' + CodeUtil.getBlank(depth);
         var varName = JSONResponse.getVariableName(key);
-        if (/0-9/.test(varName.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
+        if (varName.startsWith('_') != true && CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
           varName = '_' + varName // { '1': 0, '2': true ... } '1' -> '_1'
         }
 
@@ -2424,7 +2424,7 @@ var CodeUtil = {
         var innerPadding = padding + CodeUtil.getBlank(1);
 
         var k = JSONResponse.getVariableName(key, 'array');
-        if (/0-9/.test(k.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
+        if (k.startsWith('_') != true && CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
           k = '_' + k;
         }
 
@@ -2467,7 +2467,7 @@ var CodeUtil = {
       onParseJSONObject: function (key, value, index) {
         var padding = '\n' + CodeUtil.getBlank(depth);
         var k = JSONResponse.getVariableName(key);
-        if (/0-9/.test(k.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
+        if (k.startsWith('_') != true && CodeUtil.PYTHON_KEY_WORDS.indexOf(k) >= 0) {
           k = '_' + k;
         }
 
@@ -2503,7 +2503,7 @@ res_data = rep.json()
     return str;
   },
 
-  parsePythonResponseByStandard: function(name, key, target, real, depth, isSmart, isArrItem, funDefs, funNames) {
+  parsePythonResponseByStandard: function(name, key, target, real, depth, isSmart, ignoreDef, funDefs, funNames) {
     var isRoot = depth <= 1 && StringUtil.isEmpty(name, true);
     name = name == null ? 'res_data' : name;
     if (target == null) {
@@ -2532,20 +2532,20 @@ res_data = rep.json()
     var type = type_ == null ? 'any' : CodeUtil.getPythonTypeFromJSType(key, null, type_);
 
     var varName = JSONResponse.getVariableName(StringUtil.isEmpty(key, true) ? 'res_data' : key, 'array');
-    if (/0-9/.test(varName.substring(0, 1)) || CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
+    if (varName.startsWith('_') != true && CodeUtil.PYTHON_KEY_WORDS.indexOf(varName) >= 0) {
       varName = '_' + varName;
     }
 
     var padding = '\n' + CodeUtil.getBlank(depth);
     var innerPadding = padding + CodeUtil.getBlank(1);
 
-    var s = isArrItem ? '' : (padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
+    var s = ignoreDef ? '' : (padding + varName + (isSmart ? '' : ': ' + type) + ' = ' + (
         StringUtil.isEmpty(key, true)
             ? 'res.json()'
             : (isSmart ? ('get_val(' + name + ', ') : (name + '[')) + quote + key + quote + (isSmart ? ')' : ']')
     ));
 
-    if (isArrItem != true) {
+    if (ignoreDef != true) {
       if (type_ == 'object') {
         s += ' or {}'
       }
@@ -2557,11 +2557,12 @@ res_data = rep.json()
     var notnull = target.notnull;
     log('parsePythonResponseByStandard  notnull = target.notnull = ' + notnull + ' >>');
 
-    var prefix = padding + 'assert ';
-    var prefix2 = genFunDef ? '\n    ' : prefix;
-
     var funName = 'is_' + (isRoot ? '' : name + '_') + varName;
     var genFunDef = isSmart && funNames.indexOf(funName) < 0;
+
+    var prefix = padding + 'assert ';
+    var prefix2 = genFunDef ? '\n    if not (' : prefix;
+
     var funDef = ''
     if (isSmart) {
       if (genFunDef) {
@@ -2591,8 +2592,8 @@ res_data = rep.json()
       }
 
       if (isSmart) {
-        if (genFunDef) {
-          funDef += as;
+        if (genFunDef && StringUtil.isNotEmpty(as, true)) {
+          funDef += as + '):\n        return false';
         }
       } else {
         s += as;
@@ -2609,7 +2610,7 @@ res_data = rep.json()
 
       if (type_ == 'array') { // JSONArray
         log('parsePythonResponseByStandard  type == array >> ');
-        var itemName = StringUtil.addSuffix(varName, 'Item') + (depth <= 0 ? '' : depth + 1);
+        var itemName = StringUtil.addSuffix(varName, 'Item') + (depth <= 1 ? '' : depth);
 
         s += '\n' + padding + '# TODO 把这段代码抽取一个函数，以免 for 循环嵌套时 i 冲突 或 id 等其它字段冲突';
         var indexName = 'i' + (depth <= 1 ? '' : depth);
@@ -2618,7 +2619,11 @@ res_data = rep.json()
         s += innerPadding + 'assert not_none(' + itemName + ')';
         s += innerPadding + '# if ' + itemName + ' is None:';
         s += innerPadding + '#     continue';
-        s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, itemName, firstVal, null, depth + 1, isSmart, true, funDefs, funNames);
+
+        var cs = CodeUtil.parsePythonResponseByStandard(varName, itemName, firstVal, null, depth + 1, isSmart, true, funDefs, funNames);
+        if (StringUtil.isNotEmpty(cs, true)) {
+          s += '\n' + innerPadding + cs.trim();
+        }
       } else if (type_ == 'object') { // JSONObject
         log('parsePythonResponseByStandard  type == object >> ');
 
@@ -2630,7 +2635,10 @@ res_data = rep.json()
             continue;
           }
           log('parsePythonResponseByStandard  for tk = ' + tk + ' >> ');
-          s += '\n' + CodeUtil.parsePythonResponseByStandard(varName, tk, firstVal[tk], null, depth, isSmart, false, funDefs, funNames);
+          var cs = CodeUtil.parsePythonResponseByStandard(varName, tk, firstVal[tk], null, depth, isSmart, false, funDefs, funNames);
+          if (StringUtil.isNotEmpty(cs, true)) {
+            s += '\n' + padding + cs.trim();
+          }
         }
       } else { // Boolean, Number, String
         log('parsePythonResponseByStandard  type == boolean | number | string >> ');
@@ -2659,14 +2667,44 @@ res_data = rep.json()
         }
 
         if (isSmart) {
-          if (genFunDef) {
-            funDef += as;
+          if (genFunDef && StringUtil.isNotEmpty(as, true)) {
+            funDef += as + '):\n        return false';
           }
         } else {
           s += as;
         }
       }
 
+    }
+
+    var fas = '';
+    var format = target.format;
+    if (typeof format == 'string' && FORMAT_PRIORITIES[format] != null) {
+      var verifier = FORMAT_VERIFIERS[format];
+      if (typeof verifier == 'function') {
+        fas = prefix2 + verifier.name + '(' + varName + ', ' + notnull + ')';
+      }
+    }
+    else if (format instanceof Array == false && format instanceof Object) {
+      fas += prefix2 + varName + '_json = json.loads(' + varName + ')'
+      try {
+        var realObj = JSON.parse(real);
+        var cs = CodeUtil.parsePythonResponseByStandard(varName + '_json', key, format, realObj, depth, isSmart, true, funDefs, funNames);
+        if (StringUtil.isNotEmpty(cs, true)) {
+          fas += '\n' + padding + cs.trim();
+        }
+      } catch (e) {
+        log(e)
+      }
+
+    }
+
+    if (isSmart) {
+      if (genFunDef && StringUtil.isNotEmpty(fas, true)) {
+        funDef += fas + '):\n        return false';
+      }
+    } else {
+      s += fas;
     }
 
     if (isSmart && genFunDef) {
