@@ -52,6 +52,19 @@ var StringUtil = {
     if (s == null) {
       return true;
     }
+    if (s instanceof Array) {
+      return s.length <= 0;
+    }
+    if (s instanceof Object) {
+      return Object.keys(s).length <= 0;
+    }
+    if (typeof s == 'boolean') {
+      return s != true;
+    }
+    if (typeof s == 'number') {
+      return s <= 0;
+    }
+
     if (trim) {
       s = s.trim();
     }

@@ -818,6 +818,9 @@ var JSONResponse = {
     var notnull = target.notnull;
     log('compareWithStandard  notnull = target.notnull = ' + notnull + ' >>');
 
+    var notempty = target.notempty;
+    log('compareWithStandard  notempty = target.notempty = ' + notempty + ' >>');
+
     var type = target.type;
     log('compareWithStandard  type = target.type = ' + type + ' >>');
 
@@ -848,6 +851,16 @@ var JSONResponse = {
         code: notnull == true ? JSONResponse.COMPARE_KEY_LESS : JSONResponse.COMPARE_EQUAL,
         msg: notnull == true ? '是缺少的' : '结果正确',
         path: notnull == true ? folder : '',
+        value: real
+      };
+    }
+
+    if (notempty == true && StringUtil.isEmpty(real, true)) { // 空
+      log('compareWithStandard  notempty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY';
+      return {
+        code: JSONResponse.COMPARE_VALUE_EMPTY,
+        msg: '是空的',
+        path: folder,
         value: real
       };
     }
@@ -1273,6 +1286,12 @@ var JSONResponse = {
     log('updateStandard  notnull = target.notnull = ' + notnull + ' >>');
     if (notnull == null) {
       notnull = target.notnull = real != null;
+    }
+
+    var notempty = target.notempty;
+    log('updateStandard  notempty = target.notempty = ' + notempty + ' >>');
+    if (notempty == null && real != null && typeof real != 'boolean') {
+      notempty = target.notempty = StringUtil.isNotEmpty(real, true);
     }
 
     var type = target.type;
