@@ -1040,8 +1040,8 @@ https://github.com/Tencent/APIJSON/issues
       scriptType: 'case',
       scriptBelongId: 0,
       scripts: newDefaultScript(),
+      loadingCount: 0,
       isPreScript: true,
-      isLoading: false,
       isRandomTest: false,
       isDelayShow: false,
       isSaveShow: false,
@@ -5447,7 +5447,7 @@ https://github.com/Tencent/APIJSON/issues
 
       //请求
       request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
-        this.isLoading = true
+        this.loadingCount ++
 
         const isEnvCompare = this.isEnvCompareEnabled
 
@@ -5516,7 +5516,7 @@ https://github.com/Tencent/APIJSON/issues
                 return
               }
 
-              App.isLoading = false
+              App.loadingCount --
               res = res || {}
 
               if (isDelegate) {
@@ -5583,7 +5583,7 @@ https://github.com/Tencent/APIJSON/issues
                 return
               }
 
-              App.isLoading = false
+              App.loadingCount --
 
               log('send >> error:\n' + err)
               if (isAdminOperation) {
@@ -5647,7 +5647,8 @@ https://github.com/Tencent/APIJSON/issues
             console.log(e);
             console.log = logger
 
-            App.isLoading = false
+            App.loadingCount --
+
             // TODO if (isPre) {
             App.view = 'error'
             App.error = {
