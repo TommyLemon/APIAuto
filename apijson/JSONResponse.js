@@ -459,23 +459,22 @@ var JSONResponse = {
     return name;
   },
 
-
   COMPARE_ERROR: -2,
   COMPARE_NO_STANDARD: -1,
   COMPARE_EQUAL: 0,
   COMPARE_VALUE_REPEAT: 0, // 通过后置脚本改为 1/2 来开启。场景太少了，除了分布式 id 外，即便是订单状态，那也是有一段时间内停留在同一个状态，而且最多存 20 个值，也很难命中各种结果  1 // 2
   COMPARE_KEY_MORE: 1,
-  COMPARE_VALUE_MORE: 1,
-  COMPARE_EQUAL_EXCEPTION: 1,
-  COMPARE_LENGTH_CHANGE: 2,
-  COMPARE_VALUE_CHANGE: 2,
-  COMPARE_KEY_LESS: 3,
-  COMPARE_VALUE_EMPTY: 3,
-  COMPARE_FORMAT_CHANGE: 3,
-  COMPARE_TYPE_CHANGE: 4,
-  COMPARE_NUMBER_TYPE_CHANGE: 3,
-  COMPARE_CODE_CHANGE: 4,
-  COMPARE_THROW_CHANGE: 4,
+  COMPARE_VALUE_MORE: 2,
+  COMPARE_EQUAL_EXCEPTION: 3,
+  COMPARE_LENGTH_CHANGE: 4,
+  COMPARE_VALUE_CHANGE: 5,
+  COMPARE_VALUE_EMPTY: 6,
+  COMPARE_KEY_LESS: 7,
+  COMPARE_FORMAT_CHANGE: 8,
+  COMPARE_NUMBER_TYPE_CHANGE: 9,
+  COMPARE_TYPE_CHANGE: 10,
+  COMPARE_CODE_CHANGE: 11,
+  COMPARE_THROW_CHANGE: 12,
 
   /**测试compare: 对比 新的请求与上次请求的结果
    0-相同，无颜色；
@@ -857,7 +856,7 @@ var JSONResponse = {
     }
 
     if (notempty == true && StringUtil.isEmpty(real, true)) { // 空
-      log('compareWithStandard  notempty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY';
+      log('compareWithStandard  notempty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY');
       return {
         code: JSONResponse.COMPARE_VALUE_EMPTY,
         msg: '是空的',

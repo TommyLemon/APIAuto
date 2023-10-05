@@ -8902,38 +8902,47 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var status = res == null ? null : res.status
 
         it = it || {}
+        var p = tr.compare.path;
         it.compareType = tr.compare.code;
-        it.hintMessage = tr.compare.path + '  ' + tr.compare.msg;
+        it.compareMessage = (StringUtil.isEmpty(p, true) ? '' : p + '  ') + (tr.compare.msg || '查看结果');
         switch (it.compareType) {
           case JSONResponse.COMPARE_ERROR:
             it.compareColor = 'red'
-            it.compareMessage = (status != null && status != 200 ? status + ' ' : '') + '请求出错！'
+            it.hintMessage = (status != null && status != 200 ? status + ' ' : '') + '请求出错！'
             break;
           case JSONResponse.COMPARE_NO_STANDARD:
             it.compareColor = 'green'
-            it.compareMessage = '确认正确后点击[对的，纠正]'
+            it.hintMessage = '确认正确后点击[对的，纠正]'
             break;
           case JSONResponse.COMPARE_KEY_MORE:
+          case JSONResponse.COMPARE_VALUE_MORE:
+          case JSONResponse.COMPARE_EQUAL_EXCEPTION:
             it.compareColor = 'green'
-            it.compareMessage = '新增字段/新增值 等'
+            it.hintMessage = '新增字段/新增值 等'
             break;
+          case JSONResponse.COMPARE_LENGTH_CHANGE:
           case JSONResponse.COMPARE_VALUE_CHANGE:
             it.compareColor = 'blue'
-            it.compareMessage = '值改变 等'
+            it.hintMessage = '值改变 等'
             break;
+          case JSONResponse.COMPARE_VALUE_EMPTY:
           case JSONResponse.COMPARE_KEY_LESS:
             it.compareColor = 'orange'
-            it.compareMessage = '缺少字段/整数变小数 等'
+            it.hintMessage = '缺少字段/整数变小数 等'
             break;
+          case JSONResponse.COMPARE_FORMAT_CHANGE:
+          case JSONResponse.COMPARE_NUMBER_TYPE_CHANGE:
           case JSONResponse.COMPARE_TYPE_CHANGE:
+          case JSONResponse.COMPARE_CODE_CHANGE:
+          case JSONResponse.COMPARE_THROW_CHANGE:
             var code = response == null ? null : response[JSONResponse.KEY_CODE]
             it.compareColor = 'red'
-            it.compareMessage = (code != null && code != JSONResponse.CODE_SUCCESS
+            it.hintMessage = (code != null && code != JSONResponse.CODE_SUCCESS
              ? code + ' ' : (status != null && status != 200 ? status + ' ' : '')) + '状态码/异常/值类型 改变等'
             break;
           default:
             it.compareColor = 'white'
-            it.compareMessage = '查看结果'
+            it.hintMessage = '结果正确'
             break;
         }
 
@@ -9640,11 +9649,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       //显示详细信息, :data-hint :data, :hint 都报错，只能这样
-      setTestHint: function(index, item, isRandom, isDuration) {
+      setTestHint: function(index, item, isRandom, isDuration, isHandle) {
         item = item || {};
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
-        var h = isDuration ? item.durationHint : item.hintMessage;
-        this.$refs[(isRandom ? (toId <= 0 ? 'testRandomResult' : 'testRandomSubResult') : 'testResult') + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
+        var h = isDuration ? item.durationHint : (isHandle ? item.compareMessage : item.hintMessage);
+        this.$refs['test' + (isRandom ? (toId <= 0 ? 'Random' : 'RandomSub') : '') + (isHandle ? 'Handle' : 'Result')
+         + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
       },
 
       handleTestArg: function(hasTestArg, rawReq, delayTime, callback) {

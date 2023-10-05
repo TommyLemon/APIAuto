@@ -179,7 +179,7 @@ var StringUtil = {
       return [s];
     }
 
-    return s.split(separator)
+    return s.split(separator);
   },
 
   isNumber: function (s) {
@@ -187,10 +187,24 @@ var StringUtil = {
   },
 
   join: function (arr, separator) {
-    return arr == null ? '' : arr.join(separator)
+    return arr == null ? '' : arr.join(separator);
   },
   length: function (s) {
-    return s == null ? 0 : s.length
+    return s == null ? 0 : s.length;
+  },
+  limitLength: function (s, maxLen, ellipsize) {
+    var l = StringUtil.length(s);
+    if (maxLen == null || maxLen <= 0 || l <= maxLen) {
+      return s;
+    }
+    if (ellipsize == 'start') {
+      return '..' + s.substring(l - maxLen);
+    }
+    if (ellipsize == 'middle') {
+      var m = Math.floor(maxLen/2);
+      return s.substring(0, m) + '..' + s.substring(l - m);
+    }
+    return s.substring(0, maxLen) + '..';
   },
 
   isUri: function (s) {
