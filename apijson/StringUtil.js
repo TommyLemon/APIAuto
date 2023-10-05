@@ -377,6 +377,206 @@ var StringUtil = {
     return StringUtil.isVideo(s) && StringUtil.isFileUrl(s);
   },
 
+  isBoolKey: function (key) {
+     if (StringUtil.isEmpty(key, true) || key.length < 3) {
+        return false;
+     }
+     if (key.toLowerCase().startsWith('enable') || key.toLowerCase().startsWith('disable')
+       || StringUtil.isKeyOfCategory(key, 'bool') || StringUtil.isKeyOfCategory(key, 'boolean')) {
+        return true;
+     }
+
+     var k = key.substring(2, 3);
+     if (StringUtil.isEmpty(k, true)) {
+       return false;
+     }
+
+     return ((key.startsWith('is') || key.startsWith('Is')) && /[a-z]/g.test(k) != true)
+      || (key.startsWith('IS') && /[A-Za-z]/g.test(k) != true);
+  },
+  isIntKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Int') || StringUtil.isKeyOfCategory(key, 'Integer');
+  },
+  isLongKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Long');
+  },
+  isFloatKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Float');
+  },
+  isDoubleKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Double');
+  },
+  isDecimalKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Decimal');
+  },
+  isNumKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Num') || StringUtil.isKeyOfCategory(key, 'Number') || StringUtil.isKeyOfCategory(key, 'No');
+  },
+  isStrKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Str') || StringUtil.isKeyOfCategory(key, 'String')
+      || StringUtil.isKeyOfCategory(key, 'Txt') || StringUtil.isKeyOfCategory(key, 'Text')
+      || StringUtil.isKeyOfCategory(key, 'Msg') || StringUtil.isKeyOfCategory(key, 'Message')
+      || StringUtil.isKeyOfCategory(key, 'Title') || StringUtil.isKeyOfCategory(key, 'Content')
+      || StringUtil.isKeyOfCategory(key, 'Hint') || StringUtil.isKeyOfCategory(key, 'Alert')
+      || StringUtil.isKeyOfCategory(key, 'Remind') || StringUtil.isKeyOfCategory(key, 'Description')
+      || StringUtil.isKeyOfCategory(key, 'Detail') || StringUtil.isKeyOfCategory(key, 'Annotation');
+  },
+  isObjKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Obj') || StringUtil.isKeyOfCategory(key, 'Object');
+  },
+  isMapKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Map') || StringUtil.isKeyOfCategory(key, 'Table');
+  },
+  isDictKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Dict') || StringUtil.isKeyOfCategory(key, 'Dictionary');
+  },
+  isArrKey: function (key) {
+     if (StringUtil.isKeyOfCategory(key, 'Arr') || StringUtil.isKeyOfCategory(key, 'Array')) {
+       return true;
+     }
+
+     var k = key == null || key.length < 3 ? null : key.substring(key.length - 3, key.length - 1);
+     if (StringUtil.isEmpty(k, true)) {
+       return false;
+     }
+
+     return (key.endsWith('s') && /^[a-z]+$/g.test(k)) || (key.endsWith('S') && /^[A-Z]+$/g.test(k));
+  },
+  isListKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'List');
+  },
+  isSetKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Set');
+  },
+  isCollectionKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Collection') || StringUtil.isArrKey(key) || StringUtil.isListKey(key) || StringUtil.isSetKey(key);
+  },
+  isHashKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Hash');
+  },
+  isIdKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Id');
+  },
+  isSizeKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Size');
+  },
+  isCountKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Count');
+  },
+  isTotalKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Total');
+  },
+  isCapKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Cap') || StringUtil.isKeyOfCategory(key, 'Capacity');
+  },
+  isLevelKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Level');
+  },
+  isGradeKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Grade');
+  },
+  isScoreKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Score');
+  },
+  isSexKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Sex');
+  },
+  isGenderKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Gender');
+  },
+  isAmountKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Amount');
+  },
+  isMoneyKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Money');
+  },
+  isBalanceKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Balance');
+  },
+  isLoanKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Loan');
+  },
+  isPriceKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Price');
+  },
+  isPercentKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Percent');
+  },
+  isRevenueKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Revenue');
+  },
+  isProfitKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Profit');
+  },
+  isCashKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Cash');
+  },
+  isDiscountKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Discount');
+  },
+  isLongitudeKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Longitude');
+  },
+  isLatitudeKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Latitude');
+  },
+  isNameKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Name');
+  },
+  isPathKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Path');
+  },
+  isUrlKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Url');
+  },
+  isUriKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Uri');
+  },
+  isDateKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Date');
+  },
+  isTimeKey: function (key) {
+     return StringUtil.isKeyOfCategory(key, 'Time');
+  },
+  isKeyOfCategory: function (key, category) {
+     if (StringUtil.isEmpty(key, true) || StringUtil.isEmpty(category, true) || key.length < category.length) {
+       return false;
+     }
+
+     var lowerCate = category.toLowerCase();
+     var upperCate = category.toUpperCase();
+     var bigCate = StringUtil.firstCase(lowerCate, true);
+     if (key.endsWith(bigCate) || key == lowerCate || key == upperCate) {
+       return true;
+     }
+
+     var len = key.length;
+     var k = len <= category.length ? null : key.substring(len - 3, len - 2);
+     if (StringUtil.isEmpty(k, true)) {
+       return false;
+     }
+
+     return (key.endsWith(lowerCate) && /[a-z]/g.test(k) != true)
+      || (key.endsWith(upperCate) && /[A-Z]/g.test(k) != true);
+  },
+  TYPE_CATEGORY_KEYS: {
+     'boolean': ['bool', 'boolean'],
+     'integer': ['count', 'page', 'size', 'num', 'number', 'no', 'cap', 'capacity', 'height', 'width', 'depth'],
+     'number': ['float', 'double', 'price', 'amount', 'money', 'rest', 'balance', 'loan', 'discount', 'cash', 'cashback', 'weight', 'longitude', 'latitude'],
+     'string': [
+       'str', 'string', 'txt', 'text', 'title', 'detail'
+     ],
+     'array': [
+       'arr', 'array', 'list', 'set', 'collection', 'slice'
+     ],
+     'object': [
+       'obj', 'object', 'dict', 'map', 'table'
+     ]
+  },
+  CATEGORY_MAP: { // from TYPE_CATEGORY_KEYS
+//    'count': 'integer'
+  }
+
 };
 
 if (typeof module == 'object') {

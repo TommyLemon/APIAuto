@@ -2686,12 +2686,12 @@ res_data = rep.json()
       }
     }
     else if (format instanceof Array == false && format instanceof Object) {
-      fas += prefix2 + varName + '_json = json.loads(' + varName + ')'
+      s += prefix2 + varName + '_json = json.loads(' + varName + ')'
       try {
         var realObj = JSON.parse(real);
         var cs = CodeUtil.parsePythonResponseByStandard(varName + '_json', key, format, realObj, depth, isSmart, true, funDefs, funNames);
         if (StringUtil.isNotEmpty(cs, true)) {
-          fas += '\n' + padding + cs.trim();
+          s += '\n' + padding + cs.trim();
         }
       } catch (e) {
         log(e)

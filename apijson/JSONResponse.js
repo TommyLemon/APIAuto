@@ -289,6 +289,9 @@ var JSONResponse = {
    * @return {@link #formatKey(String, boolean, boolean, boolean)} formatColon = true, formatAt = true, formatHyphen = true, firstCase = true
    */
   getVariableName: function(fullName, listSuffix) {
+    if (StringUtil.isEmpty(fullName, true)) {
+       return null;
+    }
     if (JSONObject.isArrayKey(fullName)) {
       fullName = StringUtil.addSuffix(fullName.substring(0, fullName.length - 2), listSuffix || "list");
     }
@@ -1254,13 +1257,8 @@ var JSONResponse = {
     if (target instanceof Array) { // JSONArray
       throw new Error("Standard 语法错误，不应该有 array！");
     }
-    if (real == null) { //少了key
-      log('updateStandard  real == null');
-      if (target != null) { //} && target.values != null && target.values[0] != null) {
-        log('updateStandard  target != null >> target.notnull = false;');
-        target.notnull = false;
-      }
-      log('updateStandard  return target;');
+    if (real == null && StringUtil.isEmpty(key, true)) { // 少了key
+      log('updateStandard real == null && StringUtil.isEmpty(key, true) >> return target;');
       return target;
     }
 
@@ -1274,7 +1272,7 @@ var JSONResponse = {
     var notnull = target.notnull;
     log('updateStandard  notnull = target.notnull = ' + notnull + ' >>');
     if (notnull == null) {
-      notnull = target.notnull = true;
+      notnull = target.notnull = real != null;
     }
 
     var type = target.type;
@@ -1285,98 +1283,99 @@ var JSONResponse = {
     var rtype = JSONResponse.getType(real);
     if ((rtype == null || real == null) && StringUtil.isEmpty(type, true) && StringUtil.isNotEmpty(key, true)) {
       target.guess = true;
-      if (key.endsWith('_bool') || key.endsWith('Bool') || key.endsWith('BOOL')
-        || key.endsWith('_boolean') || key.endsWith('Boolean') || key.endsWith('BOOLEAN')
-        || key.toLowerCase().startsWith('enable') || key.toLowerCase().startsWith('disable')
-        || key.startsWith('IS_') || ((key.startsWith('is') || key.endsWith('Is')) && /[A-Z_]/g.test(key.substring(2, 3)))
-      ) {
+      if (StringUtil.isBoolKey(key)) {
         target.type = 'boolean';
       }
-      else if (key.endsWith('_str') || key.endsWith('Str') || key.endsWith('STR')
-        || key.endsWith('_text') || key.endsWith('Text') || key.endsWith('TEXT')
-        || key.endsWith('_txt') || key.endsWith('Txt') || key.endsWith('TXT')
-        || key.toLowerCase().indexOf('content') >= 0 || key.toLowerCase().indexOf('detail') >= 0
-        || key.toLowerCase().indexOf('descri') >= 0 || key.toLowerCase().indexOf('annotat') >= 0
-        || key.toLowerCase().indexOf('hint') >= 0 || key.toLowerCase().indexOf('remind') >= 0
-        || key.toLowerCase().indexOf('alert') >= 0 || key.toLowerCase().indexOf('msg') >= 0
-        || key.toLowerCase().indexOf('message') >= 0
-      ) {
-        target.type = 'string';
-      }
-      else if (key.endsWith('_date') || key.endsWith('Date') || key.endsWith('DATE')) {
+      else if (StringUtil.isDateKey(key)) {
         target.type = 'integer'; // 'string';
         if (target.format == null) {
           target.format = FORMAT_DATE;
         }
       }
-      else if (key.endsWith('_time') || key.endsWith('Time') || key.endsWith('TIME')) {
+      else if (StringUtil.isTimeKey(key)) {
         target.type = 'integer'; // 'string';
         if (target.format == null) {
           target.format = FORMAT_TIME;
         }
       }
-      else if (key.endsWith('_url') || key.endsWith('Url') || key.endsWith('URL')) {
+      else if (StringUtil.isUrlKey(key)) {
         target.type = 'string';
         if (target.format == null) {
           target.format = FORMAT_HTTP;
         }
       }
-      else if (key.endsWith('_uri') || key.endsWith('Uri') || key.endsWith('URI')) {
+      else if (StringUtil.isUriKey(key)) {
         target.type = 'string';
         if (target.format == null) {
           target.format = FORMAT_URI;
         }
       }
-      else if (key.endsWith('_path') || key.endsWith('Path') || key.endsWith('PATH')) {
+      else if (StringUtil.isPathKey(key)) {
         target.type = 'string';
         if (target.format == null) {
           target.format = FORMAT_PATH;
         }
       }
-      else if (key.endsWith('_name') || key.endsWith('Name') || key.endsWith('NAME')) {
+      else if (StringUtil.isNameKey(key)) {
         target.type = 'string';
         if (target.format == null) {
           target.format = FORMAT_BIG_NAME;
         }
       }
-      else if (key.endsWith('_dict') || key.endsWith('Dict') || key.endsWith('DICT')
-        || key.endsWith('_map') || key.endsWith('Map') || key.endsWith('MAP')
-        || key.endsWith('_obj') || key.endsWith('Obj') || key.endsWith('OBJ')
-        || key.endsWith('_object') || key.endsWith('Object') || key.endsWith('OBJECT')
-      ) {
+      else if (StringUtil.isDictKey(key) || StringUtil.isMapKey(key) || StringUtil.isObjKey(key)) {
         target.type = 'object';
       }
-      else if (key.endsWith('_arr') || key.endsWith('Arr') || key.endsWith('ARR')
-          || key.endsWith('_Array') || key.endsWith('Array') || key.endsWith('ARRAY')
-          || key.endsWith('_list') || key.endsWith('List') || key.endsWith('LIST')
-          || key.endsWith('_set') || key.endsWith('Set') || key.endsWith('SET')
-          || (key.endsWith('s') && /[a-z]/g.test(key.substring(key.length - 2, key.length - 1)))
-          || (key.endsWith('S') && /[A-Z]/g.test(key.substring(key.length - 2, key.length - 1)))
-      ) {
+      else if (StringUtil.isCollectionKey(key)) {
         target.type = 'array';
       }
-      else if (key.toLowerCase().indexOf('price') >= 0 || key.toLowerCase().indexOf('percent') >= 0
-          || key.toLowerCase().indexOf('amount') >= 0 || key.toLowerCase().indexOf('money') >= 0
-          || key.toLowerCase().indexOf('cash') >= 0 || key.toLowerCase().indexOf('discount') >= 0
-          || key.toLowerCase().indexOf('decimal') >= 0 || key.toLowerCase().indexOf('float') >= 0
-          || key.toLowerCase().indexOf('double') >= 0
+      else if (StringUtil.isPriceKey(key) || StringUtil.isPercentKey(key) || StringUtil.isAmountKey(key)
+         || StringUtil.isMoneyKey(key) || StringUtil.isCashKey(key) || StringUtil.isDiscountKey(key)
+         || StringUtil.isDecimalKey(key) || StringUtil.isFloatKey(key) || StringUtil.isDoubleKey(key)
       ) {
         target.type = 'number';
       }
-      else if (key.toLowerCase().indexOf('num') >= 0 || key.toLowerCase().indexOf('no') >= 0
-          || key.toLowerCase().indexOf('count') >= 0 || key.toLowerCase().indexOf('page') >= 0
-          || key.toLowerCase().indexOf('size') >= 0 || key.toLowerCase().indexOf('cap') >= 0
-          || key.toLowerCase().indexOf('int') >= 0 || key.toLowerCase().indexOf('long') >= 0
-          || key.toLowerCase().indexOf('level') >= 0 || key.toLowerCase().indexOf('grade') >= 0
-          || key.toLowerCase().indexOf('score') >= 0 || key.toLowerCase().indexOf('total') >= 0
-          || key.endsWith('_id') || key.endsWith('Id') || key.endsWith('ID')
-          || key.endsWith('_hash') || key.endsWith('Hash') || key.endsWith('HASH')
+      else if (StringUtil.isNumKey(key) || StringUtil.isCountKey(key) || StringUtil.isPageKey(key)
+         || StringUtil.isSizeKey(key) || StringUtil.isCapKey(key) || StringUtil.isIntKey(key) || StringUtil.isLongKey(key)
+         || StringUtil.isLevelKey(key)|| StringUtil.isGradeKey(key) || StringUtil.isScoreKey(key) || StringUtil.isTotalKey(key)
+         || StringUtil.isIdKey(key) || StringUtil.isHashKey(key)
       ) {
         target.type = 'integer';
       }
+      else if (StringUtil.isStrKey(key)) {
+        target.type = 'string';
+      }
+      else {
+        var cm = StringUtil.CATEGORY_MAP;
+        if (cm == null || Object.keys(cm).length <= 0) {
+            cm = {}
+            var tcks = StringUtil.TYPE_CATEGORY_KEYS || {};
+            for (var k in tcks) {
+              var arr = tcks[k] || [];
+              for (var i = 0; i < arr.length; i++) {
+                var k2 = arr[i];
+                cm[k2] = k;
+              }
+            }
+
+            StringUtil.CATEGORY_MAP = cm;
+        }
+
+        for (var k in cm) {
+          if (StringUtil.isKeyOfCategory(key, k)) {
+            target.type = cm[k];
+            break;
+          }
+        }
+      }
+
     }
     else {
-      target.guess = rtype == null || real == null ? false : undefined;
+      target.guess = rtype == null || real == null ? (ignoreTrend ? target.guess : false) : undefined;
+    }
+
+    if (real == null) { // 少了key
+      log('updateStandard  real == null >> return target;');
+      return target;
     }
 
     log('updateStandard  type = target.type = ' + type + ' >>');
