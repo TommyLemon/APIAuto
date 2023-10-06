@@ -1057,6 +1057,7 @@ https://github.com/Tencent/APIJSON/issues
       isRandomListShow: false,
       isRandomSubListShow: false,
       isRandomEditable: false,
+      isPercentShow: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
@@ -4158,7 +4159,8 @@ https://github.com/Tencent/APIJSON/issues
         this.onClickSummary(color, false, this.currentAccountIndex)
       },
       onClickSummary: function (color, isRandom, accountIndex) {
-        if (this.currentAccountIndex != accountIndex) {
+        var isCur = this.currentAccountIndex == accountIndex
+        if (! isCur) {
           this.onClickAccount(accountIndex, accountIndex < 0 ? this.logoutSummary : this.accounts[accountIndex])
         }
         // this.currentAccountIndex = accountIndex
@@ -4169,6 +4171,9 @@ https://github.com/Tencent/APIJSON/issues
         var list = []
         if (color == null || color == 'total') {
           list = arr
+          if (isCur) {
+            this.isPercentShow = ! this.isPercentShow;
+          }
         } else if (arr != null) {
           for (var i = 0; i < arr.length; i++) {
             var obj = arr[i]
@@ -9146,6 +9151,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       getCurrentRandomSummary: function () {
         return (this.isRandomSubListShow ? this.currentRandomItem : this.currentRemoteItem) || {}
+      },
+      getLogoutSummaryWhiteText: function () {
+        var summary = this.getLogoutSummary()
+        return this.isPercentShow ? Math.round(summary.whiteCount*1000/summary.totalCount)/10 + '%' : '' + summary.whiteCount
+      },
+      getLogoutSummaryGreenText: function () {
+        var summary = this.getLogoutSummary()
+        return this.isPercentShow ? Math.round(summary.greenCount*1000/summary.totalCount)/10 + '%' : '' + summary.greenCount
+      },
+      getLogoutSummaryBlueText: function () {
+        var summary = this.getLogoutSummary()
+        return this.isPercentShow ? Math.round(summary.blueCount*1000/summary.totalCount)/10 + '%' : '' + summary.blueCount
+      },
+      getLogoutSummaryOrangeText: function () {
+        var summary = this.getLogoutSummary()
+        return this.isPercentShow ? Math.round(summary.orangeCount*1000/summary.totalCount)/10 + '%' : '' + summary.orangeCount
+      },
+      getLogoutSummaryRedText: function () {
+        var summary = this.getLogoutSummary()
+        return this.isPercentShow ? Math.round(summary.redCount*1000/summary.totalCount)/10 + '%' : '' + summary.redCount
       },
 
       isSummaryShow: function (accountIndex) {
