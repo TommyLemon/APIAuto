@@ -1290,7 +1290,7 @@ var JSONResponse = {
 
     var notempty = target.notempty;
     log('updateStandard  notempty = target.notempty = ' + notempty + ' >>');
-    if (notempty == null && real != null && typeof real != 'boolean') {
+    if (real != null && typeof real != 'boolean') {
       notempty = target.notempty = StringUtil.isNotEmpty(real, true);
     }
 

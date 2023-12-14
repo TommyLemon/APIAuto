@@ -9306,6 +9306,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           delete obj["trace"]
           // 保留 delete obj["sql:generate|cache|execute|maxExecute"]
           // 保留 delete obj["depth:count|max"]
+          delete obj["time"]
+          delete obj["timestamp"]
           delete obj["time:start|duration|end"]
           delete obj["time:start|duration|end|parse|sql"]
           // 保留 delete obj["throw"]
@@ -10821,7 +10823,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\nthis.User = this.getCache(this.server, User, {})' +
           '\n} catch (e) {\n' + e.message)
       }
-
 
       //无效，只能在index里设置 vUrl.value = this.getCache('', 'URL_BASE')
 
