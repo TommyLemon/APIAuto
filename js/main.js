@@ -1132,7 +1132,7 @@ https://github.com/Tencent/APIJSON/issues
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
       otherEnv: 'http://localhost:8080',  // 其它环境服务地址，用来对比当前的
-      server: 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.cn
+      server: 'http://localhost:8080', // 'http://apijson.cn:9090',  // Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了 'http://apijson.org:9090',  //apijson.cn
       // server: 'http://47.74.39.68:9090',  // apijson.org
       // project: 'http://apijson.cn:8080',  // apijson.cn
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
@@ -1647,9 +1647,9 @@ https://github.com/Tencent/APIJSON/issues
                 case CodeUtil.LANGUAGE_SWIFT:
                   suffix = '.swift';
                   break;
-                case CodeUtil.LANGUAGE_OBJECTIVE_C:
-                  suffix = '.h';
-                  break;
+//                case CodeUtil.LANGUAGE_OBJECTIVE_C:
+//                  suffix = '.h';
+//                  break;
 
                 case CodeUtil.LANGUAGE_GO:
                   suffix = '.go';
@@ -1678,8 +1678,8 @@ https://github.com/Tencent/APIJSON/issues
 
               this.exTxt.name = 'User' + suffix
               alert('自动生成模型代码，可填类名后缀:\n'
-                + 'Kotlin.kt, Java.java, Swift.swift, Objective-C.m, C#.cs, Go.go,'
-                + '\nTypeScript.ts, JavaScript.js, PHP.php, Python.py, C++.cpp');
+                + 'Kotlin.kt, Java.java, Swift.swift, C#.cs, Go.go, TypeScript.ts, '
+                + '\nJavaScript.js, PHP.php, Python.py, C++.cpp');
             }
             else {
               this.exTxt.name = 'APIJSON测试 ' + this.getMethod() + ' ' + this.formatDateTime()
@@ -1721,7 +1721,7 @@ https://github.com/Tencent/APIJSON/issues
                 alert('可填数据库:\n' + CodeUtil.DATABASE_KEYS.join())
               }
               else if (index == 2) {
-                alert('自动生成代码，可填语言:\nKotlin,Java,Swift,Objective-C,C#,Go,\nTypeScript,JavaScript,PHP,Python,C++')
+                alert('自动生成代码，可填语言:\nKotlin,Java,Swift,C#,Go,TypeScript,\nJavaScript,PHP,Python,C++')
               }
               else if (index == 16) {
                 alert('多个方法用 , 隔开，可填方法: ' + HTTP_METHODS.join())
@@ -2337,9 +2337,9 @@ https://github.com/Tencent/APIJSON/issues
               case CodeUtil.LANGUAGE_SWIFT:
                 s += '(Swift):\n\n' + CodeUtil.parseSwiftResponse('', res, 0, isSingle)
                 break;
-              case CodeUtil.LANGUAGE_OBJECTIVE_C:
-                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
-                break;
+//              case CodeUtil.LANGUAGE_OBJECTIVE_C:
+//                s += '(Objective-C):\n\n' + CodeUtil.parseObjectiveCResponse('', res, 0)
+//                break;
 
               case CodeUtil.LANGUAGE_GO:
                 s += '(Go):\n\n' + CodeUtil.parseGoResponse('', res, 0)
@@ -6349,11 +6349,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               + CodeUtil.parseSwiftRequest(null, JSON.parse(rq), 0)
               + '\n ``` \n注：对象 {} 用 ["key": value]，数组 [] 用 [value0, value1]\n';
             break;
-          case CodeUtil.LANGUAGE_OBJECTIVE_C:
-            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
-              + CodeUtil.parseObjectiveCRequest(null, JSON.parse(rq))
-              + '\n ```  \n';
-            break;
+//          case CodeUtil.LANGUAGE_OBJECTIVE_C:
+//            s += '\n#### <= iOS-Objective-C \n ```objective-c \n'
+//              + CodeUtil.parseObjectiveCRequest(null, JSON.parse(rq))
+//              + '\n ```  \n';
+//            break;
 
           case CodeUtil.LANGUAGE_GO:
             s += '\n#### <= Web-Go: 对象 key: value 会被强制排序，每个 key: value 最后都要加逗号 ","'

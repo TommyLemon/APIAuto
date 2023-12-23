@@ -36,7 +36,7 @@ var CodeUtil = {
   LANGUAGE_JAVA: 'Java',
   LANGUAGE_C_SHARP: 'C#',
   LANGUAGE_SWIFT: 'Swift',
-  LANGUAGE_OBJECTIVE_C: 'Objective-C',
+//  LANGUAGE_OBJECTIVE_C: 'Objective-C',
   LANGUAGE_GO: 'Go',
   LANGUAGE_C_PLUS_PLUS: 'C++',
   LANGUAGE_TYPE_SCRIPT: 'TypeScript',
@@ -712,16 +712,16 @@ var CodeUtil = {
 
   },
 
-  /**解析出 生成iOS-Objective-C请求JSON 的代码
-   * 只需要把所有 对象标识{} 改为数组标识 []
-   * @param name
-   * @param reqObj
-   * @param depth
-   * @return parseCode
-   */
-  parseObjectiveCRequest: function(name, reqObj, depth) {
-    return CodeUtil.parseSwiftRequest(name, reqObj, depth);
-  },
+//  /**解析出 生成iOS-Objective-C请求JSON 的代码
+//   * 只需要把所有 对象标识{} 改为数组标识 []
+//   * @param name
+//   * @param reqObj
+//   * @param depth
+//   * @return parseCode
+//   */
+//  parseObjectiveCRequest: function(name, reqObj, depth) {
+//    return CodeUtil.parseSwiftRequest(name, reqObj, depth);
+//  },
 
 
   /**解析出 生成Android-Kotlin 请求JSON 的代码
@@ -1699,121 +1699,121 @@ var CodeUtil = {
   },
 
 
-  /**生成 iOS-CodeUtil.LANGUAGE_OBJECTIVE_C 解析 Response JSON 的代码
-   * @param name_
-   * @param resObj
-   * @param depth
-   * @return parseCode
-   */
-  parseObjectiveCResponse: function(name_, resObj, depth) {
-    if (depth == null || depth < 0) {
-      depth = 0;
-    }
-
-    var name = name_; //解决生成多余的解析最外层的初始化代码
-    if (StringUtil.isEmpty(name, true)) {
-      name = 'response';
-    }
-
-    return CodeUtil.parseCode(name, resObj, {
-
-      onParseParentStart: function () {
-        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
-      },
-
-      onParseParentEnd: function () {
-        return '';
-      },
-
-      onParseChildArray: function (key, value, index) {
-        return this.onParseChildObject(key, value, index);
-      },
-
-      onParseChildObject: function (key, value, index) {
-        return this.onParseJSONObject(key, value, index);
-      },
-
-      onParseChildOther: function (key, value, index) {
-
-        if (value instanceof Array) {
-          log(CodeUtil.TAG, 'parseSwiftResponse  for typeof value === "array" >>  ' );
-
-          return this.onParseJSONArray(key, value, index);
-        }
-        if (value instanceof Object) {
-          log(CodeUtil.TAG, 'parseSwiftResponse  for typeof value === "array" >>  ' );
-
-          return this.onParseJSONObject(key, value, index);
-        }
-
-        var type = CodeUtil.getSwiftTypeFromJS(key, value);
-        var padding = '\n' + CodeUtil.getBlank(depth);
-        var varName = JSONResponse.getVariableName(key);
-
-        return padding + 'let ' + varName + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
-          + padding + 'print("' + name + '.' + varName + ' = " + ' + varName + ');';
-      },
-
-      onParseJSONArray: function (key, value, index) {
-        value = value || []
-
-        var padding = '\n' + CodeUtil.getBlank(depth);
-        var innerPadding = padding + CodeUtil.getBlank(1);
-
-        var k = JSONResponse.getVariableName(key);
-        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
-
-        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
-        var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
-
-        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-
-        s += padding + 'let ' + k + ': NSArray = ' + name + '["' + key + '"] as! NSArray';
-
-        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
-
-        s += padding + 'let ' + itemName + ': ' + type;
-
-        var indexName = 'i' + (depth <= 0 ? '' : depth);
-        s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++) {';
-
-        s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
-        s += innerPadding + 'if (' + itemName + ' == nil) {';
-        s += innerPadding + '    continue';
-        s += innerPadding + '}';
-        s += innerPadding + 'print("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
-        s += innerPadding + '// TODO 你的代码\n';
-
-        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
-        if (value[0] instanceof Object) {
-          s += CodeUtil.parseSwiftResponse(itemName, value[0], depth + 1);
-        }
-        // }
-
-        s += padding + '}';
-
-        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
-
-        return s;
-      },
-
-      onParseJSONObject: function (key, value, index) {
-        var padding = '\n' + CodeUtil.getBlank(depth);
-        var k = JSONResponse.getVariableName(key);
-
-        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-
-        s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
-
-        s += CodeUtil.parseSwiftResponse(k, value, depth);
-
-        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
-
-        return s;
-      }
-    })
-
-  },
+//  /**生成 iOS-CodeUtil.LANGUAGE_OBJECTIVE_C 解析 Response JSON 的代码
+//   * @param name_
+//   * @param resObj
+//   * @param depth
+//   * @return parseCode
+//   */
+//  parseObjectiveCResponse: function(name_, resObj, depth) {
+//    if (depth == null || depth < 0) {
+//      depth = 0;
+//    }
+//
+//    var name = name_; //解决生成多余的解析最外层的初始化代码
+//    if (StringUtil.isEmpty(name, true)) {
+//      name = 'response';
+//    }
+//
+//    return CodeUtil.parseCode(name, resObj, {
+//
+//      onParseParentStart: function () {
+//        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + 'let ' + name + ': NSDictionary = try! NSJSONSerialization.JSONObjectWithData(resultJson!, options: .MutableContainers) as! NSDictionary \n';
+//      },
+//
+//      onParseParentEnd: function () {
+//        return '';
+//      },
+//
+//      onParseChildArray: function (key, value, index) {
+//        return this.onParseChildObject(key, value, index);
+//      },
+//
+//      onParseChildObject: function (key, value, index) {
+//        return this.onParseJSONObject(key, value, index);
+//      },
+//
+//      onParseChildOther: function (key, value, index) {
+//
+//        if (value instanceof Array) {
+//          log(CodeUtil.TAG, 'parseSwiftResponse  for typeof value === "array" >>  ' );
+//
+//          return this.onParseJSONArray(key, value, index);
+//        }
+//        if (value instanceof Object) {
+//          log(CodeUtil.TAG, 'parseSwiftResponse  for typeof value === "array" >>  ' );
+//
+//          return this.onParseJSONObject(key, value, index);
+//        }
+//
+//        var type = CodeUtil.getSwiftTypeFromJS(key, value);
+//        var padding = '\n' + CodeUtil.getBlank(depth);
+//        var varName = JSONResponse.getVariableName(key);
+//
+//        return padding + 'let ' + varName + ': ' + type + ' = ' + name + '["' + key + '"] as! ' + type
+//          + padding + 'print("' + name + '.' + varName + ' = " + ' + varName + ');';
+//      },
+//
+//      onParseJSONArray: function (key, value, index) {
+//        value = value || []
+//
+//        var padding = '\n' + CodeUtil.getBlank(depth);
+//        var innerPadding = padding + CodeUtil.getBlank(1);
+//
+//        var k = JSONResponse.getVariableName(key);
+//        var itemName = StringUtil.addSuffix(k, 'Item') + (depth <= 0 ? '' : depth);
+//
+//        //还有其它字段冲突以及for循环的i冲突，解决不完的，只能让开发者自己抽出函数  var item = StringUtil.addSuffix(k, 'Item');
+//        var type = CodeUtil.getSwiftTypeFromJS('item', value[0]);
+//
+//        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+//
+//        s += padding + 'let ' + k + ': NSArray = ' + name + '["' + key + '"] as! NSArray';
+//
+//        s += '\n' + padding + '// TODO 把这段代码抽取一个函数，以免for循环嵌套时 i 冲突 或 id等其它字段冲突';
+//
+//        s += padding + 'let ' + itemName + ': ' + type;
+//
+//        var indexName = 'i' + (depth <= 0 ? '' : depth);
+//        s += padding + 'for (int ' + indexName + ' = 0; ' + indexName + ' < ' + k + '.size(); ' + indexName + '++) {';
+//
+//        s += innerPadding + itemName + ' = ' + k + '[' + indexName + '] as! ' + type;
+//        s += innerPadding + 'if (' + itemName + ' == nil) {';
+//        s += innerPadding + '    continue';
+//        s += innerPadding + '}';
+//        s += innerPadding + 'print("\\n' + itemName + ' = ' + k + '[" + ' + indexName + ' + "] = \\n" + ' + itemName + ' + "\\n\\n"' + ')';
+//        s += innerPadding + '// TODO 你的代码\n';
+//
+//        //不能生成N个，以第0个为准，可能会不全，剩下的由开发者自己补充。 for (var i = 0; i < value.length; i ++) {
+//        if (value[0] instanceof Object) {
+//          s += CodeUtil.parseSwiftResponse(itemName, value[0], depth + 1);
+//        }
+//        // }
+//
+//        s += padding + '}';
+//
+//        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+//
+//        return s;
+//      },
+//
+//      onParseJSONObject: function (key, value, index) {
+//        var padding = '\n' + CodeUtil.getBlank(depth);
+//        var k = JSONResponse.getVariableName(key);
+//
+//        var s = '\n' + padding + '// ' + key + ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
+//
+//        s += padding + 'let ' + k + ': NSDictionary = ' + name + '["' + key + '"] as! NSDictionary\n'
+//
+//        s += CodeUtil.parseSwiftResponse(k, value, depth);
+//
+//        s += padding + '// ' + key + ' >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n';
+//
+//        return s;
+//      }
+//    })
+//
+//  },
 
 
   /**生成 Web-JavaScript 解析 Response JSON 的代码
@@ -4365,124 +4365,124 @@ res_data = rep.json()
   },
 
 
-  /**用数据字典转为JavaBean
-   * @param docObj
-   */
-  parseObjectiveCEntity: function(docObj, clazz, database) {
-
-    //转为Java代码格式
-    var doc = '';
-    var item;
-
-    var blank = CodeUtil.getBlank(1);
-    var blank2 = CodeUtil.getBlank(2);
-
-    //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    var list = docObj == null ? null : docObj['[]'];
-    if (list != null) {
-      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
-
-      var table;
-      var model;
-      var columnList;
-      var column;
-      for (var i = 0; i < list.length; i++) {
-        item = list[i];
-
-        //Table
-        table = item == null ? null : item.Table;
-        model = CodeUtil.getModelName(table == null ? null : table.table_name);
-        if (model != clazz) {
-          continue;
-        }
-
-        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
-
-
-        doc += '/**'
-          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
-          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
-          + '\n */'
-          + '\npackage apijson.demo.server.model;\n\n\n'
-          + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
-          + '\n@MethodAccess'
-          + '\npublic class ' + model + ' implements Serializable {'
-          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
-
-        //Column[]
-        columnList = item['[]'];
-        if (columnList != null) {
-
-          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
-
-          doc += '\n'
-            + '\n' + blank + 'public ' + model + '() {'
-            + '\n' + blank2 + 'super();'
-            + '\n' + blank + '}'
-            + '\n' + blank + 'public ' + model + '(long id) {'
-            + '\n' + blank2 + 'this();'
-            + '\n' + blank2 + 'setId(id);'
-            + '\n' + blank + '}'
-            + '\n\n'
-
-          var name;
-          var type;
-
-          for (var j = 0; j < columnList.length; j++) {
-            column = (columnList[j] || {}).Column;
-
-            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
-            if (name == '') {
-              continue;
-            }
-
-            column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
-
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
-            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
-
-          }
-
-          doc += '\n\n'
-
-          for (var j = 0; j < columnList.length; j++) {
-            column = (columnList[j] || {}).Column;
-
-            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
-            if (name == '') {
-              continue;
-            }
-            column.column_type = CodeUtil.getColumnType(column, database);
-            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
-
-            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
-
-            //getter
-            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
-              + '\n' + blank2 + 'return ' + name + ';'
-              + '\n' + blank + '}';
-
-            //setter
-            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
-              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
-              + '\n' + blank2 + 'return this;'
-              + '\n' + blank + '}\n';
-
-          }
-        }
-
-        doc += '\n\n}';
-
-      }
-    }
-    //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-    return doc;
-  },
+//  /**用数据字典转为JavaBean
+//   * @param docObj
+//   */
+//  parseObjectiveCEntity: function(docObj, clazz, database) {
+//
+//    //转为Java代码格式
+//    var doc = '';
+//    var item;
+//
+//    var blank = CodeUtil.getBlank(1);
+//    var blank2 = CodeUtil.getBlank(2);
+//
+//    //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//    var list = docObj == null ? null : docObj['[]'];
+//    if (list != null) {
+//      console.log('parseJavaBean  [] = \n' + format(JSON.stringify(list)));
+//
+//      var table;
+//      var model;
+//      var columnList;
+//      var column;
+//      for (var i = 0; i < list.length; i++) {
+//        item = list[i];
+//
+//        //Table
+//        table = item == null ? null : item.Table;
+//        model = CodeUtil.getModelName(table == null ? null : table.table_name);
+//        if (model != clazz) {
+//          continue;
+//        }
+//
+//        console.log('parseJavaBean [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
+//
+//
+//        doc += '/**'
+//          + '\n *' + CodeUtil.APP_NAME + ' 自动生成 JavaBean\n *主页: https://github.com/TommyLemon/' + CodeUtil.APP_NAME
+//          + '\n *使用方法：\n *1.修改包名 package \n *2.import 需要引入的类，可使用快捷键 Ctrl+Shift+O '
+//          + '\n */'
+//          + '\npackage apijson.demo.server.model;\n\n\n'
+//          + CodeUtil.getComment(database != 'POSTGRESQL' ? table.table_comment : (item.PgClass || {}).table_comment, true)
+//          + '\n@MethodAccess'
+//          + '\npublic class ' + model + ' implements Serializable {'
+//          + '\n' + blank + 'private static final long serialVersionUID = 1L;';
+//
+//        //Column[]
+//        columnList = item['[]'];
+//        if (columnList != null) {
+//
+//          console.log('parseJavaBean [] for ' + i + ': columnList = \n' + format(JSON.stringify(columnList)));
+//
+//          doc += '\n'
+//            + '\n' + blank + 'public ' + model + '() {'
+//            + '\n' + blank2 + 'super();'
+//            + '\n' + blank + '}'
+//            + '\n' + blank + 'public ' + model + '(long id) {'
+//            + '\n' + blank2 + 'this();'
+//            + '\n' + blank2 + 'setId(id);'
+//            + '\n' + blank + '}'
+//            + '\n\n'
+//
+//          var name;
+//          var type;
+//
+//          for (var j = 0; j < columnList.length; j++) {
+//            column = (columnList[j] || {}).Column;
+//
+//            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+//            if (name == '') {
+//              continue;
+//            }
+//
+//            column.column_type = CodeUtil.getColumnType(column, database);
+//            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+//
+//
+//            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+//
+//            var o = database != 'POSTGRESQL' ? column : (columnList[j] || {}).PgAttribute
+//            doc += '\n' + blank + 'private ' + type + ' ' + name + '; ' + CodeUtil.getComment((o || {}).column_comment, false);
+//
+//          }
+//
+//          doc += '\n\n'
+//
+//          for (var j = 0; j < columnList.length; j++) {
+//            column = (columnList[j] || {}).Column;
+//
+//            name = CodeUtil.getFieldName(column == null ? null : column.column_name);
+//            if (name == '') {
+//              continue;
+//            }
+//            column.column_type = CodeUtil.getColumnType(column, database);
+//            type = CodeUtil.isId(name, column.column_type) ? 'Long' : CodeUtil.getJavaType(column.column_type, false);
+//
+//            console.log('parseJavaBean [] for j=' + j + ': column = \n' + format(JSON.stringify(column)));
+//
+//            //getter
+//            doc += '\n' + blank + 'public ' + type + ' ' + CodeUtil.getMethodName('get', name) + '() {'
+//              + '\n' + blank2 + 'return ' + name + ';'
+//              + '\n' + blank + '}';
+//
+//            //setter
+//            doc += '\n' + blank + 'public ' + model + ' ' + CodeUtil.getMethodName('set', name) + '(' + type + ' ' + name + ') {'
+//              + '\n' + blank2 + 'this.' + name + ' = ' + name + ';'
+//              + '\n' + blank2 + 'return this;'
+//              + '\n' + blank + '}\n';
+//
+//          }
+//        }
+//
+//        doc += '\n\n}';
+//
+//      }
+//    }
+//    //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+//
+//    return doc;
+//  },
 
 
   /**用数据字典转为 PHP 实体类
