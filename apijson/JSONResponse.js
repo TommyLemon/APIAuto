@@ -855,7 +855,7 @@ var JSONResponse = {
       };
     }
 
-    if (notempty == true && StringUtil.isEmpty(real, true)) { // 空
+    if (notempty == true && typeof real != 'boolean' && typeof real != 'number' && StringUtil.isEmpty(real, true)) { // 空
       log('compareWithStandard  notempty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY');
       return {
         code: JSONResponse.COMPARE_VALUE_EMPTY,
@@ -1290,7 +1290,7 @@ var JSONResponse = {
 
     var notempty = target.notempty;
     log('updateStandard  notempty = target.notempty = ' + notempty + ' >>');
-    if (real != null && typeof real != 'boolean') {
+    if (real != null && typeof real != 'boolean' && typeof real != 'number') {
       notempty = target.notempty = StringUtil.isNotEmpty(real, true);
     }
 
