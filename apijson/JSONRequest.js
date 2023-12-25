@@ -261,6 +261,10 @@ function parseJSON(s) {
   }
   // alertOfDebug("parseJSON  s = \n" + s);
 
+  if (StringUtil.isEmpty(s, true)) {
+    return null;
+  }
+
   try {
     return JSON.parse(s);
   } catch (e) {
