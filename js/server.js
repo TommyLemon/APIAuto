@@ -130,7 +130,10 @@ app.use(async ctx => {
     isCrossEnabled = App.isCrossEnabled;
 
     ctx.status = ctx.response.status = 200; // 302;
-    ctx.body = ctx.response.body = 'Auto testing in node...';
+    ctx.body = ctx.response.body = JSON.stringify({
+      'code': 200,
+      'msg': 'Auto testing in node...'
+    });
 
     // setTimeout(function () {  // 延迟无效
     ctx.redirect('/test/status');
@@ -143,8 +146,17 @@ app.use(async ctx => {
       // ctx.redirect('/status');
     }
 
+    var server = App.server;
+    var ind = server == null ? -1 : server.indexOf('?');
+
     ctx.status = ctx.response.status = 200;  // progress >= 1 ? 200 : 302;
-    ctx.body = ctx.response.body = (message || (progress < 1 || isLoading ? 'Auto testing in node...' : 'Done auto testing in node.')) + timeMsg + progressMsg;
+    ctx.body = ctx.response.body = JSON.stringify({
+      'code': 200,
+      'msg': (message || (progress < 1 || isLoading ? 'Auto testing in node...' : 'Done auto testing in node.')) + timeMsg + progressMsg,
+      'progress': progress,
+      'reportId': App.reportId,
+      'link': server + (ind < 0 ? '?' : '&') + 'reportId=' + App.reportId
+    });
   }
   else if (ctx.path == '/test/compare' || ctx.path == '/test/ml') {
     done = false;

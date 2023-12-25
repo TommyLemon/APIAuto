@@ -11579,14 +11579,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     window.App = App
   }
   else {
-    var data = App.data
-    if (data instanceof Object && (data instanceof Array == false)) {
-      App = Object.assign(App, data)
-    }
-
     var methods = App.methods
     if (methods instanceof Object && (methods instanceof Array == false)) {
       App = Object.assign(App, methods)
+    }
+    App.autoTest = App.autoTest || methods.autoTest
+
+    var data = App.data
+    if (data instanceof Object && (data instanceof Array == false)) {
+      App = Object.assign(App, data)
     }
 
     module.exports = {getRequestFromURL, App}
