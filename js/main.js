@@ -1057,10 +1057,10 @@ https://github.com/Tencent/APIJSON/issues
       isRandomListShow: false,
       isRandomSubListShow: false,
       isRandomEditable: false,
-      isPercentShow: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
+      statisticsShowType: 0,
       currentHttpResponse: {},
       currentDocItem: {},
       currentRemoteItem: {
@@ -4172,7 +4172,7 @@ https://github.com/Tencent/APIJSON/issues
         if (color == null || color == 'total') {
           list = arr
           if (isCur) {
-            this.isPercentShow = ! this.isPercentShow;
+            this.statisticsShowType = (this.statisticsShowType + 1)%3;
           }
         } else if (arr != null) {
           for (var i = 0; i < arr.length; i++) {
@@ -9152,25 +9152,117 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       getCurrentRandomSummary: function () {
         return (this.isRandomSubListShow ? this.currentRandomItem : this.currentRemoteItem) || {}
       },
+
+      getStatisticsShowStr: function (count, total) {
+        if (count == null) {
+          count = 0;
+        }
+        if (total == null) {
+          total = 0;
+        }
+
+        var showType = this.statisticsShowType;
+        if (showType == 0) {
+          return '' + count;
+        }
+        return Math.round(total <= 0 ? 0 : count*1000/total)/10 + '%' + (showType == 1 ? '' : ' ' + count)
+      },
+
+      getLogoutSummaryTotalText: function () {
+        return this.getStatisticsShowStr(this.getLogoutSummary().totalCount, this.getAllSummary().totalCount)
+      },
+
       getLogoutSummaryWhiteText: function () {
         var summary = this.getLogoutSummary()
-        return this.isPercentShow ? Math.round(summary.whiteCount*1000/summary.totalCount)/10 + '%' : '' + summary.whiteCount
+        return this.getStatisticsShowStr(summary.whiteCount, summary.totalCount)
       },
       getLogoutSummaryGreenText: function () {
         var summary = this.getLogoutSummary()
-        return this.isPercentShow ? Math.round(summary.greenCount*1000/summary.totalCount)/10 + '%' : '' + summary.greenCount
+        return this.getStatisticsShowStr(summary.greenCount, summary.totalCount)
       },
       getLogoutSummaryBlueText: function () {
         var summary = this.getLogoutSummary()
-        return this.isPercentShow ? Math.round(summary.blueCount*1000/summary.totalCount)/10 + '%' : '' + summary.blueCount
+        return this.getStatisticsShowStr(summary.blueCount, summary.totalCount)
       },
       getLogoutSummaryOrangeText: function () {
         var summary = this.getLogoutSummary()
-        return this.isPercentShow ? Math.round(summary.orangeCount*1000/summary.totalCount)/10 + '%' : '' + summary.orangeCount
+        return this.getStatisticsShowStr(summary.orangeCount, summary.totalCount)
       },
       getLogoutSummaryRedText: function () {
         var summary = this.getLogoutSummary()
-        return this.isPercentShow ? Math.round(summary.redCount*1000/summary.totalCount)/10 + '%' : '' + summary.redCount
+        return this.getStatisticsShowStr(summary.redCount, summary.totalCount)
+      },
+
+      getSummaryTotalText: function (index) {
+        return this.getStatisticsShowStr(this.getSummary(index).totalCount, this.getAllSummary().totalCount)
+      },
+      getSummaryWhiteText: function (index) {
+        var summary = this.getSummary(index)
+        return this.getStatisticsShowStr(summary.whiteCount, summary.totalCount)
+      },
+      getSummaryGreenText: function (index) {
+        var summary = this.getSummary(index)
+        return this.getStatisticsShowStr(summary.greenCount, summary.totalCount)
+      },
+      getSummaryBlueText: function (index) {
+        var summary = this.getSummary(index)
+        return this.getStatisticsShowStr(summary.blueCount, summary.totalCount)
+      },
+      getSummaryOrangeText: function (index) {
+        var summary = this.getSummary(index)
+        return this.getStatisticsShowStr(summary.orangeCount, summary.totalCount)
+      },
+      getSummaryRedText: function (index) {
+        var summary = this.getSummary(index)
+        return this.getStatisticsShowStr(summary.redCount, summary.totalCount)
+      },
+
+      getCurrentSummaryTotalText: function () {
+        return this.getStatisticsShowStr(this.getCurrentSummary().totalCount, this.getAllSummary().totalCount)
+      },
+      getCurrentSummaryWhiteText: function () {
+        var summary = this.getCurrentSummary()
+        return this.getStatisticsShowStr(summary.whiteCount, summary.totalCount)
+      },
+      getCurrentSummaryGreenText: function () {
+        var summary = this.getCurrentSummary()
+        return this.getStatisticsShowStr(summary.greenCount, summary.totalCount)
+      },
+      getCurrentSummaryBlueText: function () {
+        var summary = this.getCurrentSummary()
+        return this.getStatisticsShowStr(summary.blueCount, summary.totalCount)
+      },
+      getCurrentSummaryOrangeText: function () {
+        var summary = this.getCurrentSummary()
+        return this.getStatisticsShowStr(summary.orangeCount, summary.totalCount)
+      },
+      getCurrentSummaryRedText: function () {
+        var summary = this.getCurrentSummary()
+        return this.getStatisticsShowStr(summary.redCount, summary.totalCount)
+      },
+
+      getAllSummaryTotalText: function () {
+        return this.getStatisticsShowStr(this.getAllSummary().totalCount, this.getAllSummary().totalCount)
+      },
+      getAllSummaryWhiteText: function () {
+        var summary = this.getAllSummary()
+        return this.getStatisticsShowStr(summary.whiteCount, summary.totalCount)
+      },
+      getAllSummaryGreenText: function () {
+        var summary = this.getAllSummary()
+        return this.getStatisticsShowStr(summary.greenCount, summary.totalCount)
+      },
+      getAllSummaryBlueText: function () {
+        var summary = this.getAllSummary()
+        return this.getStatisticsShowStr(summary.blueCount, summary.totalCount)
+      },
+      getAllSummaryOrangeText: function () {
+        var summary = this.getAllSummary()
+        return this.getStatisticsShowStr(summary.orangeCount, summary.totalCount)
+      },
+      getAllSummaryRedText: function () {
+        var summary = this.getAllSummary()
+        return this.getStatisticsShowStr(summary.redCount, summary.totalCount)
       },
 
       isSummaryShow: function (accountIndex) {
