@@ -4092,7 +4092,7 @@ https://github.com/Tencent/APIJSON/issues
               '@from@': {
                 'Document': {
                   '@raw': '@column',
-                  '@column': "DISTINCT substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):url;(CASE WHEN length(`group`) > 0 THEN `group` ELSE '_' END):name", // FIXME 新增 Group 表，专门映射 url 和 name 关系
+                  '@column': "substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):url;(CASE WHEN length(`group`) > 0 THEN `group` ELSE '_' END):name", // FIXME 新增 Group 表，专门映射 url 和 name 关系
                   'userId': this.User.id,
                   'name$': search,
                   'url$': search,
