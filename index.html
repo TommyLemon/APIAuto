@@ -157,7 +157,12 @@
             <!--<use xlink:href="svg/icon.svg#share"></use>-->
             <!--</svg>-->
 
-            <a style="display: flex;flex-grow: 1;font-size: medium;color: black" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="showTestCase(true, ! isLocalShow)">测试用例:{{ (isLocalShow ? '本地历史(' : '远程在线(') + (testCases == null ? 0 : testCases.length) + ')' }}</a>
+            <a style="color: black; font-weight: bold; margin-right: 0px; padding-right: 0px" class="hint--top save-tool" data-hint="切换显示本地|远程" href="javascript:void(0)" @click="onClickPathRoot()">测试用例:{{ isLocalShow ? '本地历史' : '远程在线' }}</a>
+            <div v-show="! isLocalShow" v-for="(item, index) in casePaths" style="display: inline-block; padding-left: 0px; margin-left: 0px;" >
+                <a style="color: gray; padding: 0px; margin: 0px">/</a><a style="color: black; outline: none; border: none; padding: 0px; margin: 0px" href="javascript:void(0)" @click="onClickPath(index, item)">{{ StringUtil.isEmpty(item.name) ? (item.url || '').substring(((casePaths[casePaths.length - 1] || {}).url || '').length + 1) : item.name }}</a>
+            </div>
+            <a style="color: black; font-weight: bold; padding-left: 0px" class="hint--top save-tool" data-hint="切换显示分组|用例" href="javascript:void(0)" @click="switchCaseShowType()">{{ '(' + (testCases == null ? 0 : testCases.length) + ')' }}</a>
+            <div style="display: inline-flex; flex-grow: 1;"></div>
 
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableCross(! isCrossEnabled)">{{ crossProcess }}</a>
@@ -186,31 +191,54 @@
             <a >条</a>
         </div>
         <div class="left-panel">
-            <ul v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                <li v-for="(item, index) in testCases" :id="'docItem' + index" >
-                    <div style="display: inline-table">
-                        <button class="hint--right" :data-hint="item.Document.url" v-show="isShowMethod()" style="width: 60px; margin-right: 0px;padding: 0px;" id="vDocMethod" @click="restoreRemoteAndTest(index, item)">{{ getMethodName(item.Document.method, item.Document.type) }}</button>
-                        <button class="hint--right" :data-hint="item.Document.request" v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
-                        <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
-                        <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">
-                            <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >
-                                <!-- 只能写成一行来消除间隙，不能换行、空格 -->
-                                <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
-                            </div>
-                            <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">
-                                <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
-                                <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
-                                    <use xlink:href="svg/icon.svg#export-txt"></use>
-                                </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
-                                <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
-                            </div>
+            <div v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%; display: inline-block">
+                <ul v-show="caseShowType != 0 && ! isLocalShow" class="historys" :style="{width: caseShowType == 1 ? '40%' : '100%', border: caseShowType != 1 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                    <li v-for="(item, index) in caseGroups" :id="'docGroup' + index" >
+                        <div style="display: inline-table; width: 100%">
+                            <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{StringUtil.trim(item.name) + ' ' + item.url}}</a><a style="right: 0px; position: absolute; z-index: 101; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                            <!--                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">-->
+<!--                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >-->
+<!--                                    &lt;!&ndash; 只能写成一行来消除间隙，不能换行、空格 &ndash;&gt;-->
+<!--                                    <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>-->
+<!--                                </div>-->
+<!--                                <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">-->
+<!--                                    <button class="hint&#45;&#45;left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>-->
+<!--                                    <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">-->
+<!--                                        <use xlink:href="svg/icon.svg#export-txt"></use>-->
+<!--                                    </svg>   &lt;!&ndash; 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 &ndash;&gt;-->
+<!--                                    <button class="hint&#45;&#45;left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint&#45;&#45;left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>-->
+<!--                                </div>-->
+<!--                            </div>-->
                         </div>
-                        <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
-                            <use xlink:href="svg/icon.svg#trash"></use>
-                        </svg>
-                    </div>
-                </li>
-            </ul>
+                    </li>
+                </ul>
+                <ul v-show="isLocalShow || caseShowType != 2" class="historys" :style="{width: caseShowType == 1 && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                    <li v-for="(item, index) in testCases" :id="'docItem' + index" >
+                        <div style="display: inline-table">
+                            <button class="hint--right" :data-hint="item.Document.url" v-show="isShowMethod()" style="width: 60px; margin-right: 0px;padding: 0px;" id="vDocMethod" @click="restoreRemoteAndTest(index, item)">{{ getMethodName(item.Document.method, item.Document.type) }}</button>
+                            <button class="hint--right" :data-hint="item.Document.request" v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
+                            <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
+                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">
+                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >
+                                    <!-- 只能写成一行来消除间隙，不能换行、空格 -->
+                                    <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
+                                </div>
+                                <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">
+                                    <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                                    <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
+                                        <use xlink:href="svg/icon.svg#export-txt"></use>
+                                    </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
+                                    <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
+                                </div>
+                            </div>
+                            <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
+                                <use xlink:href="svg/icon.svg#trash"></use>
+                            </svg>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
             <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
 
                 <div v-show="! isPreviewEnabled" style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
@@ -545,23 +573,22 @@ fun(true, 1, 'a'..);
                         </svg>
                     </a>
 
-
                     <span class="pop-btn" > <!--v-show="historys.length > 0">-->
-              <a class="hint--top save-tool"  data-hint="保存到本地" href="javascript:void(0)" @click="showSave(true)">
-                <svg class="icon">
-                  <use xlink:href="svg/icon.svg#save"></use>
-                </svg>
-              </a>
-              <ul class="historys pop" style="width: 304px"> <!-- 没必要太长，遮挡范围过大 // 490 刚好与 URL 输入框左对齐 -->
-                  <li v-for="(his, index) in historys">
-                    <a style="padding: 0px" href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
+                      <a class="hint--top save-tool"  data-hint="保存到本地" href="javascript:void(0)" @click="showSave(true)">
+                        <svg class="icon">
+                          <use xlink:href="svg/icon.svg#save"></use>
+                        </svg>
+                      </a>
+                      <ul class="historys pop" style="width: 304px"> <!-- 没必要太长，遮挡范围过大 // 490 刚好与 URL 输入框左对齐 -->
+                          <li v-for="(his, index) in historys">
+                            <a style="padding: 0px" href="javascript:void(0)" @click="restore(his, his.response)"  > {{his.name}}</a>
 
-                    <svg class="icon" @click="remove(his, index, false)">
-                      <use xlink:href="svg/icon.svg#trash"></use>
-                    </svg>
-                  </li>
-              </ul>
-          </span>
+                            <svg class="icon" @click="remove(his, index, false)">
+                              <use xlink:href="svg/icon.svg#trash"></use>
+                            </svg>
+                          </li>
+                      </ul>
+                    </span>
 
                     <a v-show="isTestCaseShow" class="hint--top" data-hint="隐藏用例列表" href="javascript:void(0)">
                         <svg class="icon" @click="showTestCase(false, isLocalShow)">

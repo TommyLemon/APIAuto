@@ -526,7 +526,7 @@ var JSONResponse = {
       if (real == null || real.data == null) {
         return {
           code: JSONResponse.COMPARE_KEY_LESS, //未上传对比标准
-          msg: '没有校验标准，且缺少非 null 值的 data 字段',
+          msg: '没有校验标准，且缺少有效 data 值',
           path: folder == null ? '' : folder
         };
       }

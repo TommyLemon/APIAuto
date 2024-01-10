@@ -995,6 +995,8 @@ https://github.com/Tencent/APIJSON/issues
       history: {name: '请求0'},
       remotes: [],
       locals: [],
+      casePaths: [],
+      caseGroups: [],
       testCases: [],
       randoms: [],
       randomSubs: [],
@@ -1060,6 +1062,7 @@ https://github.com/Tencent/APIJSON/issues
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
+      caseShowType: 1,
       statisticsShowType: 0,
       currentHttpResponse: {},
       currentDocItem: {},
@@ -4065,6 +4068,90 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
+      onClickPath: function (index, path) {
+        var casePaths = this.casePaths;
+        this.casePaths = casePaths.slice(0, index)
+        this.selectCaseGroup(0, path)
+      },
+      selectCaseGroup: function (index, group) {
+        var urlPrefix = null
+        if (group == null) {
+          this.casePaths = []
+        } else {
+          this.casePaths.push(group)
+          urlPrefix = group.url || ''
+        }
+
+        var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
+        var req = {
+          format: false,
+          'Document[]': {
+            'count': this.testCaseCount || 100, //200 条测试直接卡死 0,
+            'page': this.testCasePage || 0,
+            'Document': {
+              '@from@': {
+                'Document': {
+                  '@raw': '@column',
+                  '@column': "DISTINCT substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):url;(CASE WHEN length(`group`) > 0 THEN `group` ELSE '_' END):name", // FIXME 新增 Group 表，专门映射 url 和 name 关系
+                  'userId': this.User.id,
+                  'name$': search,
+                  'url$': search,
+                  // 'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('%', '\\%') + '/%'],
+                  '@combine': search == null ? null : 'name$,url$',
+                  '@null': 'sqlauto', //'sqlauto{}': '=null',
+                  'url{}': 'length(url)>0',
+                  'name{}': group == null || group.name != '_' ? null : 'length(name)<=0'
+                  // '@having': "length(url)>0" //  StringUtil.isEmpty(urlPrefix) ? "length(url)>0" : "(url = '" + urlPrefix.replaceAll("'", "\\'") + "')"
+                }
+              },
+              '@column': "url,name;count(*):count", // FIXME 新增 Group 表，专门映射 url 和 name 关系
+              '@group': 'url,name',
+              '@order': 'url+,name+',
+              'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('%', '\\%') + '/%']
+            }
+          },
+          '@role': IS_NODE ? null : 'LOGIN',
+          key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
+        }
+
+        if (IS_BROWSER) {
+          this.onChange(false)
+        }
+
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var data = res.data
+          if (JSONResponse.isSuccess(data) == false) {
+            alert('获取用例分组失败！\n' + (err != null ? err.message : (data || '').msg))
+            return
+          }
+
+          App.caseGroups = data['Document[]'] || []
+          App.remotes = App.testCases = []
+          App.showTestCase(true, false, null)
+        })
+      },
+
+      switchCaseShowType: function () {
+        if (this.isLocalShow) {
+          alert('只有远程用例才能切换！')
+          return
+        }
+
+        this.caseShowType = (this.caseShowType + 1)%3
+        if (this.caseShowType != 0 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+          this.selectCaseGroup(-1, null)
+        }
+      },
+
+      onClickPathRoot: function () {
+        if (this.casePaths.length <= 0) {
+          this.showTestCase(true, ! this.isLocalShow)
+        } else {
+          this.selectCaseGroup(-1, null)
+        }
+      },
+
       //显示远程的测试用例文档
       showTestCase: function (show, isLocal, callback) {
         this.isTestCaseShow = show
@@ -4079,10 +4166,15 @@ https://github.com/Tencent/APIJSON/issues
           this.testCases = this.locals || []
           return
         }
+
         this.testCases = this.remotes || []
         this.getCurrentSummary().summaryType = 'total' // this.onClickSummary('total', true)
 
         if (show) {
+          if (this.caseShowType != 0 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+            this.selectCaseGroup(-1, null)
+          }
+
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
           App.allCount = allCount
@@ -4099,6 +4191,10 @@ https://github.com/Tencent/APIJSON/issues
           var methods = this.methods
           var types = this.types
           var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
+
+          var group = this.casePaths[this.casePaths.length - 1]
+          var urlPrefix = group == null ? null : group.url
+
           var url = this.server + '/get'
           var req = {
             format: false,
@@ -4107,15 +4203,18 @@ https://github.com/Tencent/APIJSON/issues
               'page': this.testCasePage || 0,
               'join': '@/TestRecord,@/Script:pre,@/Script:post',
               'Document': {
+                '@column': 'id,userId,version,date,group,name,operation,method,type,url,request,standard;substr(url,' + (StringUtil.length(urlPrefix) + 2) + '):substr',
                 '@order': 'version-,date-',
                 'userId': this.User.id,
                 'name$': search,
                 'operation$': search,
                 'url$': search,
+                'url|$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix, urlPrefix.replaceAll('%', '\\%') + '/%'],
                 '@combine':  search == null ? null : 'name$,operation$,url$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
-                '@null': 'sqlauto' //'sqlauto{}': '=null'
+                '@null': 'sqlauto', //'sqlauto{}': '=null'
+                // '@having': StringUtil.isEmpty(urlPrefix) ? null : "substring_index(substr,'/',1)<0"
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
