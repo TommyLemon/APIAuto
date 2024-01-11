@@ -387,7 +387,7 @@ textarea {
   padding-bottom: 12px;
   padding-left: 10px;
   padding-right: 10px;
-  z-index: 100;
+  z-index: 300;
   border: #bbbbbb  1px solid;
   border-radius: 6px;
 }
