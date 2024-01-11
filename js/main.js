@@ -1059,10 +1059,11 @@ https://github.com/Tencent/APIJSON/issues
       isRandomListShow: false,
       isRandomSubListShow: false,
       isRandomEditable: false,
+      isCaseGroupEditable: false,
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
-      caseShowType: 1,
+      caseShowType: 0,
       statisticsShowType: 0,
       currentHttpResponse: {},
       currentDocItem: {},
@@ -1148,9 +1149,18 @@ https://github.com/Tencent/APIJSON/issues
       page: 0,
       count: 50,
       search: '',
+      caseGroupPage: 0,
+      caseGroupPages: {},
+      caseGroupCount: 0,
+      caseGroupCounts: {},
+      caseGroupSearch: '',
+      caseGroupSearches: {},
       testCasePage: 0,
+      testCasePages: {},
       testCaseCount: 50,
+      testCaseCounts: {},
       testCaseSearch: '',
+      testCaseSearches: {},
       randomPage: 0,
       randomCount: 50,
       randomSearch: '',
@@ -4073,21 +4083,44 @@ https://github.com/Tencent/APIJSON/issues
         this.casePaths = casePaths.slice(0, index)
         this.selectCaseGroup(0, path)
       },
+      isCaseGroupShow: function () {
+        return this.caseShowType != 1 && (this.caseGroups.length > 0 || this.casePaths.length <= 0)
+      },
+      isCaseItemShow: function () {
+        return this.caseShowType != 2 || (this.caseGroups.length <= 0 && this.casePaths.length > 0)
+      },
       selectCaseGroup: function (index, group) {
-        var urlPrefix = null
+        this.isCaseGroupEditable = false
+
         if (group == null) {
-          this.casePaths = []
+          if (index == null) {
+            index = this.casePaths.length - 1
+            group = this.casePaths[index]
+          } else {
+            this.casePaths = []
+          }
         } else {
           this.casePaths.push(group)
-          urlPrefix = group.url || ''
         }
 
-        var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
+        if (group != null && (group.name == '_' || StringUtil.isEmpty(group.url))) {
+          this.caseGroups = []
+          this.remotes = App.testCases = []
+          this.showTestCase(true, false, null)
+          return
+        }
+
+        var urlPrefix = group == null ? '' : (group.url || '')
+        var page = this.caseGroupPage = this.caseGroupPages[urlPrefix] || 0
+        var count = this.caseGroupCount = this.caseGroupCounts[urlPrefix] || 0
+        var search = this.caseGroupSearch = this.caseGroupSearches[urlPrefix] || ''
+
+        search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
         var req = {
           format: false,
           'Document[]': {
-            'count': this.testCaseCount || 100, //200 条测试直接卡死 0,
-            'page': this.testCasePage || 0,
+            'count': count || 0,
+            'page': page || 0,
             'Document': {
               '@from@': {
                 'Document': {
@@ -4096,18 +4129,18 @@ https://github.com/Tencent/APIJSON/issues
                   'userId': this.User.id,
                   'name$': search,
                   'url$': search,
-                  // 'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('%', '\\%') + '/%'],
+                  // 'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
                   '@combine': search == null ? null : 'name$,url$',
                   '@null': 'sqlauto', //'sqlauto{}': '=null',
                   'url{}': 'length(url)>0',
-                  'name{}': group == null || group.name != '_' ? null : 'length(name)<=0'
+                  // 'group{}': group == null || StringUtil.isNotEmpty(urlPrefix) ? null : 'length(group)<=0' // SQL WHERE 条件不用别名
                   // '@having': "length(url)>0" //  StringUtil.isEmpty(urlPrefix) ? "length(url)>0" : "(url = '" + urlPrefix.replaceAll("'", "\\'") + "')"
                 }
               },
-              '@column': "url,name;count(*):count", // FIXME 新增 Group 表，专门映射 url 和 name 关系
-              '@group': 'url,name',
-              '@order': 'url+,name+',
-              'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('%', '\\%') + '/%']
+              '@column': "name,url;length(name):name_len;count(*):count", // FIXME 新增 Group 表，专门映射 url 和 name 关系
+              '@group': 'name,url',
+              '@order': 'name_len+,name-,url+',
+              'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%']
             }
           },
           '@role': IS_NODE ? null : 'LOGIN',
@@ -4123,6 +4156,21 @@ https://github.com/Tencent/APIJSON/issues
           var data = res.data
           if (JSONResponse.isSuccess(data) == false) {
             alert('获取用例分组失败！\n' + (err != null ? err.message : (data || '').msg))
+            if (IS_BROWSER) { // 解决一旦错了，就只能清缓存
+              App.caseGroupCount = 50
+              App.caseGroupPage = 0
+              App.caseGroupSearch = ''
+              App.caseGroupCounts = {}
+              App.caseGroupPages = {}
+              App.caseGroupSearches = {}
+
+              App.saveCache(App.server, 'caseGroupCount', App.caseGroupCount)
+              App.saveCache(App.server, 'caseGroupPage', App.caseGroupPage)
+              App.saveCache(App.server, 'caseGroupSearch', App.caseGroupSearch)
+              App.saveCache(App.server, 'caseGroupCounts', App.caseGroupCounts)
+              App.saveCache(App.server, 'caseGroupPages', App.caseGroupPages)
+              App.saveCache(App.server, 'caseGroupSearches', App.caseGroupSearches)
+            }
             return
           }
 
@@ -4171,10 +4219,6 @@ https://github.com/Tencent/APIJSON/issues
         this.getCurrentSummary().summaryType = 'total' // this.onClickSummary('total', true)
 
         if (show) {
-          if (this.caseShowType != 0 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
-            this.selectCaseGroup(-1, null)
-          }
-
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
           App.allCount = allCount
@@ -4190,17 +4234,23 @@ https://github.com/Tencent/APIJSON/issues
 
           var methods = this.methods
           var types = this.types
-          var search = StringUtil.isEmpty(this.testCaseSearch, true) ? null : '%' + StringUtil.trim(this.testCaseSearch) + '%'
 
-          var group = this.casePaths[this.casePaths.length - 1]
-          var urlPrefix = group == null ? null : group.url
+          var index = this.casePaths.length - 1
+          var group = this.casePaths[index]
+          var urlPrefix = group == null ? '' : (group.url || '')
+
+          var page = this.testCasePage = this.testCasePages[urlPrefix] || 0
+          var count = this.testCaseCount = this.testCaseCounts[urlPrefix] || 100
+          var search = this.testCaseSearch = this.testCaseSearches[urlPrefix] || ''
+
+          search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
 
           var url = this.server + '/get'
           var req = {
             format: false,
             '[]': {
-              'count': this.testCaseCount || 100, //200 条测试直接卡死 0,
-              'page': this.testCasePage || 0,
+              'count': count || 100, //200 条测试直接卡死 0,
+              'page': page || 0,
               'join': '@/TestRecord,@/Script:pre,@/Script:post',
               'Document': {
                 '@column': 'id,userId,version,date,group,name,operation,method,type,url,request,standard;substr(url,' + (StringUtil.length(urlPrefix) + 2) + '):substr',
@@ -4209,7 +4259,8 @@ https://github.com/Tencent/APIJSON/issues
                 'name$': search,
                 'operation$': search,
                 'url$': search,
-                'url|$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix, urlPrefix.replaceAll('%', '\\%') + '/%'],
+                'url|$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix, urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
+                'group{}': group == null || StringUtil.isNotEmpty(urlPrefix) ? null : 'length(group)<=0',
                 '@combine':  search == null ? null : 'name$,operation$,url$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
@@ -4283,8 +4334,17 @@ https://github.com/Tencent/APIJSON/issues
         } else if (IS_BROWSER) { // 解决一旦错了，就只能清缓存
           this.testCaseCount = 50
           this.testCasePage = 0
+          this.testCaseSearch = ''
+          this.testCasePages = {}
+          this.testCaseCounts = {}
+          this.testCaseSearches = {}
+
           this.saveCache(this.server, 'testCasePage', this.testCasePage)
           this.saveCache(this.server, 'testCaseCount', this.testCaseCount)
+          this.saveCache(this.server, 'testCaseSearch', this.testCaseSearch)
+          this.saveCache(this.server, 'testCasePages', null)
+          this.saveCache(this.server, 'testCaseCounts', null)
+          this.saveCache(this.server, 'testCaseSearches', null)
         }
       },
 
@@ -6261,6 +6321,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return
         }
 
+        if (isFilter && type == 'caseGroup') {
+          this.isCaseGroupEditable = true
+        }
+
         var obj = event.srcElement ? event.srcElement : event.target;
         if ($(obj).attr('id') == 'vUrl') {
           vUrlComment.value = ''
@@ -6282,8 +6346,52 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return
           }
 
-          if (type == 'random' || type == 'randomSub') {
+          if (type == 'caseGroup') {
+            var url = item == null ? null : item.url
+            if (StringUtil.isEmpty(url)) {
+              alert('请选择有效的选项！item.url == null !')
+              return
+            }
 
+            //修改 Document
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+              Document: {
+                'group': item.name,
+                '@raw': '@key',
+                '@key':"url:substr(url,1,length(url)-length(substring_index(url,'/',-1))-1)",
+                // 'url{}': "(substr(url,1,length(url)-length(substring_index(url,'/',-1))-1) = '" + url.replaceAll("'", "\\'") + "')",
+                'url{}': [url], // "='" + url.replaceAll("'", "\\'") + "'",
+                // 'id{}@': {
+                //   'Document': {
+                //     '@column': "id",
+                //     '@raw': '@key,@column',
+                //     // '@key':"url:substr(url,1,length(url)-length(substring_index(url,'/',-1))-1)",
+                //     // 'url{}': "(substr(url,1,length(url)-length(substring_index(url,'/',-1))-1) = '" + url.replaceAll("'", "\\'") + "')",
+                //     // 'url{}': [url],
+                //     'userId': this.User.id,
+                //     '@null': 'sqlauto', // 'sqlauto{}': '=null',
+                //     // 'name{}': 'length(name)<=0'
+                //   }
+                // }
+              },
+              tag: 'Document-group'
+            }, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+              var isOk = JSONResponse.isSuccess(res.data)
+
+              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+              if (err != null) {
+                msg += '\nerr: ' + err.msg
+              }
+              alert('修改' + (isOk ? '成功' : '失败') + '！\nurl: ' + item.url + '\nname: ' + item.name + msg)
+
+              App.isCaseGroupEditable = ! isOk
+            })
+
+            return
+          }
+
+          if (type == 'random' || type == 'randomSub') {
             var r = item == null ? null : item.Random
             if (r == null || r.id == null) {
               alert('请选择有效的选项！item.Random.id == null !')
@@ -6299,17 +6407,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               },
               tag: 'Random'
             }, {}, function (url, res, err) {
-
+              App.onResponse(url, res, err)
               var isOk = JSONResponse.isSuccess(res.data)
 
               var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
               if (err != null) {
                 msg += '\nerr: ' + err.msg
               }
-              alert('修改' + (isOk ? '成功' : '失败')
-                + '！\ncount: ' + r.count + '\nname: ' + r.name
-                + msg
-              )
+              alert('修改' + (isOk ? '成功' : '失败') + '！\nurl: ' + item.url + '\nname: ' + r.name + msg)
 
               App.isRandomEditable = ! isOk
             })
@@ -6340,6 +6445,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         type = type || ''
         var page
         switch (type) {
+          case 'caseGroup':
+            page = this.caseGroupPage
+            break
           case 'testCase':
             page = this.testCasePage
             break
@@ -6361,6 +6469,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (page > 0) {
           page --
           switch (type) {
+            case 'caseGroup':
+              this.caseGroupPage = page
+              break
             case 'testCase':
               this.testCasePage = page
               break
@@ -6381,6 +6492,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       pageUp: function(type) {
         type = type || ''
         switch (type) {
+          case 'caseGroup':
+            this.caseGroupPage ++
+            break
           case 'testCase':
             this.testCasePage ++
             break
@@ -6398,38 +6512,67 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onFilterChange: function(type) {
         type = type || ''
-        switch (type) {
-          case 'testCase':
-            this.saveCache(this.server, 'testCasePage', this.testCasePage)
-            this.saveCache(this.server, 'testCaseCount', this.testCaseCount)
+        if (type == 'testCase' || type == 'caseGroup') {
+          var index = this.casePaths.length - 1
+          var group = this.casePaths[index]
+          var urlPrefix = group == null ? '' : (group.url || '')
+
+          if (type == 'caseGroup') {
+            this.caseGroupPages[urlPrefix] = this.caseGroupPage
+            this.caseGroupCounts[urlPrefix] = this.caseGroupCount
+            this.caseGroupSearches[urlPrefix] = this.caseGroupSearch
+            if (index < 0) {
+              this.saveCache(this.server, 'caseGroupPage', this.caseGroupPage)
+              this.saveCache(this.server, 'caseGroupCount', this.caseGroupCount)
+              // this.saveCache(this.server, 'caseGroupSearch', this.caseGroupSearch)
+            }
+            this.saveCache(this.server, 'caseGroupPages', this.caseGroupPages)
+            this.saveCache(this.server, 'caseGroupCounts', this.caseGroupCounts)
+            // this.saveCache(this.server, 'caseGroupSearches', this.caseGroupSearches)
+
+            this.selectCaseGroup()
+          }
+          else {
+            this.testCasePages[urlPrefix] = this.testCasePage
+            this.testCaseCounts[urlPrefix] = this.testCaseCount
+            this.testCaseSearches[urlPrefix] = this.testCaseSearch
+
+            if (index < 0) {
+              this.saveCache(this.server, 'testCasePage', this.testCasePage)
+              this.saveCache(this.server, 'testCaseCount', this.testCaseCount)
+            }
+            this.saveCache(this.server, 'testCasePages', this.testCasePages)
+            this.saveCache(this.server, 'testCaseCounts', this.testCaseCounts)
+            // this.saveCache(this.server, 'testCaseSearches', this.testCaseSearches)
 
             this.resetTestCount(this.currentAccountIndex)
 
             this.remotes = null
             this.showTestCase(true, false)
-            break
-          case 'random':
-            this.saveCache(this.server, 'randomPage', this.randomPage)
-            this.saveCache(this.server, 'randomCount', this.randomCount)
+          }
+        }
+        else if (type == 'random') {
+          this.saveCache(this.server, 'randomPage', this.randomPage)
+          this.saveCache(this.server, 'randomCount', this.randomCount)
 
-            this.resetTestCount(this.currentAccountIndex, true)
+          this.resetTestCount(this.currentAccountIndex, true)
 
-            var cri = this.currentRemoteItem || {}
-            cri.randoms = null
-            this.randoms = null
-            this.showRandomList(true, cri.Document, false)
-            break
-          case 'randomSub':
-            this.saveCache(this.server, 'randomSubPage', this.randomSubPage)
-            this.saveCache(this.server, 'randomSubCount', this.randomSubCount)
+          var cri = this.currentRemoteItem || {}
+          cri.randoms = null
+          this.randoms = null
+          this.showRandomList(true, cri.Document, false)
+        }
+        else if (type == 'randomSub') {
+          this.saveCache(this.server, 'randomSubPage', this.randomSubPage)
+          this.saveCache(this.server, 'randomSubCount', this.randomSubCount)
 
-            this.resetTestCount(this.currentAccountIndex, true, true)
+          this.resetTestCount(this.currentAccountIndex, true, true)
 
-            var cri = this.currentRandomItem || {}
-            this.randomSubs = null
-            this.showRandomList(true, cri.Random, true)
-            break
-          default:
+          var cri = this.currentRandomItem || {}
+          this.randomSubs = null
+          this.showRandomList(true, cri.Random, true)
+        }
+        else {
             docObj = null
             doc = null
             this.saveCache(this.server, 'page', this.page)
@@ -6445,7 +6588,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //   App.setDoc(d)
             //   App.onChange(false)
             // });
-            break
         }
       },
 
@@ -11033,14 +11175,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.crossProcess = this.isCrossEnabled ? '交叉账号:已开启' : '交叉账号:已关闭'
         this.testProcess = this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭'
         // this.host = this.getBaseUrl()
+
         this.page = this.getCache(this.server, 'page', this.page)
         this.count = this.getCache(this.server, 'count', this.count)
+
+        this.caseGroupPage = this.getCache(this.server, 'caseGroupPage', this.caseGroupPage)
+        this.caseGroupCount = this.getCache(this.server, 'caseGroupCount', this.caseGroupCount)
+        this.caseGroupSearch = this.getCache(this.server, 'caseGroupSearch', this.caseGroupSearch)
+        this.caseGroupPages = this.getCache(this.server, 'caseGroupPages', this.caseGroupPages)
+        this.caseGroupCounts = this.getCache(this.server, 'caseGroupCounts', this.caseGroupCounts)
+        this.caseGroupSearches = this.getCache(this.server, 'caseGroupSearches', this.caseGroupSearches)
+
         this.testCasePage = this.getCache(this.server, 'testCasePage', this.testCasePage)
         this.testCaseCount = this.getCache(this.server, 'testCaseCount', this.testCaseCount)
+        this.testCasePages = this.getCache(this.server, 'testCasePages', this.testCasePages)
+        this.testCaseCounts = this.getCache(this.server, 'testCaseCounts', this.testCaseCounts)
+        this.testCaseSearches = this.getCache(this.server, 'testCaseSearches', this.testCaseSearches)
+
         this.randomPage = this.getCache(this.server, 'randomPage', this.randomPage)
         this.randomCount = this.getCache(this.server, 'randomCount', this.randomCount)
         this.randomSubPage = this.getCache(this.server, 'randomSubPage', this.randomSubPage)
         this.randomSubCount = this.getCache(this.server, 'randomSubCount', this.randomSubCount)
+
         this.delegateId = this.getCache(this.server, 'delegateId', this.delegateId)
         this.otherEnvDelegateId = this.getCache(this.server, 'otherEnvDelegateId', this.otherEnvDelegateId)
 
@@ -11069,6 +11225,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       if (this.isScriptShow) {
         this.changeScriptType()
         this.listScript()
+      }
+
+      if (this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+        this.selectCaseGroup(-1, null)
       }
 
       var rawReq = getRequestFromURL()
@@ -11198,6 +11358,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // alert(event.key) 小写字母 i 而不是 KeyI
 
         var target = event.target;
+        if (target == vSearch || target == vTestCaseSearch || target == vCaseGroupSearch) {
+          return
+        }
 
         var keyCode = event.keyCode;
         var isEnter = keyCode === 13;

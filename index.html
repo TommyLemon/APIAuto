@@ -139,7 +139,7 @@
     </div>
 
     <!--<div :class="'side-left side-view-' + baseview">-->
-    <div class="side-left">
+    <div class="side-left" style="padding-bottom: 0px">
         <div v-show="! isTestCaseShow" class="left-bar" >
             <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
             <button v-show="isShowMethod()" class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ getMethodName(method, type) }}</button>
@@ -161,7 +161,7 @@
             <div v-show="! isLocalShow" v-for="(item, index) in casePaths" style="display: inline-block; padding-left: 0px; margin-left: 0px;" >
                 <a style="color: gray; padding: 0px; margin: 0px">/</a><a style="color: black; outline: none; border: none; padding: 0px; margin: 0px" href="javascript:void(0)" @click="onClickPath(index, item)">{{ StringUtil.isEmpty(item.name) ? (item.url || '').substring(((casePaths[casePaths.length - 1] || {}).url || '').length + 1) : item.name }}</a>
             </div>
-            <a style="color: black; font-weight: bold; padding-left: 0px" class="hint--top save-tool" data-hint="切换显示分组|用例" href="javascript:void(0)" @click="switchCaseShowType()">{{ '(' + (testCases == null ? 0 : testCases.length) + ')' }}</a>
+            <a style="color: black; font-weight: bold; padding-left: 0px" class="hint--top save-tool" data-hint="切换显示分组|用例" href="javascript:void(0)" @click="switchCaseShowType()">{{ '(' + (isCaseGroupShow() && ! isLocalShow ? (caseGroups == null ? 0 : caseGroups.length) : '') + (caseShowType == 0 && isCaseGroupShow() && ! isLocalShow ? '|' : '') + (caseShowType == 2 && isCaseGroupShow() ? '' : (testCases == null ? 0 : testCases.length)) + ')' }}</a>
             <div style="display: inline-flex; flex-grow: 1;"></div>
 
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
@@ -180,66 +180,78 @@
                 </svg>
             </a>
         </div>
-        <div v-show="isTestCaseShow && ! isLocalShow" style="bottom: 4px; padding: 4px 13px 0px 10px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
-            <a >搜索</a>
-            <input id="vTestCaseSearch" v-model="testCaseSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" />
-            <button @click="pageDown('testCase')">上一页</button>
-            <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
-            <button @click="pageUp('testCase')">下一页</button>
-            <a >每页</a>
-            <input id="vTestCaseCount" v-model="testCaseCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
-            <a >条</a>
-        </div>
         <div class="left-panel">
             <div v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%; display: inline-block">
-                <ul v-show="caseShowType != 0 && ! isLocalShow" class="historys" :style="{width: caseShowType == 1 ? '40%' : '100%', border: caseShowType != 1 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                    <li v-for="(item, index) in caseGroups" :id="'docGroup' + index" >
-                        <div style="display: inline-table; width: 100%">
-                            <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{StringUtil.trim(item.name) + ' ' + item.url}}</a><a style="right: 0px; position: absolute; z-index: 101; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
-                            <!--                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">-->
-<!--                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >-->
-<!--                                    &lt;!&ndash; 只能写成一行来消除间隙，不能换行、空格 &ndash;&gt;-->
-<!--                                    <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>-->
-<!--                                </div>-->
-<!--                                <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">-->
-<!--                                    <button class="hint&#45;&#45;left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>-->
-<!--                                    <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">-->
-<!--                                        <use xlink:href="svg/icon.svg#export-txt"></use>-->
-<!--                                    </svg>   &lt;!&ndash; 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 &ndash;&gt;-->
-<!--                                    <button class="hint&#45;&#45;left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint&#45;&#45;left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>-->
-<!--                                </div>-->
-<!--                            </div>-->
-                        </div>
-                    </li>
-                </ul>
-                <ul v-show="isLocalShow || caseShowType != 2" class="historys" :style="{width: caseShowType == 1 && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                    <li v-for="(item, index) in testCases" :id="'docItem' + index" >
-                        <div style="display: inline-table">
-                            <button class="hint--right" :data-hint="item.Document.url" v-show="isShowMethod()" style="width: 60px; margin-right: 0px;padding: 0px;" id="vDocMethod" @click="restoreRemoteAndTest(index, item)">{{ getMethodName(item.Document.method, item.Document.type) }}</button>
-                            <button class="hint--right" :data-hint="item.Document.request" v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
-                            <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
-                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">
-                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >
-                                    <!-- 只能写成一行来消除间隙，不能换行、空格 -->
-                                    <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
-                                </div>
-                                <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">
-                                    <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
-                                    <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
-                                        <use xlink:href="svg/icon.svg#export-txt"></use>
-                                    </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
-                                    <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
-                                </div>
+                <div v-show="isCaseGroupShow() && ! isLocalShow" :style="{width: caseShowType == 0 ? '40%' : '100%', 'border-right': caseShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
+                    <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                        <li v-for="(item, index) in caseGroups" :id="'docGroup' + index" >
+                            <div style="display: inline-table; width: 100%">
+                                <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.name" @keyup="doOnKeyUp(event, 'caseGroup', false, item)" />
+                                <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(isCaseGroupEditable ? '' : StringUtil.trim(item.name) + ' ') + item.url}}</a><a style="right: 0px; position: absolute; z-index: 101; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                                <!--                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">-->
+    <!--                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >-->
+    <!--                                    &lt;!&ndash; 只能写成一行来消除间隙，不能换行、空格 &ndash;&gt;-->
+    <!--                                    <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>-->
+    <!--                                </div>-->
+    <!--                                <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">-->
+    <!--                                    <button class="hint&#45;&#45;left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>-->
+    <!--                                    <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">-->
+    <!--                                        <use xlink:href="svg/icon.svg#export-txt"></use>-->
+    <!--                                    </svg>   &lt;!&ndash; 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 &ndash;&gt;-->
+    <!--                                    <button class="hint&#45;&#45;left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint&#45;&#45;left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>-->
+    <!--                                </div>-->
+    <!--                            </div>-->
                             </div>
-                            <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
-                                <use xlink:href="svg/icon.svg#trash"></use>
-                            </svg>
-                        </div>
-                    </li>
-                </ul>
+                        </li>
+                    </ul>
+
+                    <div style="bottom: 0px; padding: 4px 10px 4px 10px; position: absolute; background-color: white; z-index: 102">
+                        <button @click="pageDown('caseGroup')"><</button>
+                        <input id="vCaseGroupPage" v-model="caseGroupPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'caseGroup', true)" />
+                        <button @click="pageUp('caseGroup')">></button>
+                        <input id="vCaseGroupCount" v-model="caseGroupCount" style="width: 33px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'caseGroup', true)" />
+                        <input id="vCaseGroupSearch" v-model="caseGroupSearch" style="width: 72px; text-align: center" @keyup="doOnKeyUp(event, 'caseGroup', true)" placeholder="搜索|编辑" />
+                    </div>
+                </div>
+
+                <div v-show="isLocalShow || isCaseItemShow()" :style="{width: isCaseGroupShow() && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;">
+                    <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                        <li v-for="(item, index) in testCases" :id="'docItem' + index" >
+                            <div style="display: inline-table">
+                                <button class="hint--right" :data-hint="item.Document.url" v-show="isShowMethod()" style="width: 60px; margin-right: 0px;padding: 0px;" id="vDocMethod" @click="restoreRemoteAndTest(index, item)">{{ getMethodName(item.Document.method, item.Document.type) }}</button>
+                                <button class="hint--right" :data-hint="item.Document.request" v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
+                                <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
+                                <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">
+                                    <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >
+                                        <!-- 只能写成一行来消除间隙，不能换行、空格 -->
+                                        <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
+                                    </div>
+                                    <div :style="{ background: item.compareColor }" v-show="item.compareType != null" style="display: inline-block">
+                                        <button class="hint--left" ref="testResultButtons" @mouseover="setTestHint(index, item)" v-show="item.compareType != null" @click="handleTest(false, index, item)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                                        <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
+                                            <use xlink:href="svg/icon.svg#export-txt"></use>
+                                        </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
+                                        <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
+                                    </div>
+                                </div>
+                                <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true)">
+                                    <use xlink:href="svg/icon.svg#trash"></use>
+                                </svg>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <div style="bottom: 0px; padding: 4px 23.9px 4px 10px; position: absolute; background-color: white; z-index: 102">
+                        <button @click="pageDown('testCase')"><</button>
+                        <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
+                        <button @click="pageUp('testCase')">></button>
+                        <input id="vTestCaseCount" v-model="testCaseCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" />
+                        <input id="vTestCaseSearch" v-model="testCaseSearch" style="min-width: 60px; display: inline-flex; flex-grow: 1; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="搜索" />
+                    </div>
+                </div>
             </div>
 
-            <div v-show="! isTestCaseShow" style="width: 100%;height: 100%;" >
+            <div v-show="! isTestCaseShow" style="height: 100%;" >
 
                 <div v-show="! isPreviewEnabled" style="width: 100%;height: 100%;position: absolute;display: flex;flex-grow: 1" >
                     <textarea id="vComment" style="width: 100%; height: 100%; position: absolute; z-index: 0; color: darkseagreen; background-color: white;" wrap="off" disabled>
