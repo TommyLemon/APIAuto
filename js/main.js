@@ -4103,17 +4103,17 @@ https://github.com/Tencent/APIJSON/issues
           this.casePaths.push(group)
         }
 
-        if (group != null && (group.name == '_' || StringUtil.isEmpty(group.url))) {
+        var groupUrl = group == null ? '' : (group.groupUrl || '')
+        if (group != null && StringUtil.isEmpty(groupUrl)) {
           this.caseGroups = []
           this.remotes = App.testCases = []
           this.showTestCase(true, false, null)
           return
         }
 
-        var urlPrefix = group == null ? '' : (group.url || '')
-        var page = this.caseGroupPage = this.caseGroupPages[urlPrefix] || 0
-        var count = this.caseGroupCount = this.caseGroupCounts[urlPrefix] || 0
-        var search = this.caseGroupSearch = this.caseGroupSearches[urlPrefix] || ''
+        var page = this.caseGroupPage = this.caseGroupPages[groupUrl] || 0
+        var count = this.caseGroupCount = this.caseGroupCounts[groupUrl] || 0
+        var search = this.caseGroupSearch = this.caseGroupSearches[groupUrl] || ''
 
         search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
         var req = {
@@ -4125,22 +4125,26 @@ https://github.com/Tencent/APIJSON/issues
               '@from@': {
                 'Document': {
                   '@raw': '@column',
-                  '@column': "substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):url;(CASE WHEN length(`group`) > 0 THEN `group` ELSE '_' END):name", // FIXME 新增 Group 表，专门映射 url 和 name 关系
+                  '@column': "substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):groupUrl;group:groupName", // (CASE WHEN length(`group`) > 0 THEN `group` ELSE '-' END):name",
                   'userId': this.User.id,
-                  'name$': search,
+                  'group$': search,
                   'url$': search,
-                  // 'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
-                  '@combine': search == null ? null : 'name$,url$',
+                  // 'url&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
+                  '@combine': search == null ? null : 'group$,url$',
                   '@null': 'sqlauto', //'sqlauto{}': '=null',
                   'url{}': 'length(url)>0',
-                  // 'group{}': group == null || StringUtil.isNotEmpty(urlPrefix) ? null : 'length(group)<=0' // SQL WHERE 条件不用别名
-                  // '@having': "length(url)>0" //  StringUtil.isEmpty(urlPrefix) ? "length(url)>0" : "(url = '" + urlPrefix.replaceAll("'", "\\'") + "')"
+                  'url&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%']
+                  // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0' // SQL WHERE 条件不用别名
+                  // '@having': "length(url)>0" //  StringUtil.isEmpty(groupUrl) ? "length(url)>0" : "(url = '" + groupUrl.replaceAll("'", "\\'") + "')"
                 }
               },
-              '@column': "name,url;length(name):name_len;count(*):count", // FIXME 新增 Group 表，专门映射 url 和 name 关系
-              '@group': 'name,url',
-              '@order': 'name_len+,name-,url+',
-              'url&$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%']
+              'groupUrl&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
+              'groupName$': search,
+              'groupUrl$': search,
+              '@combine': search == null ? null : 'groupName$,groupUrl$',
+              '@column': "groupName,groupUrl;any_value(groupName):rawName;length(groupName):groupNameLen;count(*):count",
+              '@group': 'groupName,groupUrl',
+              '@order': 'groupNameLen+,groupName-,groupUrl+',
             }
           },
           '@role': IS_NODE ? null : 'LOGIN',
@@ -4187,7 +4191,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         this.caseShowType = (this.caseShowType + 1)%3
-        if (this.caseShowType != 0 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+        if (this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
           this.selectCaseGroup(-1, null)
         }
       },
@@ -4237,11 +4241,11 @@ https://github.com/Tencent/APIJSON/issues
 
           var index = this.casePaths.length - 1
           var group = this.casePaths[index]
-          var urlPrefix = group == null ? '' : (group.url || '')
+          var groupUrl = group == null ? '' : (group.groupUrl || '')
 
-          var page = this.testCasePage = this.testCasePages[urlPrefix] || 0
-          var count = this.testCaseCount = this.testCaseCounts[urlPrefix] || 100
-          var search = this.testCaseSearch = this.testCaseSearches[urlPrefix] || ''
+          var page = this.testCasePage = this.testCasePages[groupUrl] || 0
+          var count = this.testCaseCount = this.testCaseCounts[groupUrl] || 100
+          var search = this.testCaseSearch = this.testCaseSearches[groupUrl] || ''
 
           search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
 
@@ -4253,19 +4257,20 @@ https://github.com/Tencent/APIJSON/issues
               'page': page || 0,
               'join': '@/TestRecord,@/Script:pre,@/Script:post',
               'Document': {
-                '@column': 'id,userId,version,date,group,name,operation,method,type,url,request,standard;substr(url,' + (StringUtil.length(urlPrefix) + 2) + '):substr',
+                '@column': 'id,userId,version,date,name,operation,method,type,url,request,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
                 '@order': 'version-,date-',
                 'userId': this.User.id,
                 'name$': search,
                 'operation$': search,
                 'url$': search,
-                'url|$': StringUtil.isEmpty(urlPrefix) ? null : [urlPrefix, urlPrefix.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
-                'group{}': group == null || StringUtil.isNotEmpty(urlPrefix) ? null : 'length(group)<=0',
-                '@combine':  search == null ? null : 'name$,operation$,url$',
+                'url|$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl, groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
+                // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
+                // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
+                '@combine': search == null ? null : 'name$,operation$,url$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
-                // '@having': StringUtil.isEmpty(urlPrefix) ? null : "substring_index(substr,'/',1)<0"
+                // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
               },
               'TestRecord': {
                 'documentId@': '/Document/id',
@@ -4911,6 +4916,9 @@ https://github.com/Tencent/APIJSON/issues
             App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
 
             if (user.id > 0) {
+              if (App.caseShowType != 1 && App.casePaths.length <= 0 && App.caseGroups.length <= 0) {
+                App.selectCaseGroup(-1, null)
+              }
               App.showTestCase(true, false)
             }
           }
@@ -5100,6 +5108,8 @@ https://github.com/Tencent/APIJSON/issues
       clearUser: function () {
         this.User.id = 0
         this.Privacy = {}
+        this.casePaths = []
+        this.caseGroups = []
         this.remotes = []
         // 导致刚登录成功就马上退出 this.delegateId = null
         this.saveCache(this.server, 'User', this.User) //应该用lastBaseUrl,baseUrl应随watch输入变化重新获取
@@ -6347,32 +6357,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           if (type == 'caseGroup') {
-            var url = item == null ? null : item.url
-            if (StringUtil.isEmpty(url)) {
-              alert('请选择有效的选项！item.url == null !')
-              return
-            }
+            var groupUrl = item == null ? null : item.groupUrl
+            var rawName = item == null ? null : item.rawName
+            // if (StringUtil.isEmpty(url)) {
+            //   alert('请选择有效的选项！item.url == null !')
+            //   return
+            // }
 
             //修改 Document
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
               Document: {
-                'group': item.name,
+                'group': item.groupName,
                 '@raw': '@key',
                 '@key':"url:substr(url,1,length(url)-length(substring_index(url,'/',-1))-1)",
-                // 'url{}': "(substr(url,1,length(url)-length(substring_index(url,'/',-1))-1) = '" + url.replaceAll("'", "\\'") + "')",
-                'url{}': [url], // "='" + url.replaceAll("'", "\\'") + "'",
-                // 'id{}@': {
-                //   'Document': {
-                //     '@column': "id",
-                //     '@raw': '@key,@column',
-                //     // '@key':"url:substr(url,1,length(url)-length(substring_index(url,'/',-1))-1)",
-                //     // 'url{}': "(substr(url,1,length(url)-length(substring_index(url,'/',-1))-1) = '" + url.replaceAll("'", "\\'") + "')",
-                //     // 'url{}': [url],
-                //     'userId': this.User.id,
-                //     '@null': 'sqlauto', // 'sqlauto{}': '=null',
-                //     // 'name{}': 'length(name)<=0'
-                //   }
-                // }
+                'url{}': [groupUrl],
+                'group{}': rawName == null ? "=null" : [rawName]
               },
               tag: 'Document-group'
             }, {}, function (url, res, err) {
@@ -6383,7 +6382,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (err != null) {
                 msg += '\nerr: ' + err.msg
               }
-              alert('修改' + (isOk ? '成功' : '失败') + '！\nurl: ' + item.url + '\nname: ' + item.name + msg)
+              alert('修改' + (isOk ? '成功' : '失败') + '！\ngroupUrl: ' + item.groupUrl + '\ngroupName: ' + item.groupName + '\nrawName: ' + item.rawName + msg)
 
               App.isCaseGroupEditable = ! isOk
             })
@@ -6515,12 +6514,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (type == 'testCase' || type == 'caseGroup') {
           var index = this.casePaths.length - 1
           var group = this.casePaths[index]
-          var urlPrefix = group == null ? '' : (group.url || '')
+          var groupUrl = group == null ? '' : (group.groupUrl || '')
 
           if (type == 'caseGroup') {
-            this.caseGroupPages[urlPrefix] = this.caseGroupPage
-            this.caseGroupCounts[urlPrefix] = this.caseGroupCount
-            this.caseGroupSearches[urlPrefix] = this.caseGroupSearch
+            this.caseGroupPages[groupUrl] = this.caseGroupPage
+            this.caseGroupCounts[groupUrl] = this.caseGroupCount
+            this.caseGroupSearches[groupUrl] = this.caseGroupSearch
             if (index < 0) {
               this.saveCache(this.server, 'caseGroupPage', this.caseGroupPage)
               this.saveCache(this.server, 'caseGroupCount', this.caseGroupCount)
@@ -6533,9 +6532,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.selectCaseGroup()
           }
           else {
-            this.testCasePages[urlPrefix] = this.testCasePage
-            this.testCaseCounts[urlPrefix] = this.testCaseCount
-            this.testCaseSearches[urlPrefix] = this.testCaseSearch
+            this.testCasePages[groupUrl] = this.testCasePage
+            this.testCaseCounts[groupUrl] = this.testCaseCount
+            this.testCaseSearches[groupUrl] = this.testCaseSearch
 
             if (index < 0) {
               this.saveCache(this.server, 'testCasePage', this.testCasePage)
