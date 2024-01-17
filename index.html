@@ -147,8 +147,8 @@
             <div style="height: 100%;display: flex;flex-grow: 1">
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  ></input>
                 <textarea class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)"
-                          placeholder="请输入请求的接口地址，可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value"
-                          style="z-index: 0; background: #0000; padding-left: 2px; padding-right: 1px; scrollbar-width: none; " ></textarea>
+                    placeholder="请输入请求的接口地址，可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value"
+                    style="z-index: 0; background: #0000; padding-left: 2px; padding-right: 1px; scrollbar-width: none; " ></textarea>
             </div>
             <button class="send" id="vSend" @click="onClickSend()">{{ isEditResponse ? '模拟返回' : '发送请求' }}</button>
         </div>
@@ -187,7 +187,7 @@
                         <li v-for="(item, index) in caseGroups" :id="'docGroup' + index" >
                             <div style="display: inline-table; width: 100%">
                                 <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.groupName" @keyup="doOnKeyUp(event, 'caseGroup', false, item)" />
-                                <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(isCaseGroupEditable ? '' : (StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ') + item.groupUrl}}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                                <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" > {{(isCaseGroupEditable ? '' : (StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ') + item.groupUrl}}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
                                 <!--                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">-->
     <!--                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >-->
     <!--                                    &lt;!&ndash; 只能写成一行来消除间隙，不能换行、空格 &ndash;&gt;-->

@@ -8300,7 +8300,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               })
             }
             catch (e) {
-              this.compareResponse(res, allCount, list, index, item, data, true, this.currentAccountIndex, false, e, null, isCross, callback)
+              this.compareResponse(null, allCount, list, index, item, data, true, this.currentAccountIndex, false, e, null, isCross, callback)
             }
           }
         }

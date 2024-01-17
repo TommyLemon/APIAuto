@@ -295,7 +295,7 @@ var CodeUtil = {
 
   getOperation: function (method, json) {
         var ind = method == null ? -1 : method.indexOf('?');
-        var method = StringUtil.toLowerCase(ind < 0 ? method : method.substring(0, ind));
+        method = StringUtil.toLowerCase(ind < 0 ? method : method.substring(0, ind));
         if (method.startsWith('insert') || method.startsWith('post') || method.startsWith('add')
           || method.startsWith('pub') || method.startsWith('write')) {
           return 'INSERT'
