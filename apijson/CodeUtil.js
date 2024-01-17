@@ -86,7 +86,7 @@ var CodeUtil = {
    */
   parseComment: function (reqStr, tableList, method, database, language, isReq, standardObj, isExtract, isWarning, isAPIJSONRouter) { //怎么都获取不到真正的长度，cols不行，默认20不变，maxLineLength不行，默认undefined不变 , maxLineLength) {
     if (StringUtil.isEmpty(reqStr)) {
-      return;
+      return '';
     }
 
     var reqObj = JSON5.parse(reqStr);

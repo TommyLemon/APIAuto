@@ -490,6 +490,9 @@ var StringUtil = {
   isCountKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Count');
   },
+  isPageKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Page');
+  },
   isTotalKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Total');
   },

@@ -518,7 +518,7 @@ var JSONResponse = {
       if (real != null && real.throw != null) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且 throw 不是 null，而是 ' + real.throw,
+          msg: '没有校验标准，且 throw 是 ' + real.throw,
           path: folder == null ? '' : folder
         };
       }

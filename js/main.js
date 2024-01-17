@@ -1172,7 +1172,11 @@ https://github.com/Tencent/APIJSON/issues
       deepDoneCount: 0,
       deepAllCount: 0,
       randomDoneCount: 0,
-      randomAllCount: 0
+      randomAllCount: 0,
+      coverage: {
+        json: {},
+        html: ''
+      }
     },
 
     methods: {
@@ -1338,12 +1342,12 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
       getUrl: function () {
-        var url = StringUtil.get(this.host) + new String(vUrl.value)
-        return url.replace(/ /g, '')
+        var url = StringUtil.get(this.host) + vUrl.value
+        return url.replaceAll(' ', '')
       },
       //获取基地址
       getBaseUrl: function (url_) {
-        var url = new String(url_ || vUrl.value).trim()
+        var url = StringUtil.trim(url_ || vUrl.value)
         var length = this.getBaseUrlLength(url)
         url = length <= 0 ? '' : url.substring(0, length)
         return url == '' ? URL_BASE : url
@@ -3825,7 +3829,7 @@ https://github.com/Tencent/APIJSON/issues
               }
               App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
               if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
-                alert('导入完成，其中 ' + App.uploadRandomCount + ' 个接口已存在，改为生成和上传了参数注入配置')
+                alert('导入完成，其中 ' + App.uploadRandomCount + ' 个用例已存在，改为生成和上传了参数注入配置')
                 App.isSyncing = false
                 App.testCasePage = 0
                 App.isRandomShow = true
@@ -4089,6 +4093,17 @@ https://github.com/Tencent/APIJSON/issues
       isCaseItemShow: function () {
         return this.caseShowType != 2 || (this.caseGroups.length <= 0 && this.casePaths.length > 0)
       },
+      getCaseGroupShowName: function(index, item) {
+        if (StringUtil.isNotEmpty(item.groupName, true)) {
+          return item.groupName
+        }
+        if (StringUtil.isEmpty(item.groupUrl, true)) {
+          return '-'
+        }
+
+        var prev = index <= 0 ? null : (this.casePaths[index-1] || {}).groupUrl
+        return item.groupUrl.substring(prev == null ? 1 : prev.length + 1)
+      },
       selectCaseGroup: function (index, group) {
         this.isCaseGroupEditable = false
 
@@ -4142,9 +4157,9 @@ https://github.com/Tencent/APIJSON/issues
               'groupName$': search,
               'groupUrl$': search,
               '@combine': search == null ? null : 'groupName$,groupUrl$',
-              '@column': "groupName,groupUrl;any_value(groupName):rawName;length(groupName):groupNameLen;count(*):count",
+              '@column': "groupName,groupUrl;any_value(groupName):rawName;length(groupName):groupNameLen;length(groupUrl):groupUrlLen;count(*):count",
               '@group': 'groupName,groupUrl',
-              '@order': 'groupNameLen+,groupName-,groupUrl+',
+              '@order': 'groupNameLen+,groupName-,groupUrlLen+,groupUrl+',
             }
           },
           '@role': IS_NODE ? null : 'LOGIN',
@@ -4233,7 +4248,7 @@ https://github.com/Tencent/APIJSON/issues
             return;
           }
 
-          this.isTestCaseShow = false
+          // this.isTestCaseShow = false
           var reportId = this.reportId
 
           var methods = this.methods
@@ -4250,6 +4265,9 @@ https://github.com/Tencent/APIJSON/issues
           search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
 
           var url = this.server + '/get'
+          
+          this.coverage = {}
+          this.view = 'markdown'
           var req = {
             format: false,
             '[]': {
@@ -4305,6 +4323,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+            App.isTestCaseShow = false
             if (callback) {
               callback(url, res, err)
               return
@@ -4776,6 +4795,48 @@ https://github.com/Tencent/APIJSON/issues
         this.setRememberLogin(user.remember)
         this.account = user.phone
         this.password = user.password
+
+        var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
+
+        const req = {
+          type: 0, // 登录方式，非必须 0-密码 1-验证码
+          // asDBAccount: ! isAdminOperation,  // 直接 /execute 接口传 account, password
+          phone: this.account,
+          password: this.password,
+          version: 1, // 全局默认版本号，非必须
+          remember: vRemember.checked,
+          format: false,
+          defaults: isAdmin ? {
+            key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
+          } : {
+            '@database': StringUtil.isEmpty(this.database, true) ? undefined : this.database,
+            '@schema': schemas == null || schemas.length != 1 ? undefined : this.schema
+          }
+        }
+
+        this.isRandomShow = true
+        this.isRandomListShow = false
+        this.isHeaderShow = true
+
+        this.method = REQUEST_TYPE_POST
+        this.type = REQUEST_TYPE_JSON
+
+        if (IS_BROWSER) {
+          this.showUrl(isAdmin, '/login')
+
+          vInput.value = JSON.stringify(req, null, '    ')
+
+          this.testRandomCount = 1
+          vRandom.value = `phone: App.account\npassword: App.password\nremember: vRemember.checked`
+        }
+
+        this.scripts = newDefaultScript()
+        this.method = REQUEST_TYPE_POST
+        this.type = REQUEST_TYPE_JSON
+        this.showTestCase(false, this.isLocalShow)
+        if (IS_BROWSER) {
+          this.onChange(false)
+        }
       },
 
       setRememberLogin: function (remember) {
@@ -4793,7 +4854,6 @@ https://github.com/Tencent/APIJSON/issues
       /**登录
        */
       login: function (isAdminOperation, callback) {
-        this.isLoginShow = false
         this.isEditResponse = false
         var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
 
@@ -4814,6 +4874,8 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         if (isAdminOperation) {
+          this.isLoginShow = false
+
           this.request(isAdminOperation, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/login', req, this.getHeader(vHeader.value), function (url, res, err) {
             if (callback) {
               callback(url, res, err)
@@ -4838,32 +4900,45 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
-          if (IS_BROWSER) {
-            this.showUrl(isAdminOperation, '/login')
+          const isLoginShow = this.isLoginShow
+          var curUser = this.getCurrentAccount() || {}
+          const loginMethod = curUser.loginMethod || REQUEST_TYPE_POST
+          const loginType = curUser.loginType || REQUEST_TYPE_JSON
+          const loginUrl = curUser.loginUrl || '/login'
+          const loginReq = curUser.loginReq || req
+          const loginHeader = curUser.loginHeader || {}
 
-            vInput.value = JSON.stringify(req, null, '    ')
-          }
-
-          this.scripts = newDefaultScript()
-          this.method = REQUEST_TYPE_POST
-          this.type = REQUEST_TYPE_JSON
-          this.showTestCase(false, this.isLocalShow)
-          if (IS_BROWSER) {
-            this.onChange(false)
-          }
-          this.send(isAdminOperation, function (url, res, err) {
-            if (App.isEnvCompareEnabled != true) {
-              if (callback) {
-                callback(url, res, err)
-                return
-              }
-
-              App.onLoginResponse(isAdminOperation, req, url, res, err)
+          function loginCallback(url, res, err, random) {
+            if (callback) {
+              callback(url, res, err)
               return
             }
 
-            App.request(isAdminOperation, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, App.getBaseUrl(App.otherEnv) + '/login'
-                , req, App.getHeader(vHeader.value), function (url_, res_, err_) {
+            App.onLoginResponse(isAdminOperation, req, url, res, err,
+                isLoginShow ? App.method : loginMethod,
+                isLoginShow ? App.type : loginType,
+                isLoginShow ? App.getBranchUrl() : loginUrl,
+                isLoginShow ? App.getRequest(vInput.value) : loginReq,
+                isLoginShow ? App.getHeader(vHeader.value) : loginHeader
+            )
+          }
+
+          if (isLoginShow) {
+            this.isLoginShow = false
+
+            this.testRandomWithText(true, loginCallback)
+            return
+          }
+
+          this.scripts = newDefaultScript()
+          this.request(isAdminOperation, loginMethod, loginType, this.getBaseUrl() + loginUrl, loginReq, loginHeader, function (url, res, err) {
+            if (App.isEnvCompareEnabled != true) {
+              loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, loginReq, loginHeader)
+              return
+            }
+
+            App.request(isAdminOperation, loginMethod, loginType, App.getBaseUrl(App.otherEnv) + loginUrl
+                , loginReq, loginHeader, function(url_, res_, err_) {
                   var data = res_.data
                   var user = JSONResponse.isSuccess(data) ? data.user : null
                   if (user != null) {
@@ -4878,14 +4953,13 @@ https://github.com/Tencent/APIJSON/issues
                   }
 
                   App.onResponse(url_, res_, err_);
-                  App.onLoginResponse(isAdminOperation, req, url, res, err)
-            }, App.scripts)
-
+                  App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader)
+                }, App.scripts)
           })
         }
       },
 
-      onLoginResponse: function(isAdmin, req, url, res, err) {
+      onLoginResponse: function(isAdmin, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader) {
         res = res || {}
         if (isAdmin) {
           var rpObj = res.data || {}
@@ -4936,6 +5010,11 @@ https://github.com/Tencent/APIJSON/issues
               phone: req.phone,
               password: req.password,
               remember: data.remember,
+              loginMethod: loginMethod,
+              loginType: loginType,
+              loginUrl: loginUrl,
+              loginReq: loginReq,
+              loginHeader: loginHeader,
               cookie: res.cookie || (res.headers || {}).cookie
             })
 
@@ -4946,8 +5025,9 @@ https://github.com/Tencent/APIJSON/issues
 
             App.currentAccountIndex = App.accounts.length - 1
 
-            App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-            App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+            var key = App.getBaseUrl(loginUrl)
+            App.saveCache(key, 'currentAccountIndex', App.currentAccountIndex)
+            App.saveCache(key, 'accounts', App.accounts)
 
             App.listScript()
           }
@@ -6701,14 +6781,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return false;
         }
         doc = d;
-        vOutput.value = (this.isTestCaseShow ? '' : output) + (
+        var url = StringUtil.trim((this.coverage || {}).url)
+        if (url != null && url.startsWith('/')) {
+          url = this.getBaseUrl() + url
+          this.view = 'html'
+          vHtml.innerHTML = '<iframe width="100%" height="100%" src="' + url + '"></iframe><br>'
+          return true
+        }
+        var html = null // (this.coverage || {}).html
+        if (StringUtil.isEmpty(html) != true) {
+          this.view = 'html'
+          vHtml.innerHTML = html
+          return true
+        }
+        vOutput.value = (StringUtil.isEmpty(url, true) ? (StringUtil.isEmpty(html, true) ? '' : StringUtil.trim(html) + '<br>') : '<iframe src="' + url + '"></iframe><br>')
+          + (this.isTestCaseShow ? '' : output) + (
           '\n\n\n## 文档 \n\n 通用文档见 [APIJSON通用文档](https://github.com/Tencent/APIJSON/blob/master/Document.md#3.2) \n### 数据字典\n自动查数据库表和字段属性来生成 \n\n' + d
           + '<h3 align="center">关于</h3>'
           + '<p align="center">APIAuto-机器学习 HTTP 接口工具'
           + '<br>机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释'
           + '<br>由 <a href="https://github.com/TommyLemon/APIAuto" target="_blank">APIAuto(前端网页工具)</a>, <a href="https://github.com/Tencent/APIJSON" target="_blank">APIJSON(后端接口服务)</a> 等提供技术支持'
           + '<br>遵循 <a href="http://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache-2.0 开源协议</a>'
-          + '<br>Copyright &copy; 2016-' + new Date().getFullYear() + ' Tommy Lemon'
+          + '<br>Copyright &copy; 2017-' + new Date().getFullYear() + ' Tommy Lemon'
           + '<br><a href="https://beian.miit.gov.cn/" target="_blank"><span >粤ICP备18005508号-1</span></a>'
           + '</p><br><br>'
         );
@@ -7643,15 +7737,80 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.onChange(false)
       },
 
-      // toDoubleJSON: function (json, defaultValue) {
-      //   if (StringUtil.isEmpty(json)) {
-      //     return defaultValue == null ? '{}' : JSON.stringify(defaultValue)
-      //   }
-      //   else if (json.indexOf("'") >= 0) {
-      //     json = json.replace(/'/g, '"');
-      //   }
-      //   return json;
-      // },
+      getTotalAndCoverageString: function(typeName, count, total) {
+    	  count = count || 0
+    	  total = total || 0
+        if (count > total) {
+          count = total
+        }
+    	  return '共 ' + total + ' 个' + (typeName || '子项') + '，覆盖 ' + count  + ' 个'
+		  + (Number.isInteger(total) != true || total <= 0 ? '' : '，覆盖率 ' + (100*count/total).toFixed(2) + '%');
+      },
+      getRealClassTotal: function(data, packageName) {
+    	if (data == null) {
+    		return 0;
+    	}
+    	var packageList = data.packageList
+    	var len = packageList == null ? 0 : packageList.length
+  		if (StringUtil.isEmpty(packageName, true)) {
+  			return Math.max(data.classTotal || 0, len);
+  		}
+    	if (len <= 0) {
+    		return 0;
+    	}
+  		for (var i in packageList) {
+  			var pkgObj = packageList[i]
+  			if (pkgObj != null && pkgObj['package'] == packageName) {
+  				return Math.max(pkgObj.classTotal || 0, (pkgObj.classList || []).length || 0);
+  			}
+  		}
+  		return 0;
+	  },
+	  getRealMethodTotal: function(data, packageName, className) {
+		    if (data == null) {
+	    	 return 0;
+	      }
+	    	var packageList = data.packageList
+	    	var len = packageList == null ? 0 : packageList.length
+  			if (StringUtil.isEmpty(packageName, true)) {
+  				if (StringUtil.isEmpty(className, true)) {
+  					return Math.max(data.classTotal || 0, len);
+  				}
+  				return 0;
+  			}
+	    	if (len <= 0) {
+	    		return 0;
+	    	}
+		  for (var i in packageList) {
+			  var pkgObj = packageList[i]
+			  if (pkgObj != null && pkgObj['package'] == packageName) {
+				  var classList = pkgObj.classList
+				  var len2 = classList == null ? 0 : classList.length
+				  if (StringUtil.isEmpty(className, true)) {
+					 return Math.max(data.methodTotal || 0, len2);
+				  }
+				  if (len2 <= 0) {
+			    	  return 0;
+			      }
+				  for (var j in classList) {
+					  var clsObj = classList[j]
+					  if (clsObj != null && clsObj['class'] == className) {
+						  return Math.max(clsObj.methodTotal || 0, (clsObj.methodList || []).length || 0);
+					  }
+				  }
+			  }
+		  }
+		  return 0;
+	   },
+     toDoubleJSON: function (json, defaultValue) {
+        if (StringUtil.isEmpty(json)) {
+          return defaultValue == null ? '{}' : JSON.stringify(defaultValue)
+        }
+        else if (json.indexOf("'") >= 0) {
+          json = json.replace(/'/g, '"');
+        }
+        return json;
+      },
 
       switchQuote: function (before) {
         if (before == null) {
@@ -8455,7 +8614,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             totalCount: count
           }
 
-          var methods = this.methods
           this.testRandomSingle(show, false, this.isRandomSubListShow, this.currentRandomItem,
             this.isShowMethod() ? this.method : null, this.type, this.getUrl()
             , this.getRequest(vInput.value, {}), this.getHeader(vHeader.value), false, false, callback
@@ -8903,7 +9061,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           cs.totalCount = total
         }
 
-        this.test(false, accountIndex, isCross, callback)
+        this.coverage = {}
+        this.request(false, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.getBaseUrl() + '/coverage/start', {}, {}, function (url, res, err) {
+          try {
+            App.onResponse(url, res, err)
+            if (DEBUG) {
+              App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            }
+          } catch (e) {
+            App.log('test  App.request >> } catch (e) {\n' + e.message)
+          }
+          App.test(false, accountIndex, isCross, callback)
+        })
       },
       /**回归测试
        * 原理：
@@ -9040,77 +9209,53 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         const isEnvCompare = StringUtil.isNotEmpty(otherBaseUrl, true) // 对比自己也行，看看前后两次是否幂等  && otherBaseUrl != baseUrl
 
         for (var i = 0; i < allCount; i++) {
-          const item = list[i]
-          const document = item == null ? null : item.Document
-          if (document == null || document.name == null) {
-            if (isRandom) {
-              App.randomDoneCount ++
-            } else {
-              App.doneCount ++
-            }
-            continue
-          }
-          if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-            this.log('startTest  document.url == "/login" || document.url == "/logout" >> continue')
-            if (isRandom) {
-              App.randomDoneCount ++
-            } else {
-              App.doneCount ++
-            }
-            continue
-          }
-
-          if (DEBUG) {
-            this.log('test  document = ' + JSON.stringify(document, null, '  '))
-          }
-
-          const index = i
-
-          var hdr = null
           try {
-            hdr = this.getHeader(document.header)
-          } catch (e) {
-            this.log('test  for ' + i + ' >> try { header = this.getHeader(document.header) } catch (e) { \n' + e.message)
-          }
-          const header = hdr
-
-          const caseScript = {
-            pre: item['Script:pre'],
-            post: item['Script:post']
-          }
-
-          const method = document.method
-          const type = document.type
-          const req = this.getRequest(document.request, null, true)
-          const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
-          const curEnvUrl = baseUrl + document.url
-
-          this.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, req, header, function (url, res, err) {
-            try {
-              App.onResponse(url, res, err)
-              if (DEBUG) {
-                App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            const item = list[i]
+            const document = item == null ? null : item.Document
+            if (document == null || document.name == null) {
+              if (isRandom) {
+                App.randomDoneCount ++
+              } else {
+                App.doneCount ++
               }
+              continue
+            }
+            if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+              this.log('startTest  document.url == "/login" || document.url == "/logout" >> continue')
+              if (isRandom) {
+                App.randomDoneCount ++
+              } else {
+                App.doneCount ++
+              }
+              continue
+            }
+
+            if (DEBUG) {
+              this.log('test  document = ' + JSON.stringify(document, null, '  '))
+            }
+
+            const index = i
+
+            var hdr = null
+            try {
+              hdr = this.getHeader(document.header)
             } catch (e) {
-              App.log('test  App.request >> } catch (e) {\n' + e.message)
+              this.log('test  for ' + i + ' >> try { header = this.getHeader(document.header) } catch (e) { \n' + e.message)
+            }
+            const header = hdr
+
+            const caseScript = {
+              pre: item['Script:pre'],
+              post: item['Script:post']
             }
 
-            if (isEnvCompare != true) {
-              App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
-              return
-            }
+            const method = document.method
+            const type = document.type
+            const req = this.getRequest(document.request, null, true)
+            const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
+            const curEnvUrl = baseUrl + document.url
 
-            const otherErr = err
-            const rsp = App.removeDebugInfo(res.data)
-            const rspStr = JSON.stringify(rsp)
-            const tr = item.TestRecord || {}
-            if (isMLEnabled) {
-              tr.response = rspStr
-            }
-            tr[standardKey] = isMLEnabled ? JSON.stringify(JSONResponse.updateFullStandard({}, rsp, isMLEnabled)) : rspStr // res.data
-            item.TestRecord = tr
-
-            App.request(false, method, type, curEnvUrl, req, header, function (url, res, err) {
+            this.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, req, header, function (url, res, err) {
               try {
                 App.onResponse(url, res, err)
                 if (DEBUG) {
@@ -9120,17 +9265,47 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.log('test  App.request >> } catch (e) {\n' + e.message)
               }
 
-              App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback)
-            }, caseScript)
+              if (isEnvCompare != true) {
+                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
+                return
+              }
 
-          }, caseScript)
+              const otherErr = err
+              const rsp = App.removeDebugInfo(res.data)
+              const rspStr = JSON.stringify(rsp)
+              const tr = item.TestRecord || {}
+              if (isMLEnabled) {
+                tr.response = rspStr
+              }
+              tr[standardKey] = isMLEnabled ? JSON.stringify(JSONResponse.updateFullStandard({}, rsp, isMLEnabled)) : rspStr // res.data
+              item.TestRecord = tr
+
+              App.request(false, method, type, curEnvUrl, req, header, function (url, res, err) {
+                try {
+                  App.onResponse(url, res, err)
+                  if (DEBUG) {
+                    App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                  }
+                } catch (e) {
+                  App.log('test  App.request >> } catch (e) {\n' + e.message)
+                }
+
+                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback)
+              }, caseScript)
+
+            }, caseScript)
+          }
+          catch(e) {
+            this.compareResponse(null, allCount, list, index, item, null, isRandom, accountIndex, false, e, null, isCross, callback)
+          }
         }
 
       },
 
       compareResponse: function (res, allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback) {
         var it = item || {} //请求异步
-        var d = (isRandom ? (this.currentRemoteItem || {}).Document : it.Document) || {} //请求异步
+        var cri = this.currentRemoteItem || {} //请求异步
+        var d = (isRandom ? cri.Document : it.Document) || {} //请求异步
         var r = isRandom ? it.Random : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
@@ -9364,6 +9539,31 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   if (typeof autoTestCallback == 'function') {
                     autoTestCallback('已完成回归测试')
                   }
+
+                  App.request(false, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, App.getBaseUrl() + '/coverage/report', {}, {}, function (url, res, err) {
+                    try {
+                      App.onResponse(url, res, err)
+                      if (DEBUG) {
+                        App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                      }
+                    } catch (e) {
+                      App.log('test  App.request >> } catch (e) {\n' + e.message)
+                    }
+
+                    App.coverage = res.data
+                    if (IS_BROWSER) {
+                      setTimeout(function () {
+                        var url = StringUtil.trim((App.coverage || {}).url)
+                        if (StringUtil.isEmpty(url, false)) {
+                          url = App.getBaseUrl() + "/htmlcov/index.html"
+                        }
+                        if (url.startsWith('/')) {
+                          url = App.getBaseUrl() + url
+                        }
+                        window.open(url)
+                      }, 2000)
+                    }
+                  })
                 }
               }
             }
@@ -9759,8 +9959,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var random = item.Random = item.Random || {}
         var document;
         if (isRandom) {
-          this.isRandomShow = true
-          this.isRandomListShow = true
           if ((random.count || 0) > 1) {
             this.currentRandomIndex = index
             // this.currentRandomSubIndex = -1
@@ -9900,6 +10098,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             const isNewRandom = isRandom && random.id <= 0
+            const userId = this.User.id
 
             //TODO 先检查是否有重复名称的！让用户确认！
             // if (isML != true) {
@@ -9907,6 +10106,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const req = {
               Random: isNewRandom != true ? null : {
                 toId: random.toId,
+                userId: userId,
                 documentId: random.documentId,
                 name: random.name,
                 count: random.count,
@@ -9916,12 +10116,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 id: undefined,
                 reportId: this.reportId,
                 host: this.getBaseUrl(),
+                userId: userId,
                 testAccountId: this.getCurrentAccountId(),
                 duration: item.duration,
                 minDuration: minDuration,
                 maxDuration: maxDuration,
                 compare: JSON.stringify(testRecord.compare || {}),
               }) : {
+                userId: userId,
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 reportId: this.reportId,
@@ -11226,7 +11428,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.listScript()
       }
 
-      if (this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+      var isLoggedIn = this.User != null && this.User.id != null && this.User.id > 0
+
+      if (isLoggedIn && this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
         this.selectCaseGroup(-1, null)
       }
 
@@ -11234,7 +11438,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       if (rawReq == null || (StringUtil.isEmpty(rawReq.type, true) && StringUtil.isEmpty(rawReq.reportId, true))) {
         this.transfer()
 
-        if (this.User != null && this.User.id != null && this.User.id > 0) {
+        if (isLoggedIn) {
           setTimeout(function () {
             App.showTestCase(true, false)  // 本地历史仍然要求登录  this.User == null || this.User.id == null)
           }, 1000)
