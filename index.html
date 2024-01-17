@@ -139,7 +139,7 @@
     </div>
 
     <!--<div :class="'side-left side-view-' + baseview">-->
-    <div class="side-left" style="padding-bottom: 0px">
+    <div class="side-left" style="padding-bottom: -4px">
         <div v-show="! isTestCaseShow" class="left-bar" >
             <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
             <button v-show="isShowMethod()" class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ getMethodName(method, type) }}</button>
@@ -241,7 +241,7 @@
                         </li>
                     </ul>
 
-                    <div style="bottom: 0px; padding: 4px 23.9px 4px 10px; position: absolute; background-color: white; z-index: 102">
+                    <div v-show="! isLocalShow" style="bottom: 0px; padding: 4px 23.9px 4px 10px; position: absolute; background-color: white; z-index: 102">
                         <button @click="pageDown('testCase')"><</button>
                         <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="页码" />
                         <button @click="pageUp('testCase')">></button>
