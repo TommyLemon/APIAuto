@@ -2517,13 +2517,18 @@ https://github.com/Tencent/APIJSON/issues
             catch(e) {
               log(e)
             }
+
             var code_ = inputObj.code
-            inputObj.code = null  // delete inputObj.code
+            if (isEditResponse) {
+              inputObj.code = null  // delete inputObj.code
+            }
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
             CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], path, this.database, this.language, isEditResponse != true, commentObj, true);
 
-            inputObj.code = code_
+            if (isEditResponse) {
+              inputObj.code = code_
+            }
           }
 
           var rawRspStr = JSON.stringify(currentResponse || {})

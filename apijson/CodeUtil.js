@@ -132,8 +132,8 @@ var CodeUtil = {
 
       var comment = '';
       if (cIndex >= 0) {
-        if (isExtract && standardObj != null && (depth != 1
-          || (isReq != true && [JSONResponse.KEY_CODE, JSONResponse.KEY_MSG, JSONResponse.KEY_THROW].indexOf(key) < 0))) {
+        if (isExtract && standardObj != null && (isReq || depth != 1
+          || [JSONResponse.KEY_CODE, JSONResponse.KEY_MSG, JSONResponse.KEY_THROW].indexOf(key) < 0)) {
           comment = line.substring(cIndex + ccLen).trim();
           // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
         }
