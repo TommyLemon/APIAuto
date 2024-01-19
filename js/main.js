@@ -593,16 +593,16 @@ https://github.com/Tencent/APIJSON/issues
   var HTTP_CONTENT_TYPES = [REQUEST_TYPE_PARAM, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA, REQUEST_TYPE_JSON, REQUEST_TYPE_GRPC]
 
   var CONTENT_TYPE_MAP = {
-    // 'PARAM': 'plain/text',
-    'FORM': 'x-www-form-urlencoded',
-    'DATA': 'form-data',
+    // 'PARAM': 'text/plain',
+    'FORM': 'application/x-www-form-urlencoded',
+    'DATA': 'multipart/form-data',
     'JSON': 'application/json',
     'GRPC': 'application/json',
   }
   var CONTENT_VALUE_TYPE_MAP = {
-    'plain/text': 'JSON',
-    'x-www-form-urlencoded': 'FORM',
-    'form-data': 'DATA',
+    'text/plain': 'JSON',
+    'application/x-www-form-urlencoded': 'FORM',
+    'multipart/form-data': 'DATA',
     'application/json': 'JSON'
   }
 
@@ -837,7 +837,7 @@ https://github.com/Tencent/APIJSON/issues
   function orderIn(desc, index, ...args) {
     // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
     index = index || 0;
-    return args == null || args.length <= index ? null : args[desc ? args.length - index : index];
+    return args == null || args.length <= index ? null : args[desc ? args.length - 1 - index : index];
   }
   function orderBad(defaultArgs, desc, index, ...args) {
     // alert('orderIn  index = ' + index + '; args = ' + JSON.stringify(args));
@@ -893,11 +893,16 @@ https://github.com/Tencent/APIJSON/issues
     if (orderIndex == null || orderIndex < -1) {
       orderIndex = -1;
     }
+    if (argCount == null) {
+      argCount = 0;
+    }
+    if (step == null) {
+      step = 1;
+    }
 
     orderIndex ++
-    orderIndex = argCount == null || argCount <= 0 ? orderIndex : orderIndex%argCount;
-    orderIndex = step == null ? orderIndex : step*orderIndex%argCount;
-    ORDER_MAP[randomId][line] = orderIndex >= 0 ? orderIndex : argCount + orderIndex;
+    ORDER_MAP[randomId][line] = orderIndex;
+    orderIndex = argCount <= 0 ? step*orderIndex : step*orderIndex%argCount;
 
     // alert('orderIndex = ' + orderIndex)
     // alert('ORDER_MAP = ' + JSON.stringify(ORDER_MAP, null, '  '));
@@ -3907,7 +3912,6 @@ https://github.com/Tencent/APIJSON/issues
 
 
       onClickAccount: function (index, item, callback) {
-        this.isTestCaseShow = false
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
         if (index < 0 || index >= num) {
@@ -4280,7 +4284,7 @@ https://github.com/Tencent/APIJSON/issues
               'page': page || 0,
               'join': '@/TestRecord,@/Script:pre,@/Script:post',
               'Document': {
-                '@column': 'id,userId,version,date,name,operation,method,type,url,request,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
+                // '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
                 '@order': 'version-,date-',
                 'userId': this.User.id,
                 'name$': search,
@@ -4819,16 +4823,26 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
 
+        this.isHeaderShow = true
         this.isRandomShow = true
         this.isRandomListShow = false
-        this.isHeaderShow = true
 
-        this.method = REQUEST_TYPE_POST
-        this.type = REQUEST_TYPE_JSON
+        if (IS_BROWSER && ! isAdmin) {
+          this.prevMethod = this.method
+          this.prevType = this.type
 
-        if (IS_BROWSER) {
+          this.prevUrl = vUrl.value
+          this.prevUrlComment = vUrlComment.value
+          this.prevInput = vInput.value
+          this.prevComment = vComment.value
+          this.prevWarning = vWarning.value
+          this.prevRandom = vRandom.value
+          this.prevHeader = vHeader.value
+          this.prevScript = vScript.value
+
+          this.method = REQUEST_TYPE_POST
+          this.type = REQUEST_TYPE_JSON
           this.showUrl(isAdmin, '/login')
-
           vInput.value = JSON.stringify(req, null, '    ')
 
           this.testRandomCount = 1
@@ -4880,7 +4894,6 @@ https://github.com/Tencent/APIJSON/issues
 
         if (isAdminOperation) {
           this.isLoginShow = false
-
           this.request(isAdminOperation, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/login', req, this.getHeader(vHeader.value), function (url, res, err) {
             if (callback) {
               callback(url, res, err)
@@ -4891,11 +4904,32 @@ https://github.com/Tencent/APIJSON/issues
           })
         }
         else {
+          function recover() {
+            App.isLoginShow = false
+
+            if (App.prevUrl != null) {
+              App.method = App.prevMethod || REQUEST_TYPE_POST
+              App.type = App.prevType || REQUEST_TYPE_JSON
+
+              vUrl.value = App.prevUrl || (URL_BASE + '/get')
+              vUrlComment.value = App.prevUrlComment || ''
+              vComment.value = App.prevComment || ''
+              vWarning.value = App.prevWarning || ''
+              vInput.value = App.prevInput || '{}'
+              vRandom.value = App.prevRandom || ''
+              vHeader.value = App.prevHeader || ''
+              vScript.value = App.prevScript || ''
+
+              App.prevUrl = null
+            }
+          }
+
           if (IS_BROWSER && callback == null) {
             var item
             for (var i in this.accounts) {
               item = this.accounts[i]
               if (item != null && req.phone == item.phone) {
+                recover()
                 alert(req.phone +  ' 已在测试账号中！')
                 // this.currentAccountIndex = i
                 item.remember = vRemember.checked
@@ -4904,28 +4938,40 @@ https://github.com/Tencent/APIJSON/issues
               }
             }
           }
+          
+          this.scripts = newDefaultScript()
 
           const isLoginShow = this.isLoginShow
           var curUser = this.getCurrentAccount() || {}
-          const loginMethod = curUser.loginMethod || REQUEST_TYPE_POST
-          const loginType = curUser.loginType || REQUEST_TYPE_JSON
-          const loginUrl = curUser.loginUrl || '/login'
-          const loginReq = curUser.loginReq || req
-          const loginHeader = curUser.loginHeader || {}
+          const loginMethod = (isLoginShow ? this.method : curUser.loginMethod) || REQUEST_TYPE_POST
+          const loginType = (isLoginShow ? this.type : curUser.loginType) || REQUEST_TYPE_JSON
+          const loginUrl = (isLoginShow ? this.getBranchUrl() : curUser.loginUrl) || '/login'
+          const loginReq = (isLoginShow ? this.getRequest(vInput.value) : curUser.loginReq) || req
+          const loginHeader = (isLoginShow ? this.getHeader(vHeader.value) : curUser.loginHeader) || {}
 
           function loginCallback(url, res, err, random) {
+            recover()
             if (callback) {
               callback(url, res, err)
-              return
+            } else {
+              App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader)
             }
 
-            App.onLoginResponse(isAdminOperation, req, url, res, err,
-                isLoginShow ? App.method : loginMethod,
-                isLoginShow ? App.type : loginType,
-                isLoginShow ? App.getBranchUrl() : loginUrl,
-                isLoginShow ? App.getRequest(vInput.value) : loginReq,
-                isLoginShow ? App.getHeader(vHeader.value) : loginHeader
-            )
+            if (App.prevUrl != null) {
+              App.method = App.prevMethod || REQUEST_TYPE_POST
+              App.type = App.prevType || REQUEST_TYPE_JSON
+
+              vUrl.value = App.prevUrl || (URL_BASE + '/get')
+              vUrlComment.value = App.prevUrlComment || ''
+              vComment.value = App.prevComment || ''
+              vWarning.value = App.prevWarning || ''
+              vInput.value = App.prevInput || '{}'
+              vRandom.value = App.prevRandom || ''
+              vHeader.value = App.prevHeader || ''
+              vScript.value = App.prevScript || ''
+
+              App.prevUrl = null
+            }
           }
 
           if (isLoginShow) {
@@ -4936,6 +4982,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           this.scripts = newDefaultScript()
+
           this.request(isAdminOperation, loginMethod, loginType, this.getBaseUrl() + loginUrl, loginReq, loginHeader, function (url, res, err) {
             if (App.isEnvCompareEnabled != true) {
               loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, loginReq, loginHeader)
