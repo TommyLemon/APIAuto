@@ -118,7 +118,7 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)参数注入 Random Test' : '显示(编辑)参数注入 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ (isHeaderShow ? '隐藏(固定)' : '显示(编辑)') + (isEditResponse ? '响应头 Response Header' : '请求头 Request Header' ) }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isScriptShow, 13)">{{ (isScriptShow ? '隐藏(固定)' : '显示(编辑)') + '执行脚本 JavaScript' }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isStatisticsEnabled, 17)">{{ (isStatisticsEnabled ? '隐藏' : '显示') + '测试统计报告 Test Report' }} </a>
+                  <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isStatisticsEnabled, 17)">{{ (isStatisticsEnabled ? '隐藏' : '显示') + '测试统计报告 Test Report' }} </a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析) : {{ language || '例如 Java' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型 Database: {{ database || '例如 MYSQL' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 1)">数据库名/模式 Schema: {{ schema || '例如 sys' }}</a>
@@ -246,7 +246,7 @@
                         <input id="vTestCasePage" v-model="testCasePage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="页码" />
                         <button @click="pageUp('testCase')">></button>
                         <input id="vTestCaseCount" v-model="testCaseCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="条数" />
-                        <input id="vTestCaseSearch" v-model="testCaseSearch" style="min-width: 60px; display: inline-flex; flex-grow: 1; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="搜索" />
+                        <input id="vTestCaseSearch" v-model="testCaseSearch" style="width: 168px; display: inline-flex; flex-grow: 1; text-align: center" @keyup="doOnKeyUp(event, 'testCase', true)" placeholder="搜索" />
                     </div>
                 </div>
             </div>

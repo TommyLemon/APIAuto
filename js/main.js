@@ -11391,7 +11391,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.isEncodeEnabled = this.getCache('', 'isEncodeEnabled', this.isEncodeEnabled)
         this.isEnvCompareEnabled = this.getCache('', 'isEnvCompareEnabled', this.isEnvCompareEnabled)
         //预览了就不能编辑了，点开看会懵 this.isPreviewEnabled = this.getCache('', 'isPreviewEnabled', this.isPreviewEnabled)
-        this.isStatisticsEnabled = this.getCache('', 'isStatisticsEnabled', this.isStatisticsEnabled)
+        this.isStatisticsEnabled = false // 解决每次都查不到有效 Response this.getCache('', 'isStatisticsEnabled', this.isStatisticsEnabled)
         this.isHeaderShow = this.getCache('', 'isHeaderShow', this.isHeaderShow)
         this.isRandomShow = this.getCache('', 'isRandomShow', this.isRandomShow)
       } catch (e) {
