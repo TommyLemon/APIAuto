@@ -815,11 +815,11 @@ var JSONResponse = {
     var guess = target.guess;
     log('compareWithStandard  guess = target.guess = ' + guess + ' >>');
 
-    var notnull = target.notnull;
-    log('compareWithStandard  notnull = target.notnull = ' + notnull + ' >>');
+    var notNull = target.notNull;
+    log('compareWithStandard  notNull = target.notNull = ' + notNull + ' >>');
 
-    var notempty = target.notempty;
-    log('compareWithStandard  notempty = target.notempty = ' + notempty + ' >>');
+    var notEmpty = target.notEmpty;
+    log('compareWithStandard  notEmpty = target.notEmpty = ' + notEmpty + ' >>');
 
     var type = target.type;
     log('compareWithStandard  type = target.type = ' + type + ' >>');
@@ -832,8 +832,8 @@ var JSONResponse = {
     var firstVal = values == null || values.length <= 0 ? null : values[0];
 
     if (firstVal == null && (type == 'object' || type == 'array')) {
-      if (notnull == true) { // values{} values&{}
-        throw new Error('Standard 在 ' + folder + ' 语法错误，Object 或 Array 在 notnull: true 时 values 必须为有值的数组 !');
+      if (notNull == true) { // values{} values&{}
+        throw new Error('Standard 在 ' + folder + ' 语法错误，Object 或 Array 在 notNull: true 时 values 必须为有值的数组 !');
       }
 
       log('compareWithStandard  values == null; real ' + (real == null ? '=' : '!') + '= null >> return ' + (real == null ? 'COMPARE_EQUAL' : 'COMPARE_KEY_MORE'));
@@ -846,17 +846,17 @@ var JSONResponse = {
     }
 
     if (real == null) { //少了key
-      log('compareWithStandard  real == null >> return ' + (notnull == true ? 'COMPARE_KEY_LESS' : 'COMPARE_EQUAL'));
+      log('compareWithStandard  real == null >> return ' + (notNull == true ? 'COMPARE_KEY_LESS' : 'COMPARE_EQUAL'));
       return {
-        code: notnull == true ? JSONResponse.COMPARE_KEY_LESS : JSONResponse.COMPARE_EQUAL,
-        msg: notnull == true ? '是缺少的' : '结果正确',
-        path: notnull == true ? folder : '',
+        code: notNull == true ? JSONResponse.COMPARE_KEY_LESS : JSONResponse.COMPARE_EQUAL,
+        msg: notNull == true ? '是缺少的' : '结果正确',
+        path: notNull == true ? folder : '',
         value: real
       };
     }
 
-    if (notempty == true && typeof real != 'boolean' && typeof real != 'number' && StringUtil.isEmpty(real, true)) { // 空
-      log('compareWithStandard  notempty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY');
+    if (notEmpty == true && typeof real != 'boolean' && typeof real != 'number' && StringUtil.isEmpty(real, true)) { // 空
+      log('compareWithStandard  notEmpty == true && StringUtil.isEmpty(real, true) >> return COMPARE_VALUE_EMPTY');
       return {
         code: JSONResponse.COMPARE_VALUE_EMPTY,
         msg: '是空的',
@@ -1282,16 +1282,16 @@ var JSONResponse = {
     log('\n\n\n\n\nupdateStandard <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n' +
       ' \ntarget = ' + JSON.stringify(target, null, '    ') + '\n\n\nreal = ' + JSON.stringify(real, null, '    '));
 
-    var notnull = target.notnull;
-    log('updateStandard  notnull = target.notnull = ' + notnull + ' >>');
-    if (notnull == null) {
-      notnull = target.notnull = real != null;
+    var notNull = target.notNull;
+    log('updateStandard  notNull = target.notNull = ' + notNull + ' >>');
+    if (notNull == null) {
+      notNull = target.notNull = real != null;
     }
 
-    var notempty = target.notempty;
-    log('updateStandard  notempty = target.notempty = ' + notempty + ' >>');
+    var notEmpty = target.notEmpty;
+    log('updateStandard  notEmpty = target.notEmpty = ' + notEmpty + ' >>');
     if (real != null && typeof real != 'boolean' && typeof real != 'number') {
-      notempty = target.notempty = StringUtil.isNotEmpty(real, true);
+      notEmpty = target.notEmpty = StringUtil.isNotEmpty(real, true);
     }
 
     var type = target.type;
@@ -1470,10 +1470,10 @@ var JSONResponse = {
           // 解决总是报错缺少字段  delete real[k2];  // 解决总是多出来 key: null    real[k2] = null;
 
           if (firstVal[k2] == null) {
-            firstVal[k2] = { notnull: false };
+            firstVal[k2] = { notNull: false };
           }
           else {
-            firstVal[k2].notnull = false;
+            firstVal[k2].notNull = false;
           }
         }
       }
@@ -1664,7 +1664,7 @@ var JSONResponse = {
         if (child == null) {
           child = {};
           child.type = typeof k == 'number' ? 'array' : 'number';  // TODO 没看懂为啥是 array
-          child.notnull = false;
+          child.notNull = false;
           tgt.values[0] = child;
         }
 
@@ -1686,7 +1686,7 @@ var JSONResponse = {
     }
     var startsWithQuestion = comment.startsWith('?')
     tgt.type = JSONResponse.getType(real);
-    tgt.notnull = real != null && startsWithQuestion != true
+    tgt.notNull = real != null && startsWithQuestion != true
     tgt.comment = startsWithQuestion ? comment.substring(1) : comment
 
     return target;
