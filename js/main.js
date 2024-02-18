@@ -9062,7 +9062,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       onClickTest: function (callback) {
         this.isRandomTest = false
         this.isStatisticsEnabled = true
-        this.reportId = new Date().getTime();
+        this.reportId = new Date().getTime()
+        this.caseShowType = 1
 
         // 自动往右移动，避免断言结果遮挡太多接口名称、URL
         var split_obj = IS_BROWSER ? $('.splitx') : null
