@@ -309,8 +309,11 @@ https://github.com/TommyLemon/APIAuto/commits/master
 
 
 ### 我要赞赏
+腾讯、中国邮政、字节跳动、阿里巴巴、美团、网易、百度、京东、滴滴、平安、SHEIN、快手、携程、Bilibili、微众银行、VIVO、 <br />
+58 集团、中兴 等 和国外 NVIDIA, Amazon, SAP, ThoughtWorks, Red Hat 等各大知名大厂员工点了 Star，感谢大家的支持~ <br />
 ![image](https://github.com/TommyLemon/APIAuto/assets/5738175/723e1c9c-7cf7-431a-b29a-b878e99c7e39) 
-创作不易，右上角点 ⭐Star 支持下本项目吧，谢谢 ^_^ <br />
+
+**创作不易、坚持更难，右上角点亮 ⭐Star 支持/收藏下本项目吧，谢谢 ^_^** <br />
 https://github.com/TommyLemon/APIAuto
 
 
