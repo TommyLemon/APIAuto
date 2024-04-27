@@ -157,7 +157,7 @@
             <!--<use xlink:href="svg/icon.svg#share"></use>-->
             <!--</svg>-->
 
-            <a style="color: black; font-weight: bold; margin-right: 0px; padding-right: 0px" class="hint--top save-tool" data-hint="切换显示本地|远程" href="javascript:void(0)" @click="onClickPathRoot()">测试用例:{{ isLocalShow ? '本地历史' : '远程在线' }}</a>
+            <a style="color: black; font-weight: bold; margin-right: 0px; padding-right: 0px" class="hint--top save-tool" data-hint="切换显示本地|远程" href="javascript:void(0)" @click="onClickPathRoot()">测试用例:{{ isLocalShow ? '本地历史' : (isChainShow ? '场景串联' : '远程在线') }}</a>
             <div v-show="! isLocalShow" v-for="(item, index) in casePaths" style="display: inline-block; padding-left: 0px; margin-left: 0px;" >
                 <a style="color: gray; padding: 0px; margin: 0px">/</a><a style="color: black; outline: none; border: none; padding: 0px; margin: 0px" href="javascript:void(0)" @click="onClickPath(index, item)">{{ getCaseGroupShowName(index, item) }}</a>
             </div>
@@ -182,9 +182,9 @@
         </div>
         <div class="left-panel">
             <div v-show="isTestCaseShow" class="historys" style="width: 100%;height: 100%; display: inline-block">
-                <div v-show="isCaseGroupShow() && ! isLocalShow" :style="{width: caseShowType == 0 ? '40%' : '100%', 'border-right': caseShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
+                <div v-show="isCaseGroupShow() && ! isLocalShow && ! isChainShow" :style="{width: caseShowType == 0 ? '40%' : '100%', 'border-right': caseShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
                     <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                        <li v-for="(item, index) in caseGroups" :id="'docGroup' + index" >
+                        <li v-for="(item, index) in caseGroups" :id="'caseGroup' + index" >
                             <div style="display: inline-table; width: 100%">
                                 <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.groupName" @keyup="doOnKeyUp(event, 'caseGroup', false, item)" />
                                 <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" > {{(isCaseGroupEditable ? '' : (StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ') + item.groupUrl}}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
@@ -214,7 +214,31 @@
                     </div>
                 </div>
 
+                    <div v-show="isChainShow && isChainGroupShow() && ! isLocalShow" :style="{width: chainShowType == 0 ? '40%' : '100%', 'border-right': chainShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
+                        <input id="vChainGroupAdd" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainGroupAdd', false, {'groupName': vChainGroupAdd.value})" placeholder="输入名称，回车来添加" />
+
+                        <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                            <li v-for="(item, index) in chainGroups" :id="'chainGroup' + index" >
+                                <div style="display: inline-table; width: 100%">
+                                    <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.groupName" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
+                                    <a href="javascript:void(0)" @click="selectChainGroup(index, item)" >{{ isCaseGroupEditable ? '' : item.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                                </div>
+                            </li>
+                        </ul>
+
+                        <div style="bottom: 0px; padding: 4px 10px 4px 10px; position: absolute; background-color: white; z-index: 102">
+                            <button @click="pageDown('chainGroup')"><</button>
+                            <input id="vChainGroupPage" v-model="chainGroupPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="页码" />
+                            <button @click="pageUp('chainGroup')">></button>
+                            <input id="vChainGroupCount" v-model="chainGroupCount" style="width: 33px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="条数" />
+                            <input id="vChainGroupSearch" v-model="chainGroupSearch" style="width: 72px; text-align: center" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="搜索|编辑" />
+                        </div>
+                    </div>
+
+
                 <div v-show="isLocalShow || isCaseItemShow()" :style="{width: isCaseGroupShow() && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;">
+                    <input id="vChainAdd" v-show="isChainShow && currentChainGroupIndex >= 0" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainAdd', false, {'groupName': vChainAdd.value})" placeholder="输入名称，回车来搜索及添加" />
+
                     <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
                         <li v-for="(item, index) in testCases" :id="'docItem' + index" >
                             <div style="display: inline-table">

@@ -1000,7 +1000,9 @@ https://github.com/Tencent/APIJSON/issues
       history: {name: '请求0'},
       remotes: [],
       locals: [],
+      chainPaths: [],
       casePaths: [],
+      chainGroups: [],
       caseGroups: [],
       testCases: [],
       randoms: [],
@@ -1034,6 +1036,7 @@ https://github.com/Tencent/APIJSON/issues
       otherEnvCookieMap: {},
       allSummary: {},
       currentAccountIndex: 0,
+      currentChainGroupIndex: -1,
       currentDocIndex: -1,
       currentRandomIndex: -1,
       currentRandomSubIndex: -1,
@@ -1068,7 +1071,9 @@ https://github.com/Tencent/APIJSON/issues
       isLoginShow: false,
       isConfigShow: false,
       isDeleteShow: false,
+      groupShowType: 0,
       caseShowType: 0,
+      chainShowType: 0,
       statisticsShowType: 0,
       currentHttpResponse: {},
       currentDocItem: {},
@@ -1112,6 +1117,7 @@ https://github.com/Tencent/APIJSON/issues
       isEncodeEnabled: true,
       isEditResponse: false,
       isLocalShow: false,
+      isChainShow: false,
       uploadTotal: 0,
       uploadDoneCount: 0,
       uploadFailCount: 0,
@@ -1154,6 +1160,12 @@ https://github.com/Tencent/APIJSON/issues
       page: 0,
       count: 50,
       search: '',
+      chainGroupPage: 0,
+      chainGroupPages: {},
+      chainGroupCount: 0,
+      chainGroupCounts: {},
+      chainGroupSearch: '',
+      chainGroupSearches: {},
       caseGroupPage: 0,
       caseGroupPages: {},
       caseGroupCount: 0,
@@ -1586,6 +1598,11 @@ https://github.com/Tencent/APIJSON/issues
           selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
           isClickSelectInput = false;
           // vOption.focusout()
+
+          if (this.isChainShow) {
+            this.addCase2Chain(item.value)
+            return
+          }
 
           if (isInputValue != true) {
             App.showOptions(target, text, before + name + (isSingle ? "'" : '"') + ': ', after.substring(3), true);
@@ -4091,15 +4108,153 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
+      onClickChainPath: function (index, path) {
+        var chainPaths = this.chainPaths
+        this.chainPaths = chainPaths.slice(0, index)
+        this.selectChainGroup(0, path)
+      },
+      isChainGroupShow: function () {
+        return this.chainShowType != 1 && (this.chainGroups.length > 0 || this.chainPaths.length <= 0)
+      },
+      isChainItemShow: function () {
+        return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
+      },
+      selectChainGroup: function (index, group) {
+        this.currentChainGroupIndex = index
+        this.isCaseGroupEditable = false
+
+        if (group == null) {
+          if (index == null) {
+            index = this.chainPaths.length - 1
+            group = this.chainPaths[index]
+          } else {
+            this.chainPaths = []
+          }
+        } else {
+          this.chainPaths.push(group)
+        }
+
+        var groupId = group == null ? 0 : group.groupId
+        if (group != null && groupId == 0) {
+          this.chainGroups = []
+          this.remotes = App.testCases = []
+          this.showTestCase(true, false, null)
+          return
+        }
+
+        var key = groupId + ''
+        var page = this.chainGroupPage = this.chainGroupPages[key] || 0
+        var count = this.chainGroupCount = this.chainGroupCounts[key] || 0
+        var search = this.chainGroupSearch = this.chainGroupSearches[key] || ''
+
+        search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+        var req = {
+          format: false,
+          'Chain[]': {
+            'count': count || 0,
+            'page': page || 0,
+            'Chain': {
+              'toGroupId': groupId,
+              'groupName$': search,
+              '@column': "groupId;any_value(groupName):groupName;count(*):count",
+              '@group': 'groupId',
+              '@order': 'groupId-',
+            }
+          },
+          '@role': IS_NODE ? null : 'LOGIN',
+          key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
+        }
+
+        if (IS_BROWSER) {
+          this.onChange(false)
+        }
+
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var data = res.data
+          if (JSONResponse.isSuccess(data) == false) {
+            alert('获取场景用例分组失败！\n' + (err != null ? err.message : (data || '').msg))
+            if (IS_BROWSER) { // 解决一旦错了，就只能清缓存
+              App.chainGroupCount = 50
+              App.chainGroupPage = 0
+              App.chainGroupSearch = ''
+              App.chainGroupCounts = {}
+              App.chainGroupPages = {}
+              App.chainGroupSearches = {}
+
+              App.saveCache(App.server, 'chainGroupCount', App.chainGroupCount)
+              App.saveCache(App.server, 'chainGroupPage', App.chainGroupPage)
+              App.saveCache(App.server, 'chainGroupSearch', App.chainGroupSearch)
+              App.saveCache(App.server, 'chainGroupCounts', App.chainGroupCounts)
+              App.saveCache(App.server, 'chainGroupPages', App.chainGroupPages)
+              App.saveCache(App.server, 'chainGroupSearches', App.chainGroupSearches)
+            }
+            return
+          }
+
+          App.chainGroups = data['Chain[]'] || []
+          App.remotes = App.testCases = []
+          App.showTestCase(true, false, null)
+        })
+      },
+
+      addCase2Chain: function (item) {
+            var id = item == null ? null : item.id
+            if (id == null || id <= 0) {
+              alert('请选择有效的用例！')
+              return
+            }
+
+            var group = this.chainGroups[this.currentChainGroupIndex]
+            if (id == null || id <= 0) {
+              alert('请选择有效的场景串联用例分组！')
+              return
+            }
+
+            var isAdd = true
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
+              Chain: {
+                'groupName': group.groupName,
+                'groupId': group.groupId,
+                'documentId': item.id
+              },
+              tag: 'Chain'
+            }, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+              var isOk = JSONResponse.isSuccess(res.data)
+
+              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+              if (err != null) {
+                msg += '\nerr: ' + err.msg
+              }
+              alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+
+              App.isCaseGroupEditable = ! isOk
+            })
+      },
+
       onClickPath: function (index, path) {
-        var casePaths = this.casePaths;
-        this.casePaths = casePaths.slice(0, index)
+        if (this.isChainShow) {
+          this.onClickChainPath(index, path)
+          return
+        }
+
+        var paths = this.casePaths
+        this.casePaths = paths.slice(0, index)
         this.selectCaseGroup(0, path)
       },
       isCaseGroupShow: function () {
+        if (this.isChainShow) {
+          return this.isChainGroupShow()
+        }
+
         return this.caseShowType != 1 && (this.caseGroups.length > 0 || this.casePaths.length <= 0)
       },
       isCaseItemShow: function () {
+        if (this.isChainShow) {
+          return this.isChainItemShow()
+        }
+
         return this.caseShowType != 2 || (this.caseGroups.length <= 0 && this.casePaths.length > 0)
       },
       getCaseGroupShowName: function(index, item) {
@@ -4114,6 +4269,11 @@ https://github.com/Tencent/APIJSON/issues
         return item.groupUrl.substring(prev == null ? 1 : prev.length + 1)
       },
       selectCaseGroup: function (index, group) {
+        if (this.isChainShow) {
+          this.selectChainGroup(index, group)
+          return
+        }
+
         this.isCaseGroupEditable = false
 
         if (group == null) {
@@ -4214,6 +4374,14 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
 
+        if (this.isChainShow) {
+            this.chainShowType = (this.chainShowType + 1)%3
+            if (this.chainShowType != 1 && this.chainPaths.length <= 0 && this.chainGroups.length <= 0) {
+              this.selectChainGroup(-1, null)
+            }
+            return
+        }
+
         this.caseShowType = (this.caseShowType + 1)%3
         if (this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
           this.selectCaseGroup(-1, null)
@@ -4221,9 +4389,27 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       onClickPathRoot: function () {
-        if (this.casePaths.length <= 0) {
-          this.showTestCase(true, ! this.isLocalShow)
-        } else {
+        var isChainShow = this.isChainShow
+        var paths = isChainShow ? this.chainPaths : this.casePaths
+        if (paths.length <= 0) {
+          var type = this.groupShowType = (this.groupShowType + 1)%3
+          this.isChainShow = type == 1
+          this.isLocalShow = type == 2
+          if (type == 1 && this.chainGroups.length <= 0) {
+            this.selectChainGroup(-1, null)
+          }
+          else if (type == 0 && this.caseGroups.length <= 0) {
+            this.selectCaseGroup(-1, null)
+          }
+          else {
+            this.testCases = this.remotes = []
+            this.showTestCase(true, this.isLocalShow)
+          }
+        }
+        else if (isChainShow) {
+          this.selectChainGroup(-1, null)
+        }
+        else {
           this.selectCaseGroup(-1, null)
         }
       },
@@ -4263,17 +4449,22 @@ https://github.com/Tencent/APIJSON/issues
           var methods = this.methods
           var types = this.types
 
-          var index = this.casePaths.length - 1
-          var group = this.casePaths[index]
+          var isChainShow = this.isChainShow
+          var paths = isChainShow ? this.chainPaths : this.casePaths
+          var index = paths.length - 1
+          var group = paths[index]
+          var groupId = group == null ? 0 : (group.groupId || 0)
           var groupUrl = group == null ? '' : (group.groupUrl || '')
+          var groupKey = isChainShow ? groupId + '' : groupUrl
 
-          var page = this.testCasePage = this.testCasePages[groupUrl] || 0
-          var count = this.testCaseCount = this.testCaseCounts[groupUrl] || 100
-          var search = this.testCaseSearch = this.testCaseSearches[groupUrl] || ''
+          var page = this.testCasePage = this.testCasePages[groupKey] || 0
+          var count = this.testCaseCount = this.testCaseCounts[groupKey] || 100
+          var search = this.testCaseSearch = this.testCaseSearches[groupKey] || ''
 
           search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
 
           var url = this.server + '/get'
+          var userId = this.User.id
           
           this.coverage = {}
           this.view = 'markdown'
@@ -4282,11 +4473,18 @@ https://github.com/Tencent/APIJSON/issues
             '[]': {
               'count': count || 100, //200 条测试直接卡死 0,
               'page': page || 0,
-              'join': '@/TestRecord,@/Script:pre,@/Script:post',
+              'join':  isChainShow ? '@/Document,@/Random' : '@/TestRecord,@/Script:pre,@/Script:post',
+              'Chain': isChainShow ? {
+                // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
+                'groupId': groupId,
+                '@column': "id,groupId,documentId,randomId",
+                '@order': 'id+',
+              } : null,
               'Document': {
+                'id@': isChainShow ? '/Chain/documentId' : null,
                 // '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
                 '@order': 'version-,date-',
-                'userId': this.User.id,
+                'userId': userId,
                 'name$': search,
                 'operation$': search,
                 'url$': search,
@@ -4299,9 +4497,17 @@ https://github.com/Tencent/APIJSON/issues
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
                 // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
               },
+              'Random':  isChainShow ? {
+                'id@': '/Chain/randomId',
+                'toId': isChainShow ? 0 : null,
+//                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+                'documentId@': isChainShow ? null : '/Document/documentId',
+                'userId': userId
+              }: null,
               'TestRecord': {
+                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
                 'documentId@': '/Document/id',
-                'userId': this.User.id,
+                'userId': userId,
 //                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
                 'reportId': reportId <= 0 ? null : reportId,
@@ -4313,12 +4519,14 @@ https://github.com/Tencent/APIJSON/issues
               'Script:pre': {
                 'ahead': 1,
                 // 'testAccountId': 0,
+                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               },
               'Script:post': {
                 'ahead': 0,
                 // 'testAccountId': 0,
+                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               }
@@ -5042,6 +5250,9 @@ https://github.com/Tencent/APIJSON/issues
             App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
 
             if (user.id > 0) {
+              if (App.chainShowType != 1 && App.chainPaths.length <= 0 && App.chainGroups.length <= 0) {
+                App.selectChainGroup(-1, null)
+              }
               if (App.caseShowType != 1 && App.casePaths.length <= 0 && App.caseGroups.length <= 0) {
                 App.selectCaseGroup(-1, null)
               }
@@ -6488,6 +6699,115 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return
           }
 
+          if (type == 'chainGroupAdd' || type == 'chainGroup') {
+            var isAdd = type == 'chainGroupAdd'
+            var groupName = item == null ? null : item.groupName
+            if (StringUtil.isEmpty(groupName)) {
+               alert('请输入名称!')
+               return
+            }
+
+            var groupId = item == null ? null : item.groupId
+            if (groupId == null || groupId <= 0) {
+              if (! isAdd) {
+                alert('请选择有效的列表项!')
+                return
+              }
+
+              groupId = new Date().getTime()
+            }
+
+            //修改 Document
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + (isAdd ? '/post' : '/put'), {
+              Chain: {
+                'groupName': groupName,
+                'groupId': isAdd ? groupId : null,
+                'groupId{}': isAdd ? null : [groupId]
+              },
+              tag: 'Chain-group'
+            }, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+              var isOk = JSONResponse.isSuccess(res.data)
+
+              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+              if (err != null) {
+                msg += '\nerr: ' + err.msg
+              }
+              alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+
+              App.isCaseGroupEditable = ! isOk
+            })
+
+            return
+          }
+
+          if (type == 'chainAdd') {
+            var groupName = item == null ? null : item.groupName
+            if (StringUtil.isEmpty(groupName)) {
+               alert('请输入名称!')
+               return
+            }
+
+            var search = StringUtil.isEmpty(groupName, true) ? null : '%' + StringUtil.trim(groupName).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+            var methods = this.methods
+            var types = this.types
+
+            //修改 Document
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get', {
+                format: false,
+                'Document[]': {
+                  'count': 100, //200 条测试直接卡死 0,
+                  'page': 0,
+                  'Document': {
+                    '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson',
+                    '@order': 'version-,date-',
+                    'userId': this.User.id,
+                    'name$': search,
+                    'operation$': search,
+                    'url$': search,
+                    // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
+                    // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
+                    '@combine': search == null ? null : 'name$,operation$,url$',
+                    'method{}': methods == null || methods.length <= 0 ? null : methods,
+                    'type{}': types == null || types.length <= 0 ? null : types,
+                    '@null': 'sqlauto', //'sqlauto{}': '=null'
+                    // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
+                  }
+                }
+            }, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+              var isOk = JSONResponse.isSuccess(res.data)
+
+              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+              if (err != null) {
+                msg += '\nerr: ' + err.msg
+              }
+              if (! isOk) {
+                alert(isOk ? '选择右侧接口来添加' : '查询失败！\ngroupName: ' + groupName + '\n' + msg)
+              } else {
+                  var list = res.data['Document[]'] || []
+                  var options = []
+                  for (var i = 0; i < list.length; i ++) {
+                      var item = list[i] || {}
+                      options.push({
+                          name: '[' + item.method + '] [' + item.type + '] ' + item.name + ' ' + item.url,
+    //                      type: stringType,
+                          value: item,
+                        }
+                      )
+                  }
+
+                  App.options = options
+                  document.activeElement = vOption // vChainAdd.focusout()
+                  vOption.focus()
+                  //              App.showOptions(target, text, before, after);
+              }
+
+            })
+
+            return
+          }
+
           if (type == 'caseGroup') {
             var groupUrl = item == null ? null : item.groupUrl
             var rawName = item == null ? null : item.rawName
@@ -6643,15 +6963,34 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
       onFilterChange: function(type) {
         type = type || ''
-        if (type == 'testCase' || type == 'caseGroup') {
-          var index = this.casePaths.length - 1
-          var group = this.casePaths[index]
+        if (type == 'testCase' || type == 'caseGroup' || type == 'chainGroup') {
+          var isChainShow = this.isChainShow
+          var paths = isChainShow ? this.chainPaths : this.casePaths
+          var index = paths.length - 1
+          var group = paths[index]
+          var groupId = group == null ? 0 : (group.groupId || 0)
           var groupUrl = group == null ? '' : (group.groupUrl || '')
+          var groupKey = isChainShow ? groupId + '' : groupUrl
 
-          if (type == 'caseGroup') {
-            this.caseGroupPages[groupUrl] = this.caseGroupPage
-            this.caseGroupCounts[groupUrl] = this.caseGroupCount
-            this.caseGroupSearches[groupUrl] = this.caseGroupSearch
+          if (type == 'chainGroup') {
+            this.chainGroupPages[groupKey] = this.chainGroupPage
+            this.chainGroupCounts[groupKey] = this.chainGroupCount
+            this.chainGroupSearches[groupKey] = this.chainGroupSearch
+            if (index < 0) {
+              this.saveCache(this.server, 'chainGroupPage', this.chainGroupPage)
+              this.saveCache(this.server, 'chainGroupCount', this.chainGroupCount)
+              // this.saveCache(this.server, 'chainGroupSearch', this.chainGroupSearch)
+            }
+            this.saveCache(this.server, 'chainGroupPages', this.chainGroupPages)
+            this.saveCache(this.server, 'chainGroupCounts', this.chainGroupCounts)
+            // this.saveCache(this.server, 'chainGroupSearches', this.chainGroupSearches)
+
+            this.selectChainGroup()
+          }
+          else if (type == 'caseGroup') {
+            this.caseGroupPages[groupKey] = this.caseGroupPage
+            this.caseGroupCounts[groupKey] = this.caseGroupCount
+            this.caseGroupSearches[groupKey] = this.caseGroupSearch
             if (index < 0) {
               this.saveCache(this.server, 'caseGroupPage', this.caseGroupPage)
               this.saveCache(this.server, 'caseGroupCount', this.caseGroupCount)
@@ -6664,9 +7003,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.selectCaseGroup()
           }
           else {
-            this.testCasePages[groupUrl] = this.testCasePage
-            this.testCaseCounts[groupUrl] = this.testCaseCount
-            this.testCaseSearches[groupUrl] = this.testCaseSearch
+            this.testCasePages[groupKey] = this.testCasePage
+            this.testCaseCounts[groupKey] = this.testCaseCount
+            this.testCaseSearches[groupKey] = this.testCaseSearch
 
             if (index < 0) {
               this.saveCache(this.server, 'testCasePage', this.testCasePage)
@@ -11614,7 +11953,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // alert(event.key) 小写字母 i 而不是 KeyI
 
         var target = event.target;
-        if (target == vSearch || target == vTestCaseSearch || target == vCaseGroupSearch) {
+        if (target == vSearch || target == vTestCaseSearch || target == vCaseGroupSearch || target == vChainGroupSearch || target == vChainGroupAdd || target == vChainAdd) {
           return
         }
 
