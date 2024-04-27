@@ -4139,10 +4139,13 @@ https://github.com/Tencent/APIJSON/issues
         var groupId = group == null ? 0 : group.groupId
         if (groupId != null && groupId > 0) { // group != null && groupId == 0) {
 //          this.chainGroups = []
-          this.remotes = App.testCases = []
-          this.showTestCase(true, false, null)
+          this.remotes = this.testCases = (this.chainGroups[index] || {})['[]'] || []
+//          this.showTestCase(true, false, null)
           return
         }
+
+        var isMLEnabled = this.isMLEnabled
+        var userId = this.User.id
 
         var key = groupId + ''
         var page = this.chainGroupPage = this.chainGroupPages[key] || 0
@@ -4152,7 +4155,7 @@ https://github.com/Tencent/APIJSON/issues
         search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
         var req = {
           format: false,
-          'Chain[]': {
+          '[]': {
             'count': count || 0,
             'page': page || 0,
             'Chain': {
@@ -4163,7 +4166,68 @@ https://github.com/Tencent/APIJSON/issues
               '@group': 'groupId',
               '@order': 'groupId-',
 //              'documentId>': 0
-            }
+            },
+            '[]': {
+              'count': 0, //200 条测试直接卡死 0,
+              'page': 0,
+              'join': '&/Document,@/Random',
+              'Chain': {
+                // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
+                'groupId@': '[]/Chain/groupId',
+                '@column': "id,groupId,documentId,randomId",
+                '@order': 'id+',
+                'documentId>': 0
+              },
+              'Document': {
+                'id@': '/Chain/documentId',
+                // '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
+                '@order': 'version-,date-',
+                'userId': userId,
+                'name$': search,
+                'operation$': search,
+                'url$': search,
+                // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
+                // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
+                '@combine': search == null ? null : 'name$,operation$,url$',
+//                'method{}': methods == null || methods.length <= 0 ? null : methods,
+//                'type{}': types == null || types.length <= 0 ? null : types,
+                '@null': 'sqlauto', //'sqlauto{}': '=null'
+                // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
+              },
+              'Random':  {
+                'id@': '/Chain/randomId',
+                'toId': 0,
+//                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+//                'documentId@': '/Document/documentId',
+                'userId': userId
+              },
+              'TestRecord': {
+                'chainGroupId@': '/Chain/groupId',
+                'documentId@': '/Document/id',
+                'userId': userId,
+//                'testAccountId': this.getCurrentAccountId(),
+                'randomId': 0,
+//                'reportId': reportId <= 0 ? null : reportId,
+//                'invalid': reportId == null ? 0 : null,
+                '@order': 'date-',
+                '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (isMLEnabled ? ',standard' : ''),
+                'standard{}': isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
+              },
+              'Script:pre': {
+                'ahead': 1,
+                // 'testAccountId': 0,
+                'chainGroupId@': '/Chain/groupId',
+                'documentId@': '/Document/id',
+                '@order': 'date-'
+              },
+              'Script:post': {
+                'ahead': 0,
+                // 'testAccountId': 0,
+                'chainGroupId@': '/Chain/groupId',
+                'documentId@': '/Document/id',
+                '@order': 'date-'
+              }
+            },
           },
           '@role': IS_NODE ? null : 'LOGIN',
           key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
@@ -4196,14 +4260,14 @@ https://github.com/Tencent/APIJSON/issues
             return
           }
 
-          App.chainGroups = data['Chain[]'] || []
+          App.chainGroups = data['[]'] || []
           if (App.chainGroups.length > 0) {
             App.currentChainGroupIndex = 0
-            App.chainPaths.push(App.chainGroups[0])
+            App.chainPaths.push((App.chainGroups[0] || {}).Chain)
           }
 
-          App.remotes = App.testCases = []
-          App.showTestCase(true, false, null)
+          App.remotes = App.testCases = (App.chainGroups[0] || {})['[]'] || []
+//          App.showTestCase(true, false, null)
         })
       },
 
@@ -4412,6 +4476,8 @@ https://github.com/Tencent/APIJSON/issues
           var type = this.groupShowType = (this.groupShowType + 1)%3
           this.isChainShow = type == 1
           this.isLocalShow = type == 2
+
+          this.testCases = this.remotes = []
           if (type == 1 && this.chainGroups.length <= 0) {
             this.selectChainGroup(-1, null)
           }
@@ -4419,7 +4485,6 @@ https://github.com/Tencent/APIJSON/issues
             this.selectCaseGroup(-1, null)
           }
           else {
-            this.testCases = this.remotes = []
             this.showTestCase(true, this.isLocalShow)
           }
         }
@@ -4432,7 +4497,7 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       //显示远程的测试用例文档
-      showTestCase: function (show, isLocal, callback) {
+      showTestCase: function (show, isLocal, callback, group) {
         this.isTestCaseShow = show
         this.isLocalShow = isLocal
 
@@ -4469,7 +4534,7 @@ https://github.com/Tencent/APIJSON/issues
           var isChainShow = this.isChainShow
           var paths = isChainShow ? this.chainPaths : this.casePaths
           var index = paths.length - 1
-          var group = paths[index]
+          group = group != null ? group : paths[index]
           var groupId = group == null ? 0 : (group.groupId || 0)
           var groupUrl = group == null ? '' : (group.groupUrl || '')
           var groupKey = isChainShow ? groupId + '' : groupUrl
@@ -9454,8 +9519,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
 
-        var remotes = this.remotes
-        var total = remotes == null ? 0 : remotes.length
+        var cases = this.isChainShow ? this.chainGroups : this.remotes
+        var total = cases == null ? 0 : cases.length
 
         var als = this.getAllSummary()
         als = this.resetCount(als, false, false, num)
@@ -9553,8 +9618,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         //   return
         // }
 
-        const list = (isRandom ? this.randoms : this.remotes) || []
-        const allCount = list.length
+        const list = (isRandom ? this.randoms : (this.isChainShow ? this.chainGroups : this.remotes)) || []
+        var allCount = list.length
         App.doneCount = 0
         App.deepAllCount = 0
         App.randomDoneCount = 0
@@ -9583,6 +9648,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return
         }
 
+        if (this.isChainShow) {
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i]
+                var stepList = item['[]'] || []
+                var stepCount = stepList == null ? 0 : stepList.length
+                allCount += (stepCount - 1)
+            }
+        }
+
         if (isCross) {
           if (accountIndex < 0 && accounts[this.currentAccountIndex] != null) {  //退出登录已登录的账号
             accounts[this.currentAccountIndex].isLoggedIn = true
@@ -9603,6 +9677,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
+      startTestChain: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback) {
+         if (list == null || index == null || index >= list.length) {
+           return
+         }
+
+         this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, function(url, res, err) {
+            App.startTestChain(list, allCount, index + 1, list[index + 1], isRandom, accountIndex, isCross, callback)
+         })
+      },
+
       toTestDocIndexes: [],
 
       startTest: function (list, allCount, isRandom, accountIndex, isCross, callback) {
@@ -9613,16 +9697,33 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.autoTestCallback(this.testProcess)
         }
 
-        const isMLEnabled = this.isMLEnabled
-        const standardKey = isMLEnabled != true ? 'response' : 'standard'
+        var isChainShow = this.isChainShow
 
-        const otherEnv = this.otherEnv;
-        const otherBaseUrl = this.isEnvCompareEnabled && StringUtil.isNotEmpty(otherEnv, true) ? this.getBaseUrl(otherEnv) : null
-        const isEnvCompare = StringUtil.isNotEmpty(otherBaseUrl, true) // 对比自己也行，看看前后两次是否幂等  && otherBaseUrl != baseUrl
-
-        for (var i = 0; i < allCount; i++) {
-          try {
+        for (var i = 0; i < list.length; i++) {
             const item = list[i]
+            if (isChainShow) {
+//               this.showTestCase(true, false, function(url, res, err) {
+                  var stepList = item['[]'] // res.data['[]']
+                  var stepCount = stepList == null ? 0 : stepList.length
+                  this.startTestChain(stepList, stepCount, 0, stepCount <= 0 ? null : stepList[0], isRandom, accountIndex, isCross, callback)
+//               }, item)
+               continue
+            }
+
+            this.startTestSingle(list, allCount, i, item, isRandom, accountIndex, isCross, callback)
+        }
+
+      },
+
+      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback) {
+          try {
+            const isMLEnabled = this.isMLEnabled
+            const standardKey = isMLEnabled != true ? 'response' : 'standard'
+
+            const otherEnv = this.otherEnv;
+            const otherBaseUrl = this.isEnvCompareEnabled && StringUtil.isNotEmpty(otherEnv, true) ? this.getBaseUrl(otherEnv) : null
+            const isEnvCompare = StringUtil.isNotEmpty(otherBaseUrl, true) // 对比自己也行，看看前后两次是否幂等  && otherBaseUrl != baseUrl
+
             const document = item == null ? null : item.Document
             if (document == null || document.name == null) {
               if (isRandom) {
@@ -9630,7 +9731,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               } else {
                 App.doneCount ++
               }
-              continue
+
+              return
             }
             if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
               this.log('startTest  document.url == "/login" || document.url == "/logout" >> continue')
@@ -9639,7 +9741,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               } else {
                 App.doneCount ++
               }
-              continue
+
+              return
             }
 
             if (DEBUG) {
@@ -9710,7 +9813,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           catch(e) {
             this.compareResponse(null, allCount, list, index, item, null, isRandom, accountIndex, false, e, null, isCross, callback)
           }
-        }
 
       },
 
