@@ -221,7 +221,7 @@
                             <li v-for="(item, index) in chainGroups" :id="'chainGroup' + index" >
                                 <div style="display: inline-table; width: 100%">
                                     <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.groupName" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
-                                    <a href="javascript:void(0)" @click="selectChainGroup(index, item)" >{{ isCaseGroupEditable ? '' : item.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                                    <a href="javascript:void(0)" @click="selectChainGroup(index, item)" :style="{ color: index == currentChainGroupIndex ? 'black' : 'gray' }" >{{ isCaseGroupEditable ? '' : item.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + (item.count - 1) + ')  '}}</a>
                                 </div>
                             </li>
                         </ul>

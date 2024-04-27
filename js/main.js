@@ -4114,10 +4114,10 @@ https://github.com/Tencent/APIJSON/issues
         this.selectChainGroup(0, path)
       },
       isChainGroupShow: function () {
-        return this.chainShowType != 1 && (this.chainGroups.length > 0 || this.chainPaths.length <= 0)
+        return true // this.chainShowType != 1 && (this.chainGroups.length > 0) // || this.chainPaths.length <= 0)
       },
       isChainItemShow: function () {
-        return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
+        return true // this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
       },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
@@ -4134,9 +4134,11 @@ https://github.com/Tencent/APIJSON/issues
           this.chainPaths.push(group)
         }
 
+//        this.casePaths = this.chainPaths
+
         var groupId = group == null ? 0 : group.groupId
-        if (group != null && groupId == 0) {
-          this.chainGroups = []
+        if (groupId != null && groupId > 0) { // group != null && groupId == 0) {
+//          this.chainGroups = []
           this.remotes = App.testCases = []
           this.showTestCase(true, false, null)
           return
@@ -4156,9 +4158,11 @@ https://github.com/Tencent/APIJSON/issues
             'Chain': {
               'toGroupId': groupId,
               'groupName$': search,
+//              '@raw': '@column',
               '@column': "groupId;any_value(groupName):groupName;count(*):count",
               '@group': 'groupId',
               '@order': 'groupId-',
+//              'documentId>': 0
             }
           },
           '@role': IS_NODE ? null : 'LOGIN',
@@ -4193,6 +4197,11 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           App.chainGroups = data['Chain[]'] || []
+          if (App.chainGroups.length > 0) {
+            App.currentChainGroupIndex = 0
+            App.chainPaths.push(App.chainGroups[0])
+          }
+
           App.remotes = App.testCases = []
           App.showTestCase(true, false, null)
         })
@@ -4206,16 +4215,23 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             var group = this.chainGroups[this.currentChainGroupIndex]
-            if (id == null || id <= 0) {
+            if (group == null) {
+              var index = this.chainPaths.length - 1
+              group = this.chainPaths[index]
+            }
+            var groupId = group == null ? 0 : group.groupId
+            if (groupId == null || groupId <= 0) {
               alert('请选择有效的场景串联用例分组！')
               return
             }
 
+            var groupName = group.groupName
+
             var isAdd = true
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
               Chain: {
-                'groupName': group.groupName,
-                'groupId': group.groupId,
+                'groupName': groupName,
+                'groupId': groupId,
                 'documentId': item.id
               },
               tag: 'Chain'
@@ -4390,7 +4406,8 @@ https://github.com/Tencent/APIJSON/issues
 
       onClickPathRoot: function () {
         var isChainShow = this.isChainShow
-        var paths = isChainShow ? this.chainPaths : this.casePaths
+//        var paths = isChainShow ? this.chainPaths : this.casePaths
+        var paths = isChainShow ? [] : this.casePaths
         if (paths.length <= 0) {
           var type = this.groupShowType = (this.groupShowType + 1)%3
           this.isChainShow = type == 1
@@ -4473,12 +4490,13 @@ https://github.com/Tencent/APIJSON/issues
             '[]': {
               'count': count || 100, //200 条测试直接卡死 0,
               'page': page || 0,
-              'join':  isChainShow ? '@/Document,@/Random' : '@/TestRecord,@/Script:pre,@/Script:post',
+              'join':  isChainShow ? '&/Document,@/Random' : '@/TestRecord,@/Script:pre,@/Script:post',
               'Chain': isChainShow ? {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId': groupId,
                 '@column': "id,groupId,documentId,randomId",
                 '@order': 'id+',
+                'documentId>': 0
               } : null,
               'Document': {
                 'id@': isChainShow ? '/Chain/documentId' : null,
@@ -6784,24 +6802,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
               if (! isOk) {
                 alert(isOk ? '选择右侧接口来添加' : '查询失败！\ngroupName: ' + groupName + '\n' + msg)
-              } else {
-                  var list = res.data['Document[]'] || []
-                  var options = []
-                  for (var i = 0; i < list.length; i ++) {
-                      var item = list[i] || {}
-                      options.push({
-                          name: '[' + item.method + '] [' + item.type + '] ' + item.name + ' ' + item.url,
-    //                      type: stringType,
-                          value: item,
-                        }
-                      )
-                  }
-
-                  App.options = options
-                  document.activeElement = vOption // vChainAdd.focusout()
-                  vOption.focus()
-                  //              App.showOptions(target, text, before, after);
+                return
               }
+
+              var list = res.data['Document[]'] || []
+              var options = []
+              for (var i = 0; i < list.length; i ++) {
+                  var item = list[i] || {}
+                  options.push({
+                        name: '[' + item.method + '][' + item.type + ']', // + item.name + ' ' + item.url,
+                        type: item.name,
+                        comment: item.url,
+                        value: item
+                     }
+                  )
+              }
+
+              App.options = options
+              document.activeElement = vOption // vChainAdd.focusout()
+              vOption.focus()
+              //              App.showOptions(target, text, before, after);
 
             })
 
@@ -6985,7 +7005,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.saveCache(this.server, 'chainGroupCounts', this.chainGroupCounts)
             // this.saveCache(this.server, 'chainGroupSearches', this.chainGroupSearches)
 
-            this.selectChainGroup()
+            this.selectChainGroup(-1, null)
           }
           else if (type == 'caseGroup') {
             this.caseGroupPages[groupKey] = this.caseGroupPage
