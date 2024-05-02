@@ -1559,6 +1559,54 @@ var JSONResponse = {
     return target;
   },
 
+  /**根据 APIJSON 引用赋值路径精准地获取值
+   */
+  getValByPath: function(target, pathKeys) {
+    if (target == null) {
+      return null;
+    }
+
+    var tgt = target;
+    var depth = pathKeys == null ? 0 : pathKeys.length
+    if (depth <= 0) {
+      return target;
+    }
+
+    for (var i = 0; i < depth; i ++) {
+      if (tgt == null) {
+        return null;
+      }
+
+      var k = pathKeys[i];
+      if (k == null) {
+        return null;
+      }
+
+      if (tgt instanceof Object) {
+        if (k == '') {
+          if (tgt instanceof Array) {
+              k = 0;
+          } else {
+              ks = Object.keys(tgt);
+              k = ks == null ? null : ks[0];
+              if (k == null) {
+                return null;
+              }
+          }
+        }
+
+        tgt = tgt[k];
+
+        continue;
+      }
+
+      return null;
+    }
+
+    return tgt;
+  },
+
+
   /**根据路径精准地更新测试标准中的键值对
    */
   getStandardByPath: function(target, pathKeys) {

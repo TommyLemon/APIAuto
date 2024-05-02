@@ -610,6 +610,26 @@ https://github.com/Tencent/APIJSON/issues
     , 'content-type', 'date', 'keep-alive', 'proxy-connection', 'set-cookie', 'vary', 'accept', 'cache-control', 'dnt'
     , 'host', 'origin', 'pragma', 'referer', 'user-agent']
 
+  var PRE = 'PRE' // PRE()
+  var CUR = 'CUR' // CUR()
+  var NEXT = 'NEXT' // NEXT()
+
+  var PRE_REQ = 'PRE_REQ' // PRE_REQ('[]/page')
+  var PRE_ARG = 'PRE_ARG' // PRE_ARG('[]/page')
+  var PRE_RES = 'PRE_RES' // PRE_RES('[]/0/User/id')
+  var PRE_DATA = 'PRE_DATA' // PRE_DATA('[]/0/User/id')
+  var PRE_EXT = 'PRE_EXT' // PRE_EXT('key')
+  var CUR_REQ = 'CUR_REQ' // CUR_REQ('User/id')
+  var CUR_ARG = 'CUR_ARG' // CUR_REQ('User/id')
+  var CUR_PUT = 'CUR_PUT' // CUR_PUT('key', val)
+
+  function get4Path(obj, path) {
+    if (StringUtil.isEmpty(path, false)) {
+      return obj
+    }
+    return JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
+  }
+
   var RANDOM_DB = 'RANDOM_DB'
   var RANDOM_IN = 'RANDOM_IN'
   var RANDOM_INT = 'RANDOM_INT'
@@ -2171,7 +2191,9 @@ https://github.com/Tencent/APIJSON/issues
 
         var scripts = item.scripts
         if (isRemote) {
-          var orginItem = item
+          var originItem = item
+          item.random = (originItem.Random || {}).config
+
           doc = item.Document || {}
           docId = doc.id || 0
 
@@ -2207,7 +2229,7 @@ https://github.com/Tencent/APIJSON/issues
               }
 
               // var scripts = item.scripts || {}
-              var scripts = orginItem.scripts || {}
+              var scripts = originItem.scripts || {}
               // var ss = scripts.case
               // if (ss == null) {
               //   scripts.case = ss = {}
@@ -2222,15 +2244,15 @@ https://github.com/Tencent/APIJSON/issues
 
               var pre = rpObj['Script:pre']
               if (pre != null && pre.script != null) {
-                bs.pre = orginItem['Script:pre'] = rpObj['Script:pre']
+                bs.pre = originItem['Script:pre'] = rpObj['Script:pre']
               }
 
               var post = rpObj['Script:post']
               if (post != null && post.script != null) {
-                bs.post = orginItem['Script:post'] = rpObj['Script:post']
+                bs.post = originItem['Script:post'] = rpObj['Script:post']
               }
 
-              orginItem.scripts = scripts
+              originItem.scripts = scripts
 
               App.changeScriptType(App.scriptType)
               App.scripts.case[docId] = scripts
@@ -2446,9 +2468,12 @@ https://github.com/Tencent/APIJSON/issues
           const isExportRandom = this.isExportRandom
           const isExportScript = this.isExportScript
 
+          const cri = this.currentRemoteItem || {}
+          const chain = cri.Chain || {}
           const currentAccountId = this.getCurrentAccountId()
-          const doc = (this.currentRemoteItem || {}).Document || {}
-          const tr = (this.currentRemoteItem || {}).TestRecord || {}
+          const doc = cri.Document || {}
+          const tr = cri.TestRecord || {}
+          const cgId = chain.groupId
           const did = isExportRandom && btnIndex == 1 ? null : doc.id
 
           if (isExportScript) {
@@ -2671,12 +2696,14 @@ https://github.com/Tencent/APIJSON/issues
               format: false,
               'Random': {
                 toId: 0,
+                chainGroupId: cgId,
                 documentId: did,
                 count: App.requestCount,
                 name: App.exTxt.name,
                 config: config
               },
               'TestRecord': {
+                'chainGroupId': cgId,
                 'response': rawRspStr,
                 'standard': isML ? JSON.stringify(stddObj) : null
               },
@@ -2686,6 +2713,7 @@ https://github.com/Tencent/APIJSON/issues
               'Document': isEditResponse ? null : {
                 'id': did == null ? undefined : did,
 //                'testAccountId': currentAccountId,
+//                'chainGroupId': cgId,
                 'operation': CodeUtil.getOperation(path, reqObj),
                 'name': extName,
                 'method': method,
@@ -2698,6 +2726,7 @@ https://github.com/Tencent/APIJSON/issues
                 'detail': App.getExtraComment() || ((App.currentRemoteItem || {}).Document || {}).detail,
               },
               'TestRecord': isEditResponse != true && did != null ? null : {
+//                'chainGroupId': cgId,
                 'documentId': isEditResponse ? did : undefined,
                 'randomId': 0,
                 'host': baseUrl,
@@ -4170,7 +4199,7 @@ https://github.com/Tencent/APIJSON/issues
             '[]': {
               'count': 0, //200 条测试直接卡死 0,
               'page': 0,
-              'join': '&/Document,@/Random',
+              'join': '&/Document',
               'Chain': {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId@': '[]/Chain/groupId',
@@ -4195,10 +4224,10 @@ https://github.com/Tencent/APIJSON/issues
                 // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
               },
               'Random':  {
-                'id@': '/Chain/randomId',
+//                'id@': '/Chain/randomId',
                 'toId': 0,
-//                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
-//                'documentId@': '/Document/documentId',
+                'chainGroupId@': '/Chain/groupId',
+                'documentId@': '/Document/id',
                 'userId': userId
               },
               'TestRecord': {
@@ -9121,11 +9150,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback, preScript) {
+      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback, preScript, ctx) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
           // return null;
-          callback(null, null, null);
+          callback('', '', json);
           return
         }
         json = json || {};
@@ -9419,42 +9448,68 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 ) + ', ' + value.substring(start + 1);
             }
             else {  //随机函数
-              fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
+              if (fun == PRE_REQ) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + value.substring(start + 1);
+              }
+              else if (fun == PRE_ARG) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + value.substring(start + 1);
+              }
+              else if (fun == PRE_RES) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + value.substring(start + 1);
+              }
+              else if (fun == PRE_DATA) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + value.substring(start + 1);
+              }
+              else if (fun == PRE_EXT) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).ext, ' + value.substring(start + 1);
+              }
+              else if (fun == CUR_REQ) {
+                toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + value.substring(start + 1);
+              }
+              else if (fun == CUR_ARG) {
+                toEval = 'get4Path(((ctx || {}).cur || {}).arg, ' + value.substring(start + 1);
+              }
+              else if (fun == CUR_PUT) {
+                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + value.substring(start + 1);
+              }
+              else {
+                  fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
 
-              if (fun == RANDOM_DB) {
-                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true); //'random()');
-                continue;
-              }
+                  if (fun == RANDOM_DB) {
+                    request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true); //'random()');
+                    continue;
+                  }
 
-              if (fun == RANDOM_IN) {
-                toEval = 'randomIn' + value.substring(start);
-              }
-              else if (fun == RANDOM_INT) {
-                toEval = 'randomInt' + value.substring(start);
-              }
-              else if (fun == RANDOM_NUM) {
-                toEval = 'randomNum' + value.substring(start);
-              }
-              else if (fun == RANDOM_STR) {
-                toEval = 'randomStr' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD) {
-                toEval = 'randomBad' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD_BOOL) {
-                toEval = 'randomBadBool' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD_NUM) {
-                toEval = 'randomBadNum' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD_STR) {
-                toEval = 'randomBadStr' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD_ARR) {
-                toEval = 'randomBadArr' + value.substring(start);
-              }
-              else if (fun == RANDOM_BAD_OBJ) {
-                toEval = 'randomBadObj' + value.substring(start);
+                  if (fun == RANDOM_IN) {
+                    toEval = 'randomIn' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_INT) {
+                    toEval = 'randomInt' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_NUM) {
+                    toEval = 'randomNum' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_STR) {
+                    toEval = 'randomStr' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD) {
+                    toEval = 'randomBad' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD_BOOL) {
+                    toEval = 'randomBadBool' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD_NUM) {
+                    toEval = 'randomBadNum' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD_STR) {
+                    toEval = 'randomBadStr' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD_ARR) {
+                    toEval = 'randomBadArr' + value.substring(start);
+                  }
+                  else if (fun == RANDOM_BAD_OBJ) {
+                    toEval = 'randomBadObj' + value.substring(start);
+                  }
               }
 
             }
@@ -9677,15 +9732,49 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
-      startTestChain: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback) {
+      startTestChain: function (list, allCount, index, item, prev, ctx, isRandom, accountIndex, isCross, callback) {
          if (list == null || index == null || index >= list.length) {
            return
          }
 
-         this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, callback
-           , function(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross) {
-           App.startTestChain(list, allCount, index + 1, list[index + 1], isRandom, accountIndex, isCross, callback)
-         })
+         var cur = item = item || {}
+         cur.index = index
+//         item.pre = pre // list[index - 1]
+
+         var doc = item.Document || {}
+         var method = cur.method = doc.method
+         var type = cur.type = doc.type
+         var url = cur.url = doc.url
+         var json = cur.arg = this.getRequest(doc.request, {})
+         var req = cur.req = {
+           method: method,
+           url: url,
+           header: doc.header,
+           data: json
+         }
+         var header = cur.header = doc.header
+//
+//         this.parseRandom(json, rawConfig, random.id, true, false, function (randomName, constConfig, constJson) {
+             this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, callback
+               , function(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross) {
+
+               res = res || {}
+               var config = res.config || {}
+               cur.arg = App.getRequest(config.data || config.params, {})
+               cur.req = {
+                 method: method,
+                 url: config.url,
+                 header: config.header,
+                 arg: cur.arg
+               }
+               cur.status = res.status
+               cur.statusText = res.statusText
+               cur.res = res
+               cur.data = res.data
+               App.startTestChain(list, allCount, index + 1, list[index + 1], item, ctx, isRandom, accountIndex, isCross, callback)
+             })
+             return true
+//         })
       },
 
       toTestDocIndexes: [],
@@ -9706,7 +9795,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 //               this.showTestCase(true, false, function(url, res, err) {
                   var stepList = item['[]'] // res.data['[]']
                   var stepCount = stepList == null ? 0 : stepList.length
-                  this.startTestChain(stepList, stepCount, 0, stepCount <= 0 ? null : stepList[0], isRandom, accountIndex, isCross, callback)
+                  this.startTestChain(stepList, stepCount, 0, stepCount <= 0 ? null : stepList[0], null, { Chain: item }, isRandom, accountIndex, isCross, callback)
 //               }, item)
                continue
             }
@@ -9768,46 +9857,57 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const req = this.getRequest(document.request, null, true)
             const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
             const curEnvUrl = baseUrl + document.url
+            const cur = item
+            const pre = list[index - 1] || {} // item.pre = item.pre || list[index - 1] || {}
+            const ctx = item.ctx = item.ctx || {}
 
-            this.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, req, header, function (url, res, err) {
-              try {
-                App.onResponse(url, res, err)
-                if (DEBUG) {
-                  App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
-                }
-              } catch (e) {
-                App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
-              }
-
-              if (isEnvCompare != true) {
-                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback, singleCallback)
-                return
-              }
-
-              const otherErr = err
-              const rsp = App.removeDebugInfo(res.data)
-              const rspStr = JSON.stringify(rsp)
-              const tr = item.TestRecord || {}
-              if (isMLEnabled) {
-                tr.response = rspStr
-              }
-              tr[standardKey] = isMLEnabled ? JSON.stringify(JSONResponse.updateFullStandard({}, rsp, isMLEnabled)) : rspStr // res.data
-              item.TestRecord = tr
-
-              App.request(false, method, type, curEnvUrl, req, header, function (url, res, err) {
-                try {
-                  App.onResponse(url, res, err)
-                  if (DEBUG) {
-                    App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+            var random = item.Random || {}
+            this.parseRandom(req, random.config, random.id, true, false, false, function(randomName, constConfig, constJson) {
+                App.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, constJson, header, function (url, res, err) {
+                  try {
+                    App.onResponse(url, res, err)
+                    if (DEBUG) {
+                      App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                    }
+                  } catch (e) {
+                    App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
                   }
-                } catch (e) {
-                  App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
-                }
 
-                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback, singleCallback)
-              }, caseScript)
+                  if (isEnvCompare != true) {
+                    App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback, singleCallback)
+                    return
+                  }
 
-            }, caseScript)
+                  const otherErr = err
+                  const rsp = App.removeDebugInfo(res.data)
+                  const rspStr = JSON.stringify(rsp)
+                  const tr = item.TestRecord || {}
+                  if (isMLEnabled) {
+                    tr.response = rspStr
+                  }
+                  tr[standardKey] = isMLEnabled ? JSON.stringify(JSONResponse.updateFullStandard({}, rsp, isMLEnabled)) : rspStr // res.data
+                  item.TestRecord = tr
+
+                  App.request(false, method, type, curEnvUrl, constJson, header, function (url, res, err) {
+                    try {
+                      App.onResponse(url, res, err)
+                      if (DEBUG) {
+                        App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                      }
+                    } catch (e) {
+                      App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
+                    }
+
+                    App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback, singleCallback)
+                  }, caseScript)
+
+                }, caseScript)
+            }, caseScript.pre, {
+                index: index,
+                cur: cur,
+                pre: pre,
+                ctx: ctx
+            })
           }
           catch(e) {
             this.compareResponse(null, allCount, list, index, item, null, isRandom, accountIndex, false, e, null, isCross, callback, singleCallback)
@@ -10616,6 +10716,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             const isNewRandom = isRandom && random.id <= 0
             const userId = this.User.id
+            const cri = this.currentRemoteItem || {}
+            const chain = cri.Chain || {}
+            const cgId = chain.groupId
 
             //TODO 先检查是否有重复名称的！让用户确认！
             // if (isML != true) {
@@ -10624,6 +10727,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               Random: isNewRandom != true ? null : {
                 toId: random.toId,
                 userId: userId,
+                chainGroupId: cgId,
                 documentId: random.documentId,
                 name: random.name,
                 count: random.count,
@@ -10635,12 +10739,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 host: this.getBaseUrl(),
                 userId: userId,
                 testAccountId: this.getCurrentAccountId(),
+                chainGroupId: cgId,
                 duration: item.duration,
                 minDuration: minDuration,
                 maxDuration: maxDuration,
                 compare: JSON.stringify(testRecord.compare || {}),
               }) : {
                 userId: userId,
+                chainGroupId: cgId,
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 reportId: this.reportId,
@@ -11209,6 +11315,32 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   name: "Math.round(100*Math.random())", type: stringType, comment: '自定义代码'
                 }
               ]
+
+              if (App.isChainShow) {
+                  App.options = [
+                    {
+                      name: "PRE_RES('[]/0/User/id')",
+                      type: stringType,
+                      comment: "从上个请求的返回结果中取值 function(path:String)"
+                    }, {
+                      name: "PRE_REQ('[]/page')",
+                      type: stringType,
+                      comment: "从上个请求的参数中取值 function(path:String)"
+                    }, {
+                      name: "PRE_EXT('isMale')",
+                      type: stringType,
+                      comment: "从上个请求的扩展对象中取值 function(path:String)"
+                    }, {
+                      name: "CUR_REQ('[]/count')",
+                      type: stringType,
+                      comment: "从当前请求的参数中取值 function(path:String)"
+                    }, {
+                      name: "CUR_PUT('isMale', true)",
+                      type: stringType,
+                      comment: "在当前请求的扩展对象中存放键值对 function(path:String, val:Any)"
+                    }
+                  ].concat(App.options || [])
+              }
             }
             else {
               App.options.push({
