@@ -4114,10 +4114,10 @@ https://github.com/Tencent/APIJSON/issues
         this.selectChainGroup(0, path)
       },
       isChainGroupShow: function () {
-        return true // this.chainShowType != 1 && (this.chainGroups.length > 0) // || this.chainPaths.length <= 0)
+        return this.chainShowType != 1 && (this.chainGroups.length > 0) // || this.chainPaths.length <= 0)
       },
       isChainItemShow: function () {
-        return true // this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
+        return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
       },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
@@ -4359,7 +4359,7 @@ https://github.com/Tencent/APIJSON/issues
         if (group == null) {
           if (index == null) {
             index = this.casePaths.length - 1
-            group = this.casePaths[index]
+            group = (this.casePaths[index] || {}).Chain
           } else {
             this.casePaths = []
           }
@@ -9682,8 +9682,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
            return
          }
 
-         this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, function(url, res, err) {
-            App.startTestChain(list, allCount, index + 1, list[index + 1], isRandom, accountIndex, isCross, callback)
+         this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, callback
+           , function(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross) {
+           App.startTestChain(list, allCount, index + 1, list[index + 1], isRandom, accountIndex, isCross, callback)
          })
       },
 
@@ -9715,7 +9716,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       },
 
-      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback) {
+      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback) {
           try {
             const isMLEnabled = this.isMLEnabled
             const standardKey = isMLEnabled != true ? 'response' : 'standard'
@@ -9735,7 +9736,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               return
             }
             if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-              this.log('startTest  document.url == "/login" || document.url == "/logout" >> continue')
+              this.log('startTestSingle  document.url == "/login" || document.url == "/logout" >> continue')
               if (isRandom) {
                 App.randomDoneCount ++
               } else {
@@ -9746,16 +9747,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             if (DEBUG) {
-              this.log('test  document = ' + JSON.stringify(document, null, '  '))
+              this.log('startTestSingle  document = ' + JSON.stringify(document, null, '  '))
             }
-
-            const index = i
 
             var hdr = null
             try {
               hdr = this.getHeader(document.header)
             } catch (e) {
-              this.log('test  for ' + i + ' >> try { header = this.getHeader(document.header) } catch (e) { \n' + e.message)
+              this.log('startTestSingle try { header = this.getHeader(document.header) } catch (e) { \n' + e.message)
             }
             const header = hdr
 
@@ -9774,14 +9773,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               try {
                 App.onResponse(url, res, err)
                 if (DEBUG) {
-                  App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                  App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
                 }
               } catch (e) {
-                App.log('test  App.request >> } catch (e) {\n' + e.message)
+                App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
               }
 
               if (isEnvCompare != true) {
-                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback)
+                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err, null, isCross, callback, singleCallback)
                 return
               }
 
@@ -9799,24 +9798,24 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 try {
                   App.onResponse(url, res, err)
                   if (DEBUG) {
-                    App.log('test  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
+                    App.log('startTestSingle  App.request >> res.data = ' + JSON.stringify(res.data, null, '  '))
                   }
                 } catch (e) {
-                  App.log('test  App.request >> } catch (e) {\n' + e.message)
+                  App.log('startTestSingle  App.request >> } catch (e) {\n' + e.message)
                 }
 
-                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback)
+                App.compareResponse(res, allCount, list, index, item, res.data, isRandom, accountIndex, false, err || otherErr, null, isCross, callback, singleCallback)
               }, caseScript)
 
             }, caseScript)
           }
           catch(e) {
-            this.compareResponse(null, allCount, list, index, item, null, isRandom, accountIndex, false, e, null, isCross, callback)
+            this.compareResponse(null, allCount, list, index, item, null, isRandom, accountIndex, false, e, null, isCross, callback, singleCallback)
           }
 
       },
 
-      compareResponse: function (res, allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback) {
+      compareResponse: function (res, allCount, list, index, item, response, isRandom, accountIndex, justRecoverTest, err, ignoreTrend, isCross, callback, singleCallback) {
         var it = item || {} //请求异步
         var cri = this.currentRemoteItem || {} //请求异步
         var d = (isRandom ? cri.Document : it.Document) || {} //请求异步
@@ -9871,10 +9870,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           tr.compare.duration = it.durationHint
         }
 
-        this.onTestResponse(res, allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback);
+        this.onTestResponse(res, allCount, list, index, it, d, r, tr, response, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback);
       },
 
-      onTestResponse: function(res, allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback) {
+      onTestResponse: function(res, allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback) {
         tr = tr || {}
         cmp = cmp || {}
         tr.compare = cmp
@@ -9995,6 +9994,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
         // this.showTestCase(true)
 
+        if (singleCallback != null && singleCallback(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross)) {
+           return
+        }
+
         if (doneCount >= allCount) {  // 导致不继续测试  App.doneCount == allCount) {
           if (callback != null && callback(isRandom, allCount)) {
             return
@@ -10004,7 +10007,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const deepAllCount = this.toTestDocIndexes == null ? 0 : this.toTestDocIndexes.length
           App.deepAllCount = deepAllCount
-          if (isRandom != true && deepAllCount > 0) { // 自动给非 红色 报错的接口跑参数注入
+          if (isRandom != true && deepAllCount > 0 && ! this.isChainShow) { // 自动给非 红色 报错的接口跑参数注入
             App.deepDoneCount = 0;
             this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex, isCross)
           } else if (isCross && doneCount == allCount && accountIndex <= this.accounts.length) {
