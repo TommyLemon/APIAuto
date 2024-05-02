@@ -623,11 +623,12 @@ https://github.com/Tencent/APIJSON/issues
   var CUR_ARG = 'CUR_ARG' // CUR_REQ('User/id')
   var CUR_PUT = 'CUR_PUT' // CUR_PUT('key', val)
 
-  function get4Path(obj, path) {
-    if (StringUtil.isEmpty(path, false)) {
-      return obj
+  function get4Path(obj, path, nullable) {
+    var val = JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
+    if (val == null && nullable != true) {
+      throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！')
     }
-    return JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
+    return val
   }
 
   var RANDOM_DB = 'RANDOM_DB'
@@ -4307,7 +4308,7 @@ https://github.com/Tencent/APIJSON/issues
               return
             }
 
-            var group = this.chainGroups[this.currentChainGroupIndex]
+            var group = (this.chainGroups[this.currentChainGroupIndex] || {}).Chain
             if (group == null) {
               var index = this.chainPaths.length - 1
               group = this.chainPaths[index]
@@ -4388,7 +4389,7 @@ https://github.com/Tencent/APIJSON/issues
         if (group == null) {
           if (index == null) {
             index = this.casePaths.length - 1
-            group = (this.casePaths[index] || {}).Chain
+            group = this.casePaths[index]
           } else {
             this.casePaths = []
           }
@@ -9194,7 +9195,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const index = line.indexOf(': '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(': '); // indexOf(': '); 可能会有 Comment:to
           const p_k = line.substring(0, index);
           const bi = -1;  //没必要支持，用 before: undefined, after: .. 同样支持替换，反而这样导致不兼容包含空格的 key   p_k.indexOf(' ');
-          const path = bi < 0 ? p_k : p_k.substring(0, bi); // User/id
+          const path = decodeURI(bi < 0 ? p_k : p_k.substring(0, bi)); // User/id
 
           const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
@@ -9449,28 +9450,28 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             else {  //随机函数
               if (fun == PRE_REQ) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_ARG) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_RES) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_DATA) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_EXT) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).ext, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).ext, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CUR_REQ) {
-                toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CUR_ARG) {
-                toEval = 'get4Path(((ctx || {}).cur || {}).arg, ' + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).cur || {}).arg, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CUR_PUT) {
-                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + value.substring(start + 1);
+                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else {
                   fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！

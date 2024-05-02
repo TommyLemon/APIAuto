@@ -1581,6 +1581,7 @@ var JSONResponse = {
       if (k == null) {
         return null;
       }
+      k = decodeURI(k)
 
       if (tgt instanceof Object) {
         if (k == '') {
@@ -1594,10 +1595,25 @@ var JSONResponse = {
               }
           }
         }
+        else {
+          k = decodeURI(k)
+          if (tgt instanceof Array) {
+            try {
+              var n = Number.parseInt(k);
+              if (Number.isSafeInteger(n)) {
+                k = n > 0 ? n : n + tgt.length;
+              }
+            } catch (e) {
+            }
+          }
+        }
 
         tgt = tgt[k];
 
         continue;
+      }
+      else {
+        throw new Error('getValByPath 语法错误，' + k + ': value 中 value 类型应该是 Object 或 Array ！');
       }
 
       return null;
@@ -1638,12 +1654,15 @@ var JSONResponse = {
         k = 0;
       }
       else {
-        try {
-          var n = Number.parseInt(k);
-          if (Number.isSafeInteger(n)) {
-            k = 0;
-          }
-        } catch (e) {
+        k = decodeURI(k)
+        if (tgt instanceof Array) {
+            try {
+              var n = Number.parseInt(k);
+              if (Number.isSafeInteger(n)) {
+                k = n > 0 ? n : n + tgt.length;
+              }
+            } catch (e) {
+            }
         }
       }
 
