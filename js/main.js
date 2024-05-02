@@ -4856,12 +4856,17 @@ https://github.com/Tencent/APIJSON/issues
             ? null : '%' + StringUtil.trim(this.randomSearch) + '%')
 
           var url = this.server + '/get'
+          const cri = this.currentRemoteItem || {}
+          const chain = cri.Chain || {}
+          const cgId = chain.groupId || 0
+
           var req = {
             '[]': {
               'count': (isSub ? this.randomSubCount : this.randomCount) || 100,
               'page': (isSub ? this.randomSubPage : this.randomPage) || 0,
               'Random': {
                 'toId': isSub ? item.id : 0,
+                'chainGroupId': cgId,
                 'documentId': isSub ? null : item.id,
                 '@order': "date-",
                 'name$': search
@@ -4877,6 +4882,7 @@ https://github.com/Tencent/APIJSON/issues
                 'page': this.randomSubPage || 0,
                 'Random': {
                   'toId@': '[]/Random/id',
+                  'chainGroupId': cgId,
                   'documentId': item.id,
                   '@order': "date-",
                   'name$': subSearch
@@ -10719,7 +10725,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const userId = this.User.id
             const cri = this.currentRemoteItem || {}
             const chain = cri.Chain || {}
-            const cgId = chain.groupId
+            const cgId = chain.groupId || 0
 
             //TODO 先检查是否有重复名称的！让用户确认！
             // if (isML != true) {
