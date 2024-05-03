@@ -555,7 +555,6 @@ table.diff thead th.texttitle {
   background-color: #FFF;
 }
 
-
 .historys li {
   display: block;
   padding: 10px;
@@ -573,6 +572,40 @@ table.diff thead th.texttitle {
 }
 
 .historys svg {
+  position: absolute;
+  display: inline-block;
+  cursor: pointer;
+  right: 5px;
+  width: 15px;
+  height: 15px;
+}
+
+
+.projects {
+  margin: 0;
+  padding: 0;
+  width: 200px;
+
+  background-color: #FFF;
+}
+
+.projects li {
+  display: block;
+  padding: 10px;
+  border-bottom: #DDD 1px solid;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-right: 20px;
+  position: relative
+}
+
+.projects li a {
+  display: inline-block;
+  width: 100%;
+}
+
+.projects svg {
   position: absolute;
   display: inline-block;
   cursor: pointer;

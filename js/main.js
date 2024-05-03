@@ -1177,6 +1177,12 @@ https://github.com/Tencent/APIJSON/issues
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
+      project: 'APIJSON.cn',
+      projects: [
+         {name: 'localhost', url: 'http://localhost:8080'},
+         {name: 'APIJSON.cn', url: 'http://apijson.cn:8080'},
+         {name: 'APIJSON.cn:9090', url: 'http://apijson.cn:9090'}
+      ],
       language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
       page: 0,
@@ -2166,8 +2172,14 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       // 删除已保存的
-      remove: function (item, index, isRemote, isRandom) {
+      remove: function (item, index, isRemote, isRandom, isProject) {
         if (isRemote == null || isRemote == false) { //null != false
+          if (isProject) {
+            this.projects.splice(index, 1)
+            this.saveCache('', 'projects', this.projects)
+            return
+          }
+
           localforage.removeItem(item.key, function () {
             App.historys.splice(index, 1)
           })
@@ -4182,15 +4194,18 @@ https://github.com/Tencent/APIJSON/issues
         var allCount = testCases == null ? 0 : testCases.length
         App.allCount = allCount
         if (allCount > 0) {
+
           var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
           this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
+//          var account = this.accounts[accountIndex]
+//          baseUrl = this.getBaseUrl()
 
           var reportId = this.reportId
           if (reportId == null || Number.isNaN(reportId)) {
             reportId = null
           }
 
-          var tests = this.tests[String(accountIndex)]
+          var tests = this.tests[String(accountIndex)] // FIXME  account.phone + '@' + (account.baseUrl || baseUrl)]
           if ((reportId != null && reportId >= 0) || (tests != null && JSONObject.isEmpty(tests) != true)) {
             for (var i = 0; i < allCount; i++) {
               var item = testCases[i]
@@ -6192,7 +6207,7 @@ https://github.com/Tencent/APIJSON/issues
 
         var baseUrls = this.getCache('', 'baseUrls', [])
         var bu = this.getBaseUrl(url)
-        if (baseUrls.indexOf(bu) < 0) {
+        if (StringUtil.isNotEmpty(bu, true) && baseUrls.indexOf(bu) < 0) {
           baseUrls.push(bu)
           this.saveCache('', 'baseUrls', baseUrls)
         }
