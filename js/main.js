@@ -1177,9 +1177,9 @@ https://github.com/Tencent/APIJSON/issues
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
-      project: 'APIJSON.cn',
+      project: {name: 'APIJSON.cn', url: 'http://apijson.cn:8080'},
       projects: [
-         {name: 'localhost', url: 'http://localhost:8080'},
+         {name: 'Localhost', url: 'http://localhost:8080'},
          {name: 'APIJSON.cn', url: 'http://apijson.cn:8080'},
          {name: 'APIJSON.cn:9090', url: 'http://apijson.cn:9090'}
       ],
@@ -6210,6 +6210,27 @@ https://github.com/Tencent/APIJSON/issues
         if (StringUtil.isNotEmpty(bu, true) && baseUrls.indexOf(bu) < 0) {
           baseUrls.push(bu)
           this.saveCache('', 'baseUrls', baseUrls)
+          var projects = this.projects || []
+          var project = this.project || {}
+          var find = false
+          for (var j = 0; j < projects.length; j ++) {
+              var pjt = projects[j]
+              if (pjt == null || StringUtil.isEmpty(pjt.url, true)) {
+                 continue
+              }
+
+              if (pjt.url == project.url) {
+                  find = true
+                  break
+              }
+          }
+
+          if (find != true) {
+             projects.push({name: bu, url: bu})
+             this.projects = projects
+             this.saveCache('', 'projects', projects)
+          }
+
         }
 
         this.locals = this.locals || []
@@ -12119,8 +12140,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\n} catch (e) {\n' + e.message)
       }
       try { //这里是初始化，不能出错
+        var projects = this.getCache('', 'projects')
+        if (projects != null && projects.length >= 1) {
+          this.projects = projects
+        }
+      } catch (e) {
+        console.log('created  try { ' +
+          '\nvar accounts = this.getCache(URL_BASE, accounts)' +
+          '\n} catch (e) {\n' + e.message)
+      }
+      try { //这里是初始化，不能出错
         var accounts = this.getCache(URL_BASE, 'accounts')
-        if (accounts != null) {
+        if (accounts != null && accounts.length >= 1) {
           this.accounts = accounts
           this.currentAccountIndex = this.getCache(URL_BASE, 'currentAccountIndex')
         }

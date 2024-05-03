@@ -71,12 +71,12 @@
         <a class="logo" href="http://apijson.cn" target="_blank">
             <span class="on">APIAuto:</span>
         </a><span class="pop-btn">
-            <a href="javascript:void(0)" style="padding: 14px; font-size: 24px">{{ project }}</a>
-            <ul class="projects pop" style="z-index: 200; min-width: 440px; right: -240px; width: 100%; padding-top: 50px; background: transparent">
-                   <li v-for="(project, index) in projects" style="background: white">
-                      <a style="padding: 0px" href="javascript:void(0)" @click="host = ''; vUrl.value = project.url + getBranchUrl()"  > {{project.url + (StringUtil.isEmpty(project.name, true) ? '' : ' // ' + project.name)}}</a>
+            <a href="javascript:void(0)" @click="window.open(project.url)" style="padding: 14px; margin-left: -20px; font-size: 24px">{{ project.name }}</a>
+            <ul class="projects pop" style="z-index: 200; width: 440px; right: -260px; padding-top: 50px; background: transparent">
+                   <li v-for="(item, index) in projects" style="background: white">
+                      <a style="padding: 0px; width: auto" href="javascript:void(0)" @click="host = ''; project = item || item.url; var bu = getBranchUrl(); vUrl.value = item.url + bu; showUrl(false, bu)"  > {{item.url + (StringUtil.isEmpty(item.name, true) ? '' : ' //')}}</a><input style="min-width: 60px; margin-left: 6px; margin-right: 6px" v-model="item.name" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
 
-                      <svg class="icon" @click="remove(project, index, false, false, true)">
+                      <svg class="icon" @click="remove(item, index, false, false, true)" style="margin-top: 6px">
                           <use xlink:href="svg/icon.svg#trash"></use>
                       </svg>
                    </li>
