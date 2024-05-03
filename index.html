@@ -653,7 +653,7 @@ fun(true, 1, 'a'..);
                             <button style="background-color: #DDD;margin: 0px;outline: none;border: #DDD 1px solid;" href="javascript:void(0)" @click="removeAccountTab()"> - </button>
                             <!-- 每个账号 -->
                             <div v-for="(item, index) in accounts" style="display: inline-block; border: #DDD 1px solid" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD'}">
-                              <button style="outline: none; border: none" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD', color: item.isLoggedIn ? 'red' : 'black'}" @click="onClickAccount(index, item)">{{ item.name }}</button>
+                              <button style="outline: none; border: none" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD', color: item.isLoggedIn ? 'red' : 'black'}" @click="onClickAccount(index, item)">{{ item.name + (StringUtil.isNotEmpty(getBaseUrl(vUrl.value), true) ? '' : '@' + StringUtil.trim(item.baseUrl)) }}</button>
                               <br v-show="isStatisticsEnabled && isCrossEnabled && isAllSummaryShow()" />
                               <div v-show="isStatisticsEnabled && isCrossEnabled && isAllSummaryShow()" style="background: lightgray; padding: 1px; display: inline-block; margin: 1px" >
                                 <!-- 只能写成一行来消除间隙，不能换行、空格 -->

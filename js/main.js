@@ -793,7 +793,7 @@ https://github.com/Tencent/APIJSON/issues
     // end = end || Number.MAX_SAFE_INTEGER
 
     if (min == null) {
-      min = Number.MIN_SAFE_INTEGER
+      min = 0 // Number.MIN_SAFE_INTEGER
     }
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
@@ -844,7 +844,7 @@ https://github.com/Tencent/APIJSON/issues
 
   function orderInt(desc, index, min, max) {
     if (min == null) {
-      min = Number.MIN_SAFE_INTEGER
+      min = 0 // Number.MIN_SAFE_INTEGER
     }
     if (max == null) {
       max = Number.MAX_SAFE_INTEGER
@@ -1054,6 +1054,7 @@ https://github.com/Tencent/APIJSON/issues
           'password': '123456'
         }
       ],
+      otherEnvTokenMap: {},
       otherEnvCookieMap: {},
       allSummary: {},
       currentAccountIndex: 0,
@@ -1377,6 +1378,30 @@ https://github.com/Tencent/APIJSON/issues
           // var index = baseUrl.indexOf(':') //http://localhost:8080
           // this.server = (index < 0 ? baseUrl : baseUrl.substring(0, baseUrl)) + ':9090'
 
+          var baseUrls = this.getCache('', 'baseUrls', [])
+          if (baseUrls.indexOf(bu) <= 0) {
+            baseUrls.push(bu)
+            this.saveCache('', 'baseUrls', baseUrls)
+          }
+
+          var accounts = []
+          if (StringUtil.isNotEmpty(bu, true)) {
+            accounts = this.getCache(bu, 'accounts', [])
+          }
+          else {
+              for (var i = 0; i < baseUrls.length; i ++) {
+                var bu2 = baseUrls[i]
+                var ats = this.getCache(bu2, 'accounts', [])
+//                accounts.push({
+//                  baseUrl: bu2,
+//                  id: 0,
+//                  phone: 0,
+//                  name: ''
+//                })
+                accounts = accounts.concat(ats)
+              }
+          }
+          this.accounts = accounts
         }
       },
       getUrl: function () {
@@ -1385,10 +1410,17 @@ https://github.com/Tencent/APIJSON/issues
       },
       //获取基地址
       getBaseUrl: function (url_) {
-        var url = StringUtil.trim(url_ || vUrl.value)
+        var url = StringUtil.trim(url_ != undefined ? url_ : vUrl.value)
         var length = this.getBaseUrlLength(url)
+        if (length <= 0 && url_ == null) {
+          var account = this.getCurrentAccount()
+          if (account != null) {
+            return account.baseUrl || ''
+          }
+        }
+
         url = length <= 0 ? '' : url.substring(0, length)
-        return url == '' ? URL_BASE : url
+        return url // == '' ? URL_BASE : url
       },
       //获取基地址长度，以://后的第一个/分割baseUrl和method
       getBaseUrlLength: function (url_) {
@@ -3964,7 +3996,6 @@ https://github.com/Tencent/APIJSON/issues
 
 
 
-
       onClickAccount: function (index, item, callback) {
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
@@ -3976,8 +4007,9 @@ https://github.com/Tencent/APIJSON/issues
               App.onResponse(url, res, err)
 
               item.isLoggedIn = false
-              App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-              App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+              baseUrl = item.baseUrl || App.getBaseUrl()
+              App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+              App.saveCache(baseUrl, 'accounts', App.accounts)
               App.changeScriptType(App.scriptType)
 
               if (callback != null) {
@@ -4038,16 +4070,19 @@ https://github.com/Tencent/APIJSON/issues
                 }
                 else {
                   var headers = res.headers || {}
+                  baseUrl = item.baseUrl || App.getBaseUrl()
 
+                  item.baseUrl = baseUrl
                   item.id = user.id
                   item.name = user.name
                   item.remember = data.remember
                   item.isLoggedIn = true
+                  item.token = headers.token || headers.Token || data.token || data.Token || user.token || user.Token
                   item.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
 
                   App.accounts[App.currentAccountIndex] = item
-                  App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-                  App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+                  App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+                  App.saveCache(baseUrl, 'accounts', App.accounts)
                   App.changeScriptType(App.scriptType)
 
                   if (callback != null) {
@@ -5261,11 +5296,13 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
+          const baseUrl = this.getBaseUrl()
+
           if (IS_BROWSER && callback == null) {
             var item
             for (var i in this.accounts) {
               item = this.accounts[i]
-              if (item != null && req.phone == item.phone) {
+              if (item != null && baseUrl == item.baseUrl && req.phone == item.phone) {
                 recover()
                 alert(req.phone +  ' 已在测试账号中！')
                 // this.currentAccountIndex = i
@@ -5320,7 +5357,7 @@ https://github.com/Tencent/APIJSON/issues
 
           this.scripts = newDefaultScript()
 
-          this.request(isAdminOperation, loginMethod, loginType, this.getBaseUrl() + loginUrl, loginReq, loginHeader, function (url, res, err) {
+          this.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, loginReq, loginHeader, function (url, res, err) {
             if (App.isEnvCompareEnabled != true) {
               loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, loginReq, loginHeader)
               return
@@ -5332,7 +5369,9 @@ https://github.com/Tencent/APIJSON/issues
                   var user = JSONResponse.isSuccess(data) ? data.user : null
                   if (user != null) {
                     var headers = res.headers || {}
-                    App.otherEnvCookieMap[req.phone] = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
+                    App.otherEnvTokenMap[req.phone + '@' + baseUrl] = headers.token || headers.Token || data.token || data.Token || user.token || user.Token
+                    App.otherEnvCookieMap[req.phone + '@' + baseUrl] = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
+                    App.saveCache(App.otherEnv, 'otherEnvTokenMap', App.otherEnvTokenMap)
                     App.saveCache(App.otherEnv, 'otherEnvCookieMap', App.otherEnvCookieMap)
                   }
 
@@ -5397,6 +5436,7 @@ https://github.com/Tencent/APIJSON/issues
             var user = data.user || {}
             App.accounts.push({
               isLoggedIn: true,
+              baseUrl: App.getBaseUrl(),
               id: user.id,
               name: user.name,
               phone: req.phone,
@@ -6064,7 +6104,8 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         if (StringUtil.isEmpty(this.host, true)) {
-          if (StringUtil.get(vUrl.value).startsWith('http://') != true && StringUtil.get(vUrl.value).startsWith('https://') != true) {
+          var url = StringUtil.get(vUrl.value)
+          if (url.startsWith('/') != true && url.startsWith('http://') != true && url.startsWith('https://') != true) {
             alert('URL 缺少 http:// 或 https:// 前缀，可能不完整或不合法，\n可能使用同域的 Host，很可能访问出错！')
           }
         }
@@ -6242,9 +6283,9 @@ https://github.com/Tencent/APIJSON/issues
                 }
                 else {
                   // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
-
-                  if (App.accounts[App.currentAccountIndex] != null) {
-                    App.accounts[App.currentAccountIndex].isLoggedIn = false
+                  var account = App.accounts[App.currentAccountIndex]
+                  if (account != null) {
+                    account.isLoggedIn = false
                   }
                 }
               }
@@ -6444,7 +6485,7 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             // Node 环境内通过 headers 设置 Cookie 无效
-            header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone] : curUser.cookie
+            header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone + '@' + baseUrl] : curUser.cookie
           }
         }
 
@@ -12028,13 +12069,23 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\n} catch (e) {\n' + e.message)
       }
       try { //这里是初始化，不能出错
-        var otherEnvCookieMap = this.getCache(App.otherEnv, 'otherEnvCookieMap')
+        var otherEnvTokenMap = this.getCache(this.otherEnv, 'otherEnvTokenMap')
+        if (otherEnvTokenMap != null) {
+          this.otherEnvTokenMap = otherEnvTokenMap
+        }
+      } catch (e) {
+        console.log('created  try { ' +
+            '\nvar otherEnvTokenMap = this.getCache(this.otherEnv, otherEnvTokenMap)' +
+            '\n} catch (e) {\n' + e.message)
+      }
+      try { //这里是初始化，不能出错
+        var otherEnvCookieMap = this.getCache(this.otherEnv, 'otherEnvCookieMap')
         if (otherEnvCookieMap != null) {
           this.otherEnvCookieMap = otherEnvCookieMap
         }
       } catch (e) {
         console.log('created  try { ' +
-            '\nvar accounts = this.getCache(URL_BASE, accounts)' +
+            '\nvar otherEnvCookieMap = this.getCache(this.otherEnv, otherEnvCookieMap)' +
             '\n} catch (e) {\n' + e.message)
       }
 
