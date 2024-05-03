@@ -1561,7 +1561,7 @@ var JSONResponse = {
 
   /**根据 APIJSON 引用赋值路径精准地获取值
    */
-  getValByPath: function(target, pathKeys) {
+  getValByPath: function(target, pathKeys, isTry) {
     if (target == null) {
       return null;
     }
@@ -1612,7 +1612,8 @@ var JSONResponse = {
 
         continue;
       }
-      else {
+
+      if (isTry != true) {
         throw new Error('getValByPath 语法错误，' + k + ': value 中 value 类型应该是 Object 或 Array ！');
       }
 

@@ -624,7 +624,7 @@ https://github.com/Tencent/APIJSON/issues
   var CUR_PUT = 'CUR_PUT' // CUR_PUT('key', val)
 
   function get4Path(obj, path, nullable) {
-    var val = JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
+    var val = JSONResponse.getValByPath(obj, StringUtil.split(path, '/'))
     if (val == null && nullable != true) {
       throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！')
     }
@@ -2209,16 +2209,22 @@ https://github.com/Tencent/APIJSON/issues
           var postId = post.id
           if (docId > 0 && (preId == null || postId == null)) {
             // var accountId = this.getCurrentAccountId();
+            const cri = this.currentRemoteItem || {}
+            const chain = cri.Chain || {}
+            const cgId = chain.groupId || 0
+
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, '/get', {
               'Script:pre': preId != null ? undefined : {
                 'ahead': 1,
                 // 'testAccountId': 0,
+                'chainGroupId': cgId,
                 'documentId': docId,
                 '@order': 'date-'
               },
               'Script:post': postId != null ? undefined : {
                 'ahead': 0,
                 // 'testAccountId': 0,
+                'chainGroupId': cgId,
                 'documentId': docId,
                 '@order': 'date-'
               }
@@ -2474,7 +2480,7 @@ https://github.com/Tencent/APIJSON/issues
           const currentAccountId = this.getCurrentAccountId()
           const doc = cri.Document || {}
           const tr = cri.TestRecord || {}
-          const cgId = chain.groupId
+          const cgId = chain.groupId || 0
           const did = isExportRandom && btnIndex == 1 ? null : doc.id
 
           if (isExportScript) {
@@ -2489,6 +2495,7 @@ https://github.com/Tencent/APIJSON/issues
                 'id': sid == null ? undefined : sid,
                 'simple': 1,
                 'ahead': this.isPreScript ? 1 : 0,
+                'chainGroupId': cgId,
                 'documentId': did == null || scriptType != 'case' ? 0 : did,
                 'testAccountId': scriptType != 'account' ? 0 : currentAccountId,
                 'name': extName,
@@ -4612,13 +4619,14 @@ https://github.com/Tencent/APIJSON/issues
               },
               'Random':  isChainShow ? {
                 'id@': '/Chain/randomId',
-                'toId': isChainShow ? 0 : null,
+                'toId': 0, // isChainShow ? 0 : null,
 //                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
-                'documentId@': isChainShow ? null : '/Document/documentId',
+//                'documentId@': isChainShow ? null : '/Document/documentId',
                 'userId': userId
               }: null,
               'TestRecord': {
                 'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+                'chainGroupId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 'userId': userId,
 //                'testAccountId': this.getCurrentAccountId(),
@@ -4633,6 +4641,7 @@ https://github.com/Tencent/APIJSON/issues
                 'ahead': 1,
                 // 'testAccountId': 0,
                 'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+                'chainGroupId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               },
@@ -4640,6 +4649,7 @@ https://github.com/Tencent/APIJSON/issues
                 'ahead': 0,
                 // 'testAccountId': 0,
                 'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+                'chainGroupId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               }
@@ -7138,6 +7148,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             this.resetTestCount(this.currentAccountIndex)
 
+            this.isStatisticsEnabled = false
             this.remotes = null
             this.showTestCase(true, false)
           }
@@ -9910,6 +9921,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 }, caseScript)
             }, caseScript.pre, {
+                list: list,
+                allCount: allCount,
                 index: index,
                 cur: cur,
                 pre: pre,
