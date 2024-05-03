@@ -1343,7 +1343,7 @@ https://github.com/Tencent/APIJSON/issues
       showUrl: function (isAdminOperation, branchUrl) {
         if (StringUtil.isEmpty(this.host, true)) {  //显示(可编辑)URL Host
           if (isAdminOperation != true) {
-            baseUrl = this.getBaseUrl()
+            baseUrl = this.getBaseUrl(vUrl.value)
           }
           vUrl.value = (isAdminOperation ? this.server : baseUrl) + branchUrl
         }
@@ -1378,17 +1378,12 @@ https://github.com/Tencent/APIJSON/issues
           // var index = baseUrl.indexOf(':') //http://localhost:8080
           // this.server = (index < 0 ? baseUrl : baseUrl.substring(0, baseUrl)) + ':9090'
 
-          var baseUrls = this.getCache('', 'baseUrls', [])
-          if (baseUrls.indexOf(bu) <= 0) {
-            baseUrls.push(bu)
-            this.saveCache('', 'baseUrls', baseUrls)
-          }
-
           var accounts = []
           if (StringUtil.isNotEmpty(bu, true)) {
             accounts = this.getCache(bu, 'accounts', [])
           }
           else {
+              var baseUrls = this.getCache('', 'baseUrls', [])
               for (var i = 0; i < baseUrls.length; i ++) {
                 var bu2 = baseUrls[i]
                 var ats = this.getCache(bu2, 'accounts', [])
@@ -1401,7 +1396,10 @@ https://github.com/Tencent/APIJSON/issues
                 accounts = accounts.concat(ats)
               }
           }
-          this.accounts = accounts
+
+          if (accounts.length >= 1) {
+            this.accounts = accounts
+          }
         }
       },
       getUrl: function () {
@@ -4007,9 +4005,11 @@ https://github.com/Tencent/APIJSON/issues
               App.onResponse(url, res, err)
 
               item.isLoggedIn = false
-              baseUrl = item.baseUrl || App.getBaseUrl()
-              App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-              App.saveCache(baseUrl, 'accounts', App.accounts)
+              baseUrl = App.getBaseUrl(vUrl.value)
+              if (StringUtil.isNotEmpty(baseUrl, true)) {
+                  App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+                  App.saveCache(baseUrl, 'accounts', App.accounts)
+              }
               App.changeScriptType(App.scriptType)
 
               if (callback != null) {
@@ -4044,8 +4044,11 @@ https://github.com/Tencent/APIJSON/issues
                 App.onResponse(url, res, err)
 
                 item.isLoggedIn = false
-                App.saveCache(App.getBaseUrl(), 'currentAccountIndex', App.currentAccountIndex)
-                App.saveCache(App.getBaseUrl(), 'accounts', App.accounts)
+                baseUrl = App.getBaseUrl(vUrl.value)
+                if (StringUtil.isNotEmpty(baseUrl, true)) {
+                    App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+                    App.saveCache(baseUrl, 'accounts', App.accounts)
+                }
                 App.changeScriptType(App.scriptType)
 
                 if (callback != null) {
@@ -4070,9 +4073,9 @@ https://github.com/Tencent/APIJSON/issues
                 }
                 else {
                   var headers = res.headers || {}
-                  baseUrl = item.baseUrl || App.getBaseUrl()
+                  baseUrl = App.getBaseUrl(vUrl.value)
 
-                  item.baseUrl = baseUrl
+                  item.baseUrl = item.baseUrl || baseUrl
                   item.id = user.id
                   item.name = user.name
                   item.remember = data.remember
@@ -4081,8 +4084,12 @@ https://github.com/Tencent/APIJSON/issues
                   item.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
 
                   App.accounts[App.currentAccountIndex] = item
-                  App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-                  App.saveCache(baseUrl, 'accounts', App.accounts)
+
+                  if (StringUtil.isNotEmpty(baseUrl, true)) {
+                      App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+                      App.saveCache(baseUrl, 'accounts', App.accounts)
+                  }
+
                   App.changeScriptType(App.scriptType)
 
                   if (callback != null) {
@@ -4131,8 +4138,11 @@ https://github.com/Tencent/APIJSON/issues
           this.currentAccountIndex = this.accounts.length - 1
         }
 
-        this.saveCache(this.getBaseUrl(), 'currentAccountIndex', this.currentAccountIndex)
-        this.saveCache(this.getBaseUrl(), 'accounts', this.accounts)
+        baseUrl = this.getBaseUrl(vUrl.value)
+        if (StringUtil.isNotEmpty(baseUrl, true)) {
+            this.saveCache(baseUrl, 'currentAccountIndex', this.currentAccountIndex)
+            this.saveCache(baseUrl, 'accounts', this.accounts)
+        }
       },
       addAccountTab: function () {
         this.showLogin(true, false)
@@ -5321,6 +5331,7 @@ https://github.com/Tencent/APIJSON/issues
           const loginType = (isLoginShow ? this.type : curUser.loginType) || REQUEST_TYPE_JSON
           const loginUrl = (isLoginShow ? this.getBranchUrl() : curUser.loginUrl) || '/login'
           const loginReq = (isLoginShow ? this.getRequest(vInput.value) : curUser.loginReq) || req
+          const loginRandom = (isLoginShow ? vRandom.value : curUser.loginRandom) || ''
           const loginHeader = (isLoginShow ? this.getHeader(vHeader.value) : curUser.loginHeader) || {}
 
           function loginCallback(url, res, err, random) {
@@ -5328,7 +5339,7 @@ https://github.com/Tencent/APIJSON/issues
             if (callback) {
               callback(url, res, err)
             } else {
-              App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader)
+              App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginRandom, loginHeader)
             }
 
             if (App.prevUrl != null) {
@@ -5357,37 +5368,39 @@ https://github.com/Tencent/APIJSON/issues
 
           this.scripts = newDefaultScript()
 
-          this.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, loginReq, loginHeader, function (url, res, err) {
-            if (App.isEnvCompareEnabled != true) {
-              loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, loginReq, loginHeader)
-              return
-            }
+          this.parseRandom(loginReq, loginRandom, 0, true, false, false, function(randomName, constConfig, constJson) {
+              App.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, constJson, loginHeader, function (url, res, err) {
+                if (App.isEnvCompareEnabled != true) {
+                  loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, constJson, loginHeader)
+                  return
+                }
 
-            App.request(isAdminOperation, loginMethod, loginType, App.getBaseUrl(App.otherEnv) + loginUrl
-                , loginReq, loginHeader, function(url_, res_, err_) {
-                  var data = res_.data
-                  var user = JSONResponse.isSuccess(data) ? data.user : null
-                  if (user != null) {
-                    var headers = res.headers || {}
-                    App.otherEnvTokenMap[req.phone + '@' + baseUrl] = headers.token || headers.Token || data.token || data.Token || user.token || user.Token
-                    App.otherEnvCookieMap[req.phone + '@' + baseUrl] = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
-                    App.saveCache(App.otherEnv, 'otherEnvTokenMap', App.otherEnvTokenMap)
-                    App.saveCache(App.otherEnv, 'otherEnvCookieMap', App.otherEnvCookieMap)
-                  }
+                App.request(isAdminOperation, loginMethod, loginType, App.getBaseUrl(App.otherEnv) + loginUrl
+                    , loginReq, loginHeader, function(url_, res_, err_) {
+                      var data = res_.data
+                      var user = JSONResponse.isSuccess(data) ? data.user : null
+                      if (user != null) {
+                        var headers = res.headers || {}
+                        App.otherEnvTokenMap[req.phone + '@' + baseUrl] = headers.token || headers.Token || data.token || data.Token || user.token || user.Token
+                        App.otherEnvCookieMap[req.phone + '@' + baseUrl] = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
+                        App.saveCache(App.otherEnv, 'otherEnvTokenMap', App.otherEnvTokenMap)
+                        App.saveCache(App.otherEnv, 'otherEnvCookieMap', App.otherEnvCookieMap)
+                      }
 
-                  if (callback) {
-                    callback(url, res, err)
-                    return
-                  }
+                      if (callback) {
+                        callback(url, res, err)
+                        return
+                      }
 
-                  App.onResponse(url_, res_, err_);
-                  App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader)
-                }, App.scripts)
+                      App.onResponse(url_, res_, err_);
+                      App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, constJson, loginRandom, loginHeader)
+                    }, App.scripts)
+              })
           })
         }
       },
 
-      onLoginResponse: function(isAdmin, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginHeader) {
+      onLoginResponse: function(isAdmin, req, url, res, err, loginMethod, loginType, loginUrl, loginReq, loginRandom, loginHeader) {
         res = res || {}
         if (isAdmin) {
           var rpObj = res.data || {}
@@ -5446,6 +5459,7 @@ https://github.com/Tencent/APIJSON/issues
               loginType: loginType,
               loginUrl: loginUrl,
               loginReq: loginReq,
+              loginRandom: loginRandom,
               loginHeader: loginHeader,
               cookie: res.cookie || (res.headers || {}).cookie
             })
@@ -5457,9 +5471,12 @@ https://github.com/Tencent/APIJSON/issues
 
             App.currentAccountIndex = App.accounts.length - 1
 
-            var key = App.getBaseUrl(loginUrl)
-            App.saveCache(key, 'currentAccountIndex', App.currentAccountIndex)
-            App.saveCache(key, 'accounts', App.accounts)
+            baseUrl = App.getBaseUrl(vUrl.value)
+            if (StringUtil.isNotEmpty(baseUrl, true)) {
+//                var key = App.getBaseUrl(loginUrl)
+                App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
+                App.saveCache(baseUrl, 'accounts', App.accounts)
+            }
 
             App.listScript()
           }
@@ -6151,9 +6168,16 @@ https://github.com/Tencent/APIJSON/issues
         this.setBaseUrl()
         this.request(isAdminOperation, method, this.type, url, req, isAdminOperation ? {} : header, callback, caseScript, accountScript_, globalScript_, ignorePreScript)
 
+        var baseUrls = this.getCache('', 'baseUrls', [])
+        var bu = this.getBaseUrl(url)
+        if (baseUrls.indexOf(bu) < 0) {
+          baseUrls.push(bu)
+          this.saveCache('', 'baseUrls', baseUrls)
+        }
+
         this.locals = this.locals || []
         if (this.locals.length >= 1000) { //最多1000条，太多会很卡
-          this.locals.splice(999, this.locals.length - 999)
+          this.locals.splice(900, this.locals.length - 900)
         }
         var path = this.getMethod()
         this.locals.unshift({
