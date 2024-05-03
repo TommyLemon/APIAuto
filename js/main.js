@@ -1343,7 +1343,7 @@ https://github.com/Tencent/APIJSON/issues
       showUrl: function (isAdminOperation, branchUrl) {
         if (StringUtil.isEmpty(this.host, true)) {  //显示(可编辑)URL Host
           if (isAdminOperation != true) {
-            baseUrl = this.getBaseUrl(vUrl.value)
+            baseUrl = this.getBaseUrl(vUrl.value, true)
           }
           vUrl.value = (isAdminOperation ? this.server : baseUrl) + branchUrl
         }
@@ -1365,9 +1365,9 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
         // 重新拉取文档
-        var bu = this.getBaseUrl()
+        var bu = this.getBaseUrl(vUrl.value, true)
         if (baseUrl != bu) {
-          baseUrl = bu;
+          baseUrl = bu
           doc = null //这个是本地的数据库字典及非开放请求文档
           this.saveCache('', 'URL_BASE', baseUrl)
 
@@ -1381,6 +1381,12 @@ https://github.com/Tencent/APIJSON/issues
           var accounts = []
           if (StringUtil.isNotEmpty(bu, true)) {
             accounts = this.getCache(bu, 'accounts', [])
+//            for (var i = 0; i < accounts.length; i ++) {
+//               var ats = accounts[i]
+//               if (ats == null || (StringUtil.isNotEmpty(ats.baseUrl, true) && ats.baseUrl != bu)) {
+//
+//               }
+//            }
           }
           else {
               var baseUrls = this.getCache('', 'baseUrls', [])
@@ -1407,10 +1413,10 @@ https://github.com/Tencent/APIJSON/issues
         return url.replaceAll(' ', '')
       },
       //获取基地址
-      getBaseUrl: function (url_) {
+      getBaseUrl: function (url_, fixed) {
         var url = StringUtil.trim(url_ != undefined ? url_ : vUrl.value)
         var length = this.getBaseUrlLength(url)
-        if (length <= 0 && url_ == null) {
+        if (length <= 0 && url_ == undefined) {
           var account = this.getCurrentAccount()
           if (account != null) {
             return account.baseUrl || ''
@@ -1418,7 +1424,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         url = length <= 0 ? '' : url.substring(0, length)
-        return url // == '' ? URL_BASE : url
+        return url == '' ? (fixed != true ? URL_BASE : '') : url
       },
       //获取基地址长度，以://后的第一个/分割baseUrl和method
       getBaseUrlLength: function (url_) {
@@ -3993,6 +3999,44 @@ https://github.com/Tencent/APIJSON/issues
       },
 
 
+      saveAccounts: function() {
+          baseUrl = this.getBaseUrl()
+          this.saveCache(baseUrl, 'currentAccountIndex', this.currentAccountIndex)
+
+          var accounts = this.accounts || []
+          var accountMap = {}
+          for (var i = 0; i < accounts.length; i ++) {
+              var account = accounts[i]
+              if (account == null || account.phone == null) {
+                continue
+              }
+
+              var bu = account.baseUrl || baseUrl
+              var list = accountMap[bu] || []
+
+              var find = false
+              for (var j = 0; j < list.length; j ++) {
+                  var act = list[j]
+                  if (act == null) {
+                      continue
+                  }
+
+                  if (act.baseUrl == bu && act.phone == account.phone) {
+                      find = true
+                      break
+                  }
+              }
+
+              if (find != true) {
+                   list.push(account)
+                   accountMap[bu] = list
+              }
+          }
+
+          for (var k in accountMap) {
+              this.saveCache(k, 'accounts', accountMap[k])
+          }
+      },
 
       onClickAccount: function (index, item, callback) {
         var accounts = this.accounts
@@ -4005,11 +4049,8 @@ https://github.com/Tencent/APIJSON/issues
               App.onResponse(url, res, err)
 
               item.isLoggedIn = false
-              baseUrl = App.getBaseUrl(vUrl.value)
-              if (StringUtil.isNotEmpty(baseUrl, true)) {
-                  App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-                  App.saveCache(baseUrl, 'accounts', App.accounts)
-              }
+              App.saveAccounts()
+
               App.changeScriptType(App.scriptType)
 
               if (callback != null) {
@@ -4044,11 +4085,7 @@ https://github.com/Tencent/APIJSON/issues
                 App.onResponse(url, res, err)
 
                 item.isLoggedIn = false
-                baseUrl = App.getBaseUrl(vUrl.value)
-                if (StringUtil.isNotEmpty(baseUrl, true)) {
-                    App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-                    App.saveCache(baseUrl, 'accounts', App.accounts)
-                }
+                App.saveAccounts()
                 App.changeScriptType(App.scriptType)
 
                 if (callback != null) {
@@ -4084,11 +4121,7 @@ https://github.com/Tencent/APIJSON/issues
                   item.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
 
                   App.accounts[App.currentAccountIndex] = item
-
-                  if (StringUtil.isNotEmpty(baseUrl, true)) {
-                      App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-                      App.saveCache(baseUrl, 'accounts', App.accounts)
-                  }
+                  App.saveAccounts()
 
                   App.changeScriptType(App.scriptType)
 
@@ -4138,11 +4171,7 @@ https://github.com/Tencent/APIJSON/issues
           this.currentAccountIndex = this.accounts.length - 1
         }
 
-        baseUrl = this.getBaseUrl(vUrl.value)
-        if (StringUtil.isNotEmpty(baseUrl, true)) {
-            this.saveCache(baseUrl, 'currentAccountIndex', this.currentAccountIndex)
-            this.saveCache(baseUrl, 'accounts', this.accounts)
-        }
+        this.saveAccounts()
       },
       addAccountTab: function () {
         this.showLogin(true, false)
@@ -5470,14 +5499,7 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             App.currentAccountIndex = App.accounts.length - 1
-
-            baseUrl = App.getBaseUrl(vUrl.value)
-            if (StringUtil.isNotEmpty(baseUrl, true)) {
-//                var key = App.getBaseUrl(loginUrl)
-                App.saveCache(baseUrl, 'currentAccountIndex', App.currentAccountIndex)
-                App.saveCache(baseUrl, 'accounts', App.accounts)
-            }
-
+            App.saveAccounts()
             App.listScript()
           }
         }
@@ -9871,6 +9893,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var isChainShow = this.isChainShow
+        baseUrl = StringUtil.trim(this.getBaseUrl())
 
         for (var i = 0; i < list.length; i++) {
             const item = list[i]
@@ -9885,7 +9908,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             this.startTestSingle(list, allCount, i, item, isRandom, accountIndex, isCross, callback)
         }
-
       },
 
       startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback) {
