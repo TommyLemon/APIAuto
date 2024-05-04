@@ -1173,15 +1173,14 @@ https://github.com/Tencent/APIJSON/issues
       otherEnv: 'http://localhost:8080',  // 其它环境服务地址，用来对比当前的
       server: 'http://apijson.cn:9090', // 'http://localhost:8080', //  Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了
       // server: 'http://47.74.39.68:9090',  // apijson.org
-      // project: 'http://apijson.cn:8080',  // apijson.cn
+      projectHost: {host: 'http://apijson.cn:8080', project: 'APIJSON.cn'},  // apijson.cn
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
-      project: {name: 'APIJSON.cn', url: 'http://apijson.cn:8080'},
-      projects: [
-         {name: 'Localhost', url: 'http://localhost:8080'},
-         {name: 'APIJSON.cn', url: 'http://apijson.cn:8080'},
-         {name: 'APIJSON.cn:9090', url: 'http://apijson.cn:9090'}
+      projectHosts: [
+         {host: 'http://localhost:8080', project: 'Localhost'},
+         {host: 'http://apijson.cn:8080', project: 'APIJSON.cn'},
+         {host: 'http://apijson.cn:9090', project: 'APIJSON.cn:9090'}
       ],
       language: CodeUtil.LANGUAGE_KOTLIN,
       header: {},
@@ -2175,8 +2174,8 @@ https://github.com/Tencent/APIJSON/issues
       remove: function (item, index, isRemote, isRandom, isProject) {
         if (isRemote == null || isRemote == false) { //null != false
           if (isProject) {
-            this.projects.splice(index, 1)
-            this.saveCache('', 'projects', this.projects)
+            this.projectHosts.splice(index, 1)
+            this.saveCache('', 'projectHosts', this.projectHosts)
             return
           }
 
@@ -2369,6 +2368,106 @@ https://github.com/Tencent/APIJSON/issues
         // })
       },
 
+      onClickHost: function(index, item) {
+        this.projectHost = item = item || {}
+        this.isTestCaseShow = false
+
+        this.host = ''
+        var bu = this.getBranchUrl()
+
+        vUrl.value = item.host + bu
+        this.showUrl(false, bu)
+      },
+
+      listProjectHost: function() {
+        var req = {
+            'TestRecord[]': {
+                'count': 0,
+                'TestRecord': {
+                    '@column': 'DISTINCT host,project',
+                    '@from@': {
+                        'join': '&/Document',
+                        'TestRecord': {
+                            '@column': 'host,documentId',
+                            '@group': 'host,documentId',
+                            'host{}': 'length(host)>2'
+                        },
+                        'Document': {
+                            'id@': '/TestRecord/documentId',
+                            '@column': "ifnull(project,''):project",
+                            '@group': 'project',
+//                            'project{}': 'length(project)>0'
+                        }
+                    }
+                }
+            }
+        }
+
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+          var rpObj = res.data
+          if (JSONResponse.isSuccess(rpObj) != true) {
+            App.log(err != null ? err : (rpObj == null ? '' : rpObj.msg))
+            return
+          }
+
+          var projectHosts = App.getCache('', 'projectHosts', [])
+          var list = rpObj['TestRecord[]'] || []
+//          var phs = []
+//          for (var i = 0; i < list.length; i ++) {
+//            var item = list[i] || {}
+//            var host = (item.TestRecord || {}).host
+//            if (StringUtil.isEmpty(host, true)) {
+//              continue
+//            }
+//
+//            phs.push({ 'host': host, 'project': (item.Document || {}).project })
+//          }
+
+          App.projectHosts = projectHosts.concat(list)
+        })
+      },
+
+      syncProjectHost: function(index, item) {
+        var rawProject = item == null ? null : item.rawProject
+        var project = item == null ? null : item.project
+
+        var list = this.testCases
+        var count = list == null ? 0 : list.length
+        if (count <= 0) {
+          alert('没有可操作的用例！请先查询用例，保证有至少一个显示！')
+          return
+        }
+
+        var ids = []
+        for (var i = 0; i < count; i ++) {
+           var item = list[i]
+           var doc = item == null ? null : item.Document
+           var id = doc == null ? null : doc.id
+           if (id == null || id <= 0) {
+             continue
+           }
+
+           ids.push(id)
+        }
+
+        var req = {
+          'Document': {
+            'id{}': ids,
+            'project{}': [null, '', rawProject],
+            'project': project || ''
+          },
+          'tag': 'Document-project[]'
+        }
+
+        this.adminRequest('/put', req, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var rpObj = res.data
+          if (JSONResponse.isSuccess(rpObj)) {
+             App.listProjectHost()
+          }
+        })
+      },
+
       // 获取所有保存的json
       listHistory: function () {
         localforage.iterate(function (value, key, iterationNumber) {
@@ -2519,6 +2618,8 @@ https://github.com/Tencent/APIJSON/issues
             alert('请先登录！')
             return
           }
+
+          const project = (this.projectHost || {}).project
 
           const isExportRandom = this.isExportRandom
           const isExportScript = this.isExportScript
@@ -2759,6 +2860,7 @@ https://github.com/Tencent/APIJSON/issues
                 config: config
               },
               'TestRecord': {
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'chainGroupId': cgId,
                 'response': rawRspStr,
                 'standard': isML ? JSON.stringify(stddObj) : null
@@ -2768,6 +2870,7 @@ https://github.com/Tencent/APIJSON/issues
               format: false,
               'Document': isEditResponse ? null : {
                 'id': did == null ? undefined : did,
+                'project': StringUtil.isEmpty(project, true) ? null : project,
 //                'testAccountId': currentAccountId,
 //                'chainGroupId': cgId,
                 'operation': CodeUtil.getOperation(path, reqObj),
@@ -2885,38 +2988,40 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
       newAndUploadRandomConfig: function(baseUrl, req, documentId, config, count, callback, isReleaseRESTful) {
-                  if (documentId == null) {
-                     return
-                  }
-                  const isGenerate = StringUtil.isEmpty(config, true);
-                  var configs = isGenerate ? [] : [config]
-                  if (isGenerate) {
-                    var config = StringUtil.trim(this.newRandomConfig(null, '', req, false))
-                    if (StringUtil.isEmpty(config, true)) {
-                      return;
-                    }
-                    configs.push(config)
-                    config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
-                    if (StringUtil.isNotEmpty(config2, true)) {
-                      configs.push(config2)
-                    }
-                  }
-                  for (var i = 0; i < configs.length; i ++) {
-                      const config = configs[i]
-                      this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : this.server) + '/post', {
-                        format: false,
-                        Random: {
-                          documentId: documentId,
-                          count: count,
-                          name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
-                          config: config
-                        },
-                        TestRecord: {
-                          host: baseUrl,
-                          response: ''
-                        },
-                        tag: 'Random'
-                      }, {}, callback)
+        if (documentId == null) {
+          return
+        }
+        const isGenerate = StringUtil.isEmpty(config, true);
+        var configs = isGenerate ? [] : [config]
+        if (isGenerate) {
+          var config = StringUtil.trim(this.newRandomConfig(null, '', req, false))
+          if (StringUtil.isEmpty(config, true)) {
+            return;
+          }
+
+          configs.push(config)
+          config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
+          if (StringUtil.isNotEmpty(config2, true)) {
+            configs.push(config2)
+          }
+        }
+
+        for (var i = 0; i < configs.length; i ++) {
+          const config = configs[i]
+          this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : this.server) + '/post', {
+            format: false,
+            Random: {
+              documentId: documentId,
+              count: count,
+              name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
+              config: config
+            },
+            TestRecord: {
+              host: baseUrl,
+              response: ''
+            },
+            tag: 'Random'
+          }, {}, callback)
         }
       },
 
@@ -3917,7 +4022,7 @@ https://github.com/Tencent/APIJSON/issues
               } : undefined,
               'TestRecord': {
                 'randomId': 0,
-                'host': baseUrl,
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'testAccountId': currentAccountId,
                 'response': rspObj == null ? '' : JSON.stringify(rspObj, null, '    '),
                 'standard': standard == null ? '' : JSON.stringify(standard, null, '    '),
@@ -4272,6 +4377,8 @@ https://github.com/Tencent/APIJSON/issues
 
         var isMLEnabled = this.isMLEnabled
         var userId = this.User.id
+        var project = this.projectHost.project
+        baseUrl = this.getBaseUrl(vUrl.value, true)
 
         var key = groupId + ''
         var page = this.chainGroupPage = this.chainGroupPages[key] || 0
@@ -4309,6 +4416,7 @@ https://github.com/Tencent/APIJSON/issues
                 // '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
                 '@order': 'version-,date-',
                 'userId': userId,
+                'project': StringUtil.isEmpty(project, true) ? null : project,
                 'name$': search,
                 'operation$': search,
                 'url$': search,
@@ -4331,6 +4439,7 @@ https://github.com/Tencent/APIJSON/issues
                 'chainGroupId@': '/Chain/groupId',
                 'documentId@': '/Document/id',
                 'userId': userId,
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
 //                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
 //                'reportId': reportId <= 0 ? null : reportId,
@@ -4501,6 +4610,8 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
 
+        var project = (this.projectHost || {}).project
+
         var page = this.caseGroupPage = this.caseGroupPages[groupUrl] || 0
         var count = this.caseGroupCount = this.caseGroupCounts[groupUrl] || 0
         var search = this.caseGroupSearch = this.caseGroupSearches[groupUrl] || ''
@@ -4517,6 +4628,7 @@ https://github.com/Tencent/APIJSON/issues
                   '@raw': '@column',
                   '@column': "substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):groupUrl;group:groupName", // (CASE WHEN length(`group`) > 0 THEN `group` ELSE '-' END):name",
                   'userId': this.User.id,
+                  'project': StringUtil.isEmpty(project, true) ? null : project,
                   'group$': search,
                   'url$': search,
                   // 'url&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
@@ -4651,6 +4763,8 @@ https://github.com/Tencent/APIJSON/issues
             return;
           }
 
+          var project = (this.projectHost || {}).project
+
           // this.isTestCaseShow = false
           var reportId = this.reportId
 
@@ -4694,6 +4808,7 @@ https://github.com/Tencent/APIJSON/issues
                 // '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson,standard', // ;substr(url,' + (StringUtil.length(groupUrl) + 2) + '):substr',
                 '@order': 'version-,date-',
                 'userId': userId,
+                'project': StringUtil.isEmpty(project, true) ? null : project,
                 'name$': search,
                 'operation$': search,
                 'url$': search,
@@ -4718,6 +4833,7 @@ https://github.com/Tencent/APIJSON/issues
                 'chainGroupId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 'userId': userId,
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
 //                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
                 'reportId': reportId <= 0 ? null : reportId,
@@ -4955,6 +5071,7 @@ https://github.com/Tencent/APIJSON/issues
             ? null : '%' + StringUtil.trim(this.randomSearch) + '%')
 
           var url = this.server + '/get'
+          baseUrl = this.getBaseUrl(vUrl.value, true)
           const cri = this.currentRemoteItem || {}
           const chain = cri.Chain || {}
           const cgId = chain.groupId || 0
@@ -4973,7 +5090,7 @@ https://github.com/Tencent/APIJSON/issues
               'TestRecord': {
                 'randomId@': '/Random/id',
 //                'testAccountId': this.getCurrentAccountId(),
-                'host': this.getBaseUrl(),
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 '@order': 'date-'
               },
               '[]': isSub ? null : {
@@ -4989,7 +5106,7 @@ https://github.com/Tencent/APIJSON/issues
                 'TestRecord': {
                   'randomId@': '/Random/id',
 //                  'testAccountId': this.getCurrentAccountId(),
-                  'host': this.getBaseUrl(),
+                  'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                   '@order': 'date-'
                 }
               }
@@ -6210,25 +6327,25 @@ https://github.com/Tencent/APIJSON/issues
         if (StringUtil.isNotEmpty(bu, true) && baseUrls.indexOf(bu) < 0) {
           baseUrls.push(bu)
           this.saveCache('', 'baseUrls', baseUrls)
-          var projects = this.projects || []
-          var project = this.project || {}
+          var projectHosts = this.projectHosts || []
+          var projectHost = this.projectHost || {}
           var find = false
           for (var j = 0; j < projects.length; j ++) {
-              var pjt = projects[j]
-              if (pjt == null || StringUtil.isEmpty(pjt.url, true)) {
+              var pjt = projectHosts[j]
+              if (pjt == null || StringUtil.isEmpty(pjt.host, true)) {
                  continue
               }
 
-              if (pjt.url == project.url) {
+              if (pjt.url == projectHost.host) {
                   find = true
                   break
               }
           }
 
           if (find != true) {
-             projects.push({name: bu, url: bu})
-             this.projects = projects
-             this.saveCache('', 'projects', projects)
+             projectHosts.push({host: bu, project: projectHost.project})
+             this.projectHosts = projectHosts
+             this.saveCache('', 'projectHosts', projects)
           }
 
         }
@@ -6241,6 +6358,7 @@ https://github.com/Tencent/APIJSON/issues
         this.locals.unshift({
           'Document': {
             'userId': this.User.id,
+            'project': (this.projectHost || {}).project,
             'name': this.formatDateTime() + ' ' + (this.urlComment || StringUtil.trim(req.tag)),
             'operation': CodeUtil.getOperation(path, req),
             'method': method,
@@ -6252,6 +6370,10 @@ https://github.com/Tencent/APIJSON/issues
           }
         })
         this.saveCache('', 'locals', this.locals)
+      },
+
+      adminRequest: function (url, req, header, callback) {
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, url, req, header, callback)
       },
 
       //请求
@@ -6919,12 +7041,22 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        */
       doOnKeyUp: function (event, type, isFilter, item) {
         var keyCode = event.keyCode ? event.keyCode : (event.which ? event.which : event.charCode);
+        var isEnter = keyCode == 13
         if (type == 'option') {
-          if (keyCode == 13) {
+          if (isEnter) {
             this.selectInput(item);
           }
           return
         }
+
+        if (type == 'project') {
+          if (isEnter || item.host == (this.projectHost || {}).host) {
+            this.projectHost = {project: item.project}
+          }
+          return
+        }
+
+        var project = (this.projectHost || {}).project
 
         if (isFilter && type == 'caseGroup') {
           this.isCaseGroupEditable = true
@@ -6937,7 +7069,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.currentRemoteItem = null
         }
 
-        if (keyCode == 13) { // enter
+        if (isEnter) { // enter
           if (isFilter) {
             this.onFilterChange(type)
             return
@@ -7014,6 +7146,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     '@column': 'id,userId,version,date,name,operation,method,type,url,request,apijson',
                     '@order': 'version-,date-',
                     'userId': this.User.id,
+                    'project': StringUtil.isEmpty(project, true) ? null : project,
                     'name$': search,
                     'operation$': search,
                     'url$': search,
@@ -7073,6 +7206,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //修改 Document
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
               Document: {
+                'project': StringUtil.isEmpty(project, true) ? null : project,
                 'group': item.groupName,
                 '@raw': '@key',
                 '@key':"url:substr(url,1,length(url)-length(substring_index(url,'/',-1))-1)",
@@ -10858,6 +10992,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             const isNewRandom = isRandom && random.id <= 0
+            const baseUrl = this.getBaseUrl()
             const userId = this.User.id
             const cri = this.currentRemoteItem || {}
             const chain = cri.Chain || {}
@@ -10879,7 +11014,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               TestRecord: isDuration ? Object.assign(testRecord, {
                 id: undefined,
                 reportId: this.reportId,
-                host: this.getBaseUrl(),
+                host: baseUrl,
                 userId: userId,
                 testAccountId: this.getCurrentAccountId(),
                 chainGroupId: cgId,
@@ -10893,7 +11028,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 reportId: this.reportId,
-                host: this.getBaseUrl(),
+                host: baseUrl,
                 testAccountId: this.getCurrentAccountId(),
                 compare: JSON.stringify(testRecord.compare || {}),
                 response: rawRspStr,
@@ -12140,13 +12275,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           '\n} catch (e) {\n' + e.message)
       }
       try { //这里是初始化，不能出错
-        var projects = this.getCache('', 'projects')
-        if (projects != null && projects.length >= 1) {
-          this.projects = projects
+        var projectHosts = this.getCache('', 'projectHosts')
+        if (projectHosts != null && projectHosts.length >= 1) {
+          this.projectHosts = projectHosts
         }
       } catch (e) {
         console.log('created  try { ' +
-          '\nvar accounts = this.getCache(URL_BASE, accounts)' +
+          '\nvar projectHosts = this.getCache("", projectHosts)' +
           '\n} catch (e) {\n' + e.message)
       }
       try { //这里是初始化，不能出错
@@ -12241,9 +12376,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       }
 
       var isLoggedIn = this.User != null && this.User.id != null && this.User.id > 0
+      if (isLoggedIn) {
+          this.listProjectHost()
 
-      if (isLoggedIn && this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
-        this.selectCaseGroup(-1, null)
+          if (this.caseShowType != 1 && this.casePaths.length <= 0 && this.caseGroups.length <= 0) {
+            this.selectCaseGroup(-1, null)
+          }
       }
 
       var rawReq = getRequestFromURL()

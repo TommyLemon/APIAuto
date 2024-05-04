@@ -71,21 +71,26 @@
         <a class="logo" href="http://apijson.cn" target="_blank">
             <span class="on">APIAuto:</span>
         </a><span class="pop-btn">
-            <a href="javascript:void(0)" @click="window.open(project.url)" style="padding: 14px; margin-left: -20px; font-size: 24px">{{ project.name }}</a>
-            <ul class="projects pop" style="z-index: 200; width: 440px; right: -260px; padding-top: 50px; background: transparent">
-                   <li v-for="(item, index) in projects" style="background: white">
-                      <a style="padding: 0px; width: auto" href="javascript:void(0)" @click="host = ''; project = item || item.url; var bu = getBranchUrl(); vUrl.value = item.url + bu; showUrl(false, bu)"  > {{item.url + (StringUtil.isEmpty(item.name, true) ? '' : ' //')}}</a><input style="min-width: 60px; margin-left: 6px; margin-right: 6px" v-model="item.name" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
-
-                      <svg class="icon" @click="remove(item, index, false, false, true)" style="margin-top: 6px">
-                          <use xlink:href="svg/icon.svg#trash"></use>
-                      </svg>
-                   </li>
+            <a href="javascript:void(0)" @click="window.open(projectHost.host)" style="padding: 14px; margin-left: -20px; font-size: 24px">{{ StringUtil.isEmpty(projectHost.project, true) ? projectHost.host : projectHost.project }}</a>
+            <ul class="projects pop" style="overflow-y: scroll; z-index: 200; width: 440px; max-height: 600px; right: -260px; padding-top: 50px; background: transparent; outline: none; border: none;">
+                <li v-for="(item, index) in projectHosts" style="padding-left: 2px; background: white; border: none">
+                    <div style="margin-top:0px" >
+                        <input style="min-width: 90px; padding-top:0px; margin-right: 6px" v-model="item.project" @keyup="doOnKeyUp(event, 'project', false, item)" placeholder="输入项目名称后回车" />
+                        <a style="padding: 0px; width: auto; display: flex;flex-grow: 1" :style="{color: (item.host == projectHost.host || StringUtil.isEmpty(projectHost.host, true)) && (item.project == projectHost.project || StringUtil.isEmpty(projectHost.project, true)) ? 'red' : 'black'}" href="javascript:void(0)" @click="onClickHost(index, item)"  > {{item.host}}</a>
+                    </div>
+                    <a data-hint="同步所有接口" class="hint--left" @click="syncProjectHost(index, item)" style="top: 3px; right: -384px; position: absolute">
+                        <img style="width: 15px; height: 15px" src="img/refresh.png"/>
+                    </a>
+                    <svg class="icon" @click="remove(item, index, false, false, true)" style="top: 16px">
+                        <use xlink:href="svg/icon.svg#trash"></use>
+                    </svg>
+                </li>
             </ul>
         </span>
         <a v-show="isDelayShow" >2s</a>
 
 
-    <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=Tencent&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
+        <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=Tencent&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="160px" height="18px"></iframe>
 
         <!--只用60%避免拦截左右两侧View的触摸事件-->
         <div style="width: 40%;height: 100%;left: 30%;display: inline-block;text-align: center;position: fixed;padding-top: 10px">
