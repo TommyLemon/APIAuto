@@ -2063,10 +2063,11 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       // 显示删除弹窗
-      showDelete: function (show, item, index, isRandom) {
+      showDelete: function (show, item, index, isRandom, isChainGroup) {
         this.isDeleteShow = show
         this.isDeleteRandom = isRandom
-        this.exTxt.name = '请输入' + (isRandom ? '随机配置' : '接口') + '名来确认'
+        this.isDeleteChainGroup = isChainGroup
+        this.exTxt.name = '请输入' + (isRandom ? '随机配置' : (isChainGroup ? '分组' : '接口')) + '名来确认'
         if (isRandom) {
           this.currentRandomItem = Object.assign(item, {
             index: index
@@ -2082,15 +2083,16 @@ https://github.com/Tencent/APIJSON/issues
       // 删除接口文档
       deleteDoc: function () {
         var isDeleteRandom = this.isDeleteRandom
+        var isDeleteChainGroup = this.isDeleteChainGroup
         var item = (isDeleteRandom ? this.currentRandomItem : this.currentDocItem) || {}
-        var doc = (isDeleteRandom ? item.Random : item.Document) || {}
+        var doc = (isDeleteRandom ? item.Random : (isDeleteChainGroup ? item.Chain : item.Document)) || {}
 
-        var type = isDeleteRandom ? '随机配置' : '接口'
-        if (doc.id == null) {
+        var type = isDeleteRandom ? '随机配置' : (isDeleteChainGroup ? '分组' : '接口')
+        if ((isDeleteChainGroup && doc.groupId == null) || (isDeleteChainGroup != true && doc.id == null)) {
           alert('未选择' + type + '或' + type + '不存在！')
           return
         }
-        if (doc.name != this.exTxt.name) {
+        if ((isDeleteChainGroup && doc.groupName != this.exTxt.name) || (isDeleteChainGroup != true && doc.name != this.exTxt.name)) {
           alert('输入的' + type + '名和要删除的' + type + '名不匹配！')
           return
         }
@@ -2099,6 +2101,7 @@ https://github.com/Tencent/APIJSON/issues
 
         this.isTestCaseShow = false
         this.isRandomListShow = false
+        var isChainShow = this.isChainShow
 
         var url = this.server + '/delete'
         var req = isDeleteRandom ? {
@@ -2107,14 +2110,21 @@ https://github.com/Tencent/APIJSON/issues
             'id': doc.id
           },
           'tag': 'Random'
+        } : (isDeleteChainGroup || isChainShow ? {
+          format: false,
+          'Chain': {
+            'id': isDeleteChainGroup ? null : doc.id,
+            'groupId': isDeleteChainGroup ? doc.groupId : null
+          },
+          'tag': isDeleteChainGroup ? 'Chain-group' : 'Chain'
         } : {
           format: false,
           'Document': {
             'id': doc.id
           },
           'tag': 'Document'
-        }
-        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+        })
+        this.adminRequest(url, req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
 
           var rpObj = res.data || {}
@@ -2129,7 +2139,12 @@ https://github.com/Tencent/APIJSON/issues
               }
               // App.showRandomList(true, App.currentRemoteItem)
             }
-          } else {
+          }
+          else if (isDeleteChainGroup) {
+            App.chainGroups.splice(item.index, 1)
+            App.selectChainGroup(App.currentChainGroupIndex, null)
+          }
+          else {
             if (rpObj.Document != null && JSONResponse.isSuccess(rpObj.Document)) {
               App.remotes.splice(item.index, 1)
               App.showTestCase(true, App.isLocalShow)
@@ -2171,7 +2186,7 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       // 删除已保存的
-      remove: function (item, index, isRemote, isRandom, isProject) {
+      remove: function (item, index, isRemote, isRandom, isProject, isChainGroup) {
         if (isRemote == null || isRemote == false) { //null != false
           if (isProject) {
             this.projectHosts.splice(index, 1)
@@ -2194,7 +2209,7 @@ https://github.com/Tencent/APIJSON/issues
             return
           }
 
-          this.showDelete(true, item, index, isRandom)
+          this.showDelete(true, item, index, isRandom, isChainGroup)
         }
       },
 
@@ -4495,13 +4510,19 @@ https://github.com/Tencent/APIJSON/issues
             return
           }
 
-          App.chainGroups = data['[]'] || []
-          if (App.chainGroups.length > 0) {
-            App.currentChainGroupIndex = 0
-            App.chainPaths.push((App.chainGroups[0] || {}).Chain)
+          var chainGroups = App.chainGroups = data['[]'] || []
+          var count = chainGroups.length
+          var index = App.currentChainGroupIndex
+          if (index == null || index < 0 || index >= count) {
+             App.currentChainGroupIndex = index = 0
           }
 
-          App.remotes = App.testCases = (App.chainGroups[0] || {})['[]'] || []
+          var item = chainGroups[index] || {}
+          if (item.Chain != null) {
+            App.chainPaths.push(item.Chain)
+          }
+
+          App.remotes = App.testCases = item['[]'] || []
 //          App.showTestCase(true, false, null)
         })
       },
@@ -4545,6 +4566,11 @@ https://github.com/Tencent/APIJSON/issues
               alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
 
               App.isCaseGroupEditable = ! isOk
+              if (isOk) {
+//                App.remotes = App.testCases = []
+//                App.showTestCase(true, false, null)
+                App.selectChainGroup(App.currentChainGroupIndex, null)
+              }
             })
       },
 
@@ -4891,6 +4917,12 @@ https://github.com/Tencent/APIJSON/issues
           this.isLocalShow = false
           this.testCases = App.remotes = rpObj['[]']
           this.getCurrentRandomSummary().summaryType = 'total' // App.onClickSummary('total', true)
+          if (this.isChainShow && this.currentChainGroupIndex >= 0) {
+            var chain = this.chainGroups[this.currentChainGroupIndex]
+            if (chain != null) {
+              chain['[]'] = this.testCases
+            }
+          }
 
           if (IS_BROWSER) {
             vOutput.value = show ? '' : (output || '')
@@ -7373,7 +7405,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             this.saveCache(this.server, 'chainGroupCounts', this.chainGroupCounts)
             // this.saveCache(this.server, 'chainGroupSearches', this.chainGroupSearches)
 
-            this.selectChainGroup(-1, null)
+            this.selectChainGroup(this.currentChainGroupIndex, null)
           }
           else if (type == 'caseGroup') {
             this.caseGroupPages[groupKey] = this.caseGroupPage
