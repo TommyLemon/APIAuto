@@ -618,17 +618,26 @@ https://github.com/Tencent/APIJSON/issues
   var PRE_ARG = 'PRE_ARG' // PRE_ARG('[]/page')
   var PRE_RES = 'PRE_RES' // PRE_RES('[]/0/User/id')
   var PRE_DATA = 'PRE_DATA' // PRE_DATA('[]/0/User/id')
-  var PRE_EXT = 'PRE_EXT' // PRE_EXT('key')
+  var CTX_EXT = 'CTX_EXT' // CTX_EXT('key')
   var CUR_REQ = 'CUR_REQ' // CUR_REQ('User/id')
   var CUR_ARG = 'CUR_ARG' // CUR_REQ('User/id')
-  var CUR_PUT = 'CUR_PUT' // CUR_PUT('key', val)
+  var CUR_RES = 'CUR_RES' // CUR_RES('[]/0/User/id')
+  var CUR_DATA = 'CUR_DATA' // CUR_DATA('[]/0/User/id')
+  var CTX_PUT = 'CTX_PUT' // CTX_PUT('key', val)
 
-  function get4Path(obj, path, nullable) {
+  function get4Path(obj, path, defaultVal, msg) {
     var val = JSONResponse.getValByPath(obj, StringUtil.split(path, '/'))
-    if (val == null && nullable != true) {
-      throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！')
+    if (val == null && defaultVal == undefined) {
+      throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！' + StringUtil.get(msg))
     }
     return val
+  }
+
+  function put4Path(obj, key, val, msg) {
+    if (obj == null) {
+      throw new Error('obj = null ！不能 put ' + key + ' ！' + StringUtil.get(msg))
+    }
+    obj[key] = val
   }
 
   var RANDOM_DB = 'RANDOM_DB'
@@ -1451,7 +1460,7 @@ https://github.com/Tencent/APIJSON/issues
       },
       //获取操作方法
       getMethod: function (url, noQuery) {
-        var url = new String(url == null ? vUrl.value : url).trim()
+        var url = StringUtil.get(url == null ? vUrl.value : url).trim()
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
         index = noQuery ? url.indexOf("?") : -1
@@ -1461,7 +1470,7 @@ https://github.com/Tencent/APIJSON/issues
         return url.startsWith('/') ? url.substring(1) : url
       },
       getBranchUrl: function (url) {
-        var url = new String(url == null ? vUrl.value : url).trim()
+        var url = StringUtil.get(url == null ? vUrl.value : url).trim()
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url : '/' + url
@@ -1478,6 +1487,9 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       getRequest: function (json, defaultValue, isRaw) {  // JSON5 兜底，减少修改范围  , isSingle) {
+        if (JSONResponse.isString(json) != true) {
+          return json == null ? defaultValue : json
+        }
         var s = isRaw != true && isSingle ? this.switchQuote(json) : json; // this.toDoubleJSON(json, defaultValue);
         if (StringUtil.isEmpty(s, true)) {
           return defaultValue
@@ -1661,7 +1673,7 @@ https://github.com/Tencent/APIJSON/issues
           isClickSelectInput = false;
           // vOption.focusout()
 
-          if (this.isChainShow) {
+          if (this.isChainShow && this.isTestCaseShow) {
             this.addCase2Chain(item.value)
             return
           }
@@ -1942,7 +1954,7 @@ https://github.com/Tencent/APIJSON/issues
               break
             case 3:
               this.host = this.getBaseUrl()
-              this.showUrl(false, new String(vUrl.value).substring(this.host.length)) //没必要导致必须重新获取 Response，this.onChange(false)
+              this.showUrl(false, StringUtil.get(vUrl.value).substring(this.host.length)) //没必要导致必须重新获取 Response，this.onChange(false)
               break
             case 4:
               this.isHeaderShow = show
@@ -2010,7 +2022,7 @@ https://github.com/Tencent/APIJSON/issues
         }
         else if (index == 3) {
           var host = StringUtil.get(this.host)
-          var branch = new String(vUrl.value)
+          var branch = StringUtil.get(vUrl.value)
           this.host = ''
           vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = this.host (http://apijson.cn:8080/put /balance)
           this.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
@@ -2273,20 +2285,20 @@ https://github.com/Tencent/APIJSON/issues
             // var accountId = this.getCurrentAccountId();
             const cri = this.currentRemoteItem || {}
             const chain = cri.Chain || {}
-            const cgId = chain.groupId || 0
+            const cId = chain.id || 0
 
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, '/get', {
               'Script:pre': preId != null ? undefined : {
                 'ahead': 1,
                 // 'testAccountId': 0,
-                'chainGroupId': cgId,
+                'chainId': cId,
                 'documentId': docId,
                 '@order': 'date-'
               },
               'Script:post': postId != null ? undefined : {
                 'ahead': 0,
                 // 'testAccountId': 0,
-                'chainGroupId': cgId,
+                'chainId': cId,
                 'documentId': docId,
                 '@order': 'date-'
               }
@@ -2344,7 +2356,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         // localforage.getItem(item.key || '', function (err, value) {
-          var branch = new String(item.url || '/get')
+          var branch = StringUtil.get(item.url || '/get')
           if (branch.startsWith('/') == false) {
             branch = '/' + branch
           }
@@ -2645,6 +2657,7 @@ https://github.com/Tencent/APIJSON/issues
           const doc = cri.Document || {}
           const tr = cri.TestRecord || {}
           const cgId = chain.groupId || 0
+          const cId = chain.id || 0
           const did = isExportRandom && btnIndex == 1 ? null : doc.id
 
           if (isExportScript) {
@@ -2660,6 +2673,7 @@ https://github.com/Tencent/APIJSON/issues
                 'simple': 1,
                 'ahead': this.isPreScript ? 1 : 0,
                 'chainGroupId': cgId,
+                'chainId': cId,
                 'documentId': did == null || scriptType != 'case' ? 0 : did,
                 'testAccountId': scriptType != 'account' ? 0 : currentAccountId,
                 'name': extName,
@@ -2869,6 +2883,7 @@ https://github.com/Tencent/APIJSON/issues
               'Random': {
                 toId: 0,
                 chainGroupId: cgId,
+                chainId: cId,
                 documentId: did,
                 count: App.requestCount,
                 name: App.exTxt.name,
@@ -2877,6 +2892,7 @@ https://github.com/Tencent/APIJSON/issues
               'TestRecord': {
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'chainGroupId': cgId,
+                'chainId': cId,
                 'response': rawRspStr,
                 'standard': isML ? JSON.stringify(stddObj) : null
               },
@@ -4446,12 +4462,12 @@ https://github.com/Tencent/APIJSON/issues
               'Random':  {
 //                'id@': '/Chain/randomId',
                 'toId': 0,
-                'chainGroupId@': '/Chain/groupId',
+                'chainId@': '/Chain/id',
                 'documentId@': '/Document/id',
                 'userId': userId
               },
               'TestRecord': {
-                'chainGroupId@': '/Chain/groupId',
+                'chainId@': '/Chain/id',
                 'documentId@': '/Document/id',
                 'userId': userId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
@@ -4466,14 +4482,14 @@ https://github.com/Tencent/APIJSON/issues
               'Script:pre': {
                 'ahead': 1,
                 // 'testAccountId': 0,
-                'chainGroupId@': '/Chain/groupId',
+                'chainId@': '/Chain/id',
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               },
               'Script:post': {
                 'ahead': 0,
                 // 'testAccountId': 0,
-                'chainGroupId@': '/Chain/groupId',
+                'chainId@': '/Chain/id',
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               }
@@ -4521,8 +4537,8 @@ https://github.com/Tencent/APIJSON/issues
           if (item.Chain != null) {
             App.chainPaths.push(item.Chain)
           }
-
           App.remotes = App.testCases = item['[]'] || []
+          App.isTestCaseShow = true
 //          App.showTestCase(true, false, null)
         })
       },
@@ -4850,13 +4866,13 @@ https://github.com/Tencent/APIJSON/issues
               'Random':  isChainShow ? {
                 'id@': '/Chain/randomId',
                 'toId': 0, // isChainShow ? 0 : null,
-//                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
+//                'chainId@': isChainShow ? '/Chain/id' : null,
 //                'documentId@': isChainShow ? null : '/Document/documentId',
                 'userId': userId
               }: null,
               'TestRecord': {
-                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
-                'chainGroupId': isChainShow ? null : 0,
+                'chainId@': isChainShow ? '/Chain/id' : null,
+                'chainId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 'userId': userId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
@@ -4871,16 +4887,16 @@ https://github.com/Tencent/APIJSON/issues
               'Script:pre': {
                 'ahead': 1,
                 // 'testAccountId': 0,
-                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
-                'chainGroupId': isChainShow ? null : 0,
+                'chainId@': isChainShow ? '/Chain/id' : null,
+                'chainId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               },
               'Script:post': {
                 'ahead': 0,
                 // 'testAccountId': 0,
-                'chainGroupId@': isChainShow ? '/Chain/groupId' : null,
-                'chainGroupId': isChainShow ? null : 0,
+                'chainId@': isChainShow ? '/Chain/id' : null,
+                'chainId': isChainShow ? null : 0,
                 'documentId@': '/Document/id',
                 '@order': 'date-'
               }
@@ -5106,7 +5122,7 @@ https://github.com/Tencent/APIJSON/issues
           baseUrl = this.getBaseUrl(vUrl.value, true)
           const cri = this.currentRemoteItem || {}
           const chain = cri.Chain || {}
-          const cgId = chain.groupId || 0
+          const cId = chain.id || 0
 
           var req = {
             '[]': {
@@ -5114,7 +5130,7 @@ https://github.com/Tencent/APIJSON/issues
               'page': (isSub ? this.randomSubPage : this.randomPage) || 0,
               'Random': {
                 'toId': isSub ? item.id : 0,
-                'chainGroupId': cgId,
+                'chainId': cId,
                 'documentId': isSub ? null : item.id,
                 '@order': "date-",
                 'name$': search
@@ -5130,7 +5146,7 @@ https://github.com/Tencent/APIJSON/issues
                 'page': this.randomSubPage || 0,
                 'Random': {
                   'toId@': '[]/Random/id',
-                  'chainGroupId': cgId,
+                  'chainId': cId,
                   'documentId': item.id,
                   '@order': "date-",
                   'name$': subSearch
@@ -6036,7 +6052,7 @@ https://github.com/Tencent/APIJSON/issues
           return;
         }
 
-        inputted = new String(vInput.value);
+        inputted = StringUtil.get(vInput.value);
         vComment.value = '';
         vWarning.value = '';
         // vUrlComment.value = '';
@@ -6281,7 +6297,7 @@ https://github.com/Tencent/APIJSON/issues
       removeComment: function (json) {
         var reg = /("([^\\\"]*(\\.)?)*")|('([^\\\']*(\\.)?)*')|(\/{2,}.*?(\r|\n))|(\/\*(\n|.)*?\*\/)/g // 正则表达式
         try {
-          return new String(json).replace(reg, function(word) { // 去除注释后的文本
+          return StringUtil.get(json).replace(reg, function(word) { // 去除注释后的文本
             return /^\/{2,}/.test(word) || /^\/\*/.test(word) ? "" : word;
           })
         } catch (e) {
@@ -8659,7 +8675,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         if (typeof s != 'string') {
-          return new String(s)
+          return StringUtil.get(s)
         }
 
         //无效
@@ -9756,28 +9772,34 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             else {  //随机函数
               if (fun == PRE_REQ) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + (value == 'PRE_REQ()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_ARG) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + (value == 'PRE_ARG()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_RES) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + (value == 'PRE_RES()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == PRE_DATA) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + (value == 'PRE_DATA()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
-              else if (fun == PRE_EXT) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).ext, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+              else if (fun == CTX_GET) {
+                toEval = 'get4Path(((ctx || {}).pre || {}).ctx, ' + (value == 'CTX_GET()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+              }
+              else if (fun == CTX_PUT) {
+                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + (value == 'CTX_PUT()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CUR_REQ) {
-                toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + (value == 'CUR_REQ()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CUR_ARG) {
-                toEval = 'get4Path(((ctx || {}).cur || {}).arg, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path(((ctx || {}).cur || {}).arg, ' + (value == 'CUR_ARG()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
-              else if (fun == CUR_PUT) {
-                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + (value == ')' ? JSON.stringify(path) : '') + value.substring(start + 1);
+              else if (fun == CUR_RES) {
+                toEval = 'get4Path(((ctx || {}).cur || {}).res, ' + (value == 'CUR_RES()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+              }
+              else if (fun == CUR_DATA) {
+                toEval = 'get4Path(((ctx || {}).cur || {}).data, ' + (value == 'CUR_DATA()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else {
                   fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
@@ -9980,7 +10002,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         //   return
         // }
 
-        const list = (isRandom ? this.randoms : (this.isChainShow ? this.chainGroups : this.remotes)) || []
+        const list = (isRandom ? this.randoms : (this.isChainShow ? (
+            this.isChainGroupShow() ? this.chainGroups : [this.chainGroups[0]]
+          ) : this.remotes)
+        ) || []
+
         var allCount = list.length
         App.doneCount = 0
         App.deepAllCount = 0
@@ -11029,6 +11055,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const cri = this.currentRemoteItem || {}
             const chain = cri.Chain || {}
             const cgId = chain.groupId || 0
+            const cId = chain.id || 0
 
             //TODO 先检查是否有重复名称的！让用户确认！
             // if (isML != true) {
@@ -11038,6 +11065,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 toId: random.toId,
                 userId: userId,
                 chainGroupId: cgId,
+                chainId: cId,
                 documentId: random.documentId,
                 name: random.name,
                 count: random.count,
@@ -11050,6 +11078,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 userId: userId,
                 testAccountId: this.getCurrentAccountId(),
                 chainGroupId: cgId,
+                chainId: cId,
                 duration: item.duration,
                 minDuration: minDuration,
                 maxDuration: maxDuration,
@@ -11057,6 +11086,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }) : {
                 userId: userId,
                 chainGroupId: cgId,
+                chainId: cId,
                 documentId: isNewRandom ? null : (isRandom ? random.documentId : document.id),
                 randomId: isRandom && ! isNewRandom ? random.id : null,
                 reportId: this.reportId,
@@ -11629,25 +11659,45 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (App.isChainShow) {
                   App.options = [
                     {
-                      name: "PRE_RES('[]/0/User/id')",
+                      name: "PRE_DATA('[]/0/User/id')",
                       type: stringType,
-                      comment: "从上个请求的返回结果中取值 function(path:String)"
+                      comment: "从上个请求的返回结果中取值 function(path:String?, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "PRE_REQ('[]/page')",
+                      name: "PRE_ARG('[]/page')",
                       type: stringType,
-                      comment: "从上个请求的参数中取值 function(path:String)"
+                      comment: "从上个请求的参数中取值 function(path:String?, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "PRE_EXT('isMale')",
+                      name: "CTX_GET('userId')",
                       type: stringType,
-                      comment: "从上个请求的扩展对象中取值 function(path:String)"
+                      comment: "在上下文存放键值对 function(key:String?, defaultVal:Any?, msg:String?)"
+                    }, {
+                      name: "CTX_PUT('userId', 'User/id', 'CUR_DATA')",
+                      type: stringType,
+                      comment: "在上下文存放键值对 function(key:String, val:Any, from:String?, msg:String?)"
+                    }, {
+                      name: "PRE_RES('[]/page')",
+                      type: stringType,
+                      comment: "从上个请求的 Response 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
+                    }, {
+                      name: "PRE_REQ('isMale')",
+                      type: stringType,
+                      comment: "从上个请求 Request 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
+                    }, {
+                      name: "CUR_ARG('[]/count')",
+                      type: stringType,
+                      comment: "从当前请求的参数中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }, {
                       name: "CUR_REQ('[]/count')",
                       type: stringType,
-                      comment: "从当前请求的参数中取值 function(path:String)"
+                      comment: "从当前请求的 Request 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "CUR_PUT('isMale', true)",
+                      name: "CUR_DATA('[]/count')",
                       type: stringType,
-                      comment: "在当前请求的扩展对象中存放键值对 function(path:String, val:Any)"
+                      comment: "从当前请求的返回结果中取值 function(path:String?, defaultVal:Any?, msg:String?)"
+                    }, {
+                      name: "CUR_RES('[]/count')",
+                      type: stringType,
+                      comment: "从当前请求的 Response 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }
                   ].concat(App.options || [])
               }
@@ -11882,7 +11932,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   var isPage = key == 'page';
                   for (var i = 0; i < 100; i++) {
                     App.options.push({
-                      name: new String(i), // 直接用数字导致重复生成 JSON
+                      name: StringUtil.get(i), // 直接用数字导致重复生成 JSON
                       type: intType,
                       comment: isPage ? '分页页码' : '每页数量'
                     });

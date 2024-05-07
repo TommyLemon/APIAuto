@@ -1162,18 +1162,30 @@ var JSONResponse = {
 
   getType: function(o) { //typeof [] = 'object'
     if (o == null) {
-      return 'object';
+      return 'object'; // FIXME return null
     }
+
     if (o instanceof Array) {
       return 'array';
     }
 
-    var t = typeof o;
-    if (t == 'number' && Number.isInteger(o)) {
+    if (JSONResponse.isBoolean(o)) {
+      return 'boolean';
+    }
+
+    if (JSONResponse.isInteger(o)) {
       return 'integer';
     }
 
-    return t;
+    if (JSONResponse.isNumber(o)) {
+      return 'number';
+    }
+
+    if (JSONResponse.isString(o)) {
+      return 'string';
+    }
+
+    return typeof o;
   },
 
   isObject: function(o) {
@@ -1184,16 +1196,16 @@ var JSONResponse = {
     return o instanceof Array;
   },
   isString: function(o) {
-    return typeof o == 'string';
+    return typeof o == 'string' || o instanceof String;
   },
   isNumber: function(o) {
-    return typeof o == 'number';
+    return typeof o == 'number' || o instanceof Number;
   },
   isInteger: function(o) {
-    return JSONResponse.getType(o) == 'integer';
+    return Number.isInteger(o);
   },
   isBoolean: function(o) {
-    return typeof o == 'boolean';
+    return typeof o == 'boolean' || o instanceof Boolean;
   },
 
 

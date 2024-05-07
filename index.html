@@ -1038,7 +1038,7 @@ fun(true, 1, 'a'..);
   var vVerify = document.getElementById("vVerify");
   var vRemember = document.getElementById("vRemember");
 
-  vUrl.value = new String(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
+  vUrl.value = StringUtil.get(URL_BASE + '/get'); //main.js里访问不到，可能是script引用顺序问题
 
   var vRequestMarkdown = document.getElementById('vRequestMarkdown');
   var vMarkdown = document.getElementById('vMarkdown');

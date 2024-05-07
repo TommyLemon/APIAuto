@@ -7007,7 +7007,7 @@ res_data = rep.json()
       var verifyType = isSubquery != true && value != null;
 
       if (onlyTableAndColumn) {
-        key = new String(columnName);
+        key = StringUtil.get(columnName);
       }
       else {
         //功能符 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -7172,7 +7172,7 @@ res_data = rep.json()
         }
         else {
           fun = '';
-          key = new String(columnName);
+          key = StringUtil.get(columnName);
         }
 
 
