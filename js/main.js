@@ -618,7 +618,7 @@ https://github.com/Tencent/APIJSON/issues
   var PRE_ARG = 'PRE_ARG' // PRE_ARG('[]/page')
   var PRE_RES = 'PRE_RES' // PRE_RES('[]/0/User/id')
   var PRE_DATA = 'PRE_DATA' // PRE_DATA('[]/0/User/id')
-  var CTX_EXT = 'CTX_EXT' // CTX_EXT('key')
+  var CTX_GET = 'CTX_GET' // CTX_GET('key')
   var CUR_REQ = 'CUR_REQ' // CUR_REQ('User/id')
   var CUR_ARG = 'CUR_ARG' // CUR_REQ('User/id')
   var CUR_RES = 'CUR_RES' // CUR_RES('[]/0/User/id')
@@ -9784,10 +9784,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + (value == 'PRE_DATA()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CTX_GET) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).ctx, ' + (value == 'CTX_GET()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                toEval = 'get4Path((ctx || {}).ctx, ' + (value == 'CTX_GET()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CTX_PUT) {
-                toEval = 'put4Path(((ctx || {}).cur || {}).ctx, ' + (value == 'CTX_PUT()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                var as = StringUtil.split(value.substring(start + 1, end), ', ')
+                if (as.length >= 2) {
+                  as[1] = 'get4Path((ctx || {}).ctx, ' + StringUtil.trim(as[1]) + ')'
+                }
+                toEval = 'put4Path((ctx || {}).ctx, ' + (value == 'CTX_PUT()' ? JSON.stringify(path) : '') + as.join(', ') + value.substring(end);
               }
               else if (fun == CUR_REQ) {
                 toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + (value == 'CUR_REQ()' ? JSON.stringify(path) : '') + value.substring(start + 1);
@@ -10105,7 +10109,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                cur.res = res
                cur.data = res.data
                App.startTestChain(list, allCount, index + 1, list[index + 1], item, ctx, isRandom, accountIndex, isCross, callback)
-             })
+             }, ctx)
              return true
 //         })
       },
@@ -10138,7 +10142,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
-      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback) {
+      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback, ctx) {
           try {
             const isMLEnabled = this.isMLEnabled
             const standardKey = isMLEnabled != true ? 'response' : 'standard'
@@ -10192,7 +10196,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const curEnvUrl = baseUrl + document.url
             const cur = item
             const pre = list[index - 1] || {} // item.pre = item.pre || list[index - 1] || {}
-            const ctx = item.ctx = item.ctx || {}
+//            const ctx = item.ctx = item.ctx || {}
 
             var random = item.Random || {}
             this.parseRandom(req, random.config, random.id, true, false, false, function(randomName, constConfig, constJson) {
