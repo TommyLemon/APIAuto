@@ -6440,19 +6440,126 @@ https://github.com/Tencent/APIJSON/issues
         const timeout = timeout_ != null ? timeout_ : this.timeout
         const wait = wait_ != null ? wait_ : (this.wait || 0)
         var retry = retry_ != null ? retry_ : (this.retry || 0)
-        var retryReq = function () {
-          if (retry == null || retry <= 0) {
+
+        const onHttpResponse = function (res) {
+          App.currentHttpResponse = res
+          clearTimeout(errHandler)
+          var postEvalResult = evalPostScript(url, res, null)
+          if (postEvalResult == BREAK_ALL) {
+            return
+          }
+
+          App.loadingCount --
+          res = res || {}
+
+          if (isDelegate) {
+            var hs = res.headers || {}
+            var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
+
+            if (delegateId != null) {
+              if (isEnvCompare) {
+                if (delegateId != App.otherEnvDelegateId) {
+                  App.otherEnvDelegateId = delegateId
+                  App.saveCache(App.server, 'otherEnvDelegateId', delegateId)
+                }
+              } else {
+                if (delegateId != App.delegateId) {
+                  App.delegateId = delegateId
+                  App.saveCache(App.server, 'delegateId', delegateId)
+                }
+              }
+            }
+          }
+
+          //any one of then callback throw error will cause it calls then(null)
+          // if ((res.config || {}).method == 'options') {
+          //   return
+          // }
+          if (DEBUG) {
+            log('send >> success:\n' + JSON.stringify(res.data, null, '    '))
+          }
+
+          //未登录，清空缓存
+          if (res.data != null && res.data.code == 407) {
+            // alert('request res.data != null && res.data.code == 407 >> isAdminOperation = ' + isAdminOperation)
+            if (isAdminOperation) {
+              // alert('request App.User = {} App.server = ' + App.server)
+
+              App.clearUser()
+            }
+            else {
+              // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
+              var account = App.accounts[App.currentAccountIndex]
+              if (account != null) {
+                account.isLoggedIn = false
+              }
+            }
+          }
+
+          if (postEvalResult == BREAK_LAST) {
+            return
+          }
+
+          if (callback != null) {
+            callback(url, res, null)
+            return
+          }
+          App.onResponse(url, res, null)
+        }
+
+        const onHttpCatch = function (err) {
+          if (retry != null && retry > 0 && retryReq(err)) {
+            return;
+          }
+
+          var errObj = err instanceof Array == false && err instanceof Object ? err : {}
+          var res = {status: errObj.status || (errObj.response || {}).status, request: {url: url, headers: header, data: req}, data: (errObj.response || {}).data}
+          App.currentHttpResponse = res
+
+          var postEvalResult = evalPostScript(url, res, err)
+          if (postEvalResult == BREAK_ALL) {
+            return
+          }
+
+          App.loadingCount --
+
+          log('send >> error:\n' + err)
+          if (isAdminOperation) {
+            App.delegateId = null
+          }
+
+          if (postEvalResult == BREAK_LAST) {
+            return
+          }
+
+          if (callback != null) {
+            callback(url, res, err)
+            return
+          }
+
+          if (typeof App.autoTestCallback == 'function') {
+            App.autoTestCallback('Error when testing: ' + err + '.\nurl: ' + url + ' \nrequest: \n' + JSON.stringify(req, null, '    '), err)
+          }
+
+          App.onResponse(url, {request: {url: url, headers: header, data: req}}, err)
+        }
+
+        var retryReq = function (err) {
+          if (retry == null || retry < 0) {
+            onHttpCatch(err)
             return false
           }
 
           retry --
           try {
-            sendRequest(isAdminOperation, method, type, url, req, header, callback)
+            setTimeout(function () {
+              sendRequest(isAdminOperation, method, type, url, req, header, callback)
+            }, wait < 0 ? 0 : wait)
           } catch (e) {
             App.log('request retryReq retry = ' + retry + ' >> try {\n' +
                 '            sendRequest(isAdminOperation, method, type, url, req, header, callback)\n' +
                 '          } catch (e) = ' + e.message)
-            return retryReq()
+            return retryReq(err)
           }
 
           return true
@@ -6511,107 +6618,8 @@ https://github.com/Tencent/APIJSON/issues
             // crossDomain: true
             timeout: timeout
           })
-            .then(function (res) {
-              App.currentHttpResponse = res
-              clearTimeout(errHandler)
-              var postEvalResult = evalPostScript(url, res, null)
-              if (postEvalResult == BREAK_ALL) {
-                return
-              }
-
-              App.loadingCount --
-              res = res || {}
-
-              if (isDelegate) {
-                var hs = res.headers || {}
-                var delegateId = hs['Apijson-Delegate-Id'] || hs['apijson-delegate-id']
-
-                if (delegateId != null) {
-                  if (isEnvCompare) {
-                    if (delegateId != App.otherEnvDelegateId) {
-                      App.otherEnvDelegateId = delegateId
-                      App.saveCache(App.server, 'otherEnvDelegateId', delegateId)
-                    }
-                  } else {
-                    if (delegateId != App.delegateId) {
-                      App.delegateId = delegateId
-                      App.saveCache(App.server, 'delegateId', delegateId)
-                    }
-                  }
-                }
-              }
-
-              //any one of then callback throw error will cause it calls then(null)
-              // if ((res.config || {}).method == 'options') {
-              //   return
-              // }
-              if (DEBUG) {
-                log('send >> success:\n' + JSON.stringify(res.data, null, '    '))
-              }
-
-              //未登录，清空缓存
-              if (res.data != null && res.data.code == 407) {
-                // alert('request res.data != null && res.data.code == 407 >> isAdminOperation = ' + isAdminOperation)
-                if (isAdminOperation) {
-                  // alert('request App.User = {} App.server = ' + App.server)
-
-                  App.clearUser()
-                }
-                else {
-                  // alert('request App.accounts[App.currentAccountIndex].isLoggedIn = false ')
-                  var account = App.accounts[App.currentAccountIndex]
-                  if (account != null) {
-                    account.isLoggedIn = false
-                  }
-                }
-              }
-
-              if (postEvalResult == BREAK_LAST) {
-                return
-              }
-
-              if (callback != null) {
-                callback(url, res, null)
-                return
-              }
-              App.onResponse(url, res, null)
-            })
-            .catch(function (err) {
-              if (retryReq()) {
-                return;
-              }
-
-              var errObj = err instanceof Array == false && err instanceof Object ? err : {}
-              var res = {status: errObj.status || (errObj.response || {}).status, request: {url: url, headers: header, data: req}, data: (errObj.response || {}).data}
-              App.currentHttpResponse = res
-
-              var postEvalResult = evalPostScript(url, res, err)
-              if (postEvalResult == BREAK_ALL) {
-                return
-              }
-
-              App.loadingCount --
-
-              log('send >> error:\n' + err)
-              if (isAdminOperation) {
-                App.delegateId = null
-              }
-
-              if (postEvalResult == BREAK_LAST) {
-                return
-              }
-
-              if (callback != null) {
-                callback(url, res, err)
-                return
-              }
-
-              if (typeof App.autoTestCallback == 'function') {
-                App.autoTestCallback('Error when testing: ' + err + '.\nurl: ' + url + ' \nrequest: \n' + JSON.stringify(req, null, '    '), err)
-              }
-
-              App.onResponse(url, {request: {url: url, headers: header, data: req}}, err)
-            })
+            .then(onHttpResponse)
+            .catch(onHttpCatch)
         }
 
         var evalScript = isAdminOperation || caseScript_ == null ? function () {} : function (isPre, code, res, err) {
@@ -6803,9 +6811,7 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
 
-        setTimeout(function () {
-          sendRequest(isAdminOperation, method, type, url, req, header, callback)
-        }, wait < 0 ? 0 : wait)
+        retryReq()
       },
 
 
