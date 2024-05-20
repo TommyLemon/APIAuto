@@ -1081,6 +1081,8 @@ https://github.com/Tencent/APIJSON/issues
       scriptType: 'case',
       scriptBelongId: 0,
       scripts: newDefaultScript(),
+      wait: 0, // 每个请求前的等待延迟
+      timeout: null, // 每个请求的超时时间
       loadingCount: 0,
       isPreScript: true,
       isRandomTest: false,
@@ -6378,7 +6380,7 @@ https://github.com/Tencent/APIJSON/issues
           var projectHosts = this.projectHosts || []
           var projectHost = this.projectHost || {}
           var find = false
-          for (var j = 0; j < projects.length; j ++) {
+          for (var j = 0; j < projectHosts.length; j ++) {
               var pjt = projectHosts[j]
               if (pjt == null || StringUtil.isEmpty(pjt.host, true)) {
                  continue
@@ -6393,7 +6395,7 @@ https://github.com/Tencent/APIJSON/issues
           if (find != true) {
              projectHosts.push({host: bu, project: projectHost.project})
              this.projectHosts = projectHosts
-             this.saveCache('', 'projectHosts', projects)
+             this.saveCache('', 'projectHosts', projectHosts)
           }
 
         }
@@ -6425,7 +6427,7 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       //请求
-      request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript) {
+      request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript, timeout_, wait_) {
         this.loadingCount ++
 
         const isEnvCompare = this.isEnvCompareEnabled
@@ -6434,6 +6436,8 @@ https://github.com/Tencent/APIJSON/issues
         const globalScript = (isAdminOperation ? null : (globalScript_ != null ? globalScript_ : (scripts.global || {})[0])) || {}
         const accountScript = (isAdminOperation ? null : (accountScript_ != null ? accountScript_ : (scripts.account || {})[this.getCurrentAccountId() || 0])) || {}
         const caseScript = (isAdminOperation ? null : caseScript_) || {}
+        const timeout = timeout_ != null ? timeout_ : this.timeout
+        const wait = wait_ != null ? wait_ : (this.wait || 0)
 
         var evalPostScript = function () {}
 
@@ -6486,6 +6490,7 @@ https://github.com/Tencent/APIJSON/issues
             headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
             withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
             // crossDomain: true
+            timeout: timeout
           })
             .then(function (res) {
               App.currentHttpResponse = res
@@ -6775,7 +6780,9 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
 
-        sendRequest(isAdminOperation, method, type, url, req, header, callback)
+        setTimeout(function () {
+          sendRequest(isAdminOperation, method, type, url, req, header, callback)
+        }, wait < 0 ? 0 : wait)
       },
 
 

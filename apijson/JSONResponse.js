@@ -1613,7 +1613,7 @@ var JSONResponse = {
             try {
               var n = Number.parseInt(k);
               if (Number.isSafeInteger(n)) {
-                k = n > 0 ? n : n + tgt.length;
+                k = n >= 0 ? n : n + tgt.length;
               }
             } catch (e) {
             }
