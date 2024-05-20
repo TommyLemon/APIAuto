@@ -1081,6 +1081,7 @@ https://github.com/Tencent/APIJSON/issues
       scriptType: 'case',
       scriptBelongId: 0,
       scripts: newDefaultScript(),
+      retry: 0, // 每个请求前的等待延迟
       wait: 0, // 每个请求前的等待延迟
       timeout: null, // 每个请求的超时时间
       loadingCount: 0,
@@ -6427,7 +6428,7 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       //请求
-      request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript, timeout_, wait_) {
+      request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript, timeout_, wait_, retry_) {
         this.loadingCount ++
 
         const isEnvCompare = this.isEnvCompareEnabled
@@ -6438,6 +6439,24 @@ https://github.com/Tencent/APIJSON/issues
         const caseScript = (isAdminOperation ? null : caseScript_) || {}
         const timeout = timeout_ != null ? timeout_ : this.timeout
         const wait = wait_ != null ? wait_ : (this.wait || 0)
+        var retry = retry_ != null ? retry_ : (this.retry || 0)
+        var retryReq = function () {
+          if (retry == null || retry <= 0) {
+            return false
+          }
+
+          retry --
+          try {
+            sendRequest(isAdminOperation, method, type, url, req, header, callback)
+          } catch (e) {
+            App.log('request retryReq retry = ' + retry + ' >> try {\n' +
+                '            sendRequest(isAdminOperation, method, type, url, req, header, callback)\n' +
+                '          } catch (e) = ' + e.message)
+            return retryReq()
+          }
+
+          return true
+        }
 
         var evalPostScript = function () {}
 
@@ -6558,6 +6577,10 @@ https://github.com/Tencent/APIJSON/issues
               App.onResponse(url, res, null)
             })
             .catch(function (err) {
+              if (retryReq()) {
+                return;
+              }
+
               var errObj = err instanceof Array == false && err instanceof Object ? err : {}
               var res = {status: errObj.status || (errObj.response || {}).status, request: {url: url, headers: header, data: req}, data: (errObj.response || {}).data}
               App.currentHttpResponse = res
