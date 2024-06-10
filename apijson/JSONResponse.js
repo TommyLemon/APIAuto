@@ -1764,10 +1764,26 @@ var JSONResponse = {
     if (tgt == null) {
       tgt = {};
     }
-    var startsWithQuestion = comment.startsWith('?')
-    tgt.type = JSONResponse.getType(real);
-    tgt.notNull = real != null && startsWithQuestion != true
-    tgt.comment = startsWithQuestion ? comment.substring(1) : comment
+    var ind = comment.indexOf(', ')
+    if (ind < 0) {
+      ind = comment.indexOf(',')
+    }
+
+    var prefix = ind <= 0 ? '' : comment.substring(0, ind).trim()
+    comment = ind < 0 ? comment : comment.substring(ind + 1)
+    var nullable = prefix.endsWith('?')
+    var notEmpty = prefix.endsWith('!')
+    var name = nullable || notEmpty ? prefix.substring(0, prefix.length - 1) : prefix
+    if (StringUtil.isName(name)) {
+       tgt.name = name
+    } else {
+       nullable = notEmpty = null
+    }
+
+    tgt.type = JSONResponse.getType(real)
+    tgt.notNull = notEmpty == true || nullable == false || (nullable == null && real != null)
+    tgt.notEmpty = notEmpty == true || (notEmpty == null && StringUtil.isNotEmpty(real))
+    tgt.comment = comment
 
     return target;
   },

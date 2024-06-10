@@ -4467,7 +4467,8 @@ https://github.com/Tencent/APIJSON/issues
                 'toId': 0,
                 'chainId@': '/Chain/id',
                 'documentId@': '/Document/id',
-                'userId': userId
+                'userId': userId,
+                '@order': 'date-'
               },
               'TestRecord': {
                 'chainId@': '/Chain/id',
@@ -9825,7 +9826,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               else if (fun == CTX_PUT) {
                 var as = StringUtil.split(value.substring(start + 1, end), ', ')
                 if (as.length >= 2) {
-                  as[1] = 'get4Path((ctx || {}).ctx, ' + StringUtil.trim(as[1]) + ')'
+                  as[1] = 'get4Path(((ctx || {}).pre || {}).data, ' + StringUtil.trim(as[1]) + ')'
                 }
                 toEval = 'put4Path((ctx || {}).ctx, ' + (value == 'CTX_PUT()' ? JSON.stringify(path) : '') + as.join(', ') + value.substring(end);
               }
@@ -10043,7 +10044,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // }
 
         const list = (isRandom ? this.randoms : (this.isChainShow ? (
-            this.isChainGroupShow() ? this.chainGroups : [this.chainGroups[0]]
+            this.isChainGroupShow() ? this.chainGroups : [this.chainGroups[this.currentChainGroupIndex]]
           ) : this.remotes)
         ) || []
 
@@ -10339,7 +10340,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (isRandom) {
             stdd = stdd || ((this.currentRemoteItem || {}).TestRecord || {})[standardKey]
           }
-          
+
           var standard = typeof stdd != 'string' ? stdd : (StringUtil.isEmpty(stdd, true) ? null : JSON.parse(stdd))
           tr.compare = JSONResponse.compareResponse(res, standard, this.removeDebugInfo(response) || {}, '', isML, null, null, ignoreTrend) || {}
           tr.compare.duration = it.durationHint
