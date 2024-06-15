@@ -173,11 +173,11 @@
             <!--<use xlink:href="svg/icon.svg#share"></use>-->
             <!--</svg>-->
 
-            <a style="color: black; font-weight: bold; margin-right: 0px; padding-right: 0px" class="hint--top save-tool" data-hint="切换显示本地|远程" href="javascript:void(0)" @click="onClickPathRoot()">测试用例:{{ isLocalShow ? '本地历史' : (isChainShow ? '场景串联' : '远程在线') }}</a>
-            <div v-show="! isLocalShow" v-for="(item, index) in casePaths" style="display: inline-block; padding-left: 0px; margin-left: 0px;" >
+            <a style="color: black; font-weight: bold; margin-right: 0px; padding-right: 0px" class="hint--top save-tool" data-hint="切换 远程|场景|本地" href="javascript:void(0)" @click="onClickPathRoot()">测试用例:{{ isLocalShow ? '本地历史' : (isChainShow ? '场景串联' : '远程在线') }}</a>
+            <div v-show="! (isLocalShow || (isChainShow && isChainGroupShow()))" v-for="(item, index) in casePaths" style="display: inline-block; padding-left: 0px; margin-left: 0px;" >
                 <a style="color: gray; padding: 0px; margin: 0px">/</a><a style="color: black; outline: none; border: none; padding: 0px; margin: 0px" href="javascript:void(0)" @click="onClickPath(index, item)">{{ getCaseGroupShowName(index, item) }}</a>
             </div>
-            <a style="color: black; font-weight: bold; padding-left: 0px" class="hint--top save-tool" data-hint="切换显示分组|用例" href="javascript:void(0)" @click="switchCaseShowType()">{{ '(' + (isCaseGroupShow() && ! isLocalShow ? (caseGroups == null ? 0 : caseGroups.length) : '') + (caseShowType == 0 && isCaseGroupShow() && ! isLocalShow ? '|' : '') + (caseShowType == 2 && ! isLocalShow && isCaseGroupShow() ? '' : (testCases == null ? 0 : testCases.length)) + ')' }}</a>
+            <a style="color: black; font-weight: bold; padding-left: 0px" class="hint--top save-tool" data-hint="切换显示分组|用例" href="javascript:void(0)" @click="switchCaseShowType()">{{ getCaseCountStr() }}</a>
             <div style="display: inline-flex; flex-grow: 1;"></div>
 
             <a v-show="! isLocalShow" class="hint--top save-tool" data-hint="点击切换" href="javascript:void(0)" @click="enableML(! isMLEnabled)">{{ testProcess }}</a>
@@ -230,29 +230,29 @@
                     </div>
                 </div>
 
-                    <div v-show="isChainShow && isChainGroupShow() && ! isLocalShow" :style="{width: chainShowType == 0 ? '40%' : '100%', 'border-right': chainShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
-                        <input id="vChainGroupAdd" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainGroupAdd', false, {'groupName': vChainGroupAdd.value})" placeholder="输入名称，回车来添加" />
+                <div v-show="isChainShow && isChainGroupShow() && ! isLocalShow" :style="{width: chainShowType == 0 ? '40%' : '100%', 'border-right': chainShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
+                    <input id="vChainGroupAdd" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainGroupAdd', false, {'groupName': vChainGroupAdd.value})" placeholder="输入名称，回车来添加" />
 
-                        <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
-                            <li v-for="(item, index) in chainGroups" :id="'chainGroup' + index" >
-                                <div style="display: inline-table; width: 100%">
-                                    <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.Chain.groupName" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
-                                    <a href="javascript:void(0)" @click="selectChainGroup(index, item.Chain)" :style="{ color: index == currentChainGroupIndex ? 'black' : 'gray' }" >{{ isCaseGroupEditable ? '' : item.Chain.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
-                                    <svg class="icon" @click="remove(item, index, true, false, false, true)" style="background-color: white; width: 27px; height: 18px; right: -2px; top: 10px; padding-left: 3px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px;" >
-                                        <use xlink:href="svg/icon.svg#trash"></use>
-                                    </svg>
-                                </div>
-                            </li>
-                        </ul>
+                    <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
+                        <li v-for="(item, index) in chainGroups" :id="'chainGroup' + index" >
+                            <div style="display: inline-table; width: 100%">
+                                <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.Chain.groupName" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
+                                <a href="javascript:void(0)" @click="selectChainGroup(index, item.Chain)" :style="{ color: index == currentChainGroupIndex ? 'black' : 'gray' }" >{{ isCaseGroupEditable ? '' : item.Chain.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
+                                <svg class="icon" @click="remove(item, index, true, false, false, true)" style="background-color: white; width: 27px; height: 18px; right: -2px; top: 10px; padding-left: 3px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px;" >
+                                    <use xlink:href="svg/icon.svg#trash"></use>
+                                </svg>
+                            </div>
+                        </li>
+                    </ul>
 
-                        <div style="bottom: 0px; padding: 4px 10px 4px 10px; position: absolute; background-color: white; z-index: 102">
-                            <button @click="pageDown('chainGroup')"><</button>
-                            <input id="vChainGroupPage" v-model="chainGroupPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="页码" />
-                            <button @click="pageUp('chainGroup')">></button>
-                            <input id="vChainGroupCount" v-model="chainGroupCount" style="width: 33px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="条数" />
-                            <input id="vChainGroupSearch" v-model="chainGroupSearch" style="width: 72px; text-align: center" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="搜索|编辑" />
-                        </div>
+                    <div style="bottom: 0px; padding: 4px 10px 4px 10px; position: absolute; background-color: white; z-index: 102">
+                        <button @click="pageDown('chainGroup')"><</button>
+                        <input id="vChainGroupPage" v-model="chainGroupPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="页码" />
+                        <button @click="pageUp('chainGroup')">></button>
+                        <input id="vChainGroupCount" v-model="chainGroupCount" style="width: 33px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="条数" />
+                        <input id="vChainGroupSearch" v-model="chainGroupSearch" style="width: 72px; text-align: center" @keyup="doOnKeyUp(event, 'chainGroup', true)" placeholder="搜索|编辑" />
                     </div>
+                </div>
 
 
                 <div v-show="isLocalShow || isCaseItemShow()" :style="{width: isCaseGroupShow() && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;">

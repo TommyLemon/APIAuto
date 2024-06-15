@@ -4396,10 +4396,10 @@ https://github.com/Tencent/APIJSON/issues
             this.chainPaths = []
           }
         } else {
-          this.chainPaths.push(group)
+          this.chainPaths = [group] // .push(group)
         }
 
-//        this.casePaths = this.chainPaths
+       this.casePaths = this.chainPaths
 
         var groupId = group == null ? 0 : group.groupId
         if (groupId != null && groupId > 0) { // group != null && groupId == 0) {
@@ -4778,6 +4778,32 @@ https://github.com/Tencent/APIJSON/issues
         else {
           this.selectCaseGroup(-1, null)
         }
+      },
+
+      getCaseCountStr: function() {
+        var isChainShow = this.isChainShow
+        var isCaseGroupShow = this.isCaseGroupShow()
+        var isLocalShow = this.isLocalShow
+        var caseShowType = this.caseShowType
+        var caseGroups = (isChainShow ? this.chainGroups : this.caseGroups) || []
+        var testCases = this.testCases || []
+
+        if (isLocalShow) {
+          return '(' + testCases.length + ')'
+        }
+
+        return '(' + (isCaseGroupShow ? caseGroups.length : '')
+            + (caseShowType == 0 && isCaseGroupShow ? '|' : '')
+            + (caseShowType == 2 && (isCaseGroupShow) ? '' : testCases.length) + ')';
+
+        // 以下代码不知道为啥结果显示不对
+        // var isCaseGroupShow = this.isCaseGroupShow()
+        // var isCaseItemShow = this.isCaseItemShow()
+        // var caseGroups = (this.isChainShow ? this.chainGroups : this.caseGroups) || []
+        //
+        // return '(' + (isCaseGroupShow ? caseGroups.length : '')
+        //     + (isCaseGroupShow && isCaseItemShow ? '|' : '')
+        //     + (isCaseItemShow ? '' : testCases.length) + ')';
       },
 
       //显示远程的测试用例文档
