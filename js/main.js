@@ -1670,9 +1670,13 @@ https://github.com/Tencent/APIJSON/issues
           this.options = [];
 
           target.focus();
-          selectionStart = target.selectionStart = selectionEnd + (isClickSelectInput ? (name.length - (isValue ? 4 : 0)) : 0)
-            + (isValue ? (after.startsWith(',') ? 1 : 0) : (target == vInput || target == vScript ? 3 : 2));
-          selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
+          try {
+            selectionStart = target.selectionStart = selectionEnd + (isClickSelectInput ? (name.length - (isValue ? 4 : 0)) : 0)
+                + (isValue ? (after.startsWith(',') ? 1 : 0) : (target == vInput || target == vScript ? 3 : 2));
+            selectionEnd = target.selectionEnd = selectionStart + (isValue ? 0 : 4)
+          } catch (e) {
+            console.log(e)
+          }
           isClickSelectInput = false;
           // vOption.focusout()
 
@@ -4125,7 +4129,7 @@ https://github.com/Tencent/APIJSON/issues
         if (date == null) {
           date = new Date()
         }
-        return this.fillZero(date.getHours()) + ':' + this.fillZero(date.getMinutes())
+        return this.fillZero(date.getHours()) + ':' + this.fillZero(date.getMinutes()) + ':' + this.fillZero(date.getSeconds())
       },
       formatDateTime: function (date) {
         if (date == null) {
@@ -4386,6 +4390,7 @@ https://github.com/Tencent/APIJSON/issues
       },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
+        this.currentDocIndex = -1
         this.isCaseGroupEditable = false
 
         if (group == null) {
@@ -4441,8 +4446,8 @@ https://github.com/Tencent/APIJSON/issues
               'Chain': {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId@': '[]/Chain/groupId',
-                '@column': "id,groupId,documentId,randomId",
-                '@order': 'id+',
+                '@column': "id,groupId,documentId,randomId,rank",
+                '@order': 'rank+,id+',
                 'documentId>': 0
               },
               'Document': {
@@ -4548,50 +4553,55 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       addCase2Chain: function (item) {
-            var id = item == null ? null : item.id
-            if (id == null || id <= 0) {
-              alert('请选择有效的用例！')
-              return
-            }
+        var id = item == null ? null : item.id
+        if (id == null || id <= 0) {
+          alert('请选择有效的用例！')
+          return
+        }
 
-            var group = (this.chainGroups[this.currentChainGroupIndex] || {}).Chain
-            if (group == null) {
-              var index = this.chainPaths.length - 1
-              group = this.chainPaths[index]
-            }
-            var groupId = group == null ? 0 : group.groupId
-            if (groupId == null || groupId <= 0) {
-              alert('请选择有效的场景串联用例分组！')
-              return
-            }
+        var group = (this.chainGroups[this.currentChainGroupIndex] || {}).Chain
+        if (group == null) {
+          var index = this.chainPaths.length - 1
+          group = this.chainPaths[index]
+        }
 
-            var groupName = group.groupName
+        var groupId = group == null ? 0 : group.groupId
+        if (groupId == null || groupId <= 0) {
+          alert('请选择有效的场景串联用例分组！')
+          return
+        }
 
-            var isAdd = true
-            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
-              Chain: {
-                'groupName': groupName,
-                'groupId': groupId,
-                'documentId': item.id
-              },
-              tag: 'Chain'
-            }, {}, function (url, res, err) {
-              App.onResponse(url, res, err)
-              var isOk = JSONResponse.isSuccess(res.data)
+        var nextIndex = this.currentDocIndex
+        var nextChain = nextIndex == null || nextIndex < 0 ? null : (this.testCases[nextIndex] || {}).Chain
+        var nextRank = nextChain == null ? null : nextChain.rank
 
-              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
-              if (err != null) {
-                msg += '\nerr: ' + err.msg
-              }
-              alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+        var groupName = group.groupName
+        var isAdd = true
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
+          Chain: {
+            'rank': this.formatDateTime(StringUtil.isEmpty(nextRank, true) ? null : new Date(new Date(nextRank).getTime() - 10)),
+            'groupName': groupName,
+            'groupId': groupId,
+            'documentId': item.id
+          },
+          tag: 'Chain'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var isOk = JSONResponse.isSuccess(res.data)
 
-              App.isCaseGroupEditable = ! isOk
-              if (isOk) {
-//                App.remotes = App.testCases = []
-//                App.showTestCase(true, false, null)
-                App.selectChainGroup(App.currentChainGroupIndex, null)
-              }
-            })
+          var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+          if (err != null) {
+            msg += '\nerr: ' + err.msg
+          }
+          alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+
+          App.isCaseGroupEditable = ! isOk
+          if (isOk) {
+//          App.remotes = App.testCases = []
+//          App.showTestCase(true, false, null)
+            App.selectChainGroup(App.currentChainGroupIndex, null)
+          }
+        })
       },
 
       onClickPath: function (index, path) {
@@ -4859,7 +4869,7 @@ https://github.com/Tencent/APIJSON/issues
 
           var url = this.server + '/get'
           var userId = this.User.id
-          
+
           this.coverage = {}
           this.view = 'markdown'
           var req = {
@@ -4871,8 +4881,8 @@ https://github.com/Tencent/APIJSON/issues
               'Chain': isChainShow ? {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId': groupId,
-                '@column': "id,groupId,documentId,randomId",
-                '@order': 'id+',
+                '@column': "id,groupId,documentId,randomId,documentName,randomName,rank", // ;unix_timestamp(rank):rank",
+                '@order': 'rank+,id+',
                 'documentId>': 0
               } : null,
               'Document': {
@@ -4893,7 +4903,7 @@ https://github.com/Tencent/APIJSON/issues
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
                 // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
               },
-              'Random':  isChainShow ? {
+              'Random': isChainShow ? {
                 'id@': '/Chain/randomId',
                 'toId': 0, // isChainShow ? 0 : null,
 //                'chainId@': isChainShow ? '/Chain/id' : null,
@@ -5561,7 +5571,7 @@ https://github.com/Tencent/APIJSON/issues
               }
             }
           }
-          
+
           this.scripts = newDefaultScript()
 
           const isLoginShow = this.isLoginShow
@@ -5670,7 +5680,7 @@ https://github.com/Tencent/APIJSON/issues
             App.onClickAccount(App.currentAccountIndex, item) //自动登录测试账号
 
             if (user.id > 0) {
-              if (App.chainShowType != 1 && App.chainPaths.length <= 0 && App.chainGroups.length <= 0) {
+              if (App.isChainShow && App.chainShowType != 1 && App.chainPaths.length <= 0 && App.chainGroups.length <= 0) {
                 App.selectChainGroup(-1, null)
               }
               if (App.caseShowType != 1 && App.casePaths.length <= 0 && App.caseGroups.length <= 0) {
@@ -9242,7 +9252,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const which = i;
           var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Random || {}).config : random.config
-          
+
           var cb = function (url, res, err) {
             if (callback != null) {
               callback(url, res, err, random)
@@ -9251,7 +9261,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               App.onResponse(url, res, err)
             }
           };
-                  
+
           try {
             this.parseRandom(
               JSON.parse(JSON.stringify(json)), rawConfig, random.id
@@ -10248,8 +10258,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const header = hdr
 
             const caseScript = {
-              pre: item['Script:pre'],
-              post: item['Script:post']
+              pre: (item['Script:pre'] || {}).script,
+              post: (item['Script:post'] || {}).script
             }
 
             const method = document.method
