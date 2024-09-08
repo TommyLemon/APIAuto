@@ -116,6 +116,8 @@ Bilibili：https://search.bilibili.com/all?keyword=APIAuto
 
 ### 相关推荐
 [别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg)
+[APIAuto: 最先进的HTTP接口工具](https://blog.csdn.net/Nifc666/article/details/141966487)
+
 
 ### 百度、搜狗、抖音公网接口调用演示<br />
 因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
