@@ -254,6 +254,24 @@ https://github.com/TommyLemon/APIAuto/issues
 
 <br />
 
+### Roadmap 路线图
+1.Translate document to English/Italian/Franch/Spanish... <br />
+
+2.新增功能 <br />
+1) 断言结果 新增按钮 变-\{原因}，点击后右侧展示 JSON diff view； <br />
+2) 右下角列表展示具体每个断言有问题的字段，点击后 JSON view 只显示该字段对应值 <br />
+其他待补充... <br />
+<br />
+3.完善自动断言，支持更多格式的匹配 <br />
+<br />
+4.解决 bug <br />
+<br />
+5.提升性能 <br />
+<br />
+6.其他待补充... <br />
+
+<br />
+
 ### 感谢开源
 * jsonon
 * editor.md
