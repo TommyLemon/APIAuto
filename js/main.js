@@ -5147,7 +5147,15 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
+      lastCaseReqTime: 0,
       onTestCaseListResponse: function(show, url, res, err) {
+        var time = res == null || res.config == null || res.config.metadata == null ? 0 : (res.config.metadata.startTime || 0)
+        if (time < this.lastCaseReqTime) {
+          return
+        }
+
+        this.lastCaseReqTime = time;
+
         this.onResponse(url, res, err)
 
         var rpObj = res.data
