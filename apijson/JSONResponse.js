@@ -476,6 +476,54 @@ var JSONResponse = {
   COMPARE_CODE_CHANGE: 11,
   COMPARE_THROW_CHANGE: 12,
 
+  getCompareShowObj: function(cmp, status, response) {
+     var it = cmp;
+     var p = cmp.path
+     it.compareType = cmp.code;
+     it.compareMessage = (StringUtil.isEmpty(p, true) ? '' : p + '  ') + (cmp.msg || '查看结果')
+     switch (it.code) {
+            case JSONResponse.COMPARE_ERROR:
+              it.compareColor = 'red'
+              it.hintMessage = (status != null && status != 200 ? status + ' ' : '') + '请求出错！'
+              break;
+            case JSONResponse.COMPARE_NO_STANDARD:
+              it.compareColor = 'green'
+              it.hintMessage = '确认正确后点击[对的，纠正]'
+              break;
+            case JSONResponse.COMPARE_KEY_MORE:
+            case JSONResponse.COMPARE_VALUE_MORE:
+            case JSONResponse.COMPARE_EQUAL_EXCEPTION:
+              it.compareColor = 'green'
+              it.hintMessage = '新增字段/新增值 等'
+              break;
+            case JSONResponse.COMPARE_LENGTH_CHANGE:
+            case JSONResponse.COMPARE_VALUE_CHANGE:
+              it.compareColor = 'blue'
+              it.hintMessage = '值改变 等'
+              break;
+            case JSONResponse.COMPARE_VALUE_EMPTY:
+            case JSONResponse.COMPARE_KEY_LESS:
+              it.compareColor = 'orange'
+              it.hintMessage = '缺少字段/整数变小数 等'
+              break;
+            case JSONResponse.COMPARE_FORMAT_CHANGE:
+            case JSONResponse.COMPARE_NUMBER_TYPE_CHANGE:
+            case JSONResponse.COMPARE_TYPE_CHANGE:
+            case JSONResponse.COMPARE_CODE_CHANGE:
+            case JSONResponse.COMPARE_THROW_CHANGE:
+              var code = response == null ? null : response[JSONResponse.KEY_CODE]
+              it.compareColor = 'red'
+              it.hintMessage = (code != null && code != JSONResponse.CODE_SUCCESS
+               ? code + ' ' : (status != null && status != 200 ? status + ' ' : '')) + '状态码/异常/值类型 改变等'
+              break;
+            default:
+              it.compareColor = 'white'
+              it.hintMessage = '结果正确'
+              break;
+          }
+    return it;
+  },
+
   /**测试compare: 对比 新的请求与上次请求的结果
    0-相同，无颜色；
    1-对象新增字段或数组新增值，绿色；
@@ -1635,6 +1683,85 @@ var JSONResponse = {
     return tgt;
   },
 
+  /**根据 APIJSON 引用赋值路径精准地修改值
+   */
+  setValByPath: function(target, pathKeys, val, isTry) {
+    var depth = pathKeys == null ? 0 : pathKeys.length
+    if (depth <= 0) {
+      return target;
+    }
+
+    var tgt = target;
+    var parent = target;
+    for (var i = 0; i < depth - 1; i ++) {
+      var k = pathKeys[i];
+      if (k == null) {
+        return null;
+      }
+      k = decodeURI(k);
+
+      if (tgt instanceof Object) {
+        if (k == '') {
+          if (tgt instanceof Array) {
+              k = 0;
+          } else {
+              ks = Object.keys(tgt);
+              k = ks == null ? null : ks[0];
+              if (k == null) {
+                return null;
+              }
+          }
+        }
+        else {
+          if (tgt instanceof Array) {
+            try {
+              var n = Number.parseInt(k);
+              if (Number.isSafeInteger(n)) {
+                k = n >= 0 ? n : n + tgt.length;
+              }
+            } catch (e) {
+            }
+          }
+        }
+
+        parent = tgt;
+        tgt = tgt[k];
+        continue;
+      }
+
+      if (tgt == null) {
+        try {
+          var n = Number.parseInt(k);
+          if (Number.isSafeInteger(n)) {
+            k = n >= 0 ? n : n + tgt.length;
+          }
+        } catch (e) {
+        }
+
+        tgt = Number.isInteger(k) ? [] : {};
+        if (i == 0 && parent == null) {
+          parent = target = tgt;
+        } else {
+          parent[k] = tgt;
+        }
+
+        parent = tgt;
+        tgt = tgt[k];
+
+        continue;
+      }
+
+      if (isTry != true) {
+        throw new Error('setValByPath 语法错误，' + k + ': value 中 value 类型应该是 Object 或 Array ！');
+      }
+
+      return null;
+    }
+
+    tgt[pathKeys[pathKeys.length - 1]] = val;
+
+    return target;
+  },
 
   /**根据路径精准地更新测试标准中的键值对
    */

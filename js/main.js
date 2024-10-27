@@ -93,12 +93,12 @@
   }
 
   Vue.component('vue-item', {
-    props: ['jsondata', 'theme'],
+    props: ['jsondata', 'theme', 'thiz'],
     template: '#item-template'
   })
 
   Vue.component('vue-outer', {
-    props: ['jsondata', 'isend', 'path', 'theme'],
+    props: ['jsondata', 'isend', 'thiz', 'path', 'theme'],
     template: '#outer-template'
   })
 
@@ -108,7 +108,7 @@
   })
 
   Vue.component('vue-val', {
-    props: ['field', 'val', 'isend', 'path', 'theme'],
+    props: ['field', 'val', 'isend', 'thiz', 'path', 'theme'],
     template: '#val-template'
   })
 
@@ -216,17 +216,44 @@
                     continue
                   }
 
-                  var newVal = {}
+                  var curPath = cPath + '/' + i;
+                  var curTable = firstKey;
+                  var thiz = {
+                    _$_path_$_: curPath,
+                    _$_table_$_: curTable
+                  };
+
+                  var newVal = {};
                   for (var k in vi) {
-                    newVal[k] = vi[k] //提升性能
+                    newVal[k] = vi[k]; //提升性能
+                    try {
+                      var tr = App.currentRemoteItem.TestRecord || {};
+                      var d = App.currentRemoteItem.Document || {};
+                      var standard = App.isMLEnabled ? tr.standard : tr.response;
+                      var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                      var tests = App.tests[String(App.currentAccountIndex)] || {};
+                      var responseObj = (tests[d.id] || {})[0]
+
+                      var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
+                      var pathKeys = StringUtil.split(pathUri, '/');
+                      var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                      var real = JSONResponse.getValByPath(responseObj, pathKeys);
+                      var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                      cmp.path = pathUri;
+                      var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                      thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                      var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                      thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                    } catch (e) {
+                      thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                      var countKey = '_$_redCount_$_';
+                      thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                    }
+
                     delete vi[k]
                   }
 
-                  vi._$_this_$_ = JSON.stringify({
-                    path: cPath + '/' + i,
-                    table: firstKey
-                  })
-
+                  vi._$_this_$_ = JSON.stringify(thiz)
                   for (var k in newVal) {
                     vi[k] = newVal[k]
                   }
@@ -246,19 +273,47 @@
 
             // var newVal = JSON.parse(JSON.stringify(val))
 
-            var newVal = {}
+            var curPath = (StringUtil.isEmpty(path, false) ? '' : path + '/') + key;
+            var curTable = JSONObject.isTableKey(objName, val, isRestful) ? objName : null;
+            var thiz = {
+              _$_path_$_: curPath,
+              _$_table_$_: curTable
+            };
+
+            var newVal = {};
             for (var k in val) {
-              newVal[k] = val[k] //提升性能
-              delete val[k]
+              newVal[k] = val[k]; //提升性能
+              try {
+                var tr = App.currentRemoteItem.TestRecord || {};
+                var d = App.currentRemoteItem.Document || {};
+                var standard = App.isMLEnabled ? tr.standard : tr.response;
+                var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                var tests = App.tests[String(App.currentAccountIndex)] || {};
+                var responseObj = (tests[d.id] || {})[0]
+
+                var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
+                var pathKeys = StringUtil.split(pathUri, '/');
+                var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                var real = JSONResponse.getValByPath(responseObj, pathKeys);
+        //              c = JSONResponse.compareWithBefore(target, real, path);
+                var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                cmp.path = pathUri;
+                var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+              } catch (e) {
+                thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                var countKey = '_$_redCount_$_';
+                thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+              }
+
+              delete val[k];
             }
 
-            val._$_this_$_ = JSON.stringify({
-              path: (StringUtil.isEmpty(path, false) ? '' : path + '/') + key,
-              table: JSONObject.isTableKey(objName, val, isRestful) ? objName : null
-            })
-
+            val._$_this_$_ = JSON.stringify(thiz)
             for (var k in newVal) {
-              val[k] = newVal[k]
+              val[k] = newVal[k];
             }
 
             // val = Object.assign({ _$_this_$_: objName }, val) //解决多显示一个逗号 ,
@@ -266,7 +321,6 @@
             // this._$_this_$_ = key  TODO  不影响 JSON 的方式，直接在组件读写属性
             // alert('this._$_this_$_ = ' + this._$_this_$_)
           }
-
 
         } catch (e) {
           if (DEBUG) {
@@ -287,9 +341,9 @@
        * @param key
        * @param $event
        */
-      Vue.prototype.setResponseHint = function (val, key, $event) {
+      Vue.prototype.setResponseHint = function (val, key, $event, isAssert, color) {
         console.log('setResponseHint')
-        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event));
+        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event, isAssert, color));
       }
       /**获取 Response JSON 的注释
        * 方案一：
@@ -309,7 +363,7 @@
        * @param key
        * @param $event
        */
-      Vue.prototype.getResponseHint = function (val, key, $event) {
+      Vue.prototype.getResponseHint = function (val, key, $event, isAssert, color) {
         // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
 
         var s = ''
@@ -337,18 +391,18 @@
 
             // alert('valString = ' + valString)
 
-            var i = valString.indexOf('"_$_this_$_":  "')
+            var i = valString.indexOf('"_$_this_$_":  ')
             if (i >= 0) {
-              valString = valString.substring(i + '"_$_this_$_":  "'.length)
+              valString = valString.substring(i + '"_$_this_$_":  '.length)
               i = valString.indexOf('}"')
-              if (i >= 0) {
-                valString = valString.substring(0, i + 1)
+              var i2 = valString.indexOf('"{')
+              if (i >= 0 && i2 >= 0 && i2 < i) {
+                valString = valString.substring(i2 + 1, i + 1)
                 // alert('valString = ' + valString)
                 var _$_this_$_ = JSON.parse(valString) || {}
-                path = _$_this_$_.path
-                table = _$_this_$_.table
+                path = _$_this_$_._$_path_$_
+                table = _$_this_$_._$_table_$_
               }
-
 
               var aliaIndex = key == null ? -1 : key.indexOf(':');
               var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
@@ -369,16 +423,17 @@
 
             // alert('valString = ' + valString)
 
-            var i = valString.indexOf('"_$_this_$_":  "')
+            var i = valString.indexOf('"_$_this_$_":  ')
             if (i >= 0) {
-              valString = valString.substring(i + '"_$_this_$_":  "'.length)
+              valString = valString.substring(i + '"_$_this_$_":  '.length)
               i = valString.indexOf('}"')
-              if (i >= 0) {
-                valString = valString.substring(0, i + 1)
+              var i2 = valString.indexOf('"{')
+              if (i >= 0 && i2 >= 0 && i2 < i) {
+                valString = valString.substring(i2 + 1, i + 1)
                 // alert('valString = ' + valString)
                 var _$_this_$_ = JSON.parse(valString) || {}
-                path = _$_this_$_ == null ? '' : _$_this_$_.path
-                table = _$_this_$_ == null ? '' : _$_this_$_.table
+                path = _$_this_$_ == null ? '' : _$_this_$_._$_path_$_
+                table = _$_this_$_ == null ? '' : _$_this_$_._$_table_$_
               }
             }
 
@@ -408,8 +463,30 @@
                 }
 
                 var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
+                var c;
+                if (isAssert) {
+                    try {
+                      var tr = App.currentRemoteItem.TestRecord || {};
+                      var d = App.currentRemoteItem.Document || {};
+                      var standard = App.isMLEnabled ? tr.standard : tr.response;
+                      var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                      var tests = App.tests[String(App.currentAccountIndex)] || {};
+                      var responseObj = (tests[d.id] || {})[0]
 
-                var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+                      var pathKeys = StringUtil.split(pathUri, '/');
+                      var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                      var real = JSONResponse.getValByPath(responseObj, pathKeys);
+        //              c = JSONResponse.compareWithBefore(target, real, path);
+                      var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                      cmp.path = pathUri;
+                      return JSONResponse.getCompareShowObj(cmp);
+                    } catch (e) {
+                      s += '\n' + e.message
+                    }
+                } else {
+                    c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+                }
+
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
                   + (
                     StringUtil.isEmpty(c, true) ? '' : table + ': '
@@ -432,7 +509,29 @@
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
-          var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+          var c;
+          if (isAssert) {
+            try {
+              var tr = App.currentRemoteItem.TestRecord || {};
+              var d = App.currentRemoteItem.Document || {};
+              var standard = App.isMLEnabled ? tr.standard : tr.response;
+              var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+              var tests = App.tests[String(App.currentAccountIndex)] || {};
+              var responseObj = (tests[d.id] || {})[0]
+
+              var pathKeys = StringUtil.split(pathUri, '/');
+              var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+              var real = JSONResponse.getValByPath(responseObj, pathKeys);
+//              c = JSONResponse.compareWithBefore(target, real, path);
+              var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+              cmp.path = pathUri;
+              return JSONResponse.getCompareShowObj(cmp);
+            } catch (e) {
+              s += '\n' + e.message
+            }
+          } else {
+            c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+          }
 
           s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
         }
@@ -441,8 +540,89 @@
         }
 
         return s;
-      }
+      },
 
+      /**显示 Response JSON 的注释
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.setResponseCounts = function (val, key, $event, isAssert) {
+        console.log('setResponseCounts')
+        this.$refs.responseGreenAssert.setAttribute('data-content', isSingle ? '' : this.getResponseGreenCount(val, key, $event));
+        this.$refs.responseBlueAssert.setAttribute('data-content', isSingle ? '' : this.getResponseBlueCount(val, key, $event));
+        this.$refs.responseOrangeAssert.setAttribute('data-content', isSingle ? '' : this.getResponseOrangeCount(val, key, $event));
+        this.$refs.responseRedAssert.setAttribute('data-content', isSingle ? '' : this.getResponseRedCount(val, key, $event));
+      },
+      /**获取 Response 断言失败 的数量
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.setResponseAllCount = function (val, key, $event) {
+        return this.setResponseHint(val, key, $event, true, 'all')
+      },
+      /**获取 Response 断言失败 的数量
+       * @author TommyLemon
+       * @param val
+       * @param key
+       * @param $event
+       */
+      Vue.prototype.getResponseAllCount = function (val, key, $event) {
+        return this.getResponseGreenCount(val, key, $event) + this.getResponseBlueCount(val, key, $event) + this.getResponseOrangeCount(val, key, $event) + this.getResponseRedCount(val, key, $event);
+      },
+      Vue.prototype.setResponseColorCount = function (val, key, $event) {
+        console.log('setResponseColorCount')
+        var assert = isSingle ? null : this.getResponseHint(val, key, $event, true, 'all')
+        var responseAssert = $event.target; // this.$refs.responseAssert
+//        responseAssert.innerText = (StringUtil.trim(assert.count) || '1');
+//        $(responseAssert).attr('data-hint', assert == null ? '' : StringUtil.trim(assert.hintMessage));
+//        responseAssert.setAttribute('data-content', assert == null ? '' : (StringUtil.trim(assert.count) || '1'));
+        responseAssert.setAttribute('data-hint', assert == null ? '' : StringUtil.trim(assert.compareMessage));
+//        $(responseAssert).attr('background', assert == null ? '' : assert.compareColor);
+//        $(responseAssert).attr('visibility', assert == null || assert.code == 0 ? 'hidden' : 'show');
+      },
+      Vue.prototype.setResponseCount = function (val, key, $event, color) {
+        console.log('setResponseCount')
+//        var count = isSingle ? 0 : this.getResponseCount(val, key, $event, color)
+        var assert = isSingle ? null : this.getResponseHint(val, key, $event, true, 'all')
+        var responseAssert = $event.target; // this.$refs['response' + StringUtil.firstCase(color, true) + 'Assert']
+//        responseAssert.innerText = (StringUtil.trim(assert.count) || '1');
+        $(responseAssert).attr('data-hint', assert == null ? '' : StringUtil.trim(assert.compareMessage));
+//        responseAssert.setAttribute('data-content', assert == null ? '' : (StringUtil.trim(assert.count) || '1'));
+//        responseAssert.setAttribute('data-hint', assert == null ? '' : StringUtil.trim(assert.hintMessage));
+//        $(responseAssert).attr('background', assert == null ? '' : assert.compareColor);
+//        $(responseAssert).attr('visibility', assert == null || assert.code == 0 ? 'hidden' : 'show');
+      },
+      Vue.prototype.getResponseCount = function (val, key, $event, color) {
+        return this.getResponseHint(val, key, $event, true, color)
+      },
+      Vue.prototype.setResponseGreenCount = function (val, key, $event, isAssert) {
+        this.setResponseCount(val, key, $event, 'green')
+      },
+      Vue.prototype.getResponseGreenCount = function (val, key, $event) {
+        return this.getResponseHint(val, key, $event, true, 'green')
+      },
+      Vue.prototype.setResponseBlueCount = function (val, key, $event, isAssert) {
+        this.setResponseCount(val, key, $event, 'blue')
+      },
+      Vue.prototype.getResponseBlueCount = function (val, key, $event) {
+        return this.getResponseHint(val, key, $event, true, 'blue')
+      },
+      Vue.prototype.setResponseOrangeCount = function (val, key, $event, isAssert) {
+        this.setResponseCount(val, key, $event, 'orange')
+      },
+      Vue.prototype.getResponseOrangeCount = function (val, key, $event) {
+        return this.getResponseHint(val, key, $event, true, 'orange')
+      },
+      Vue.prototype.setResponseRedCount = function (val, key, $event, isAssert) {
+        this.setResponseCount(val, key, $event, 'red')
+      },
+      Vue.prototype.getResponseRedCount = function (val, key, $event) {
+        return this.getResponseHint(val, key, $event, true, 'red')
+      }
     }
   })
 
@@ -1341,8 +1521,8 @@ https://github.com/Tencent/APIJSON/issues
             else {
               this.jsonhtml = Object.assign({
                 _$_this_$_: JSON.stringify({
-                  path: null,
-                  table: null
+                  _$_path_$_: null,
+                  _$_table_$_: null
                 })
               }, ret)
             }
@@ -6478,6 +6658,8 @@ https://github.com/Tencent/APIJSON/issues
         const wait = wait_ != null ? wait_ : (this.wait || 0)
         var retry = retry_ != null ? retry_ : (this.retry || 0)
 
+        var evalPostScript = function () {}
+
         const onHttpResponse = function (res) {
           App.currentHttpResponse = res
           clearTimeout(errHandler)
@@ -6602,8 +6784,6 @@ https://github.com/Tencent/APIJSON/issues
           return true
         }
 
-        var evalPostScript = function () {}
-
         var sendRequest = function (isAdminOperation, method, type, url, req, header, callback) {
           var hs = ""
           if (isDelegate && header != null) {
@@ -6616,6 +6796,8 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
+          var isParam = HTTP_URL_ARG_TYPES.indexOf(type) >= 0
+
           if (req != null && JSONResponse.getType(req) == 'object') { // 支持 URL 里有 Path Variable，例如 http://apijson.cn:8080/{method}/{table}
             var ind = -1 // 支持 ?id={id} 这种动态参数  url.indexOf('?')
             var uri = ind < 0 ? url : url.substring(0, ind)
@@ -6625,8 +6807,12 @@ https://github.com/Tencent/APIJSON/issues
                 var v = k == null ? null : req[k]
                 var kind = uri.indexOf('{' + k + '}')
                 if (kind >= 0) {
-                   uri = uri.replaceAll('${' + k + '}', v).replaceAll('{{' + k + '}}', v).replaceAll('{' + k + '}', v)
-                   continue
+                  if (v instanceof Array) {
+                    var multiInd = uri.indexOf(':=')
+                  }
+
+                  uri = uri.replaceAll('${' + k + '}', v).replaceAll('{{' + k + '}}', v).replaceAll('{' + k + '}', v)
+                  continue
                 }
 
                 newReq[k] = v
@@ -6648,7 +6834,7 @@ https://github.com/Tencent/APIJSON/issues
                   App.isEncodeEnabled ? encodeURI(url) : url
                 )
             ),
-            params: HTTP_URL_ARG_TYPES.indexOf(type) >= 0 ? req : null,
+            params: isParam ? req : null,
             data: HTTP_JSON_TYPES.indexOf(type) >= 0 ? req : (HTTP_FORM_DATA_TYPES.indexOf(type) >= 0 ? toFormData(req) : null),
             headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
             withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
@@ -10258,8 +10444,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const header = hdr
 
             const caseScript = {
-              pre: (item['Script:pre'] || {}).script,
-              post: (item['Script:post'] || {}).script
+              pre: (item['Script:pre'] || {}),
+              post: (item['Script:post'] || {})
             }
 
             const method = document.method
@@ -10312,7 +10498,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }, caseScript)
 
                 }, caseScript)
-            }, caseScript.pre, {
+            }, (caseScript.pre || {}).script, {
                 list: list,
                 allCount: allCount,
                 index: index,
@@ -10983,7 +11169,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param index
        * @param item
        */
-      handleTest: function (right, index, item, isRandom, isDuration, isCross) {
+      handleTest: function (right, index, item, path, isRandom, isDuration, isCross) {
         item = item || {}
         var random = item.Random = item.Random || {}
         var document;
@@ -11008,14 +11194,24 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // this.currentRandomSubIndex = -1
           document = item.Document = item.Document || {}
         }
+
         var testRecord = item.TestRecord = item.TestRecord || {}
+        var pathKeys = StringUtil.split(path, '/') || [];
+        var pathNames = pathKeys.slice(0, pathKeys.length - 1);
+        var lastKey = pathKeys[pathKeys.length - 1];
 
         var tests = this.tests[String(this.currentAccountIndex)] || {}
         var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[
           isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
-        ] || {}
+        ]
 
-        var rawRspStr = JSON.stringify(currentResponse)
+        if (pathKeys.length > 0) {
+          var curRsp = StringUtil.isEmpty(testRecord.response) ? {} : JSON.parse(testRecord.response);
+          JSONResponse.setValByPath(curRsp, pathKeys, JSONResponse.getValByPath(currentResponse, pathKeys));
+          currentResponse = curRsp;
+        }
+
+        const rawRspStr = currentResponse == null ? null : JSON.stringify(currentResponse)
 
         const list = isRandom ? (random.toId == null || random.toId <= 0 ? this.randoms : this.randomSubs) : this.testCases
 
@@ -11033,7 +11229,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.jsoncon = res || ''
         }
         else {
-          var url
+          var url;
 
           if (isBefore) { //撤回原来错误提交的校验标准
             if (isDuration) {
@@ -11076,7 +11272,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 item.TestRecord = null
               }
 
-              App.updateTestRecord(0, list, index, item, JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
+              App.updateTestRecord(0, list, index, item, rawRspStr == null ? null : JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
             })
           }
           else { //上传新的校验标准
@@ -11088,8 +11284,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             // }
             var isML = this.isMLEnabled;  // 异常分支不合并内容，只记录 code, throw, msg 等关键信息
 
-            var standard
-            var stddObj
+            var standard;
+            var stddObj;
 
             var minDuration = testRecord.minDuration
             var maxDuration = testRecord.maxDuration
@@ -11123,7 +11319,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             else {
               standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : JSON.parse(testRecord.standard)) || {}
-              stddObj = JSONResponse.updateFullStandard(standard, JSON.parse(rawRspStr), isML)
+              if (pathKeys.length <= 0) {
+                stddObj = JSONResponse.updateFullStandard(standard, rawRspStr == null ? null : JSON.parse(rawRspStr), isML)
+              } else if (isML) {
+                stddObj = JSONResponse.updateStandardByPath(standard, pathNames, lastKey, rawRspStr == null ? null : JSON.parse(rawRspStr))
+              }
             }
 
             const isNewRandom = isRandom && random.id <= 0
@@ -11243,7 +11443,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //   }
                 // }
 
-                App.updateTestRecord(0, list, index, item, JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
+                App.updateTestRecord(0, list, index, item, rawRspStr == null ? null : JSON.parse(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
               }
 
             })
@@ -12558,7 +12758,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           isSingle = ! isSingle
 
           var hasTestArg = false  // 避免 http://localhost:63342/APIAuto/index.html?_ijt=fh8di51h7qip2d1s3r3bqn73nt 这种无意义参数
-          if (StringUtil.isEmpty(rawReq.method, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.method, true)) {
             hasTestArg = true
             App.method = StringUtil.toUpperCase(rawReq.method, true)
             if (App.methods == null) {
@@ -12568,7 +12768,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               App.methods.push(App.method)
             }
           }
-          if (StringUtil.isEmpty(rawReq.type, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.type, true)) {
             hasTestArg = true
             App.type = StringUtil.toUpperCase(rawReq.type, true)
             if (App.types == null) {
@@ -12579,30 +12779,36 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
           }
 
-          if (StringUtil.isEmpty(rawReq.url, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.url, true)) {
             hasTestArg = true
             vUrl.value = StringUtil.trim(rawReq.url)
           }
 
-          if (StringUtil.isEmpty(rawReq.json, true) == false) {
+          var decode = false
+          if (StringUtil.isNotEmpty(rawReq.decode, true)) {
             hasTestArg = true
-            vInput.value = StringUtil.trim(rawReq.json)
+            decode = rawReq.decode == 'true'
           }
 
-          if (StringUtil.isEmpty(rawReq.header, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.json, true)) {
+            hasTestArg = true
+            vInput.value = StringUtil.trim(decode ? rawReq.json.replaceAll('\\\\', '') : rawReq.json)
+          }
+
+          if (StringUtil.isNotEmpty(rawReq.header, true)) {
             hasTestArg = true
             vHeader.value = StringUtil.trim(rawReq.header, true)
             App.isHeaderShow = true
           }
 
-          if (StringUtil.isEmpty(rawReq.random, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.random, true)) {
             hasTestArg = true
             vRandom.value = StringUtil.trim(rawReq.random, true)
             App.isRandomShow = true
             App.isRandomListShow = false
           }
 
-          if (StringUtil.isEmpty(rawReq.reportId, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.reportId, true)) {
             try {
               App.reportId = + StringUtil.trim(rawReq.reportId, true)
               if (Number.isNaN(App.reportId)) {
@@ -12621,7 +12827,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var delayTime = 0
 
           // URL 太长导致截断和乱码
-          if (StringUtil.isEmpty(rawReq.setting, true) == false) {
+          if (StringUtil.isNotEmpty(rawReq.setting, true)) {
             var save = rawReq.save == 'true'
             try {
               var setting = JSON.parse(StringUtil.trim(rawReq.setting, true)) || {}

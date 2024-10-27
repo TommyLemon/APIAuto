@@ -274,7 +274,7 @@
                                         <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item)">
                                             <use xlink:href="svg/icon.svg#export-txt"></use>
                                         </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
-                                        <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
+                                        <button class="hint--left" ref="testHandleButtons" @mouseover="setTestHint(index, item, null, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testResultDurationButtons" @mouseover="setTestHint(index, item, false, true)" @click="handleTest(true, index, item, null, false, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
                                     </div>
                                 </div>
                                 <svg v-show="isLocalShow || (item.Document != null && item.Document.userId == User.id)" class="icon" style="background-color: white; width: 33px; height: 18px; right: -2px; padding-left: 5px; padding-right: 8px; padding-top: 2px; padding-bottom: 2px; top: 13px;" @click="remove(item, index, true)">
@@ -452,11 +452,11 @@ Ctrl + S 或 Command + S 保存当前用例；
                                 <input v-show="isRandomEditable" style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
 
                                 <div :style="{ background: item.compareColor }" v-show="! isRandomEditable && item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
-                                    <button class="hint--left" ref="testRandomSubResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                                    <button class="hint--left" ref="testRandomSubResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, null, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
                                     <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
                                         <use xlink:href="svg/icon.svg#export-txt"></use>
                                     </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
-                                    <button class="hint--left" ref="testRandomSubHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomSubResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
+                                    <button class="hint--left" ref="testRandomSubHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, null, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomSubResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, null, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
                                 </div>
                                 <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
@@ -482,19 +482,19 @@ Ctrl + S 或 Command + S 保存当前用例；
                                 <a v-show="! isRandomEditable" style="top: 13px; left: 68px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
                                 <input v-show="isRandomEditable" style="top: 10px; left: 68px; position: absolute; display: inline-flex; width: 64%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" />
 
-                                <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute;top: 10px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
-                                <div v-show="isStatisticsEnabled && ((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, true)">
+                                <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute;top: 10px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
+                                <div v-show="isStatisticsEnabled && ((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, null, true)">
                                     <!-- 只能写成一行来消除间隙，不能换行、空格 -->
                                     <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
                                 </div>
 
                                 <div v-show="isStatisticsEnabled && ! isRandomEditable && ((item.Random || {}).count || 1) <= 1" style="position: absolute;top: 10px;right: 36px;display: inline-block;">
                                     <div :style="{ background: item.compareColor }" v-show="item.compareType != null" >
-                                        <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
+                                        <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, null, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
                                         <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
                                             <use xlink:href="svg/icon.svg#export-txt"></use>
                                         </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
-                                        <button class="hint--left" ref="testRandomHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
+                                        <button class="hint--left" ref="testRandomHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, null, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, null, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
                                     </div>
                                 </div>
 
@@ -910,15 +910,15 @@ fun(true, 1, 'a'..);
 <!--最外层根结构-->
 <script type="text/x-template" id="outer-template">
     <ul class="json-item">
-        <vue-val  :val="jsondata" :isend="isend" :theme="theme"></vue-val>
+        <vue-val :theme="theme" :val="jsondata" :isend="isend" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (JSON.parse(jsondata._$_this_$_) || {})" ></vue-val>
     </ul>
 </script>
 
 <!--内层每个键值对-->
 <script type="text/x-template" id="item-template">
     <ul class="json-item">
-        <vue-val :field="key" :theme="theme" :val="val" :isend="index == objLength(jsondata) - 1"
-                 v-show="onRenderJSONItem(val, key, jsondata._$_this_$_ == null ? null : (JSON.parse(jsondata._$_this_$_) || {}).path)"
+        <vue-val :theme="theme" :field="key" :val="val" :isend="index == objLength(jsondata) - 1" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (JSON.parse(jsondata._$_this_$_) || {})"
+                 v-show="onRenderJSONItem(val, key, thiz == null ? null : thiz._$_path_$_)"
                  v-for="(val, key, index) in jsondata"></vue-val>
     </ul>
 </script>
@@ -926,35 +926,39 @@ fun(true, 1, 'a'..);
 <!--key value 最终的渲染方式-->
 <script type="text/x-template" id="val-template">
     <div class="keyval">
-        <template v-if="!isObjectArr(val)">
-      <span class="key hint--top-right hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}"
-            ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
+        <template v-if="! isObjectArr(val)">
+            <span class="key hint--top-right hint--rounded hint--no-animate" v-show="field" :style="{color: theme.key}"
+            ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}":</span>
+
+            <a v-if="thiz[field] != null && thiz[field][0] != 0" ref="responseAssert" @click="App.handleTest(true, App.isTestCaseShow ? App.currentDocIndex : App.currentRandnomIndex, App.currentRemoteItem, (StringUtil.isEmpty(thiz._$_path_$_, false) ? '' : thiz._$_path_$_ + '/') + field)" :data-hint="(thiz[field] || [])[2]" class="key hint--top-right hint--rounded hint--no-animate" :style="{background: (thiz[field] || [])[1]}" style="color: white; position: relative; height: 100%; min-width: 6px; margin-left: 0px; margin-right: 0px; padding-left: 2px; padding-right: 2px">√</a>
 
             <span  :class="'val val-' + getTyp(val, field)" :style="{color: theme[getTyp(val)]}">
-            <span v-if="!isaLink(val)">{{formatVal(val)}}</span>
-            <a v-if="isaLink(val)" :href="val" target="_blank" class="json-link" :style="{color: theme['link-link']}">{{formatVal(val)}}</a>
-            <span v-if="!isend">,</span>
-          </span>
+                <span v-if="! isaLink(val)">{{formatVal(val)}}</span>
+                <a v-if="isaLink(val)" :href="val" target="_blank" class="json-link" :style="{color: theme['link-link']}">{{formatVal(val)}}</a>
+                <span v-if="! isend">,</span>
+            </span>
         </template>
-
 
         <!--key + 展开折叠ICON-->
         <template v-if="isObjectArr(val)">
-      <span class="key hint--right hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field"
-            ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}": </span>
+            <span class="key hint--right hint--rounded hint--no-animate" :style="{color: theme.key}" v-show="field"
+                ref="responseKey" @mouseover="setResponseHint(val, field, $event)">"{{field}}":</span>
+
+            <a v-if="thiz[field] != null && thiz[field][0] != 0" ref="responseAssert" @click="App.handleTest(true, App.isTestCaseShow ? App.currentDocIndex : App.currentRandnomIndex, App.currentRemoteItem, thiz._$_path_$_ || field)" :data-hint="(thiz[field] || [])[2]" class="key hint--right hint--rounded hint--no-animate" :style="{background: (thiz[field] || [])[1]}" style="color: white; position: relative; height: 100%; min-width: 6px; margin-left: 0px; margin-right: 0px; padding-left: 2px; padding-right: 2px">√</a>
+<!--            <a ref="responseGreenAssert" @mouseover="setResponseGreenCount(val, field, $event, true)" style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px"></a><a ref="responseBlueAssert" @load="setResponseBlueCount(val, field, $event, true)" style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px"></a><a ref="responseOrangeAssert" @load="setResponseOrangeCount(val, field, $event, true)" style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px"></a><a ref="responseRedAssert" @load="setResponseRedCount(val, field, $event, true)" style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px"></a>-->
+
             <vue-expand></vue-expand>
         </template>
-
 
         <!--值为对象时-->
         <template v-if="getTyp(val) == 'Object'">
           <span class="expand-view">
             <span>{</span>
             <vue-item :jsondata="val" :theme="theme"></vue-item>
-            <div class="brace-end">}<span v-if="!isend">,</span></div>
+            <div class="brace-end">}<span v-if="! isend">,</span></div>
           </span>
 
-            <span class="fold-view">{{getTyp(val)}}{<label class="ex-alia" @click="expand($event)">{{objLength(val)}}</label>}<span v-if="!isend">,</span></span>
+          <span class="fold-view">{{getTyp(val)}}{<label class="ex-alia" @click="expand($event)">{{objLength(val)}}</label>}<span v-if="!isend">,</span></span>
         </template>
 
 
@@ -965,7 +969,7 @@ fun(true, 1, 'a'..);
             <span class="val">
               <vue-outer :jsondata="sub" v-for="(sub, index) in val" :isend="index == val.length - 1" :theme="theme"></vue-outer>
             </span>
-            <div class="brace-end">]<span v-if="!isend">,</span></div>
+            <div class="brace-end">]<span v-if="! isend">,</span></div>
           </span>
 
             <span class="fold-view">{{getTyp(val)}}[<label class="arrlen ex-alia" @click="expand($event)">{{val.length}}</label>]<span v-if="!isend">,</span></span>
