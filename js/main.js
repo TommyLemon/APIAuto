@@ -226,28 +226,30 @@
                   var newVal = {};
                   for (var k in vi) {
                     newVal[k] = vi[k]; //提升性能
-                    try {
-                      var tr = App.currentRemoteItem.TestRecord || {};
-                      var d = App.currentRemoteItem.Document || {};
-                      var standard = App.isMLEnabled ? tr.standard : tr.response;
-                      var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
-                      var tests = App.tests[String(App.currentAccountIndex)] || {};
-                      var responseObj = (tests[d.id] || {})[0]
+                    if (App.isFullAssert) {
+                        try {
+                          var tr = App.currentRemoteItem.TestRecord || {};
+                          var d = App.currentRemoteItem.Document || {};
+                          var standard = App.isMLEnabled ? tr.standard : tr.response;
+                          var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                          var tests = App.tests[String(App.currentAccountIndex)] || {};
+                          var responseObj = (tests[d.id] || {})[0]
 
-                      var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
-                      var pathKeys = StringUtil.split(pathUri, '/');
-                      var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
-                      var real = JSONResponse.getValByPath(responseObj, pathKeys);
-                      var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
-                      cmp.path = pathUri;
-                      var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
-                      thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
-                      var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
-                      thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
-                    } catch (e) {
-                      thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
-                      var countKey = '_$_redCount_$_';
-                      thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                          var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
+                          var pathKeys = StringUtil.split(pathUri, '/');
+                          var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                          var real = JSONResponse.getValByPath(responseObj, pathKeys);
+                          var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                          cmp.path = pathUri;
+                          var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                          thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                          var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                          thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                        } catch (e) {
+                          thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                          var countKey = '_$_redCount_$_';
+                          thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                        }
                     }
 
                     delete vi[k]
@@ -283,29 +285,31 @@
             var newVal = {};
             for (var k in val) {
               newVal[k] = val[k]; //提升性能
-              try {
-                var tr = App.currentRemoteItem.TestRecord || {};
-                var d = App.currentRemoteItem.Document || {};
-                var standard = App.isMLEnabled ? tr.standard : tr.response;
-                var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
-                var tests = App.tests[String(App.currentAccountIndex)] || {};
-                var responseObj = (tests[d.id] || {})[0]
+              if (App.isFullAssert) {
+                  try {
+                    var tr = App.currentRemoteItem.TestRecord || {};
+                    var d = App.currentRemoteItem.Document || {};
+                    var standard = App.isMLEnabled ? tr.standard : tr.response;
+                    var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                    var tests = App.tests[String(App.currentAccountIndex)] || {};
+                    var responseObj = (tests[d.id] || {})[0]
 
-                var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
-                var pathKeys = StringUtil.split(pathUri, '/');
-                var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
-                var real = JSONResponse.getValByPath(responseObj, pathKeys);
-        //              c = JSONResponse.compareWithBefore(target, real, path);
-                var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
-                cmp.path = pathUri;
-                var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
-                thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
-                var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
-                thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
-              } catch (e) {
-                thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
-                var countKey = '_$_redCount_$_';
-                thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                    var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
+                    var pathKeys = StringUtil.split(pathUri, '/');
+                    var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                    var real = JSONResponse.getValByPath(responseObj, pathKeys);
+            //              c = JSONResponse.compareWithBefore(target, real, path);
+                    var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                    cmp.path = pathUri;
+                    var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                    thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                    var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                    thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                  } catch (e) {
+                    thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                    var countKey = '_$_redCount_$_';
+                    thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                  }
               }
 
               delete val[k];
@@ -6822,6 +6826,22 @@ https://github.com/Tencent/APIJSON/issues
             req = newReq
           }
 
+          axios.interceptors.request.use(function (config) {
+            config.metadata = { startTime: new Date().getTime()}
+            return config;
+          }, function (error) {
+            return Promise.reject(error);
+          });
+          axios.interceptors.response.use(function (response) {
+            response.config.metadata.endTime = new Date().getTime()
+            response.duration = response.config.metadata.endTime - response.config.metadata.startTime
+            return response;
+          }, function (error) {
+            error.config.metadata.endTime = new Date().getTime();
+            error.duration = error.config.metadata.endTime - error.config.metadata.startTime;
+            return Promise.reject(error);
+          });
+
           // axios.defaults.withcredentials = true
           axios({
             method: method != null ? method : (HTTP_METHODS.indexOf(type) >= 0 ? type.toLowerCase() : (type == REQUEST_TYPE_PARAM ? 'get' : 'post')),
@@ -7037,13 +7057,21 @@ https://github.com/Tencent/APIJSON/issues
         retryReq()
       },
 
-
+      lastReqTime: 0,
       /**请求回调
        */
       onResponse: function (url, res, err) {
         if (res == null) {
           res = {}
+        } else {
+          var time = res.config == null || res.config.metadata == null ? 0 : (res.config.metadata.startTime || 0)
+          if (time < this.lastReqTime) {
+            return
+          }
+
+          this.lastReqTime = time
         }
+
         if (DEBUG) {
           log('onResponse url = ' + url + '\nerr = ' + err + '\nreq = \n'
             + (res.request == null || res.request.data == null ? 'null' : JSON.stringify(res.request.data))
@@ -8054,6 +8082,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         })
       },
 
+      lastDocReqTime: 0,
       onDocumentListResponse: function(url, res, err, callback) {
         if (err != null || res == null || res.data == null) {
           log('getDoc  err != null || res == null || res.data == null >> return;');
@@ -8062,6 +8091,13 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           return;
         }
+
+        var time = res.config == null || res.config.metadata == null ? 0 : (res.config.metadata.startTime || 0)
+        if (time < this.lastDocReqTime) {
+          return
+        }
+
+        this.lastDocReqTime = time;
 
 //        log('getDoc  docRq.responseText = \n' + docRq.responseText);
         docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
@@ -10373,6 +10409,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 //         })
       },
 
+      isFullAssert: true,
       toTestDocIndexes: [],
 
       startTest: function (list, allCount, isRandom, accountIndex, isCross, callback) {
@@ -10402,6 +10439,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback, ctx) {
+          this.isFullAssert = false
           try {
             const isMLEnabled = this.isMLEnabled
             const standardKey = isMLEnabled != true ? 'response' : 'standard'
@@ -10572,6 +10610,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       },
 
       onTestResponse: function(res, allCount, list, index, it, d, r, tr, response, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback) {
+        this.isFullAssert = false
         tr = tr || {}
         cmp = cmp || {}
         tr.compare = cmp
@@ -11194,6 +11233,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // this.currentRandomSubIndex = -1
           document = item.Document = item.Document || {}
         }
+
+        this.isFullAssert = true
 
         var testRecord = item.TestRecord = item.TestRecord || {}
         var pathKeys = StringUtil.split(path, '/') || [];
