@@ -370,7 +370,7 @@ Ctrl + S 或 Command + S 保存当前用例；
 " >
 {
     "User": {
-        "id": 82001
+        "id": "82001"
     }, // 以上查一个对象，以下查一个数组，Comment.userId = User.id。在键值对后按 Enter 回车键自动智能生成补全提示
     "[]": {
          Comment : {
@@ -918,7 +918,7 @@ fun(true, 1, 'a'..);
 <script type="text/x-template" id="item-template">
     <ul class="json-item">
         <vue-val :theme="theme" :field="key" :val="val" :isend="index == objLength(jsondata) - 1" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (JSON.parse(jsondata._$_this_$_) || {})"
-                 v-show="onRenderJSONItem(val, key, thiz == null ? null : thiz._$_path_$_)"
+                 v-show="onRenderJSONItem(val, key, (JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (thiz || JSON.parse(jsondata._$_this_$_) || {}))._$_path_$_)"
                  v-for="(val, key, index) in jsondata"></vue-val>
     </ul>
 </script>

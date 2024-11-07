@@ -135,7 +135,7 @@ var CodeUtil = {
         if (isExtract && standardObj != null && (isReq || depth != 1
           || [JSONResponse.KEY_CODE, JSONResponse.KEY_MSG, JSONResponse.KEY_THROW].indexOf(key) < 0)) {
           comment = line.substring(cIndex + ccLen).trim();
-          // standardObj = CodeUtil.updateStandardPart(standardObj, names, key, value, comment)
+          // standardObj = CodeUtil.updateStandardByPath(standardObj, names, key, value, comment)
         }
 
         line = line.substring(0, cIndex).trim();

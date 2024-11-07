@@ -79,11 +79,13 @@ app.use(async ctx => {
   ctx.set('Access-Control-Allow-Headers', "*");
   ctx.set('Access-Control-Allow-Credentials', 'true');
   ctx.set('Access-Control-Allow-Methods', 'GET,HEAD,POST,PUT,DELETE,OPTIONS,TRACE');
+//    ctx.set('Access-Control-Expose-Headers', "*");
 
   if (ctx.method == null || ctx.method.toUpperCase() == 'OPTIONS') {
      ctx.status = 200;
      return;
   }
+
   if (ctx.path == '/test/start' || (isLoading != true && ctx.path == '/test')) {
     if (isLoading && ctx.path == '/test/start') {
       ctx.status = 200;

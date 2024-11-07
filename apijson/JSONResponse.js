@@ -1758,7 +1758,7 @@ var JSONResponse = {
       return null;
     }
 
-    tgt[pathKeys[pathKeys.length - 1]] = val;
+    tgt[pathKeys[depth - 1]] = val;
 
     return target;
   },

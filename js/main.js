@@ -197,12 +197,12 @@
             if (val[0] instanceof Object && (val[0] instanceof Array == false)) {  // && JSONObject.isArrayKey(key, null, isRestful)) {
               // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
 
-              var ckey = key.substring(0, key.lastIndexOf('[]'));
+              var ckey = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
 
-              var aliaIndex = ckey.indexOf(':');
+              var aliaIndex = ckey == null ? -1 : ckey.indexOf(':');
               var objName = aliaIndex < 0 ? ckey : ckey.substring(0, aliaIndex);
 
-              var firstIndex = objName.indexOf('-');
+              var firstIndex = objName == null ? -1 : objName.indexOf('-');
               var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
 
               for (var i = 0; i < val.length; i++) {
@@ -239,7 +239,7 @@
                           var pathKeys = StringUtil.split(pathUri, '/');
                           var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
                           var real = JSONResponse.getValByPath(responseObj, pathKeys);
-                          var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                          var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, pathUri) : JSONResponse.compareWithBefore(target, real, pathUri);
                           cmp.path = pathUri;
                           var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
                           thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
@@ -270,7 +270,7 @@
             }
           }
           else if (val instanceof Object) {
-            var aliaIndex = key.indexOf(':');
+            var aliaIndex = key == null ? -1 : key.indexOf(':');
             var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
             // var newVal = JSON.parse(JSON.stringify(val))
@@ -299,7 +299,7 @@
                     var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
                     var real = JSONResponse.getValByPath(responseObj, pathKeys);
             //              c = JSONResponse.compareWithBefore(target, real, path);
-                    var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                    var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, pathUri) : JSONResponse.compareWithBefore(target, real, pathUri);
                     cmp.path = pathUri;
                     var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
                     thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
@@ -1519,16 +1519,118 @@ https://github.com/Tencent/APIJSON/issues
             } catch (ex) {
               log(ex)
             }
+
+            var path = null;
+            var key = null;
+            var thiz = {
+               _$_path_$_: null,
+               _$_table_$_: null
+            };
+
             if (isSingle || ret instanceof Array || (ret instanceof Object == false)) {
-              this.jsonhtml = ret
+              var val = ret;
+              if (isSingle != true && val instanceof Array && val[0] instanceof Object && (val[0] instanceof Array == false)) {
+                  // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
+                  var ckey = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
+
+                  var aliaIndex = ckey == null ? -1 : ckey.indexOf(':');
+                  var objName = aliaIndex < 0 ? ckey : ckey.substring(0, aliaIndex);
+
+                  var firstIndex = objName == null ? -1 : objName.indexOf('-');
+                  var firstKey = firstIndex < 0 ? objName : objName.substring(0, firstIndex);
+
+                  for (var i = 0; i < val.length; i++) {
+                    var vi = val[i]
+
+                    if (vi instanceof Object && vi instanceof Array == false && JSONObject.isTableKey(firstKey, val, isRestful)) {
+                      // var newVal = JSON.parse(JSON.stringify(val[i]))
+                      if (vi == null) {
+                        continue
+                      }
+
+                      var curPath = '' + i;
+                      var curTable = firstKey;
+                      var thiz = {
+                        _$_path_$_: curPath,
+                        _$_table_$_: curTable
+                      };
+
+                      var newVal = {};
+                      for (var k in vi) {
+                        newVal[k] = vi[k]; //提升性能
+                        if (this.isFullAssert) {
+                            try {
+                              var tr = this.currentRemoteItem.TestRecord || {};
+                              var d = this.currentRemoteItem.Document || {};
+                              var standard = this.isMLEnabled ? tr.standard : tr.response;
+                              var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                              var tests = this.tests[String(this.currentAccountIndex)] || {};
+                              var responseObj = (tests[d.id] || {})[0]
+
+                              var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
+                              var pathKeys = StringUtil.split(pathUri, '/');
+                              var target = this.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                              var real = JSONResponse.getValByPath(responseObj, pathKeys);
+                              var cmp = this.isMLEnabled ? JSONResponse.compareWithStandard(target, real, pathUri) : JSONResponse.compareWithBefore(target, real, pathUri);
+                              cmp.path = pathUri;
+                              var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                              thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                              var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                              thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                            } catch (e) {
+                              thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                              var countKey = '_$_redCount_$_';
+                              thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                            }
+                        }
+
+                        delete vi[k]
+                      }
+
+                      vi._$_this_$_ = JSON.stringify(thiz)
+                      for (var k in newVal) {
+                        vi[k] = newVal[k]
+                      }
+                    }
+
+                  }
+                }
+
+                this.jsonhtml = val;
             }
             else {
-              this.jsonhtml = Object.assign({
-                _$_this_$_: JSON.stringify({
-                  _$_path_$_: null,
-                  _$_table_$_: null
-                })
-              }, ret)
+                for (var k in ret) {
+                  if (this.isFullAssert) {
+                      try {
+                        var tr = this.currentRemoteItem.TestRecord || {};
+                        var d = this.currentRemoteItem.Document || {};
+                        var standard = this.isMLEnabled ? tr.standard : tr.response;
+                        var standardObj = StringUtil.isEmpty(standard, true) ? null : JSON.parse(standard);
+                        var tests = this.tests[String(this.currentAccountIndex)] || {};
+                        var responseObj = (tests[d.id] || {})[0]
+
+                        var pathUri = k;
+                        var pathKeys = StringUtil.split(pathUri, '/');
+                        var target = this.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                        var real = JSONResponse.getValByPath(responseObj, pathKeys);
+                //              c = JSONResponse.compareWithBefore(target, real, path);
+                        var cmp = this.isMLEnabled ? JSONResponse.compareWithStandard(target, real, pathUri) : JSONResponse.compareWithBefore(target, real, pathUri);
+                        cmp.path = pathUri;
+                        var cmpShowObj = JSONResponse.getCompareShowObj(cmp);
+                        thiz[k] = [cmpShowObj.compareType, cmpShowObj.compareColor, cmpShowObj.compareMessage];
+                        var countKey = '_$_' + cmpShowObj.compareColor + 'Count_$_';
+                        thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                      } catch (e) {
+                        thiz[k] = [JSONResponse.COMPARE_ERROR, 'red', e.message];
+                        var countKey = '_$_redCount_$_';
+                        thiz[countKey] = thiz[countKey] == null ? 1 : thiz[countKey] + 1;
+                      }
+                  }
+                }
+
+                this.jsonhtml = Object.assign({
+                    _$_this_$_: JSON.stringify(thiz)
+                }, ret)
             }
 
           }
@@ -1844,7 +1946,7 @@ https://github.com/Tencent/APIJSON/issues
         var name = item == null ? '' : StringUtil.get(item.name);
         target.value = text = before + name + after
         if (target == vScript) { // 不这样会自动回滚
-          App.scripts[App.scriptType][App.scriptBelongId][App.isPreScript ? 'pre' : 'post'].script = text
+          this.scripts[this.scriptType][this.scriptBelongId][this.isPreScript ? 'pre' : 'post'].script = text
         }
         else if (target == vInput) {
           inputted = target.value;
@@ -1870,7 +1972,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           if (isInputValue != true) {
-            App.showOptions(target, text, before + name + (isSingle ? "'" : '"') + ': ', after.substring(3), true);
+            this.showOptions(target, text, before + name + (isSingle ? "'" : '"') + ': ', after.substring(3), true);
           }
         } else {
           target.selectionStart = selectionStart;
