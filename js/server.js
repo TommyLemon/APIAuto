@@ -69,7 +69,7 @@ const PORT = 3000;
 
 var done = false;
 const app = new Koa();
-app.use(bodyParser());
+// app.use(bodyParser());
 app.use(async ctx => {
   console.log(ctx);
   var origin = ctx.get('Origin') || ctx.get('origin');

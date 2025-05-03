@@ -24,7 +24,7 @@ var StringUtil = {
    * @return
    */
   get: function(s) {
-    return s == null ? '' : s;
+    return s == null ? '' : (JSONResponse.isString(s) ? s : JSON.stringify(s));
   },
 
   /**获取去掉前后空格后的string,为null则返回''
@@ -32,7 +32,7 @@ var StringUtil = {
    * @return
    */
   trim: function(s) {
-    return s == null ? '' : s.trim();
+    return StringUtil.get(s).trim();
   },
 
   /**获取去掉所有空格后的string,为null则返回''

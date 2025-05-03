@@ -203,7 +203,7 @@
                         <li v-for="(item, index) in caseGroups" :id="'caseGroup' + index" >
                             <div style="display: inline-table; width: 100%">
                                 <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.groupName" @keyup="doOnKeyUp(event, 'caseGroup', false, item)" />
-                                <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" > {{(isCaseGroupEditable ? '' : (StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ') + item.groupUrl}}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white">{{' (' + item.count + ')  '}}</a>
+                                <a href="javascript:void(0)" @click="selectCaseGroup(index, item)" > {{(isCaseGroupEditable ? '' : (StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ') + item.groupUrl}}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white" class="hint--left" :data-hint="(StringUtil.isEmpty(item.groupName) ? '-' : item.groupName) + ' ' + item.groupUrl">{{' (' + item.count + ')  '}}</a>
                                 <!--                            <div v-show="isStatisticsEnabled" style="position: absolute; right: 36px; top: 8px; display: inline-flex">-->
     <!--                                <div v-show="(item.totalCount || 0) > 0" style="background: lightgray; padding: 1px; margin-right: 2px; display: inline-block; position: relative" @click="restoreRemote(index, item, null, true)" >-->
     <!--                                    &lt;!&ndash; 只能写成一行来消除间隙，不能换行、空格 &ndash;&gt;-->
@@ -231,13 +231,13 @@
                 </div>
 
                 <div v-show="isChainShow && isChainGroupShow() && ! isLocalShow" :style="{width: chainShowType == 0 ? '40%' : '100%', 'border-right': chainShowType != 0 ? 'none' : '#DDD 1px solid' }" style="float: left; min-width: 30px; width: 40%; height: 100%;">
-                    <input id="vChainGroupAdd" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainGroupAdd', false, {'groupName': vChainGroupAdd.value})" placeholder="输入名称，回车来添加" />
+                    <input id="vChainGroupAdd" style="width: 100%; text-align: center"  @keyup="doOnKeyUp(event, 'chainGroupAdd', false, {'groupName': vChainGroupAdd.value})" placeholder="输入名称，回车来添加" />
 
                     <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
                         <li v-for="(item, index) in chainGroups" :id="'chainGroup' + index" >
                             <div style="display: inline-table; width: 100%">
                                 <input v-show="isCaseGroupEditable" style="min-width: 60px; width: 40%; margin-right: 6px" v-model="item.Chain.groupName" @keyup="doOnKeyUp(event, 'chainGroup', false, item)" />
-                                <a href="javascript:void(0)" @click="selectChainGroup(index, item.Chain)" :style="{ color: index == currentChainGroupIndex ? 'black' : 'gray' }" >{{ isCaseGroupEditable ? '' : item.Chain.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
+                                <a href="javascript:void(0)" @click="selectChainGroup(index, item.Chain)" :style="{ color: index == currentChainGroupIndex ? 'black' : 'gray' }" >{{ isCaseGroupEditable ? '' : item.Chain.groupName }}</a><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px" class="hint--left" :data-hint="item.Chain.groupName">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
                                 <svg class="icon" @click="remove(item, index, true, false, false, true)" style="background-color: white; width: 27px; height: 18px; right: -2px; top: 10px; padding-left: 3px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px;" >
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
@@ -256,7 +256,7 @@
 
 
                 <div v-show="isLocalShow || isCaseItemShow()" :style="{width: isCaseGroupShow() && ! isLocalShow ? '60%' : '100%'}" style="float: right; flex-grow: 1; height: 100%;">
-                    <input id="vChainAdd" v-show="isChainShow && currentChainGroupIndex >= 0" style="width: 100%"  @keyup="doOnKeyUp(event, 'chainAdd', false, {'groupName': vChainAdd.value})" placeholder="输入名称，回车来搜索及添加" />
+                    <input id="vChainAdd" v-show="isChainShow && currentChainGroupIndex >= 0" style="width: 100%; text-align: center"  @keyup="doOnKeyUp(event, 'chainAdd', false, {'groupName': vChainAdd.value})" placeholder="输入名称，回车来搜索及添加" />
 
                     <ul class="historys" style="width: 100%; height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 50px">
                         <li v-for="(item, index) in testCases" :id="'docItem' + index" >
@@ -743,14 +743,18 @@ fun(true, 1, 'a'..);
 
                 <div class="right-main" id="vHtml" v-show="view == 'html'"></div>
                 <div class="right-main" id="vMarkdown" v-show="view == 'markdown'"></div>
-                <div v-show="view == 'markdown'" style="bottom: -6px; text-align: right; position: absolute; width: 100%; padding: 4px 20px 0px 4px; background-color: white;">
-                    <input id="vSearch" v-model="search" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'document', true)" placeholder="搜索" />
-                    <button @click="pageDown('document')">上页 < </button>
-                    <input id="vPage"  v-model="page" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" placeholder="页码" />
-                    <button @click="pageUp('document')"> > 下页</button>
-                    <a >每页</a>
-                    <input id="vCount" v-model="count" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" placeholder="条数" />
-                    <a >条</a>
+                <div style="bottom: -6px; text-align: right; position: absolute; width: 100%; padding: 4px 20px 0px 4px; background-color: white;">
+<!--                <div style="float: right" >-->
+                        <input v-show="view == 'markdown'" id="vSearch" v-model="search" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'document', true)" placeholder="搜索文档" />
+                        <button v-show="view == 'markdown'" @click="pageDown('document')">上页 < </button>
+                        <input v-show="view == 'markdown'" id="vPage"  v-model="page" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" placeholder="页码" />
+                        <button v-show="view == 'markdown'" @click="pageUp('document')"> > 下页</button>
+                        <a v-show="view == 'markdown'" >每页</a>
+                        <input v-show="view == 'markdown'" id="vCount" v-model="count" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'document', true)" placeholder="条数" />
+                        <a v-show="view == 'markdown'" >条</a>
+                    <!--                    </div>-->
+                    <input id="vAskAI" style="min-width: 60px; display: inline-flex; padding: 0px 4px 0px 4px" @keyup="doOnKeyUp(event, 'ask', true)"  placeholder="Ask AI" :style="{'width': view == 'markdown' ? 'auto' : '82%', 'text-align': view == 'markdown' ? 'center' : 'left'}" />
+                    <label style="float: right; margin-left: 8px; padding-left: 15px; padding-top: 3px; justify-content: center; align-items: center; text-align: center; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;"><input id="vDeepSearch" type="checkbox" name="Deep Search" style="height: 100%; text-align: center; position: absolute; margin-left: -15px; bottom: -0px">Deep Search</label>
                 </div>
 
                 <ul class="dropdown-menu" id="vOption" style="display: block; left: 0px; top: 0px; max-height: 100%; max-width: 100%; overflow: scroll; overflow-x: scroll; overflow-y:scroll;" v-show="options != null && options.length > 0">
@@ -910,15 +914,15 @@ fun(true, 1, 'a'..);
 <!--最外层根结构-->
 <script type="text/x-template" id="outer-template">
     <ul class="json-item">
-        <vue-val :theme="theme" :val="jsondata" :isend="isend" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (JSON.parse(jsondata._$_this_$_) || {})" ></vue-val>
+        <vue-val :theme="theme" :val="jsondata" :isend="isend" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (parseJSON(jsondata._$_this_$_) || {})" ></vue-val>
     </ul>
 </script>
 
 <!--内层每个键值对-->
 <script type="text/x-template" id="item-template">
     <ul class="json-item">
-        <vue-val :theme="theme" :field="key" :val="val" :isend="index == objLength(jsondata) - 1" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (JSON.parse(jsondata._$_this_$_) || {})"
-                 v-show="onRenderJSONItem(val, key, (JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (thiz || JSON.parse(jsondata._$_this_$_) || {}))._$_path_$_)"
+        <vue-val :theme="theme" :field="key" :val="val" :isend="index == objLength(jsondata) - 1" :thiz="JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (parseJSON(jsondata._$_this_$_) || {})"
+                 v-show="onRenderJSONItem(val, key, (JSONResponse.isObject(jsondata) != true || StringUtil.isEmpty(jsondata._$_this_$_, true) ? {} : (thiz || parseJSON(jsondata._$_this_$_) || {}))._$_path_$_)"
                  v-for="(val, key, index) in jsondata"></vue-val>
     </ul>
 </script>
@@ -1048,6 +1052,7 @@ fun(true, 1, 'a'..);
   var vMarkdown = document.getElementById('vMarkdown');
   var vPage = document.getElementById('vPage');
   var vCount = document.getElementById('vCount');
+  var vAskAI = document.getElementById('vAskAI');
   var vSearch = document.getElementById('vSearch');
   var vTestCasePage = document.getElementById('vTestCasePage');
   var vTestCaseCount = document.getElementById('vTestCaseCount');

@@ -54,7 +54,7 @@ var CodeUtil = {
   DATABASE_KINGBASE: 'KINGBASE',
   DATABASE_TIDB: 'TIDB',
   DATABASE_TDENGINE: 'TDENGINE',
-  DATABASE_NEBULA: 'NEBULA',
+  DATABASE_SURREALDB: 'SURREALDB',
   DATABASE_PRESTO: 'PRESTO',
   DATABASE_TRINO: 'TRINO',
   DATABASE_INFLUXDB: 'INFLUXDB',
@@ -64,6 +64,13 @@ var CodeUtil = {
   DATABASE_KAFKA: 'KAFKA',
   DATABASE_MARIADB: 'MARIADB',
   DATABASE_HIVE: 'HIVE',
+  DATABASE_SNOWFLAKE: 'SNOWFLAKE',
+  DATABASE_DATABRICKS: 'DATABRICKS',
+  DATABASE_MILVUS: 'MILVUS',
+  DATABASE_IOTDB: 'IOTDB',
+  DATABASE_DUCKDB: 'DUCKDB',
+  DATABASE_CASSANDRA: 'CASSANDRA',
+  DATABASE_MONGODB: 'MONGODB',
 
   type: 'JSON',
   database: 'MYSQL',
@@ -259,7 +266,7 @@ var CodeUtil = {
               }
               else {
                 try {
-                  value = JSON.parse(value)
+                  value = parseJSON(value)
                 }
                 catch (e) {
                   console.log(e)
@@ -1839,7 +1846,7 @@ var CodeUtil = {
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = JSON.parse(resultJson) \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ' = parseJSON(resultJson) \n';
       },
 
       onParseParentEnd: function () {
@@ -2688,7 +2695,7 @@ res_data = rep.json()
     else if (format instanceof Array == false && format instanceof Object) {
       s += prefix2 + varName + '_json = json.loads(' + varName + ')'
       try {
-        var realObj = JSON.parse(real);
+        var realObj = parseJSON(real);
         var cs = CodeUtil.parsePythonResponseByStandard(varName + '_json', key, format, realObj, depth, isSmart, true, funDefs, funNames);
         if (StringUtil.isNotEmpty(cs, true)) {
           s += '\n' + padding + cs.trim();
@@ -2752,7 +2759,7 @@ res_data = rep.json()
     return CodeUtil.parseCode(name, resObj, {
 
       onParseParentStart: function () {
-        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = JSON.parse(resultJson); \n';
+        return depth > 0 || StringUtil.isEmpty(name_, true) == false ? '' : CodeUtil.getBlank(depth) + varKey + ' ' + name + ': object = parseJSON(resultJson); \n';
       },
 
       onParseParentEnd: function () {
@@ -6222,7 +6229,7 @@ res_data = rep.json()
     OWNER: '拥有者',
     ADMIN: '管理员'
   },
-  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'DAMENG', 'KINGBASE', 'MARIADB', 'SQLITE', 'INFLUXDB', 'TDENGINE', 'PRESTO', 'TRINO', 'HIVE', 'TIDB', 'CLICKHOUSE', 'ELASTICSEARCH', 'REDIS'], // , 'KAFKA'],
+  DATABASE_KEYS: ['MYSQL', 'POSTGRESQL', 'SQLSERVER', 'ORACLE', 'DB2', 'DAMENG', 'KINGBASE', 'MARIADB', 'SQLITE', 'INFLUXDB', 'TDENGINE', 'PRESTO', 'TRINO', 'HIVE', 'TIDB', 'CLICKHOUSE', 'ELASTICSEARCH', 'REDIS', 'IOTDB', 'SURREALDB', 'DUCKDB', 'CASSANDRA', 'MONGODB', 'SNOWFLAKE', 'DATABRICKS', 'MILVUS'], // , 'KAFKA'],
 
   getComment4Function: function (funCallStr, method, language) {
     if (typeof funCallStr != 'string') {
@@ -6776,7 +6783,7 @@ res_data = rep.json()
     var typeOfValue = CodeUtil.getType4Request(value);
     var isValueNotArray = typeOfValue != 'array';
     var isValueNotObject = typeOfValue != 'object';
-    
+
     if (standardObj != null) {
       var parentObj = pathKeys == null || pathKeys.length <= 0 ? null : JSONResponse.getStandardByPath(standardObj, pathKeys.slice(0, pathKeys.length - 1));
       var targetValues = parentObj == null ? null : parentObj.values;
@@ -7287,7 +7294,7 @@ res_data = rep.json()
   },
 
   getType4Request: function (value) {
-    // return t != 'string' ? t : typeof JSON.parse(value);
+    // return t != 'string' ? t : typeof parseJSON(value);
     if (value instanceof Array) {
       return 'array'
     }
