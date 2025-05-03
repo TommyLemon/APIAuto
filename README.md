@@ -23,7 +23,8 @@
 腾讯内部用户包括 IEG 互动娱乐事业群、TEG 技术工程事业群、CSIG 云与智慧事业群 的多个部门及团队， <br />
 外部用户包含 华为、工商银行某地分行、500 强上市公司传音、跨境电商巨头 SHEIN、行业领头羊社保科技 等。
 
-![image](https://github.com/user-attachments/assets/24460af3-0001-46e7-aa2a-df28b711a8cf)
+![](https://github.com/user-attachments/assets/24460af3-0001-46e7-aa2a-df28b711a8cf)
+![](https://github.com/user-attachments/assets/8bc839b1-cce1-4cda-a35d-77ade1387035)
 ![](https://user-images.githubusercontent.com/5738175/145665502-94231804-5ea8-4784-b30d-d5558aad0f8d.jpeg)
 
 <h3 align="center" style="text-align:center;">
@@ -281,7 +282,7 @@ https://github.com/TommyLemon/APIAuto/issues
 ### 技术交流
 ##### 关于作者
 [https://github.com/TommyLemon](https://github.com/TommyLemon)<br />
-<img width="1280" src="https://github.com/TommyLemon/UIGO/assets/5738175/ec77df98-ff9b-43aa-b2f1-2fce2549d276">
+![image](https://github.com/user-attachments/assets/c4aa8573-f8b3-4973-8c37-29677c06ac3b)
 
 如果有什么问题或建议可以 [提 issue](https://github.com/TommyLemon/APIAuto/issues)，交流技术，分享经验。<br >
 如果你解决了某些 bug，或者新增了一些功能，欢迎 [提 PR 贡献代码](https://github.com/Tencent/APIJSON/blob/master/CONTRIBUTING.md)，感激不尽。
