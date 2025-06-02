@@ -5,9 +5,11 @@
 <p align="center">☔ HTTP 接口 机器学习零代码测试 和 一站式智能开发管理 工具</p>
 
 <p align="center" >
+  <a href="https://deepwiki.com/TommyLemon/APIAuto">English</a>
   <a href="https://github.com/TommyLemon/APIAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
   <a href="https://search.bilibili.com/all?keyword=APIAuto">视频教程</a>
   <a href="http://apijson.cn/api">在线体验</a>
+  <a href="https://deepwiki.com/TommyLemon/APIAuto">AI 问答</a>
 </p>
 
 <p align="center" >
