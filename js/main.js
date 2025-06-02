@@ -7507,18 +7507,58 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (type == 'ask') {
           if (isEnter) {
+            event.preventDefault();
+
+            if (event.shiftKey) {
+              vAskAI.value = StringUtil.trim(vAskAI.value) + '\n'
+              return
+            }
+
+            var query = vAskAI.value = StringUtil.trim(vAskAI.value)
+
             var isRes = false;
-            if (StringUtil.isEmpty(vAskAI.value) && StringUtil.isNotEmpty(this.jsoncon, true) ) {
-              var res = JSON.parse(this.jsoncon);
+
+            if (StringUtil.isEmpty(query)) {
+              var view = this.view;
+              var isCode = view == 'code'
+
+// 太长             var output = view == 'error' || view == 'output' ? this.output : null;
+              var output = view == 'error' ? this.output : null;
+              var d = view == 'markdown' || view == 'html' ? doc : null;
+
+              var res = isCode ? JSON.parse(this.jsoncon) : null;
 //              res = this.removeDebugInfo(res);
-              delete res['trace:stack']
-              delete res['debug:info|help']
-              vAskAI.value = JSON.stringify(res)
+              if (JSONResponse.isObject(res)) {
+                  delete res['trace:stack']
+                  delete res['debug:info|help']
+              }
+              var resStr = res == null ? null : JSON.stringify(res)
+
+              var headers = isCode ? (this.currentHttpResponse || {}).headers : null
+              var headerStr = ''
+              if (headers != null) {
+                  for (var k in headers) {
+                    var v = headers[k];
+                    headerStr += '\n' + k + ': ' + StringUtil.get(v);
+                  }
+              }
+
+              vAskAI.value = "### Request:\n" + this.method + " " + this.type + " " + this.getUrl()
+                              + (StringUtil.isEmpty(vHeader.value) ? '' : "\n" + StringUtil.trim(vHeader.value))
+                              + (StringUtil.isEmpty(vInput.value) ? '' : "\n\n```js\n" + StringUtil.trim(vInput.value) + '\n```')
+                              + (isCode ? "\n\n### Response: " : '')
+                              + (StringUtil.isEmpty(headerStr) ? '' : '\n' + StringUtil.trim(headerStr))
+                              + (StringUtil.isEmpty(resStr) ? '' : "\n\n```js\n" + resStr + '\n```')
+                              + (StringUtil.isEmpty(vAskAI.value) ? '' : '\n\n' + StringUtil.trim(vAskAI.value)) + '\n'
+                              + (StringUtil.isEmpty(output) ? '' : '\n\n### 提示信息: \n' + StringUtil.trim(output))
+                              // 太长 + (StringUtil.isEmpty(d) ? '' : '\n\n### 文档: \n' + d)
+                              + '\n'
               isRes = true;
             }
 
             const user_query = StringUtil.trim(vAskAI.value);
             if (StringUtil.isEmpty(user_query)) {
+              alert('请输入问题！')
               return;
             }
 
@@ -7624,12 +7664,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 //            }
 
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, 'https://api.devin.ai/ada/query', {
-              "engine_id": "multihop",
-              "user_query": "<relevant_context>" + (isRes ? "这是用 HTTP 接口工具 TommyLemon/APIAuto 发请求后的响应结果，分析并" : "") + "用中文回答：</relevant_context>" + user_query,
+              "engine_id": vDeepSearch.checked ? "agent" : "multihop",
+              "user_query": "<relevant_context>" + (isRes ? "这是用 HTTP 接口工具 TommyLemon/APIAuto 发请求后的响应结果，分析并" : "") + "用中文回答：</relevant_context><br/>\n" + user_query,
               "keywords": [],
-              "repo_names": [
-                "Tencent/APIJSON"
-              ],
+              "repo_names": JSONObject.isAPIJSONPath(this.getMethod()) ? [
+                "Tencent/APIJSON", "TommyLemon/APIAuto"
+              ] : ["TommyLemon/APIAuto"],
               "additional_context": "",
               "query_id": this.uuid,
               "use_notes": false,
@@ -8130,7 +8170,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             break;
 
           case CodeUtil.LANGUAGE_PYTHON:
-            s += '\n#### <= Web-Python: 注释符用 \'\#\''
+            s += '\n#### <= Web-Python: 注释符用 \'\\#\''
               + ' \n ```python \n'
               + CodeUtil.parsePythonRequest(null, parseJSON(rq), 0, isSingle, vInput.value)
               + '\n ``` \n注：关键词转换 null: None, false: False, true: True';
