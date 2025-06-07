@@ -7543,7 +7543,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
               }
 
-              vAskAI.value = "### Request:\n" + this.method + " " + this.type + " " + this.getUrl()
+              var curItem = (this.isTestCaseShow != true ? this.currentRandomItem : this.remotes[this.currentDocIndex]) || {}
+              var curDoc = curItem.Document || {}
+              var curRecord = curItem.TestRecord || {}
+              var curRandom = curItem.Random || {}
+
+//              var isRandom = this.isTestCaseShow != true && this.isRandomShow == true
+//              var tests = this.tests[String(this.currentAccountIndex)] || {}
+//              var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[
+//                  isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
+//              ]
+//
+//              resStr = currentResponse != null ? JSON.stringify(currentResponse) : curRecord.response;
+
+              if (this.isTestCaseShow != true) {
+                  vAskAI.value = "### Request:\n" + this.method + " " + this.type + " " + this.getUrl()
                               + (StringUtil.isEmpty(vHeader.value) ? '' : "\n" + StringUtil.trim(vHeader.value))
                               + (StringUtil.isEmpty(vInput.value) ? '' : "\n\n```js\n" + StringUtil.trim(vInput.value) + '\n```')
                               + (isCode ? "\n\n### Response: " : '')
@@ -7553,6 +7567,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                               + (StringUtil.isEmpty(output) ? '' : '\n\n### 提示信息: \n' + StringUtil.trim(output))
                               // 太长 + (StringUtil.isEmpty(d) ? '' : '\n\n### 文档: \n' + d)
                               + '\n'
+              } else {
+                  vAskAI.value = "### Request:\n" + curDoc.method + " " + curDoc.type + " " + (this.getBaseUrl() + curDoc.url)
+                              + (StringUtil.isEmpty(curDoc.header) ? '' : "\n" + StringUtil.trim(curDoc.header))
+                              + (StringUtil.isEmpty(curDoc.request) ? '' : "\n\n```js\n" + StringUtil.trim(curDoc.request) + '\n```')
+                              + (isCode ? "\n\n### Response: " : '')
+                              + (StringUtil.isEmpty(curRecord.header) ? '' : '\n' + StringUtil.trim(curRecord.header))
+                              + (StringUtil.isEmpty(resStr) ? '' : "\n\n```js\n" + resStr + '\n```')
+                              + (StringUtil.isEmpty(vAskAI.value) ? '' : '\n\n' + StringUtil.trim(vAskAI.value)) + '\n'
+                              + (StringUtil.isEmpty(output) ? '' : '\n\n### 提示信息: \n' + StringUtil.trim(output))
+                              // 太长 + (StringUtil.isEmpty(d) ? '' : '\n\n### 文档: \n' + d)
+                              + '\n'
+              }
+
               isRes = true;
             }
 
@@ -7660,7 +7687,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             // 可能少调用了 https://api2.amplitude.com/2/httpapi 导致不能同一个会话二次请求
 //            if (StringUtil.isEmpty(this.uuid, true)) {
-              this.uuid = crypto.randomUUID();
+               try {
+                 this.uuid = crypto.randomUUID();
+               } catch (e) {
+                 console.error('Failed to generate UUID:', e);
+                 this.uuid = '';
+               }
+
+              if (StringUtil.isEmpty(this.uuid, true)) {
+                this.uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                  var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                  return v.toString(16);
+                });
+              }
 //            }
 
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, 'https://api.devin.ai/ada/query', {
