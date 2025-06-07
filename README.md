@@ -48,8 +48,8 @@ https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==
 ![https://testwo.cn1.quickconnect.cn/vs/sharing/iiP8VK1C#!aG9tZV92aWRlby0xMQ==](https://user-images.githubusercontent.com/5738175/179575169-de9cc578-6d90-4aec-bbf4-f28147277ed2.png)
 
 #### QECon-全球软件质量&效能大会-零代码开发和测试
-从包括 BAT、字节、京东、华为等几十个专家和架构师的分享中脱颖而出，<br />
-和主会场华为云副总裁等大佬的分享被 QECon 大会主办方一块先放了出来 <br />
+从包括 BAT、华为、字节、京东等几十个专家和架构师的分享脱颖而出，<br />
+零代码开发和测试 成为大会主会场回看预约海报唯一分会场演讲范例。 <br /><br />
 <img width="1360" alt="wecom-temp-377bbd0daf5aed716baf7ebcb003d94c" src="https://user-images.githubusercontent.com/5738175/121370207-1b35de00-c96f-11eb-840e-cc2ff2995888.png">
 
 <img width="390" src="https://user-images.githubusercontent.com/5738175/125167121-86bed580-e1d1-11eb-9dc6-2ea190146fe6.png">
