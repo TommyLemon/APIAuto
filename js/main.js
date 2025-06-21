@@ -6726,7 +6726,7 @@ https://github.com/Tencent/APIJSON/issues
                 .then(response => response.json())
                 .then(data => {
                   var path = data.path;
-                  if (StringUtil.isEmpty(path, true)) {
+                  if (StringUtil.isEmpty(path, true) || data.size == null) {
                     throw new Error('上传失败！' + JSON.stringify(data || {}));
                   }
 
@@ -6767,7 +6767,7 @@ https://github.com/Tencent/APIJSON/issues
             .then(response => response.json())
             .then(data => {
               var path = data.path;
-              if (StringUtil.isEmpty(path, true)) {
+              if (StringUtil.isEmpty(path, true) || data.size == null) {
                 throw new Error('上传失败！' + JSON.stringify(data || {}));
               }
 
@@ -12023,10 +12023,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (isRandom) {
           var toId = (d == null ? null : d.toId) || 0
-          this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'][index].setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
+          var eles = this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'];
+          var ele = eles == null ? null : eles[index];
+          if (ele == null) {
+            return;
+          }
+          ele.setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
         }
         else {
-          this.$refs['testCaseTexts'][index].setAttribute('data-hint', StringUtil.isEmpty(d.request, true) ? '' : JSON.stringify(this.getRequest(d.request, {}, true), null, ' '));
+          var eles = this.$refs['testCaseTexts'];
+          var ele = eles == null ? null : eles[index];
+          if (ele == null) {
+            return;
+          }
+          ele.setAttribute('data-hint', StringUtil.isEmpty(d.request, true) ? '' : JSON.stringify(this.getRequest(d.request, {}, true), null, ' '));
         }
       },
 
@@ -12035,8 +12045,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         item = item || {};
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
         var h = isDuration ? item.durationHint : (isHandle ? item.compareMessage : item.hintMessage);
-        this.$refs['test' + (isRandom ? (toId <= 0 ? 'Random' : 'RandomSub') : '') + (isHandle ? 'Handle' : 'Result')
-         + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
+        var eles = this.$refs['test' + (isRandom ? (toId <= 0 ? 'Random' : 'RandomSub') : '') + (isHandle ? 'Handle' : 'Result') + (isDuration ? 'Duration' : '') + 'Buttons'];
+        var ele = eles == null ? null : eles[index];
+        if (ele == null) {
+          return;
+        }
+        ele.setAttribute('data-hint', h || '');
       },
 
       handleTestArg: function(hasTestArg, rawReq, delayTime, callback) {
