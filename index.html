@@ -460,8 +460,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <li style="width: 100%; background-color: white; " v-for="(item, index) in randomSubs" :id="'randomSubItem' + index" >
                                 <img id="vRandomSubImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; width: 90px" @click="onClickAddRandom(currentRandomIndex, index)">
 
-                                <a v-show="! isRandomEditable" class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
-                                <input v-show="isRandomEditable" style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
+                                <a class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') + '\n' + ((item.Random || {}).file || '') }}</a>
+                                <input style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
 
                                 <div :style="{ background: item.compareColor }" v-show="! isRandomEditable && item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
                                     <button class="hint--left" ref="testRandomSubResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, null, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
@@ -470,6 +470,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                                     </svg>   <!-- 中间 button 仅用来占位，解决上面按钮隐藏后，下载图标纵向没对齐 -->
                                     <button class="hint--left" ref="testRandomSubHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, null, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomSubResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, null, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
                                 </div>
+
+                                <img id="vRandomSubUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="margin-right: 27px; top: 13px" @click="uploadImage(currentRandomIndex, index)">
                                 <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
@@ -487,20 +489,18 @@ Ctrl + S 或 Command + S 保存当前用例；
                         <!-- 持久化存储的配置项 -->
                         <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%; margin-top: 36px; background-color: transparent;overflow: hidden;overflow-y: scroll;padding-bottom: 100px">
                             <li style="width: 100%; display: inline-flex; background-color: white" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
-                                <img id="vRandomImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; width: 160px; background-color: rgba(255, 255, 255, 0.5); position: relative" @click="onClickAddRandom(index)">
+                                <img id="vRandomImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; background-color: rgba(255, 255, 255, 0.5); position: relative" @click="onClickAddRandom(index)">
 
-                                <input v-show="false" v-model="(item.Random || {}).count" style="min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" @keyup="doOnKeyUp(event, 'random', false, item)" />
-                                <a v-show="false" style="margin-left: 4px; ">次</a>
-                                <a v-show="false" style="top: 35px; left: 173px; width: 150px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
-                                <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" />
+                                <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') + '\n' + ((item.Random || {}).file || '') }}</a>
+                                <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" ></textarea>
 
-                                <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute;top: 10px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
+                                <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute; bottom: 6px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
                                 <div v-show="isStatisticsEnabled && ((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; top: 10px;right: 36px;display: inline-block" @click="handleTest(true, index, item, null, true)">
                                     <!-- 只能写成一行来消除间隙，不能换行、空格 -->
                                     <a style="background: transparent; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ (item.totalCount || 0) + ':' }}</a><a style="background: white; color: black; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.whiteCount || 0 }}</a><a style="background: green; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.greenCount || 0 }}</a><a style="background: blue; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.blueCount || 0 }}</a><a style="background: orange; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.orangeCount || 0 }}</a><a style="background: red; color: white; position: relative; min-width: 6px; width: auto; height: 100%; margin: 0; padding: 2px">{{ item.redCount || 0 }}</a>
                                 </div>
 
-                                <div v-show="isStatisticsEnabled && ! isRandomEditable && ((item.Random || {}).count || 1) <= 1" style="position: absolute;top: 10px;right: 36px;display: inline-block;">
+                                <div v-show="isStatisticsEnabled && ! isRandomEditable && ((item.Random || {}).count || 1) <= 1" style="position: absolute;bottom: 6px;right: 36px;display: inline-block;">
                                     <div :style="{ background: item.compareColor }" v-show="item.compareType != null" >
                                         <button class="hint--left" ref="testRandomResultButtons" @mouseover="setTestHint(index, item, true)" v-show="item.compareType != null" @click="handleTest(false, index, item, null, true)" style="position: relative;">{{ StringUtil.limitLength(item.compareMessage, 30, 'middle') + (item.showType == 'before' ? '-前' : '-后') }}</button>
                                         <svg class="icon" style="position: relative;margin-left: 10px" @click="downloadTest(index, item, true)">
@@ -510,7 +510,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                                     </div>
                                 </div>
 
-                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
+                                <img id="vRandomUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="position: absolute;right: 27px; top: 3px" @click="uploadImage(index)">
+                                <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="position: absolute;right: 5px; top: 6px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
                             </li>

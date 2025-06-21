@@ -6669,7 +6669,7 @@ https://github.com/Tencent/APIJSON/issues
         const items = (isSub ? this.randomSubs : this.randoms) || [];
         const cri = this.currentRandomItem || {}
         const random = cri.Random || {}
-        const ind = isSub && randomSubIndex != null ? this.currentRandomSubIndex : this.currentRandomIndex;
+        const ind = isSub && this.currentRandomSubIndex != null ? this.currentRandomSubIndex : this.currentRandomIndex;
 
         var selectedFiles = Array.from(event.target.files);
         // const previewList = document.getElementById('previewList');
@@ -6697,6 +6697,13 @@ https://github.com/Tencent/APIJSON/issues
                 config: ''
               }
             }, items[index] || {});
+            item.status = 'uploading';
+
+            const r = item.Random || {};
+            r.file = file.name;
+            r.size = file.size;
+            r.width = file.width;
+            r.height = file.height;
 
             items[index] = item;
 
@@ -6708,43 +6715,77 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             Vue.set(items, index, item);
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch(this.server + '/upload', {
+              method: 'POST',
+              body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                  var path = data.path;
+                  if (StringUtil.isEmpty(path, true)) {
+                    throw new Error('上传失败！' + JSON.stringify(data || {}));
+                  }
+
+                  console.log('Upload successful:', data);
+                  item.status = 'done';
+                  item.img = (path.startsWith('/') ? App.server + path : path) || item.img;
+                })
+                .catch(error => {
+                  console.error('Upload failed:', error);
+                  item.status = 'failed';
+                });
           };
           reader.readAsDataURL(file);
         });
       },
 
-      showUploadImage: function() {
-        var fileInput = document.getElementById('imageInput');
-        const file = fileInput.files[0];
+      uploadImage: function(randomIndex, randomSubIndex) {
+        const isSub = randomSubIndex != null;
+        const items = (isSub ? this.randomSubs : this.randoms) || [];
+        const cri = this.currentRandomItem || {}
+        const ind = isSub && randomSubIndex != null ? randomSubIndex : randomIndex;
+        const item = items[ind] || {}
+        const random = item.Random || {}
 
-        var vImage = document.getElementById('vImage');
-        vImage.src = file.uri;
-      },
-
-      uploadImage: function() {
-        var fileInput = document.getElementById('imageInput');
-        const file = fileInput.files[0];
-
-        if (!file) {
+        if (StringUtil.isEmpty(item.img)) {
           alert('Please select an image file.');
+          this.onClickAddRandom(randomIndex, randomSubIndex)
           return;
         }
 
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('file', item.img);
 
-        fetch(this.getUrl(), {
+        fetch(this.server + '/upload', {
           method: 'POST',
           body: formData
         })
             .then(response => response.json())
             .then(data => {
+              var path = data.path;
+              if (StringUtil.isEmpty(path, true)) {
+                throw new Error('上传失败！' + JSON.stringify(data || {}));
+              }
+
               console.log('Upload successful:', data);
-              alert('Image uploaded successfully!');
+              item.status = 'done';
+              const img = (path.startsWith('/') ? App.server + path : path) || item.img || '';
+              var keys = StringUtil.split(data.path, '/');
+              var fn = keys == null ? null : keys[keys.length - 1];
+              random.file = StringUtil.isEmpty(fn, true) ? fn : random.file;
+              random.img = img;
+              random.size = (data.size || (StringUtil.length(img) * (3/4)) - (img.endsWith('==') ? 2 : 1));
+              random.width = data.width || random.width;
+              random.height = data.height || random.height;
             })
             .catch(error => {
               console.error('Upload failed:', error);
               alert('Failed to upload image.');
+              item.status = 'failed';
             });
       },
 
