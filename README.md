@@ -1,19 +1,19 @@
 <h1 align="center" style="text-align:center;">
-  APIAuto
+  CVAuto
 </h1>
  
 <p align="center">☔ HTTP 接口 机器学习零代码测试 和 一站式智能开发管理 工具</p>
 
 <p align="center" >
-  <a href="https://deepwiki.com/TommyLemon/APIAuto">English</a>
-  <a href="https://github.com/TommyLemon/APIAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
-  <a href="https://search.bilibili.com/all?keyword=APIAuto">视频教程</a>
+  <a href="https://deepwiki.com/TommyLemon/CVAuto">English</a>
+  <a href="https://github.com/TommyLemon/CVAuto#%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B">快速上手</a>
+  <a href="https://search.bilibili.com/all?keyword=CVAuto">视频教程</a>
   <a href="http://apijson.cn/api">在线体验</a>
-  <a href="https://deepwiki.com/TommyLemon/APIAuto">AI 问答</a>
+  <a href="https://deepwiki.com/TommyLemon/CVAuto">AI 问答</a>
 </p>
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/TommyLemon/APIAuto/master/img/logo.png" />
+  <img src="https://raw.githubusercontent.com/TommyLemon/CVAuto/master/img/logo.png" />
 </p>
 
 ---
@@ -33,11 +33,11 @@
 腾讯 AI 测试圈子演讲(部分)
 </h3>
 
-![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/APIAuto/APIAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
+![](https://raw.githubusercontent.com/TommyLemon/StaticResources/master/CVAuto/CVAuto_Tencent_TEG_AITestCircle_quick_and_slow.gif)
 
 
 #### 腾讯内先后被 TEG 工具开发组、微信支付部门、IEG 工具开发组、CDG 金融支付组、IEG PC 游戏平台部 邀请分享了 
-* APIAuto-机器学习 HTTP 接口工具
+* CVAuto-机器学习 HTTP 接口工具
 * 零代码测试工具与实践(API•单元•UI)
 * 零代码开发和测试(API测试•单元测试•API开发)
 * 零代码开发和测试(API测试•单元测试•API开发)
@@ -127,7 +127,7 @@ Bilibili：https://search.bilibili.com/all?keyword=APIAuto
 ### 百度、搜狗、抖音公网接口调用演示<br />
 因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
 可以复制 Chrome 等浏览器、Charles 等抓包工具的请求文本，<br />
-粘贴到 APIAuto 的 URL 输入框，会自动填充 URL, JSON, Header 等。<br />
+粘贴到 CVAuto 的 URL 输入框，会自动填充 URL, JSON, Header 等。<br />
 https://github.com/TommyLemon/APIAuto/issues/16 
 
 #### 百度
@@ -165,7 +165,7 @@ https://www.bilibili.com/video/BV1JZ4y1d7c8
 **自动生成文档、自动管理测试用例 这两个功能 需要部署 APIJSON 后端，建议用 APIJSONBoot 系列之一 Demo，见** <br /> 
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 
-**建议使用已 [内置 APIAuto](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static) 的 [APIJSONBoot-MultiDataSource](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource)，可以避免以下常见问题 1, 3, 4**
+**建议使用已 [内置 CVAuto](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource/src/main/resources/static) 的 [APIJSONBoot-MultiDataSource](https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource)，可以避免以下常见问题 1, 3, 4**
 
 <br />
 
@@ -177,7 +177,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server
 点右上角登录 > 点右上角设置 > 导入第三方文档(平台 URL) > 如果默认设置不符你的需求，可以在弹窗内修改 > 点上传按钮
 
 #### 2.从浏览器 Network 接口信息界面或 Charles 等抓包工具复制后粘贴到 URL 输入框
-https://github.com/TommyLemon/APIAuto#%E7%99%BE%E5%BA%A6%E6%90%9C%E7%8B%97%E6%8A%96%E9%9F%B3%E5%85%AC%E7%BD%91%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E6%BC%94%E7%A4%BA
+https://github.com/TommyLemon/CVAuto#%E7%99%BE%E5%BA%A6%E6%90%9C%E7%8B%97%E6%8A%96%E9%9F%B3%E5%85%AC%E7%BD%91%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E6%BC%94%E7%A4%BA
 
 #### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、响应等信息
 https://github.com/APIJSON/APIJSON-Demo/tree/master/APIJSON-Java-Server/APIJSONBoot-MultiDataSource#%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E5%8F%8A%E5%BD%95%E5%88%B6%E6%B5%81%E9%87%8F
@@ -233,7 +233,7 @@ npm i xxx
 很多问题都不需要看文档/视频，可以直接通过把光标放上去等简单尝试来得到解答**
 
 #### 1.无法访问接口
-如果是 APIAuto 本身调用的后端接口，则一般是 Chrome 90+ 对 CORS 请求禁止携带 Cookie  <br />
+如果是 CVAuto 本身调用的后端接口，则一般是 Chrome 90+ 对 CORS 请求禁止携带 Cookie  <br />
 或 Chrome 80-89 强制 same-site Cookie 的策略导致，打开以下链接查看解决方法 <br />
 https://github.com/TommyLemon/APIAuto/issues/9
 

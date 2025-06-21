@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>APIAuto-机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释</title>
+  <title>CVAuto-零代码 CV AI 自动化测试平台</title>
     <meta charset="utf-8" />
-    <meta name="keywords" content="apijson,api,json,auto,apiauto,自动生成接口文档,自动化接口回归测试,机器学习接口回归测试,回归测试,机器学习,接口测试,API测试,自动化,API自动化,接口自动化,fastjson,json在线解析,json格式化验证"/>
-    <meta name="description" content="APIAuto-敏捷开发最强大易用的 HTTP 接口工具，机器学习零代码测试、生成代码与静态检查、生成文档与光标悬浮注释"/>
+  <meta name="keywords" content="apijson,api,json,auto,cv,ai,cvauto,计算机视觉,自动化CV回归测试,机器学习CV回归测试,回归测试,机器学习,CV测试,自动化,CV自动化,功能测试,功能自动化,录制回放,零代码,低代码"/>
+  <meta name="description" content="👁 零代码 CV AI 自动化测试平台 🚀 零代码、自动化测试 CV 计算机视觉 AI 人工智能图像识别算法：行人检测、动物分类、文本 OCR 识别等"/>
 
     <!-- 登录 <<<<<<<<<<<<<<<<<<<< -->
     <link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css">
@@ -69,7 +69,7 @@
 
         <img src="img/logo.png" class="logo-img"/>
         <a class="logo" href="http://apijson.cn" target="_blank">
-            <span class="on">APIAuto:</span>
+            <span class="on">CVAuto:</span>
         </a><span class="pop-btn">
             <a href="javascript:void(0)" @click="window.open(projectHost.host)" style="padding: 14px; margin-left: -20px; font-size: 24px">{{ StringUtil.isEmpty(projectHost.project, true) ? projectHost.host : projectHost.project }}</a>
             <ul class="projects pop" style="overflow-y: scroll; z-index: 200; width: 440px; max-height: 600px; right: -260px; padding-top: 50px; background: transparent; outline: none; border: none;">
@@ -410,15 +410,24 @@ Ctrl + S 或 Command + S 保存当前用例；
                 </div>
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
-                <div style="width: 100%; height: auto; position: absolute;bottom: 0px; z-index: 100; background: white;" >
+                <div id="vContainer" v-show="view == 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100" >
+                    <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
+                        <img id="vBefore" ref="vBefore" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 240px; height: 100%; position: absolute; " />
+                        <canvas id="vBeforeRender" style="min-width: 240px; height: 100%; position: absolute;" />
+                    </div>
+                    <img id="vDiff" ref="vDiff" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 240px; height: 33%; margin: 1px; " />
+                    <img id="vAfter" ref="vAfter" src="img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg" style="min-width: 240px; height: 33%; ; margin: 1px;" />
+                </div>
+                
+                <div v-show="isRandomShow" style="position: absolute; right: 0px; width: 330px; height: 100%; z-index: 101;" >
 
-                    <div v-show="isRandomShow" style="width: 100%; height: 330px; position: relative;" >
-                        <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
+                    <div v-show="isRandomShow" style="position: absolute; width: 100%; height: 100%; " wrap="off" >
+                        <div class="left-bar" style="height: 40px; width: 100%; right: 0px; border-top: #DDD 1px solid; position: absolute; border-top: none; background-color: rgba(255, 255, 255, 0.5);">
                             <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
                             <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
-                            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '参数注入 Random Test' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
+                            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '图片' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? '(' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
                                 <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 6px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
-                                    父项列表
+                                    父项分组
                                 </a>
                                 <a style="padding-right: 4px">
                                   {{ testRandomProcess }}
@@ -446,8 +455,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                         </div>
 
                         <!-- 临时生成的配置子项 -->
-                        <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll; padding-bottom: 100px">
-                            <li style="width: 100%" v-for="(item, index) in randomSubs" :id="'randomSubItem' + index" >
+                        <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent; overflow: hidden;overflow-y: scroll; padding-bottom: 100px; margin-top: 36px">
+                            <li style="width: 100%; background-color: white; " v-for="(item, index) in randomSubs" :id="'randomSubItem' + index" >
                                 <a v-show="! isRandomEditable" class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
                                 <input v-show="isRandomEditable" style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
 
@@ -464,7 +473,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             </li>
                         </ul>
 
-                        <div v-show="isRandomSubListShow" style="bottom: 0px; padding: 4px 13px 4px 6px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
+                        <div v-show="isRandomSubListShow" style="bottom: 0px; padding: 4px 13px 4px 6px; position: absolute; width: 100%; text-align: right; z-index: 100">
                             <input id="vRandomSubSearch" v-model="randomSubSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'randomSub', true)" placeholder="搜索" />
                             <button @click="pageDown('randomSub')">上页 < </button>
                             <input id="vRandomSubPage" v-model="randomSubPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'randomSub', true)" placeholder="页码" />
@@ -475,8 +484,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                         </div>
 
                         <!-- 持久化存储的配置项 -->
-                        <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%;overflow: hidden;overflow-y: scroll;padding-bottom: 100px">
-                            <li style="width: 100%; display: inline-table" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
+                        <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%; margin-top: 36px; background-color: transparent;overflow: hidden;overflow-y: scroll;padding-bottom: 100px">
+                            <li style="width: 100%; display: inline-table; background-color: white" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
                                 <input v-model="(item.Random || {}).count" style="min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" @keyup="doOnKeyUp(event, 'random', false, item)" />
                                 <a style="margin-left: 4px; ">次</a>
                                 <a v-show="! isRandomEditable" style="top: 13px; left: 68px; position: absolute" class="hint--rounded hint--no-animate" ref="randomTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ (item.Random || {}).name }}</a>
@@ -504,17 +513,15 @@ Ctrl + S 或 Command + S 保存当前用例；
                             </li>
                         </ul>
 
-                        <div v-show="isRandomListShow" style="bottom: 0px; padding: 4px 13px 4px 6px; position: absolute; width: 100%; text-align: right; background-color: white; z-index: 100">
-                            <input id="vRandomSearch" v-model="randomSearch" style="min-width: 60px; display: inline-flex; text-align: center" @keyup="doOnKeyUp(event, 'random', true)" placeholder="搜索" />
-                            <button @click="pageDown('random')">上页 < </button>
+                        <div v-show="isRandomListShow" style="bottom: 42px; padding: 4px 4px 4px -8px; position: absolute; width: 100%; text-align: right; z-index: 100;">
+                            <input id="vRandomSearch" v-model="randomSearch" style="min-width: 50px; display: inline-flex; text-align: center; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px" @keyup="doOnKeyUp(event, 'random', true)" placeholder="搜索" />
+                            <button @click="pageDown('random')"> < </button>
                             <input id="vRandomPage" v-model="randomPage" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" placeholder="页码" />
-                            <button @click="pageUp('random')"> > 下页</button>
-                            <a >每页</a>
-                            <input id="vRandomCount" v-model="randomCount" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'random', true)" placeholder="条数" />
-                            <a >条</a>
+                            <button @click="pageUp('random')"> > </button>
+                            <input id="vRandomCount" v-model="randomCount" style="width: 30px;text-align: center; margin-right: 4px"  type="number" @keyup="doOnKeyUp(event, 'random', true)" placeholder="条数" />
                         </div>
 
-                        <textarea id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%;" wrap="off"
+                        <textarea id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%; margin-top: 36px; background-color: white; " wrap="off"
                                   placeholder="# 常用：
 RANDOM_IN(val0:Any, val1:Any ...) // 从选项内随机取值
 RANDOM_INT(min:Integer, max:Integer) // 从范围内随机取整数
@@ -610,7 +617,7 @@ fun(true, 1, 'a'..);
     <div class="splitx" ></div>
 
     <div class="side-right">
-        <div class="right-inner">
+        <div class="right-inner" style="z-index: 100" >
             <div class="right-bar">
                 <div class="pull-left">
 

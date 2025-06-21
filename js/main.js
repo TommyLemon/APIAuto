@@ -1258,7 +1258,7 @@ https://github.com/Tencent/APIJSON/issues
       tests: { '-1':{}, '0':{}, '1':{}, '2': {} },
       crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
-      randomTestTitle: '参数注入 Random Test',
+      randomTestTitle: '图片',
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
@@ -1829,7 +1829,7 @@ https://github.com/Tencent/APIJSON/issues
 
             var val = item2.substring(index + 1, item2.length)
 
-            var ind = val.indexOf('(')  //一定要有函数是为了避免里面是一个简短单词和 APIAuto 代码中变量冲突
+            var ind = val.indexOf('(')  //一定要有函数是为了避免里面是一个简短单词和 CVAuto 代码中变量冲突
             if (ind > 0 && val.indexOf(')') > ind) {  //不从 0 开始是为了保证是函数，且不是 (1) 这种单纯限制作用域的括号
               try {
                 val = eval(val)
@@ -1846,7 +1846,7 @@ https://github.com/Tencent/APIJSON/issues
         return header
       },
 
-      // 分享 APIAuto 特有链接，打开即可还原分享人的 JSON 参数、设置项、搜索关键词、分页数量及页码等配置
+      // 分享 CVAuto 特有链接，打开即可还原分享人的 JSON 参数、设置项、搜索关键词、分页数量及页码等配置
       shareLink: function (isRandom) {
         var settingStr = null
         try {
@@ -4268,7 +4268,7 @@ https://github.com/Tencent/APIJSON/issues
         return null
       },
 
-      //上传第三方平台的 API 至 APIAuto
+      //上传第三方平台的 API 至 CVAuto
       uploadThirdPartyApi: function(method, type, name, url, parameters, json, header, description, creator, data) {
         if (typeof json == 'string') {
           json = parseJSON(json)
@@ -10548,9 +10548,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           //
           // var right_left = parseInt(right_ele.css('left'))
 
-          split_obj.css('left', 0.55*width)
-          left_ele.width(0.55*width);
-          right_ele.width(0.45*width).css('left', 0.55*width);
+          split_obj.css('left', 0.6*width)
+          left_ele.width(0.6*width);
+          right_ele.width(0.4*width).css('left', 0.6*width);
           // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
         }
 
