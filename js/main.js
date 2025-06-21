@@ -1209,6 +1209,7 @@ https://github.com/Tencent/APIJSON/issues
       requestCount: 1,
       urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
+      allowMultiple: true,
       options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],
       history: {name: '请求0'},
@@ -3359,17 +3360,23 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
-      onClickAddRandom: function () {
-         if (this.isRandomListShow || this.isRandomSubListShow) {
-            this.randomTestTitle = null;
-            this.isRandomListShow = false;
-            this.isRandomSubListShow = false;
-         } else if (StringUtil.isEmpty(vRandom.value, true)) {
-            var req = this.getRequest(vInput.value, {})
-            vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req, Math.random() >= 0.5, Math.random() >= 0.3, Math.random() >= 0.8))
-         } else {
-            this.showExport(true, true, true)
-         }
+      onClickAddRandom: function (randomIndex, randomSubIndex) {
+         // if (this.isRandomListShow || this.isRandomSubListShow) {
+         //    this.randomTestTitle = null;
+         //    this.isRandomListShow = false;
+         //    this.isRandomSubListShow = false;
+         // } else if (StringUtil.isEmpty(vRandom.value, true)) {
+         //    var req = this.getRequest(vInput.value, {})
+         //    vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req, Math.random() >= 0.5, Math.random() >= 0.3, Math.random() >= 0.8))
+         // } else {
+         //    this.showExport(true, true, true)
+         // }
+
+         this.currentRandomIndex = randomIndex;
+         this.currentRandomSubIndex = randomSubIndex;
+         this.allowMultiple = randomIndex == null || randomIndex < 0;
+         const fileInput = document.getElementById('imageInput');
+         fileInput.click();
       },
 
       newRandomConfig: function (path, key, value, isRand, isBad, noDeep, isConst) {
@@ -6654,6 +6661,90 @@ https://github.com/Tencent/APIJSON/issues
           log('transfer  delete comment in json >> catch \n' + e.message);
         }
         return json;
+      },
+
+      handleFileSelect: function(event) {
+        const isSub = this.isRandomSubListShow;
+        const items = (isSub ? this.randomSubs : this.randoms) || [];
+        const cri = this.currentRandomItem || {}
+        const random = cri.Random || {}
+        const ind = isSub && randomSubIndex != null ? this.currentRandomSubIndex : this.currentRandomIndex;
+
+        var selectedFiles = Array.from(event.target.files);
+        // const previewList = document.getElementById('previewList');
+        // previewList.innerHTML = '';
+
+        selectedFiles.forEach((file, i) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            // const img = document.createElement('img');
+            // img.src = e.target.result;
+            // img.style.height = '100%';
+            // img.style.margin = '1px';
+            // previewList.appendChild(img);
+
+            const index = ind != null && ind >= 0 ? ind : items.length;
+            var item = JSONResponse.deepMerge({
+              Random: {
+                id: -(index || 0) - 1, //表示未上传
+                toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
+                userId: random.userId,
+                documentId: random.documentId,
+                count: 1,
+                name: '分析位于 ' + index + ' 的这张图片',
+                img: e.target.result,
+                config: ''
+              }
+            }, items[index] || {});
+
+            items[index] = item;
+
+            if (isSub) {
+              this.randomSubs = items;
+            }
+            else {
+              this.randoms = items;
+            }
+
+            Vue.set(items, index, item);
+          };
+          reader.readAsDataURL(file);
+        });
+      },
+
+      showUploadImage: function() {
+        var fileInput = document.getElementById('imageInput');
+        const file = fileInput.files[0];
+
+        var vImage = document.getElementById('vImage');
+        vImage.src = file.uri;
+      },
+
+      uploadImage: function() {
+        var fileInput = document.getElementById('imageInput');
+        const file = fileInput.files[0];
+
+        if (!file) {
+          alert('Please select an image file.');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch(this.getUrl(), {
+          method: 'POST',
+          body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+              console.log('Upload successful:', data);
+              alert('Image uploaded successfully!');
+            })
+            .catch(error => {
+              console.error('Upload failed:', error);
+              alert('Failed to upload image.');
+            });
       },
 
       showAndSend: function (branchUrl, req, isAdminOperation, callback) {
