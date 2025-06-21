@@ -411,13 +411,19 @@ Ctrl + S 或 Command + S 保存当前用例；
                 </div>
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
-                <div id="vContainer" v-show="view == 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100" >
+                <div id="vContainer" v-show="view == 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100; display: flex; flex-direction: column" >
                     <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
                         <img id="vBefore" ref="vBefore" src="img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg" style="min-width: 240px; height: 100%; position: absolute; " />
-                        <canvas id="vBeforeRender" style="min-width: 240px; height: 100%; position: absolute;" />
+                        <canvas id="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" />
                     </div>
-                    <img id="vDiff" ref="vDiff" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 240px; height: 33%; margin: 1px; " />
-                    <img id="vAfter" ref="vAfter" src="img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg" style="min-width: 240px; height: 33%; ; margin: 1px;" />
+                    <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
+                        <img id="vDiff" ref="vDiff" src="img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg" style="min-width: 240px; height: 100%; margin: 1px; position: absolute; " />
+                        <canvas id="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" />
+                    </div>
+                    <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
+                        <img id="vAfter" ref="vAfter" src="img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg" style="min-width: 240px; height: 100%; ; margin: 1px;position: absolute; " />
+                        <canvas id="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" />
+                    </div>
                 </div>
                 
                 <div v-show="isRandomShow" style="position: absolute; right: 0px; width: 330px; height: 100%; z-index: 101;" >
@@ -1038,6 +1044,13 @@ fun(true, 1, 'a'..);
 
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
+  var vBefore = document.getElementById("vBefore");
+  var vDiff = document.getElementById("vDiff");
+  var vAfter = document.getElementById("vAfter");
+  var vBeforeCanvas = document.getElementById("vBeforeCanvas");
+  var vDiffCanvas = document.getElementById("vDiffCanvas");
+  var vAfterCanvas = document.getElementById("vAfterCanvas");
+
   var vUrl = document.getElementById("vUrl");
   var vUrlComment = document.getElementById("vUrlComment");
   var vTransfer = document.getElementById("vTransfer");

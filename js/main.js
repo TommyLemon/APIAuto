@@ -6714,7 +6714,11 @@ https://github.com/Tencent/APIJSON/issues
               this.randoms = items;
             }
 
-            Vue.set(items, index, item);
+            try {
+              Vue.set(items, index, item);
+            } catch (e) {
+              console.error(e)
+            }
 
             const formData = new FormData();
             formData.append('file', file);
@@ -6732,7 +6736,13 @@ https://github.com/Tencent/APIJSON/issues
 
                   console.log('Upload successful:', data);
                   item.status = 'done';
-                  item.img = (path.startsWith('/') ? App.server + path : path) || item.img;
+                  r.img = (path.startsWith('/') ? App.server + path : path) || r.img;
+
+                  try {
+                    Vue.set(items, index, item);
+                  } catch (e) {
+                    console.error(e)
+                  }
                 })
                 .catch(error => {
                   console.error('Upload failed:', error);
@@ -6781,12 +6791,79 @@ https://github.com/Tencent/APIJSON/issues
               random.size = (data.size || (StringUtil.length(img) * (3/4)) - (img.endsWith('==') ? 2 : 1));
               random.width = data.width || random.width;
               random.height = data.height || random.height;
+              try {
+                Vue.set(items, ind, item);
+              } catch (e) {
+                console.error(e)
+              }
+
             })
             .catch(error => {
               console.error('Upload failed:', error);
               alert('Failed to upload image.');
               item.status = 'failed';
             });
+      },
+
+      drawDetections: function(img, canvas, detection) {
+        if (canvas == null) {
+          console.error('drawDetections  canvas == null!')
+          return;
+        }
+
+        if (! JSONResponse.isObject(detection)) {
+          console.error('drawDetections  ! JSONResponse.isObject(detection)!')
+          return;
+        }
+
+        const rate = canvas.width/img.naturalWidth
+
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+        ctx.font = '14px sans-serif';
+        ctx.textBaseline = 'top';
+
+        // Draw bboxes
+        detection.bboxes?.forEach((item) => {
+          var [x, y, w, h] = item.bbox;
+          x = x*rate;
+          y = y*rate;
+          w = w*rate;
+          h = h*rate;
+
+          const angle = item.angle || 0;
+          const [r, g, b, a] = item.color || [0, 255, 0, 255];
+          const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+          ctx.strokeStyle = rgba;
+          ctx.fillStyle = rgba;
+
+          ctx.save();
+          ctx.translate(x + w / 2, y + h / 2);
+          ctx.rotate((angle * Math.PI) / 180);
+          ctx.strokeRect(-w / 2, -h / 2, w, h);
+          ctx.fillText(`${item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}%`, -w / 2 + 4, -h / 2 + 2);
+          ctx.restore();
+        });
+
+        // 绘制线条
+        detection.lines.forEach(([x1, y1, x2, y2]) => {
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        });
+
+        // 绘制多边形
+        if (detection.polygons.length > 1) {
+          ctx.beginPath();
+          detection.polygons.forEach(([x, y], i) => {
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.closePath();
+          ctx.stroke();
+        }
       },
 
       showAndSend: function (branchUrl, req, isAdminOperation, callback) {
@@ -11717,6 +11794,48 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           this.currentRandomSubIndex = index
           document = this.currentRemoteItem || {}
+
+          vBefore.src = vDiff.src = vAfter.src = random.img;
+
+          //FIXME 仅测试用
+          var before = {
+            bboxes: [{
+              id: 1, label: '湘A580319X', score: 0.95, angle: 10, color: [255, 0, 70, 128], bbox: [100, 105, 209, 200]
+            }, {
+              id: 2, label: "person", score: 0.77, color: [131, 90, 120, 16], bbox: [125, 40, 73, 80]
+            }, {
+              id: 3, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [450, 510, 100, 50]
+            }, {
+              id: 4, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+            }],
+            lines: [[100, 100, 200, 200], [50, 90, 60, 300], [150, 30, 77, 225], [200*Math.random(), 400*Math.random(), 600*Math.random(), 800*Math.random()]],
+            polygons: [[100, 100], [210, 160], [300, 181], [79, 502], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+          };
+          var after = {
+            bboxes: [{
+              id: 1, label: '湘A5883I9X', score: 0.6, angle: 11, color: [255, 0, 70, 128], bbox:[100, 105, 209, 200]
+            }, {
+              id: 2, label: '粤Y1702Y5ZQ', score: 0.79, angle: 360*Math.random(), color: [255, 0, 70, 128], bbox: [600*Math.random(), 600*Math.random(), 800*Math.random(), 100*Math.random()]
+            }, {
+              id: 3, label: "person", score: 0.82, color: [131, 90, 120, 16], bbox:[126, 39, 75, 81]
+            }, {
+              id: 4, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox:[450, 510, 100, 50]
+            }, {
+              id: 5, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+            }, {
+              id: 6, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [800*Math.random(), 800*Math.random(), 200*Math.random(), 1000*Math.random()]
+            }, {
+              id: 7, label: "dog", score: Math.random(), color: [255*Math.random(), 255*Math.random(), 255*Math.random(), 100*Math.random()], bbox: [1000*Math.random(), 1000*Math.random(), 500*Math.random(), 300*Math.random()]
+            }],
+            lines: [[100, 100, 200, 200], [151, 50, 360, 873], [900*Math.random(), 300*Math.random(), 700*Math.random(), 500*Math.random()], [11, 922, 536, 78]],
+            polygons: [[100, 100], [230, 160], [310, 281], [79, 502], [100, 100], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+          };
+
+          var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
+
+          this.drawDetections(vBefore, vBeforeCanvas, before); // FIXME
+          this.drawDetections(vDiff, vDiffCanvas, diff);
+          this.drawDetections(vAfter, vAfterCanvas, after);
         }
         else {
           this.currentDocIndex = index

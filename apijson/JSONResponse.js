@@ -809,31 +809,63 @@ var JSONResponse = {
     }
 
     if (right instanceof Array) {
-      var lfirst = left[0];
-      if (lfirst instanceof Object) {
-        for (var i = 1; i < left.length; i++) {
-          lfirst = JSONResponse.deepMerge(lfirst, left[i]);
+      if (left instanceof Array) {
+        left = left.concat(right);
+      }
+      else if (left instanceof Object) {
+        for (let i = 0; i < right.length; i++) {
+          var k = i + '';
+          left[k] = Object.assign(left[k], right[i]);
         }
       }
-
-      var rfirst = right[0];
-      if (rfirst instanceof Object) {
-        for (var i = 1; i < right.length; i++) {
-          rfirst = JSONResponse.deepMerge(rfirst, right[i]);
-        }
+      else {
+        left = [left].concat(right);
       }
 
-      var m = JSONResponse.deepMerge(lfirst, rfirst);
-
-      return m == null ? [] : [ m ];
+      return left;
+      // var lfirst = left[0];
+      // if (lfirst instanceof Object) {
+      //   for (var i = 1; i < left.length; i++) {
+      //     lfirst = JSONResponse.deepMerge(lfirst, left[i]);
+      //   }
+      // }
+      //
+      // var rfirst = right[0];
+      // if (rfirst instanceof Object) {
+      //   for (var i = 1; i < right.length; i++) {
+      //     rfirst = JSONResponse.deepMerge(rfirst, right[i]);
+      //   }
+      // }
+      //
+      // var m = JSONResponse.deepMerge(lfirst, rfirst);
+      //
+      // return m == null ? [] : [ m ];
     }
-
-    if (right instanceof Object) {
-      var m = parseJSON(JSON.stringify(left));
-      for (var k in right) {
-        m[k] = JSONResponse.deepMerge(m[k], right[k]);
+    else if (right instanceof Object) {
+      if (left instanceof Array) {
+        left.push(right);
       }
-      return m;
+      else if (left instanceof Object) {
+        left = Object.assign(left, right);
+        var m = left; // parseJSON(JSON.stringify(left));
+
+        for (var k in right) {
+          m[k] = JSONResponse.deepMerge(m[k], right[k]);
+        }
+        left = m;
+      }
+      else {
+        left = Object.assign({'0$left': left}, right);
+      }
+    }
+    else if (left instanceof Array) {
+      left.push(right);
+    }
+    else if (left instanceof Object) {
+      left[Object.keys(left).length + '$right'] = right;
+    }
+    else {
+      return right;
     }
 
     return left;
