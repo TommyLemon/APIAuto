@@ -1894,7 +1894,7 @@ https://github.com/Tencent/APIJSON/issues
           , null
           , null
           , this.isTestCaseShow || StringUtil.isEmpty(vHeader.value, true) ? null : encodeURIComponent(StringUtil.trim(vHeader.value))
-          , this.isTestCaseShow || StringUtil.isEmpty(vRandom.value, true) ? null : encodeURIComponent(StringUtil.trim(vRandom.value))
+          // , this.isTestCaseShow || StringUtil.isEmpty(vRandom.value, true) ? null : encodeURIComponent(StringUtil.trim(vRandom.value))
           , settingStr
         ))
       },
@@ -2475,7 +2475,7 @@ https://github.com/Tencent/APIJSON/issues
           request: inputted,
           response: this.jsoncon,
           header: vHeader.value,
-          random: vRandom.value,
+          // random: vRandom.value,
           scripts: this.scripts
         }
         var key = String(Date.now())
@@ -2530,7 +2530,7 @@ https://github.com/Tencent/APIJSON/issues
         var random = (item || {}).Random || {}
         this.randomTestTitle = random.name
         this.testRandomCount = random.count
-        vRandom.value = StringUtil.get(random.config)
+        // vRandom.value = StringUtil.get(random.config)
 
         var response = ((item || {}).TestRecord || {}).response
         if (StringUtil.isEmpty(response, true) == false) {
@@ -2666,7 +2666,7 @@ https://github.com/Tencent/APIJSON/issues
           this.showTestCase(false, this.isLocalShow)
           vInput.value = StringUtil.get(item.request)
           vHeader.value = StringUtil.get(item.header)
-          vRandom.value = StringUtil.get(item.random)
+          // vRandom.value = StringUtil.get(item.random)
           this.changeScriptType(this.scriptType)
 
           this.onChange(false)
@@ -3077,7 +3077,7 @@ https://github.com/Tencent/APIJSON/issues
           currentResponse.code = code;
           currentResponse.throw = thrw;
 
-          var config = vRandom.value;
+          var config = '' // vRandom.value;
           const mapReq = {};
           const mustKeys = [];
           const typeObj = {};
@@ -3303,7 +3303,7 @@ https://github.com/Tencent/APIJSON/issues
                         }
                         else {
                           alert((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
-                          vRandom.value = config
+                          // vRandom.value = config
                         }
                         App.onResponse(url, res, err)
                   }, isReleaseRESTful)
@@ -5781,7 +5781,7 @@ https://github.com/Tencent/APIJSON/issues
           this.prevInput = vInput.value
           this.prevComment = vComment.value
           this.prevWarning = vWarning.value
-          this.prevRandom = vRandom.value
+          this.prevRandom = '' // vRandom.value
           this.prevHeader = vHeader.value
           this.prevScript = vScript.value
 
@@ -5791,7 +5791,7 @@ https://github.com/Tencent/APIJSON/issues
           vInput.value = JSON.stringify(req, null, '    ')
 
           this.testRandomCount = 1
-          vRandom.value = `phone: App.account\npassword: App.password\nremember: vRemember.checked`
+          // vRandom.value = `phone: App.account\npassword: App.password\nremember: vRemember.checked`
         }
 
         this.scripts = newDefaultScript()
@@ -5861,7 +5861,7 @@ https://github.com/Tencent/APIJSON/issues
               vComment.value = App.prevComment || ''
               vWarning.value = App.prevWarning || ''
               vInput.value = App.prevInput || '{}'
-              vRandom.value = App.prevRandom || ''
+              // vRandom.value = App.prevRandom || ''
               vHeader.value = App.prevHeader || ''
               vScript.value = App.prevScript || ''
 
@@ -5894,7 +5894,8 @@ https://github.com/Tencent/APIJSON/issues
           const loginType = (isLoginShow ? this.type : curUser.loginType) || REQUEST_TYPE_JSON
           const loginUrl = (isLoginShow ? this.getBranchUrl() : curUser.loginUrl) || '/login'
           const loginReq = (isLoginShow ? this.getRequest(vInput.value) : curUser.loginReq) || req
-          const loginRandom = (isLoginShow ? vRandom.value : curUser.loginRandom) || ''
+          // const loginRandom = (isLoginShow ? vRandom.value : curUser.loginRandom) || ''
+          const loginRandom = (isLoginShow ? '' : curUser.loginRandom) || ''
           const loginHeader = (isLoginShow ? this.getHeader(vHeader.value) : curUser.loginHeader) || {}
 
           function loginCallback(url, res, err, random) {
@@ -5914,7 +5915,7 @@ https://github.com/Tencent/APIJSON/issues
               vComment.value = App.prevComment || ''
               vWarning.value = App.prevWarning || ''
               vInput.value = App.prevInput || '{}'
-              vRandom.value = App.prevRandom || ''
+              // vRandom.value = App.prevRandom || ''
               vHeader.value = App.prevHeader || ''
               vScript.value = App.prevScript || ''
 
@@ -10181,7 +10182,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               userId: (this.User || {}).id,
               count: count,
               name: this.randomTestTitle,
-              config: vRandom.value
+              config: '', // vRandom.value
             },
             totalCount: count
           }
@@ -10201,7 +10202,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           this.isRandomShow = true
-          vRandom.select()
+          // vRandom.select()
         }
       },
 
@@ -13299,7 +13300,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           if (StringUtil.isNotEmpty(rawReq.random, true)) {
             hasTestArg = true
-            vRandom.value = StringUtil.trim(rawReq.random, true)
+            // vRandom.value = StringUtil.trim(rawReq.random, true)
             App.isRandomShow = true
             App.isRandomListShow = false
           }
