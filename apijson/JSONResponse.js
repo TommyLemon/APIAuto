@@ -2270,6 +2270,167 @@ var JSONResponse = {
     }
 
     return value;
+  },
+  /**
+   * 计算两个 bbox（[x, y, w, h]）的 IoU
+   */
+  computeIoU: function(b1, b2) {
+    const [x1, y1, w1, h1] = b1;
+    const [x2, y2, w2, h2] = b2;
+
+    const xA = Math.max(x1, x2);
+    const yA = Math.max(y1, y2);
+    const xB = Math.min(x1 + w1, x2 + w2);
+    const yB = Math.min(y1 + h1, y2 + h2);
+
+    const interW = xB - xA;
+    const interH = yB - yA;
+
+    if (interW <= 0 || interH <= 0) return 0;
+
+    const interArea = interW * interH;
+    const unionArea = w1 * h1 + w2 * h2 - interArea;
+
+    return interArea / unionArea;
+  },
+
+  /**
+   * 根据 IoU 过滤掉重复框，生成差异框集合
+   * @returns [{...box, isBefore: true/false}]
+   */
+  filterDiffBoxes: function(before, after, { iouThreshold = 0.5 } = {}) {
+    const usedAfter = new Set();
+    const diff = [];
+
+    before.forEach(b1 => {
+      const match = after.find((b2, i) => {
+        const iou = JSONResponse.computeIoU(b1.bbox, b2.bbox);
+        if (iou >= iouThreshold && !usedAfter.has(i)) {
+          usedAfter.add(i);
+          return true;
+        }
+        return false;
+      });
+
+      if (!match) {
+        diff.push({ ...b1, isBefore: true });
+      }
+    });
+
+    after.forEach((b2, i) => {
+      if (!usedAfter.has(i)) {
+        diff.push({ ...b2, isBefore: false });
+      }
+    });
+
+    return diff;
+  },
+
+  /**
+   * 在 canvas 上绘制标注框和标签
+   */
+  drawDetections: function(canvas, detection = {}, options = {}) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const bboxes = detection.bboxes || [];
+    bboxes.forEach(box => {
+      if (
+          options.visiblePaths?.length &&
+          box.path &&
+          !options.visiblePaths.includes(box.path)
+      ) return;
+
+      const [x, y, w, h] = box.bbox;
+      const angle = box.angle || 0;
+
+      const hover = box.id === options.hoverBoxId;
+      const [r, g, b, a] = (options.styleOverride?.(box, box.isBefore)?.color || box.color || [255, 0, 0, 128]);
+      const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+
+      ctx.save();
+      ctx.translate(x + w / 2, y + h / 2);
+      if (options.rotateBoxes) {
+        ctx.rotate((angle * Math.PI) / 180);
+      }
+      ctx.translate(-(x + w / 2), -(y + h / 2));
+
+      ctx.strokeStyle = hover ? 'orange' : rgba;
+      ctx.lineWidth = hover ? 2 : 1;
+      ctx.strokeRect(x, y, w, h);
+
+      if (box.correct !== undefined) {
+        ctx.fillStyle = box.correct ? 'green' : 'red';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(box.correct ? '√' : '×', x + w - 14, y + 14);
+      }
+
+      ctx.restore();
+
+      // 文本始终水平
+      ctx.save();
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = rgba;
+      const label = `${box.label} ${(box.score * 100).toFixed(1)}%`;
+
+      let tx = x, ty = y - 4;
+      if (ty < 10) ty = y + h + 12;
+      ctx.fillText(label, tx, ty);
+      ctx.restore();
+    });
+  },
+  clamp: function(num, min, max) {
+    return Math.min(Math.max(num, min), max);
+  },
+  /**
+   * 对原始颜色做偏移，红移和蓝移大致 20%
+   * @param {number[]} color RGBA数组 [r,g,b,a]
+   * @param {'red'|'blue'} mode
+   * @param {number} alphaFactor 透明度缩放因子，例如1.2 或 0.7
+   * @returns {number[]} 新的RGBA颜色数组
+   */
+   shiftColor: function(color, mode, alphaFactor = 1) {
+    let [r, g, b, a] = color;
+    const shiftRatio = 0.2; // 20%
+
+    if (mode === 'red') {
+      // 红移：增加红色，减少蓝色和绿色
+      r = JSONResponse.clamp(r * (1 + shiftRatio), 0, 255);
+      g = JSONResponse.clamp(g * (1 - shiftRatio), 0, 255);
+      b = JSONResponse.clamp(b * (1 - shiftRatio), 0, 255);
+    } else if (mode === 'blue') {
+      // 蓝移：增加蓝色，减少红色和绿色
+      r = JSONResponse.clamp(r * (1 - shiftRatio), 0, 255);
+      g = JSONResponse.clamp(g * (1 - shiftRatio), 0, 255);
+      b = JSONResponse.clamp(b * (1 + shiftRatio), 0, 255);
+    }
+
+    // 透明度缩放后裁剪
+    a = JSONResponse.clamp(a * alphaFactor, 0, 255);
+
+    return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
+  },
+  /**
+   * 根据模式对颜色整体亮度做调整
+   * @param {number[]} color RGBA数组 [r,g,b,a]
+   * @param {'darken'|'brighten'} mode
+   * @param {number} alphaFactor 透明度缩放因子
+   * @returns {number[]} 新的RGBA颜色数组
+   */
+  adjustBrightness: function(color, mode, alphaFactor = 1) {
+    let [r, g, b, a] = color;
+    let factor = 1;
+    if (mode === 'darken') {
+      factor = 0.8; // 变暗淡 80%
+    } else if (mode === 'brighten') {
+      factor = 1.2; // 变高亮 120%
+    }
+    r = JSONResponse.clamp(r * factor, 0, 255);
+    g = JSONResponse.clamp(g * factor, 0, 255);
+    b = JSONResponse.clamp(b * factor, 0, 255);
+    a = JSONResponse.clamp(a * alphaFactor, 0, 255);
+    return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
   }
 
 };

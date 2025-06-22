@@ -1210,6 +1210,20 @@ https://github.com/Tencent/APIJSON/issues
       urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
       allowMultiple: true,
+      hoverIds: { before: null, diff: null, after: null },
+      detection: {
+        before: { bboxes: [] },
+        diff: { bboxes: [] },
+        after: { bboxes: [] }
+      },
+      stageImages: {
+        before: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
+        diff: 'img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg',
+        after: 'img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg'
+      },
+      visiblePaths: [],
+      imgMap: {},
+      canvasMap: {},
       options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],
       history: {name: '请求0'},
@@ -6805,57 +6819,215 @@ https://github.com/Tencent/APIJSON/issues
             });
       },
 
-      drawDetections: function(img, canvas, detection) {
-        if (canvas == null) {
-          console.error('drawDetections  canvas == null!')
+      syncCanvasSize: function(stage) {
+        const img = this.imgMap[stage];
+        const canvas = this.canvasMap[stage];
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        this.draw(stage);
+      },
+      isInsideBox: function(x, y, [bx, by, bw, bh]) {
+        return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+      },
+      getCanvasXY: function(stage, event) {
+        const el = this.canvasMap[stage];
+        const rect = el.getBoundingClientRect();
+        return [event.clientX - rect.left, event.clientY - rect.top];
+      },
+      onMousemove: function(stage, event) {
+        const [x, y] = this.getCanvasXY(stage, event);
+        let found = null;
+        for (const item of this.detection[stage].bboxes || []) {
+          if (this.isInsideBox(x, y, item.bbox)) {
+            found = item.id;
+            break;
+          }
+        }
+        this.$set(this.hoverIds, stage, found);
+        this.draw(stage);
+      },
+      onClick: function(stage, event) {
+        const [x, y] = this.getCanvasXY(stage, event);
+        for (const item of this.detection[stage].bboxes || []) {
+          if (this.isInsideBox(x, y, item.bbox)) {
+            item.correct = item.correct === true ? false : true;
+            break;
+          }
+        }
+        this.draw(stage);
+      },
+      draw: function(stage) {
+        const img = this.imgMap[stage];
+        const canvas = this.canvasMap[stage];
+        const det = this.detection[stage];
+        const isDiff = stage === 'diff';
+        this.drawDetections(canvas, det, {
+          hoverBoxId: this.hoverIds[stage],
+          visiblePaths: this.visiblePaths,
+          labelBackground: true,
+          rotateBoxes: true,
+          rotateText: false,
+          styleOverride: isDiff ? (box, isBefore) => {
+            if (! box.color) { // 防止空色
+              box.color = [255, 255, 255, 128]
+            };
+            // 以原始颜色为基准，做红移或蓝移，透明度相对调节
+            // return { color: JSONResponse.shiftColor(box.color, isBefore ? 'red' : 'blue', isBefore ? 1.2 : 0.8) };  // 红移，透明度放大20%；蓝移，透明度缩小 20%
+            return { color: JSONResponse.adjustBrightness(box.color, isBefore ? 'darken' : 'brighten', isBefore ? 1.2 : 0.8) };  // 暗移，透明度放大20%；亮移，透明度缩小 20%
+          } : null
+        }, img);
+      },
+      drawAll: function() {
+        ['before', 'diff', 'after'].forEach(stage => this.draw(stage));
+      },
+      processDiff: function() {
+        const before = this.detection.before.bboxes;
+        const after = this.detection.after.bboxes;
+        const diffBoxes = JSONResponse.filterDiffBoxes(before, after, { iouThreshold: 0.5 });
+        this.detection.diff.bboxes = diffBoxes;
+        return this.detection.diff;
+      },
+      exportJSON: function () {
+        const jsonStr = JSON.stringify(this.detection, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'detection_export.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+
+      drawDetections: function(canvas, detection, options, img) {
+        if (!detection || typeof detection !== 'object') {
+          console.error('drawDetections: invalid detection input');
           return;
         }
-
-        if (! JSONResponse.isObject(detection)) {
-          console.error('drawDetections  ! JSONResponse.isObject(detection)!')
-          return;
-        }
-
-        const rate = canvas.width/img.naturalWidth
 
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 2;
-        ctx.font = '14px sans-serif';
+        const height = canvas.height || (img || {}).height;
+        const width = canvas.width || (img || {}).width;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.lineWidth = height*0.005;
+        ctx.font = 'bold 24px';
         ctx.textBaseline = 'top';
 
-        // Draw bboxes
-        detection.bboxes?.forEach((item) => {
-          var [x, y, w, h] = item.bbox;
-          x = x*rate;
-          y = y*rate;
-          w = w*rate;
-          h = h*rate;
+        const placedLabels = [];
+        const rotateBoxes = options.rotateBoxes || false;
+        const rotateText = options.rotateText || false;
+        const showLabelBackground = options.labelBackground || false;
+        const hoverBoxId = options.hoverBoxId || null;
+        const visiblePaths = options.visiblePaths || null;
 
+        const nw = img == null ? 0 : (img.naturalWidth || 0);
+        const nh = img == null ? 0 : (img.naturalHeight || 0);
+        const xRate = nw < 1 ? 1 : canvas.width/nw;
+        const yRate = nh < 1 ? 1 : canvas.height/nh;
+
+        // Draw bboxes
+        detection.bboxes?.forEach((item, index) => {
+          var [x, y, w, h] = item.bbox;
+          x = x*xRate;
+          y = y*yRate;
+          w = w*xRate;
+          h = h*yRate;
           const angle = item.angle || 0;
-          const [r, g, b, a] = item.color || [0, 255, 0, 255];
+
+          var color = item.color;
+          if (options.styleOverride) {
+            const override = options.styleOverride(item, item.isBefore);
+            if (override && override.color) {
+              color = override.color;
+            }
+          }
+
+          const [r, g, b, a] = color || [0, 255, 0, 255];
           const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-          ctx.strokeStyle = rgba;
+          const isHovered = item.id === hoverBoxId;
+          const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
+          if (!visible) return;
+
+          ctx.strokeStyle = isHovered ? 'orange' : rgba;
           ctx.fillStyle = rgba;
 
+          // Draw horizontal box
+          ctx.strokeRect(x, y, w, h);
+
+          // Optionally draw rotated box
+          if (rotateBoxes && angle !== 0) {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.rotate((angle * Math.PI) / 180);
+            ctx.strokeRect(-w / 2, -h / 2, w, h);
+            ctx.restore();
+          }
+
+          // Draw correctness marker
+          if (item.correct === true || item.correct === false) {
+            ctx.font = '24px sans-serif';
+            ctx.fillStyle = item.correct ? 'green' : 'red';
+            ctx.fillText(item.correct ? '√' : '×', x + w + 4, y);
+          }
+
+          // Label
+          const label = `${item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
+          ctx.font = 'bold 24px';
+          const size = ctx.measureText(label);
+          const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
+          const textWidth = size.width; // *textHeight/size.height;
+          const padding = 2;
+
+          let positions = [
+            [x, y - textHeight - padding],
+            [x + w - textWidth, y - textHeight - padding],
+            [x, y + h + padding],
+            [x + w - textWidth, y + h + padding]
+          ];
+
+          let labelX = x, labelY = y - textHeight - padding;
+          for (const [lx, ly] of positions) {
+            const overlaps = placedLabels.some(({ x: ox, y: oy, w: ow, h: oh }) =>
+                lx < ox + ow && lx + textWidth > ox && ly < oy + oh && ly + textHeight > oy
+            );
+            if (!overlaps && lx >= 0 && ly >= 0 && lx + textWidth <= canvas.width && ly + textHeight <= canvas.height) {
+              labelX = lx;
+              labelY = ly;
+              break;
+            }
+          }
+
+          placedLabels.push({ x: labelX, y: labelY, w: textWidth, h: textHeight });
+
           ctx.save();
-          ctx.translate(x + w / 2, y + h / 2);
-          ctx.rotate((angle * Math.PI) / 180);
-          ctx.strokeRect(-w / 2, -h / 2, w, h);
-          ctx.fillText(`${item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}%`, -w / 2 + 4, -h / 2 + 2);
+          if (rotateText && angle !== 0) {
+            ctx.translate(labelX + textWidth / 2, labelY + textHeight / 2);
+            ctx.rotate((angle * Math.PI) / 180);
+            ctx.translate(-textWidth / 2, -textHeight / 2);
+            labelX = 0;
+            labelY = 0;
+          }
+
+          if (showLabelBackground) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(labelX - 2, labelY - 1, textWidth + 4, textHeight + 2);
+          }
+
+          ctx.fillStyle = rgba;
+          ctx.fillText(label, labelX, labelY);
           ctx.restore();
         });
 
-        // 绘制线条
-        detection.lines.forEach(([x1, y1, x2, y2]) => {
+        // Draw lines
+        detection.lines?.forEach(([x1, y1, x2, y2]) => {
           ctx.beginPath();
           ctx.moveTo(x1, y1);
           ctx.lineTo(x2, y2);
           ctx.stroke();
         });
 
-        // 绘制多边形
-        if (detection.polygons.length > 1) {
+        // Draw polygons
+        if (detection.polygons?.length > 1) {
           ctx.beginPath();
           detection.polygons.forEach(([x, y], i) => {
             if (i === 0) ctx.moveTo(x, y);
@@ -11831,11 +12003,17 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             polygons: [[100, 100], [230, 160], [310, 281], [79, 502], [100, 100], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
           };
 
-          var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
+          this.detection.before = before;
+          this.detection.after = after;
 
-          this.drawDetections(vBefore, vBeforeCanvas, before); // FIXME
-          this.drawDetections(vDiff, vDiffCanvas, diff);
-          this.drawDetections(vAfter, vAfterCanvas, after);
+          var diff = this.processDiff();
+          this.drawAll();
+
+          // var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
+
+          // this.drawDetections(vBefore, vBeforeCanvas, before); // FIXME
+          // this.drawDetections(vDiff, vDiffCanvas, diff);
+          // this.drawDetections(vAfter, vAfterCanvas, after);
         }
         else {
           this.currentDocIndex = index
@@ -13247,6 +13425,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         })
         return result
       }
+    },
+    mounted: function () {
+      this.imgMap = {
+        before: document.getElementById("vBefore"),
+        diff: document.getElementById("vDiff"),
+        after: document.getElementById("vAfter")
+      };
+      this.canvasMap = {
+        before: document.getElementById("vBeforeCanvas"),
+        diff: document.getElementById("vDiffCanvas"),
+        after: document.getElementById("vAfterCanvas")
+      };
     },
     created: function  () {
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
