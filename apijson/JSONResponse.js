@@ -958,7 +958,7 @@ var JSONResponse = {
     };
 
     var realType = JSONResponse.getType(real);
-    if (type != realType && type != 'undefined' && (type != 'number' || realType != 'integer')) { //类型改变
+    if (type != null && type != realType && type != 'undefined' && (type != 'number' || realType != 'integer')) { //类型改变
       log('compareWithStandard  type != realType && type != undefined && (type != number || realType != integer) >> return COMPARE_TYPE_CHANGE');
 
       max = {
@@ -1343,7 +1343,6 @@ var JSONResponse = {
 
     if (isCodeChange) {
       if (hasCode != true) {  // 走正常分支
-        stddObj.code = code;
         stddObj.throw = thrw;
       }
       else {  // 走异常分支

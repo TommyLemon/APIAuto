@@ -3205,7 +3205,7 @@ https://github.com/Tencent/APIJSON/issues
               },
               'TestRecord': {
                 'userId': userId,
-                'documentId': documentId,
+                'documentId': did,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'chainGroupId': cgId,
                 'chainId': cId,
@@ -6922,16 +6922,23 @@ https://github.com/Tencent/APIJSON/issues
 
         const nw = img == null ? 0 : (img.naturalWidth || 0);
         const nh = img == null ? 0 : (img.naturalHeight || 0);
-        const xRate = nw < 1 ? 1 : canvas.width/nw;
-        const yRate = nh < 1 ? 1 : canvas.height/nh;
+        const xRate = nw < 1 ? 1 : width/nw;
+        const yRate = nh < 1 ? 1 : height/nh;
 
         // Draw bboxes
         detection.bboxes?.forEach((item, index) => {
+          const isHovered = item.id === hoverBoxId;
+          const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
+          if (! visible) {
+            return;
+          }
+
           var [x, y, w, h] = item.bbox;
-          x = x*xRate;
-          y = y*yRate;
-          w = w*xRate;
-          h = h*yRate;
+          const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
+          x = isRate ? x*width : x*xRate;
+          y = isRate ? y*height : y*yRate;
+          w = isRate ? w*width : w*xRate;
+          h = isRate ? h*height : h*yRate;
           const angle = item.angle || 0;
 
           var color = item.color;
@@ -6944,9 +6951,6 @@ https://github.com/Tencent/APIJSON/issues
 
           const [r, g, b, a] = color || [0, 255, 0, 255];
           const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-          const isHovered = item.id === hoverBoxId;
-          const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
-          if (!visible) return;
 
           ctx.strokeStyle = isHovered ? 'orange' : rgba;
           ctx.fillStyle = rgba;
@@ -6971,7 +6975,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           // Label
-          const label = `${item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
+          const label = `${item.ocr || item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
           ctx.font = 'bold 24px';
           const size = ctx.measureText(label);
           const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
@@ -11969,51 +11973,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           vBefore.src = vDiff.src = vAfter.src = random.img;
 
-          //FIXME 仅测试用
-          var before = {
-            bboxes: [{
-              id: 1, label: '湘A580319X', score: 0.95, angle: 10, color: [255, 0, 70, 128], bbox: [100, 105, 209, 200]
-            }, {
-              id: 2, label: "person", score: 0.77, color: [131, 90, 120, 16], bbox: [125, 40, 73, 80]
-            }, {
-              id: 3, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [450, 510, 100, 50]
-            }, {
-              id: 4, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
-            }],
-            lines: [[100, 100, 200, 200], [50, 90, 60, 300], [150, 30, 77, 225], [200*Math.random(), 400*Math.random(), 600*Math.random(), 800*Math.random()]],
-            polygons: [[100, 100], [210, 160], [300, 181], [79, 502], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
-          };
-          var after = {
-            bboxes: [{
-              id: 1, label: '湘A5883I9X', score: 0.6, angle: 11, color: [255, 0, 70, 128], bbox:[100, 105, 209, 200]
-            }, {
-              id: 2, label: '粤Y1702Y5ZQ', score: 0.79, angle: 360*Math.random(), color: [255, 0, 70, 128], bbox: [600*Math.random(), 600*Math.random(), 800*Math.random(), 100*Math.random()]
-            }, {
-              id: 3, label: "person", score: 0.82, color: [131, 90, 120, 16], bbox:[126, 39, 75, 81]
-            }, {
-              id: 4, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox:[450, 510, 100, 50]
-            }, {
-              id: 5, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
-            }, {
-              id: 6, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [800*Math.random(), 800*Math.random(), 200*Math.random(), 1000*Math.random()]
-            }, {
-              id: 7, label: "dog", score: Math.random(), color: [255*Math.random(), 255*Math.random(), 255*Math.random(), 100*Math.random()], bbox: [1000*Math.random(), 1000*Math.random(), 500*Math.random(), 300*Math.random()]
-            }],
-            lines: [[100, 100, 200, 200], [151, 50, 360, 873], [900*Math.random(), 300*Math.random(), 700*Math.random(), 500*Math.random()], [11, 922, 536, 78]],
-            polygons: [[100, 100], [230, 160], [310, 281], [79, 502], [100, 100], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
-          };
-
-          this.detection.before = before;
-          this.detection.after = after;
-
-          var diff = this.processDiff();
-          this.drawAll();
-
-          // var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
-
-          // this.drawDetections(vBefore, vBeforeCanvas, before); // FIXME
-          // this.drawDetections(vDiff, vDiffCanvas, diff);
-          // this.drawDetections(vAfter, vAfterCanvas, after);
         }
         else {
           this.currentDocIndex = index
@@ -12057,6 +12016,54 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           this.view = 'code'
           this.jsoncon = res || ''
+
+          if (isRandom) {
+            //FIXME 仅测试用
+            var before = parseJSON(testRecord.response) || {
+              bboxes: [{
+                id: 1, label: '湘A580319X', score: 0.95, angle: 10, color: [255, 0, 70, 128], bbox: [100, 105, 209, 200]
+              }, {
+                id: 2, label: "person", score: 0.77, color: [131, 90, 120, 16], bbox: [125, 40, 73, 80]
+              }, {
+                id: 3, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [450, 510, 100, 50]
+              }, {
+                id: 4, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+              }],
+              lines: [[100, 100, 200, 200], [50, 90, 60, 300], [150, 30, 77, 225], [200*Math.random(), 400*Math.random(), 600*Math.random(), 800*Math.random()]],
+              polygons: [[100, 100], [210, 160], [300, 181], [79, 502], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+            };
+            var after = currentResponse || {
+              bboxes: [{
+                id: 1, label: '湘A5883I9X', score: 0.6, angle: 11, color: [255, 0, 70, 128], bbox:[100, 105, 209, 200]
+              }, {
+                id: 2, label: '粤Y1702Y5ZQ', score: 0.79, angle: 360*Math.random(), color: [255, 0, 70, 128], bbox: [600*Math.random(), 600*Math.random(), 800*Math.random(), 100*Math.random()]
+              }, {
+                id: 3, label: "person", score: 0.82, color: [131, 90, 120, 16], bbox:[126, 39, 75, 81]
+              }, {
+                id: 4, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox:[450, 510, 100, 50]
+              }, {
+                id: 5, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+              }, {
+                id: 6, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [800*Math.random(), 800*Math.random(), 200*Math.random(), 1000*Math.random()]
+              }, {
+                id: 7, label: "dog", score: Math.random(), color: [255*Math.random(), 255*Math.random(), 255*Math.random(), 100*Math.random()], bbox: [1000*Math.random(), 1000*Math.random(), 500*Math.random(), 300*Math.random()]
+              }],
+              lines: [[100, 100, 200, 200], [151, 50, 360, 873], [900*Math.random(), 300*Math.random(), 700*Math.random(), 500*Math.random()], [11, 922, 536, 78]],
+              polygons: [[100, 100], [230, 160], [310, 281], [79, 502], [100, 100], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+            };
+
+            this.detection.before = before;
+            this.detection.after = after;
+
+            var diff = this.processDiff();
+            this.drawAll();
+
+            // var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
+
+            // this.drawDetections(vBefore, vBeforeCanvas, before); // FIXME
+            // this.drawDetections(vDiff, vDiffCanvas, diff);
+            // this.drawDetections(vAfter, vAfterCanvas, after);
+          }
         }
         else {
           var url;
