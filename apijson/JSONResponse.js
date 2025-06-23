@@ -2325,60 +2325,6 @@ var JSONResponse = {
     return diff;
   },
 
-  /**
-   * 在 canvas 上绘制标注框和标签
-   */
-  drawDetections: function(canvas, detection = {}, options = {}) {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const bboxes = detection.bboxes || [];
-    bboxes.forEach(box => {
-      if (
-          options.visiblePaths?.length &&
-          box.path &&
-          !options.visiblePaths.includes(box.path)
-      ) return;
-
-      const [x, y, w, h] = box.bbox;
-      const angle = box.angle || 0;
-
-      const hover = box.id === options.hoverBoxId;
-      const [r, g, b, a] = (options.styleOverride?.(box, box.isBefore)?.color || box.color || [255, 0, 0, 128]);
-      const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-
-      ctx.save();
-      ctx.translate(x + w / 2, y + h / 2);
-      if (options.rotateBoxes) {
-        ctx.rotate((angle * Math.PI) / 180);
-      }
-      ctx.translate(-(x + w / 2), -(y + h / 2));
-
-      ctx.strokeStyle = hover ? 'orange' : rgba;
-      ctx.lineWidth = hover ? 2 : 1;
-      ctx.strokeRect(x, y, w, h);
-
-      if (box.correct !== undefined) {
-        ctx.fillStyle = box.correct ? 'green' : 'red';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(box.correct ? '√' : '×', x + w - 14, y + 14);
-      }
-
-      ctx.restore();
-
-      // 文本始终水平
-      ctx.save();
-      ctx.font = '10px sans-serif';
-      ctx.fillStyle = rgba;
-      const label = `${box.label} ${(box.score * 100).toFixed(1)}%`;
-
-      let tx = x, ty = y - 4;
-      if (ty < 10) ty = y + h + 12;
-      ctx.fillText(label, tx, ty);
-      ctx.restore();
-    });
-  },
   clamp: function(num, min, max) {
     return Math.min(Math.max(num, min), max);
   },
