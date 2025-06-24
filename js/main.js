@@ -6933,7 +6933,7 @@ https://github.com/Tencent/APIJSON/issues
             return;
           }
 
-          var [x, y, w, h] = item.bbox;
+          var [x, y, w, h] = JSONResponse.getXYWH(item.bbox || []);
           const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
           x = isRate ? x*width : x*xRate;
           y = isRate ? y*height : y*yRate;

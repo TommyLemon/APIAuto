@@ -2270,12 +2270,26 @@ var JSONResponse = {
 
     return value;
   },
+
+  getXYWH: function (bbox) {
+    if (bbox == null) {
+      return null;
+    }
+    if (JSONResponse.isString(bbox)) {
+      bbox = StringUtil.split(bbox, ',', true);
+    }
+    var x = bbox.x || bbox.leftTopX || bbox.topLeftX || bbox.left_top_x || bbox.top_left_x || 0;
+    var y = bbox.y || bbox.leftTopY || bbox.topLeftY || bbox.left_top_y || bbox.top_left_y || 0;
+    var w = bbox.w || bbox.width || ((bbox.rbx || bbox.rightBottomX || bbox.bottomRightX || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
+    var h = bbox.h || bbox.height || ((bbox.rby || bbox.rightBottomY || bbox.bottomRightY || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
+    return [x, y, w, h];
+  },
   /**
    * 计算两个 bbox（[x, y, w, h]）的 IoU
    */
   computeIoU: function(b1, b2) {
-    const [x1, y1, w1, h1] = b1;
-    const [x2, y2, w2, h2] = b2;
+    const [x1, y1, w1, h1] = JSONResponse.getXYWH(b1);
+    const [x2, y2, w2, h2] = JSONResponse.getXYWH(b2);
 
     const xA = Math.max(x1, x2);
     const yA = Math.max(y1, y2);
