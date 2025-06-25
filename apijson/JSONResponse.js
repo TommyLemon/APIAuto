@@ -2278,11 +2278,15 @@ var JSONResponse = {
     if (JSONResponse.isString(bbox)) {
       bbox = StringUtil.split(bbox, ',', true);
     }
-    var x = bbox.x || bbox.leftTopX || bbox.topLeftX || bbox.left_top_x || bbox.top_left_x || 0;
-    var y = bbox.y || bbox.leftTopY || bbox.topLeftY || bbox.left_top_y || bbox.top_left_y || 0;
-    var w = bbox.w || bbox.width || ((bbox.rbx || bbox.rightBottomX || bbox.bottomRightX || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
-    var h = bbox.h || bbox.height || ((bbox.rby || bbox.rightBottomY || bbox.bottomRightY || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
-    return [x, y, w, h];
+    if (bbox instanceof Array) {
+      return [+ (bbox[0] || 0), + (bbox[1] || 0), + (bbox[2] || 0), + (bbox[3] || 0)];
+    }
+
+    var x = bbox.x || bbox.x0 || bbox.x1 || bbox.leftTopX || bbox.topLeftX || bbox.left_top_x || bbox.top_left_x || 0;
+    var y = bbox.y || bbox.y0 || bbox.y1 || bbox.leftTopY || bbox.topLeftY || bbox.left_top_y || bbox.top_left_y || 0;
+    var w = bbox.w || bbox.width || ((bbox.x2 || bbox.x1 || bbox.rbx || bbox.brx || bbox.rightBottomX || bbox.bottomRightX || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
+    var h = bbox.h || bbox.height || ((bbox.y2 || bbox.y1 || bbox.rby || bbox.bry || bbox.rightBottomY || bbox.bottomRightY || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
+    return [+ (x || 0), + (y || 0), + (w || 0), + (h || 0)];
   },
   /**
    * 计算两个 bbox（[x, y, w, h]）的 IoU
