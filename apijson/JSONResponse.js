@@ -2316,26 +2316,33 @@ var JSONResponse = {
    * @returns [{...box, isBefore: true/false}]
    */
   filterDiffBoxes: function(before, after, { iouThreshold = 0.5 } = {}) {
+    if (JSONObject.len(before) <= 0) {
+      return after;
+    }
+    if (JSONObject.len(after) <= 0) {
+      return before;
+    }
+
     const usedAfter = new Set();
     const diff = [];
 
     before.forEach(b1 => {
       const match = after.find((b2, i) => {
         const iou = JSONResponse.computeIoU(b1.bbox, b2.bbox);
-        if (iou >= iouThreshold && !usedAfter.has(i)) {
+        if (iou >= iouThreshold && ! usedAfter.has(i)) {
           usedAfter.add(i);
           return true;
         }
         return false;
       });
 
-      if (!match) {
+      if (! match) {
         diff.push({ ...b1, isBefore: true });
       }
     });
 
     after.forEach((b2, i) => {
-      if (!usedAfter.has(i)) {
+      if (! usedAfter.has(i)) {
         diff.push({ ...b2, isBefore: false });
       }
     });

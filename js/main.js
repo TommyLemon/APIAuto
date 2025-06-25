@@ -1214,6 +1214,11 @@ https://github.com/Tencent/APIJSON/issues
       detection: {
         before: { bboxes: [] },
         diff: { bboxes: [] },
+        afterTotal: 0,
+        afterThreshold: 0.0,
+        afterCorrect: 0,
+        afterWrong: 0,
+        afterMiss: 0,
         after: { bboxes: [] }
       },
       stageImages: {
@@ -13744,8 +13749,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // alert(event.key) 小写字母 i 而不是 KeyI
 
         var target = event.target;
-        if (target == vAskAI || target == vSearch || target == vTestCaseSearch || target == vCaseGroupSearch
-          || target == vChainGroupSearch || target == vChainGroupAdd || target == vChainAdd) {
+        if ([vAskAI, vSearch, vTestCaseSearch, vCaseGroupSearch
+          , vChainGroupSearch, vChainGroupAdd, vChainAdd
+          , vAfterTotal, vAfterThreshold, vAfterCorrect, vAfterWrong, vAfterMiss
+        ].indexOf(target) >= 0) {
           return
         }
 

@@ -23,8 +23,28 @@ var JSONObject = {
 
   },
 
+  len: function (obj) {
+    if (obj == null) {
+      return 0;
+    }
+    if (obj instanceof Array || typeof obj == 'string') {
+      return obj.length;
+    }
+
+    if (obj instanceof Object) {
+      return Object.keys(obj).length;
+    }
+
+    if (typeof obj == 'boolean') {
+      return obj ? 1 : 0;
+    }
+
+    var s = String(obj);
+    return s.length - (s.indexOf(".") >= 0 ? 1 : 0);
+  },
+
   isEmpty: function (obj) {
-    return obj == null || Object.keys(obj).length <= 0;
+    return JSONObject.len(obj) <= 0;
   },
 
   /**判断key是否为表名

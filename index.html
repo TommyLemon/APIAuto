@@ -412,17 +412,26 @@ Ctrl + S 或 Command + S 保存当前用例；
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
                 <div id="vContainer" v-show="view === 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100; display: flex; flex-direction: column">
-                    <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
-                        <img id="vBefore" :src="stageImages.before" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
-                        <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" @click="onClick('before', $event)" />
+                    <div >
+                        <div style="bottom: 0px; padding: 4px 13px 4px 6px; position: absolute; width: 100%; text-align: right; z-index: 100">
+                            <a >当前结果: 置信度 </a><input id="vAfterThreshold" v-model="detection.afterThreshold" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterThreshold', true)" placeholder="阈值" />
+                            <a >实际总数 </a><input id="vAfterTotal" v-model="detection.afterTotal" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterTotal', true)" placeholder="总数" />
+                            <a > = 正确数 </a><a id="vAfterCorrect" v-model="detection.afterCorrect" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterCorrect', true)" placeholder="正确数" />
+                            <a > + 误报数 </a><a id="vAfterWrong" v-model="detection.afterWrong" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterCorrect', true)" placeholder="正确数" />
+                            <a > + 漏检数 </a><a id="vAfterMiss" v-model="detection.afterMiss" style="width: 30px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterCorrect', true)" placeholder="正确数" />
+                        </div>
+                        <div style="min-width: 240px; height: 30%; top: 60px; margin: 1px; position: absolute;">
+                            <img id="vAfter" :src="stageImages.after" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
+                            <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
+                        </div>
                     </div>
                     <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
                         <img id="vDiff" :src="stageImages.diff" ref="vDiffImg" @load="syncCanvasSize('diff')" style="min-width: 240px; height: 100%; position: absolute;" />
                         <canvas id="vDiffCanvas" ref="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('diff', $event)" @click="onClick('diff', $event)" />
                     </div>
                     <div style="min-width: 240px; height: 33%; margin: 1px; position: relative">
-                        <img id="vAfter" :src="stageImages.after" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
-                        <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
+                        <img id="vBefore" :src="stageImages.before" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
+                        <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" @click="onClick('before', $event)" />
                     </div>
                 </div>
 <!--                <div id="vContainer" v-show="view === 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100; display: flex; flex-direction: column">-->
@@ -1062,6 +1071,11 @@ fun(true, 1, 'a'..);
   var vBeforeCanvas = document.getElementById("vBeforeCanvas");
   var vDiffCanvas = document.getElementById("vDiffCanvas");
   var vAfterCanvas = document.getElementById("vAfterCanvas");
+  var vAfterTotal = document.getElementById("vAfterTotal");
+  var vAfterThreshold = document.getElementById("vAfterThreshold");
+  var vAfterCorrect = document.getElementById("vAfterCorrect");
+  var vAfterWrong = document.getElementById("vAfterWrong");
+  var vAfterMiss = document.getElementById("vAfterMiss");
 
   var vUrl = document.getElementById("vUrl");
   var vUrlComment = document.getElementById("vUrlComment");
