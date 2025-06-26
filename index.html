@@ -435,7 +435,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                     </div>
                     <div style="min-width: 240px; height: 30%; position: relative; top: 50px">
                         <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
-                            <a style="font-weight: bold; color: black">之前: </a><a>置信度 </a><input id="vBeforeThreshold" v-model="detection.beforeThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'beforeThreshold', true)" placeholder="阈值" />
+                            <a style="font-weight: bold; color: black">之前: </a><a>置信度 </a><input id="vBeforeThreshold" v-model="detection.beforeThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'beforeThreshold', true)" placeholder="阈值" disabled />
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.beforeCorrect + ' 误报数 ' + detection.beforeWrong + ' 漏检数 ' + detection.beforeMiss : '召回率 ' + detection.beforeRecall + ' 精确率 ' + detection.beforePrecision + ' F1 ' + detection.beforeF1 }} </a>
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
