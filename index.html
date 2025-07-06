@@ -415,18 +415,18 @@ Ctrl + S 或 Command + S 保存当前用例；
                     <div style="min-width: 240px; height: 30%; position: relative">
                         <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">本次: </a><a>置信度 </a><input id="vAfterThreshold" v-model="detection.afterThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterThreshold', true)" placeholder="阈值" />
-                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.afterCorrect + ' 误报数 ' + detection.afterWrong + ' 漏检数 ' + detection.afterMiss : '召回率 ' + detection.afterRecall + ' 精确率 ' + detection.afterPrecision + ' F1 ' + detection.afterF1 }} </a>
+                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.afterCorrect + ' 误报数 ' + detection.afterWrong + ' 漏检数 ' + detection.afterMiss : '召回率 ' + detection.afterRecallStr + ' 精确率 ' + detection.afterPrecisionStr + ' F1 ' + detection.afterF1Str }} </a>
                             <a > 实际 </a><input id="vAfterTotal" v-model="detection.afterTotal" style="width: 36px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterTotal', true)" placeholder="总数" />
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vAfter" :src="img" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
-                            <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
+                            <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" />
                         </div>
                     </div>
                     <div style="min-width: 240px; height: 30%; position: relative; top: 25px">
                         <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">差异: </a><a>重合度 </a><input id="vDiffThreshold" v-model="detection.diffThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'diffThreshold', true)" placeholder="阈值" />
-                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 '  + detection.diffCorrect + ' 误报数 ' + detection.diffWrong + ' 漏检数 ' + detection.diffMiss : '召回率 ' + detection.diffRecall + ' 精确率 ' + detection.diffPrecision + ' F1 ' + detection.diffF1 }} </a>
+                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 '  + detection.diffCorrectStr + ' 误报数 ' + detection.diffWrongStr + ' 漏检数 ' + detection.diffMissStr : '召回率 ' + detection.diffRecallStr + ' 精确率 ' + detection.diffPrecisionStr + ' F1 ' + detection.diffF1Str }} </a>
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vDiff" :src="img" ref="vDiffImg" @load="syncCanvasSize('diff')" style="min-width: 240px; height: 100%; position: absolute;" />
@@ -436,11 +436,11 @@ Ctrl + S 或 Command + S 保存当前用例；
                     <div style="min-width: 240px; height: 30%; position: relative; top: 50px">
                         <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">之前: </a><a>置信度 </a><input id="vBeforeThreshold" v-model="detection.beforeThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'beforeThreshold', true)" placeholder="阈值" disabled />
-                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.beforeCorrect + ' 误报数 ' + detection.beforeWrong + ' 漏检数 ' + detection.beforeMiss : '召回率 ' + detection.beforeRecall + ' 精确率 ' + detection.beforePrecision + ' F1 ' + detection.beforeF1 }} </a>
+                            <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.beforeCorrect + ' 误报数 ' + detection.beforeWrong + ' 漏检数 ' + detection.beforeMiss : '召回率 ' + detection.beforeRecallStr + ' 精确率 ' + detection.beforePrecisionStr + ' F1 ' + detection.beforeF1Str }} </a>
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vBefore" :src="img" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
-                            <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" @click="onClick('before', $event)" />
+                            <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" />
                         </div>
                     </div>
                 </div>

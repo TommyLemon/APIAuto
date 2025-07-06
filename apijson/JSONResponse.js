@@ -2405,6 +2405,14 @@ var JSONResponse = {
     return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
   },
 
+  getBboxes: function (detection) {
+    if (! JSONResponse.isObject(detection)) {
+      return null;
+    }
+
+    return detection.bboxes || detection.boxes || detection.targets
+  },
+
   drawDetections: function(canvas, detection, options, img) {
     if (!detection || typeof detection !== 'object') {
       console.error('drawDetections: invalid detection input');
@@ -2435,7 +2443,8 @@ var JSONResponse = {
     const yRate = nh < 1 ? 1 : height/nh;
 
     // Draw bboxes
-    detection.bboxes?.forEach((item, index) => {
+    var bboxes = JSONResponse.getBboxes(detection) || []
+    bboxes?.forEach((item, index) => {
       const isHovered = item.id === hoverBoxId;
       const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
       if (! visible) {

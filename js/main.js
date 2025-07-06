@@ -1218,28 +1218,35 @@ https://github.com/Tencent/APIJSON/issues
         afterCorrect: 9,
         afterWrong: 1,
         afterMiss: 1,
-        afterRecall: (100*(9/(9+1))).toFixed(0) + '%',
-        afterPrecision: (100*(9/(9+1))).toFixed(0) + '%',
-        afterF1: (100*2*((9/(9+1))*(9/(9+1))/(9/(9+1) + (9/(9+1))))).toFixed(0) + '%',
+        afterRecall: 9/(9+1),
+        afterRecallStr: (100*this.afterRecall).toFixed(0) + '%',
+        afterPrecision: 9/(9+1),
+        afterPrecisionStr: (100*this.afterPrecision).toFixed(0) + '%',
+        afterF1Str: (100*2*(this.afterRecall*this.afterPrecision)/(this.afterRecall + this.afterPrecision)).toFixed(0) + '%',
         after: { bboxes: [] },
-        diffTotal: 10,
-        diffThreshold: 90,
-        diffCorrect: '+' + 1,
-        diffWrong: '-' + 2,
-        diffMiss: '-' + 1,
-        diffRecall: '+' + (100*(9/(9+1) - 8/(8+3))).toFixed(0) + '%',
-        diffPrecision: '+' + (100*(9/(9+1) - 8/(8+2))).toFixed(0) + '%',
-        diffF1: '+' + (100*2*((9/(9+1))*(9/(9+1))/(9/(9+1) + (9/(9+1))) - (8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
-        diff: { bboxes: [] },
+
         beforeTotal: 10,
         beforeThreshold: 30,
         beforeCorrect: 8,
         beforeWrong: 3,
         beforeMiss: 2,
-        beforeRecall: (100*(8/(8+3))).toFixed(0) + '%',
-        beforePrecision: (100*(8/(8+2))).toFixed(0) + '%',
+        beforeRecall: 8/(8+3),
+        beforeRecallStr: (100*this.beforeRecall).toFixed(0) + '%',
+        beforePrecision: 8/(8+2),
+        beforePrecisionStr: (100*this.beforePrecisionStr).toFixed(0) + '%',
         beforeF1: (100*2*((8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
-        before: { bboxes: [] }
+        beforeF1Str: (100*2*(this.beforeRecall*this.beforePrecision)/(this.beforeRecall + this.beforePrecision)).toFixed(0) + '%',
+        before: { bboxes: [] },
+
+        diffTotal: 10,
+        diffThreshold: 90,
+        diffCorrectStr: '+' + 1,
+        diffWrongStr: '-' + 2,
+        diffMissStr: '-' + 1,
+        diffRecallStr: '+' + (100*(9/(9+1) - 8/(8+3))).toFixed(0) + '%',
+        diffPrecisionStr: '+' + (100*(9/(9+1) - 8/(8+2))).toFixed(0) + '%',
+        diffF1Str: '+' + (100*2*((9/(9+1))*(9/(9+1))/(9/(9+1) + (9/(9+1))) - (8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
+        diff: { bboxes: [] },
       },
       img: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
       visiblePaths: [],
@@ -6898,7 +6905,8 @@ https://github.com/Tencent/APIJSON/issues
       onMousemove: function(stage, event) {
         const [x, y] = this.getCanvasXY(stage, event);
         let found = null;
-        for (const item of this.detection[stage].bboxes || []) {
+        var bboxes = JSONResponse.getBboxes(this.detection[stage]) || []
+        for (const item of bboxes) {
           if (this.isInsideBox(x, y, item.bbox)) {
             found = item.id;
             break;
@@ -6909,10 +6917,12 @@ https://github.com/Tencent/APIJSON/issues
       },
 
       draw: function(stage) {
+        const detection = this.detection || {};
         const img = this.imgMap[stage];
         const canvas = this.canvasMap[stage];
-        const det = this.detection[stage];
+        const det = detection[stage];
         const isDiff = stage === 'diff';
+
         JSONResponse.drawDetections(canvas, det, {
           hoverBoxId: this.hoverIds[stage],
           visiblePaths: this.visiblePaths,
@@ -6933,10 +6943,55 @@ https://github.com/Tencent/APIJSON/issues
       drawAll: function() {
         ['before', 'diff', 'after'].forEach(stage => this.draw(stage));
       },
+      compute: function() {
+        const detection = this.detection || {};
+        var total = detection.afterTotal;
+        ['before', 'after'].forEach(stage => {
+          var det2 = detection[stage]
+          var correctCount = 0;
+          var wrongCount = 0;
+          const bboxes = JSONResponse.getBboxes(det2) || [];
+          bboxes.forEach(bbox => {
+            if (bbox.correct === false) {
+              wrongCount ++;
+            } else {
+              correctCount ++;
+            }
+          })
+
+          detection[stage + 'Correct'] = correctCount;
+          detection[stage + 'Wrong'] = wrongCount;
+          detection[stage + 'Miss'] = total - correctCount;
+          var recall = detection[stage + 'Recall'] = correctCount/total;
+          var precision = detection[stage + 'Precision'] = correctCount/(correctCount + wrongCount);
+          var f1 = detection[stage + 'F1'] = (2*recall*precision)/(recall + precision);
+          detection[stage + 'RecallStr'] = (100*recall).toFixed(0) + '%';
+          detection[stage + 'PrecisionStr'] = (100*precision).toFixed(0) + '%';
+          detection[stage + 'F1Str'] = (100*f1).toFixed(0) + '%';
+        })
+
+        if (total <= 0) {
+          detection.afterTotal = detection.beforeTotal = detection.diffTotal = total = detection.afterCorrect || detection.beforeCorrect;
+        }
+
+        var diffCorrect = detection.afterCorrect - detection.beforeCorrect;
+        var diffWrong = detection.afterWrong - detection.beforeWrong;
+        var diffMiss = detection.afterMiss - detection.beforeMiss;
+        var diffRecall = detection.afterRecall - detection.beforeRecall;
+        var diffPrecision = detection.afterPrecision - detection.beforePrecision;
+        var diffF1 = detection.afterF1 - detection.beforeF1;
+        detection['diffCorrectStr'] = diffCorrect >= 0 ? '+' + diffCorrect : diffCorrect;
+        detection['diffWrongStr'] = diffWrong >= 0 ? '+' + diffWrong : diffWrong;
+        detection['diffMissStr'] = diffMiss >= 0 ? '+' + diffMiss : diffMiss;
+        detection['diffRecallStr'] = (diffRecall >= 0 ? '+' : '') + (100*diffRecall).toFixed(0) + '%';
+        detection['diffPrecisionStr'] = (diffPrecision >= 0 ? '+' : '') + (100*diffPrecision).toFixed(0) + '%';
+        detection['diffF1Str'] = (diffF1 >= 0 ? '+' : '') + (100*diffF1).toFixed(0) + '%';
+        this.detection = detection;
+      },
       processDiffAndAutoMark: function() {
         var detection = this.detection || {};
-        const beforeBoxes = detection.before.bboxes || [];   // 上次参考结果
-        const afterBoxes = detection.after.bboxes || [];    // 当前检测结果
+        const beforeBoxes = JSONResponse.getBboxes(detection.before) || [];   // 上次参考结果
+        const afterBoxes = JSONResponse.getBboxes(detection.after) || [];    // 当前检测结果
         const iouThreshold = (detection.diffThreshold || 90) / 100;
 
         const diffBoxes = [];
@@ -6976,50 +7031,10 @@ https://github.com/Tencent/APIJSON/issues
         this.$set(this.detection, 'diff', { bboxes: diffBoxes });
         this.$set(this.detection, 'after', { bboxes: afterBoxes });  // 确保 after 被更新到 Vue
         this.drawAll();
+        this.compute();
         return this.detection.diff;
       },
-      // processDiff: function() {
-      //   var detection = this.detection || {};
-      //   const before = detection.before.bboxes;
-      //   const after = detection.after.bboxes;
-      //   const diffBoxes = JSONResponse.filterDiffBoxes(before, after, { iouThreshold: detection.diffThreshold/100 });
-      //   this.detection.diff.bboxes = diffBoxes;
-      //   return this.detection.diff;
-      // },
-      // processAutoMark: function() {
-      //   var detection = this.detection || {};
-      //   const beforeBoxes = detection.before.bboxes;  // 上次参考结果
-      //   const afterBoxes = detection.after.bboxes;  // 当前检测结果
-      //   const iouThreshold = detection.diffThreshold/100;
-      //
-      //   afterBoxes.forEach(curBox => {
-      //     let bestIou = 0;
-      //     let bestRef = null;
-      //
-      //     beforeBoxes.forEach(refBox => {
-      //       const iou = JSONResponse.computeIoU(curBox.bbox, refBox.bbox);
-      //       if (iou > bestIou) {
-      //         bestIou = iou;
-      //         bestRef = refBox;
-      //       }
-      //     });
-      //
-      //     if (bestIou >= iouThreshold && bestRef) {
-      //       // 标签一致 → 跟随参考 correct
-      //       if (curBox.label === bestRef.label) {
-      //         curBox.correct = bestRef.correct;
-      //       } else {
-      //         // 标签不同 → correct 取反
-      //         curBox.correct = bestRef.correct === true ? false : true;
-      //       }
-      //     } else {
-      //       // 没有匹配到 → 标记为错误
-      //       curBox.correct = false;
-      //     }
-      //   });
-      //
-      //   this.drawAll();
-      // },
+
       exportJSON: function () {
         const jsonStr = JSON.stringify(this.detection, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -7054,7 +7069,8 @@ https://github.com/Tencent/APIJSON/issues
        */
       onClick: function(stage, event) {
         const [x, y] = this.getCanvasXY(stage, event);
-        for (const item of this.detection[stage].bboxes || []) {
+        const bboxes = JSONResponse.getBboxes(this.detection[stage]) || []
+        for (const item of bboxes) {
           const [bx, by, bw, bh] = item.bbox;
           const labelX = bx + bw + 4; // 和 drawDetections 中计算按钮位置保持一致
           const labelY = by; // 同上
@@ -7062,22 +7078,23 @@ https://github.com/Tencent/APIJSON/issues
           const size = 16; // 按钮点击区域大小
           if (x >= labelX && x <= labelX + size && y >= labelY && y <= labelY + size) {
             item.correct = true;
-            this.draw(stage);
-            return;
-          } else if (x >= labelX + size + 4 && x <= labelX + size * 2 + 4 && y >= labelY && y <= labelY + size) {
+            break;
+          }
+
+          if (x >= labelX + size + 4 && x <= labelX + size * 2 + 4 && y >= labelY && y <= labelY + size) {
             item.correct = false;
-            this.draw(stage);
-            return;
+            break;
           }
-        }
-        // 其它情况，检测是否点击到框内
-        for (const item of this.detection[stage].bboxes || []) {
+
+          // 其它情况，检测是否点击到框内
           if (this.isInsideBox(x, y, item.bbox)) {
-            item.correct = item.correct === true ? false : true;
-            this.draw(stage);
-            return;
+            item.correct = item.correct === false ? true : false;
+            break;
           }
         }
+
+        this.draw(stage);
+        this.compute();
       },
 
       showAndSend: function (branchUrl, req, isAdminOperation, callback) {
