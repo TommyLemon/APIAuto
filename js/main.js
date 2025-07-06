@@ -6929,7 +6929,7 @@ https://github.com/Tencent/APIJSON/issues
           labelBackground: true,
           rotateBoxes: true,
           rotateText: false,
-          markable: stage == 'diff',
+          markable: stage == 'after', // 'diff',
           styleOverride: isDiff ? (box, isBefore) => {
             if (! box.color) { // 防止空色
               box.color = [255, 255, 255, 128]
