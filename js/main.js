@@ -6913,12 +6913,13 @@ https://github.com/Tencent/APIJSON/issues
         const canvas = this.canvasMap[stage];
         const det = this.detection[stage];
         const isDiff = stage === 'diff';
-        this.drawDetections(canvas, det, {
+        JSONResponse.drawDetections(canvas, det, {
           hoverBoxId: this.hoverIds[stage],
           visiblePaths: this.visiblePaths,
           labelBackground: true,
           rotateBoxes: true,
           rotateText: false,
+          markable: stage == 'diff',
           styleOverride: isDiff ? (box, isBefore) => {
             if (! box.color) { // 防止空色
               box.color = [255, 255, 255, 128]
@@ -6932,13 +6933,93 @@ https://github.com/Tencent/APIJSON/issues
       drawAll: function() {
         ['before', 'diff', 'after'].forEach(stage => this.draw(stage));
       },
-      processDiff: function() {
-        const before = this.detection.before.bboxes;
-        const after = this.detection.after.bboxes;
-        const diffBoxes = JSONResponse.filterDiffBoxes(before, after, { iouThreshold: 0.5 });
+      processDiffAndAutoMark: function() {
+        var detection = this.detection || {};
+        const beforeBoxes = detection.before.bboxes || [];   // 上次参考结果
+        const afterBoxes = detection.after.bboxes || [];    // 当前检测结果
+        const iouThreshold = (detection.diffThreshold || 90) / 100;
+
+        const diffBoxes = [];
+
+        afterBoxes.forEach(curBox => {
+          let bestIou = 0;
+          let bestRef = null;
+
+          beforeBoxes.forEach(refBox => {
+            const iou = JSONResponse.computeIoU(curBox.bbox, refBox.bbox);
+            if (iou > bestIou) {
+              bestIou = iou;
+              bestRef = refBox;
+            }
+          });
+
+          if (bestIou >= iouThreshold && bestRef) {
+            // 如果匹配到：标签一致→继承correct，标签不同→打X
+            curBox.correct = curBox.label === bestRef.label ? bestRef.correct : false;
+          } else {
+            // 没有匹配→打X
+            curBox.correct = false;
+          }
+
+          // diff 结果逻辑：只把差异明显的保存到 diff
+          if (! bestRef || curBox.label !== bestRef.label || bestIou < iouThreshold) {
+            diffBoxes.push({
+              ...curBox,
+              isBefore: false
+            });
+          }
+        });
+
+        // 如果需要也展示 before 中 unmatched 的box，可遍历 beforeBoxes 进行差异补充
+
         this.detection.diff.bboxes = diffBoxes;
+        this.$set(this.detection, 'diff', { bboxes: diffBoxes });
+        this.$set(this.detection, 'after', { bboxes: afterBoxes });  // 确保 after 被更新到 Vue
+        this.drawAll();
         return this.detection.diff;
       },
+      // processDiff: function() {
+      //   var detection = this.detection || {};
+      //   const before = detection.before.bboxes;
+      //   const after = detection.after.bboxes;
+      //   const diffBoxes = JSONResponse.filterDiffBoxes(before, after, { iouThreshold: detection.diffThreshold/100 });
+      //   this.detection.diff.bboxes = diffBoxes;
+      //   return this.detection.diff;
+      // },
+      // processAutoMark: function() {
+      //   var detection = this.detection || {};
+      //   const beforeBoxes = detection.before.bboxes;  // 上次参考结果
+      //   const afterBoxes = detection.after.bboxes;  // 当前检测结果
+      //   const iouThreshold = detection.diffThreshold/100;
+      //
+      //   afterBoxes.forEach(curBox => {
+      //     let bestIou = 0;
+      //     let bestRef = null;
+      //
+      //     beforeBoxes.forEach(refBox => {
+      //       const iou = JSONResponse.computeIoU(curBox.bbox, refBox.bbox);
+      //       if (iou > bestIou) {
+      //         bestIou = iou;
+      //         bestRef = refBox;
+      //       }
+      //     });
+      //
+      //     if (bestIou >= iouThreshold && bestRef) {
+      //       // 标签一致 → 跟随参考 correct
+      //       if (curBox.label === bestRef.label) {
+      //         curBox.correct = bestRef.correct;
+      //       } else {
+      //         // 标签不同 → correct 取反
+      //         curBox.correct = bestRef.correct === true ? false : true;
+      //       }
+      //     } else {
+      //       // 没有匹配到 → 标记为错误
+      //       curBox.correct = false;
+      //     }
+      //   });
+      //
+      //   this.drawAll();
+      // },
       exportJSON: function () {
         const jsonStr = JSON.stringify(this.detection, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -6996,156 +7077,6 @@ https://github.com/Tencent/APIJSON/issues
             this.draw(stage);
             return;
           }
-        }
-      },
-
-      drawDetections: function(canvas, detection, options, img) {
-        if (!detection || typeof detection !== 'object') {
-          console.error('drawDetections: invalid detection input');
-          return;
-        }
-
-        const ctx = canvas.getContext('2d');
-        const height = canvas.height || (img || {}).height;
-        const width = canvas.width || (img || {}).width;
-
-        ctx.clearRect(0, 0, width, height);
-        ctx.lineWidth = height*0.005;
-        ctx.font = 'bold 24px';
-        ctx.textBaseline = 'top';
-
-        const placedLabels = [];
-        const rotateBoxes = options.rotateBoxes || false;
-        const rotateText = options.rotateText || false;
-        const showLabelBackground = options.labelBackground || false;
-        const hoverBoxId = options.hoverBoxId || null;
-        const visiblePaths = options.visiblePaths || null;
-
-        const nw = img == null ? 0 : (img.naturalWidth || 0);
-        const nh = img == null ? 0 : (img.naturalHeight || 0);
-        const xRate = nw < 1 ? 1 : width/nw;
-        const yRate = nh < 1 ? 1 : height/nh;
-
-        // Draw bboxes
-        detection.bboxes?.forEach((item, index) => {
-          const isHovered = item.id === hoverBoxId;
-          const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
-          if (! visible) {
-            return;
-          }
-
-          var [x, y, w, h] = JSONResponse.getXYWH(item.bbox || []);
-          const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
-          x = isRate ? x*width : x*xRate;
-          y = isRate ? y*height : y*yRate;
-          w = isRate ? w*width : w*xRate;
-          h = isRate ? h*height : h*yRate;
-          const angle = item.angle || 0;
-
-          var color = item.color;
-          if (options.styleOverride) {
-            const override = options.styleOverride(item, item.isBefore);
-            if (override && override.color) {
-              color = override.color;
-            }
-          }
-
-          const [r, g, b, a] = color || [0, 255, 0, 255];
-          const rgba = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-
-          ctx.strokeStyle = isHovered ? 'orange' : rgba;
-          ctx.fillStyle = rgba;
-
-          // Draw horizontal box
-          ctx.strokeRect(x, y, w, h);
-
-          // Optionally draw rotated box
-          if (rotateBoxes && angle !== 0) {
-            ctx.save();
-            ctx.translate(x + w / 2, y + h / 2);
-            ctx.rotate((angle * Math.PI) / 180);
-            ctx.strokeRect(-w / 2, -h / 2, w, h);
-            ctx.restore();
-          }
-
-          // Label
-          const label = `${item.ocr || item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
-          ctx.font = 'bold 24px';
-          const size = ctx.measureText(label);
-          const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
-          const textWidth = size.width; // *textHeight/size.height;
-          const padding = 2;
-
-          let positions = [
-            [x, y - textHeight - padding],
-            [x + w - textWidth, y - textHeight - padding],
-            [x, y + h + padding],
-            [x + w - textWidth, y + h + padding]
-          ];
-
-          let labelX = x, labelY = y - textHeight - padding;
-          for (const [lx, ly] of positions) {
-            const overlaps = placedLabels.some(({ x: ox, y: oy, w: ow, h: oh }) =>
-                lx < ox + ow && lx + textWidth > ox && ly < oy + oh && ly + textHeight > oy
-            );
-            if (!overlaps && lx >= 0 && ly >= 0 && lx + textWidth <= canvas.width && ly + textHeight <= canvas.height) {
-              labelX = lx;
-              labelY = ly;
-              break;
-            }
-          }
-
-          placedLabels.push({ x: labelX, y: labelY, w: textWidth, h: textHeight });
-
-          ctx.save();
-          if (rotateText && angle !== 0) {
-            ctx.translate(labelX + textWidth / 2, labelY + textHeight / 2);
-            ctx.rotate((angle * Math.PI) / 180);
-            ctx.translate(-textWidth / 2, -textHeight / 2);
-            labelX = 0;
-            labelY = 0;
-          }
-
-          if (showLabelBackground) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(labelX - 2, labelY - 1, textWidth + 4, textHeight + 2);
-          }
-
-          ctx.fillStyle = rgba;
-          ctx.fillText(label, labelX, labelY);
-          ctx.restore();
-
-          // 绘制 √ 和 ×
-          ctx.font = '24px sans-serif';
-          ctx.fillStyle = item.correct === false ? 'red' : 'green';
-          const checkX = labelX + textWidth + 4;
-          const checkY = labelY;
-          ctx.fillText(item.correct === false ? '×' : '√', checkX, checkY);
-
-          // 记录点击区域
-          if (! canvas._clickAreas) {
-            canvas._clickAreas = [];
-          }
-          canvas._clickAreas.push({ x: checkX, y: checkY, w: 16, h: textHeight, item });
-        });
-
-        // Draw lines
-        detection.lines?.forEach(([x1, y1, x2, y2]) => {
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-        });
-
-        // Draw polygons
-        if (detection.polygons?.length > 1) {
-          ctx.beginPath();
-          detection.polygons.forEach(([x, y], i) => {
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          });
-          ctx.closePath();
-          ctx.stroke();
         }
       },
 
@@ -12170,42 +12101,60 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //FIXME 仅测试用
             var before = parseJSON(testRecord.response) || {
               bboxes: [{
-                id: 1, label: '湘A580319X', score: 0.95, angle: 10, color: [255, 0, 70, 128], bbox: [100, 105, 209, 200]
+                id: 1, label: '湘A580319X', score: 0.95, angle: 10, color: [255, 0, 70, 128], bbox: [100, 105, 400, 300]
               }, {
-                id: 2, label: "person", score: 0.77, color: [131, 90, 120, 16], bbox: [125, 40, 73, 80]
+                id: 2, label: "person", score: 0.77, color: [131, 90, 120, 16], bbox: [125, 40, 200, 300]
               }, {
-                id: 3, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [450, 510, 100, 50]
+                id: 3, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [800, 500, 400, 200]
               }, {
-                id: 4, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+                id: 4, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [1920*Math.random(), 1080*Math.random(), 300*Math.random(), 800*Math.random()]
               }],
-              lines: [[100, 100, 200, 200], [50, 90, 60, 300], [150, 30, 77, 225], [200*Math.random(), 400*Math.random(), 600*Math.random(), 800*Math.random()]],
-              polygons: [[100, 100], [210, 160], [300, 181], [79, 502], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+              lines: [
+                [100, 100, 600, 600],
+                [300, 200, 1000, 900],
+                [1920*Math.random(), 1080*Math.random(), 1920*Math.random(), 1080*Math.random()]
+              ],
+              polygons: [
+                [100, 100], [500, 160], [900, 200], [400, 900],
+                [1920*Math.random(), 1080*Math.random()], [1920*Math.random(), 1080*Math.random()], [100, 100]
+              ]
             };
-            var after = currentResponse || {
+            // var after = currentResponse || {
+            var after = {
               bboxes: [{
-                id: 1, label: '湘A5883I9X', score: 0.6, angle: 11, color: [255, 0, 70, 128], bbox:[100, 105, 209, 200]
+                id: 1, label: '湘A5883I9X', score: 0.6, angle: 11, color: [255, 0, 70, 128], bbox: [100, 105, 400, 300]
               }, {
-                id: 2, label: '粤Y1702Y5ZQ', score: 0.79, angle: 360*Math.random(), color: [255, 0, 70, 128], bbox: [600*Math.random(), 600*Math.random(), 800*Math.random(), 100*Math.random()]
+                id: 2, label: '粤Y1702Y5ZQ', score: 0.79, angle: 360*Math.random(), color: [255, 0, 70, 128], bbox: [1920*Math.random(), 1080*Math.random(), 600*Math.random(), 300*Math.random()]
               }, {
-                id: 3, label: "person", score: 0.82, color: [131, 90, 120, 16], bbox:[126, 39, 75, 81]
+                id: 3, label: "person", score: 0.82, color: [131, 90, 120, 16], bbox: [126, 39, 200, 300]
               }, {
-                id: 4, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox:[450, 510, 100, 50]
+                id: 4, label: "car", score: 0.49, color: [62, 170, 0, 99], bbox: [800, 500, 400, 200]
               }, {
-                id: 5, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [600*Math.random(), 600*Math.random(), 200*Math.random(), 1000*Math.random()]
+                id: 5, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [1920*Math.random(), 1080*Math.random(), 300*Math.random(), 800*Math.random()]
               }, {
-                id: 6, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [800*Math.random(), 800*Math.random(), 200*Math.random(), 1000*Math.random()]
+                id: 6, label: "person", score: Math.random(), color: [131, 90, 120, 16], bbox: [1920*Math.random(), 1080*Math.random(), 300*Math.random(), 800*Math.random()]
               }, {
-                id: 7, label: "dog", score: Math.random(), color: [255*Math.random(), 255*Math.random(), 255*Math.random(), 100*Math.random()], bbox: [1000*Math.random(), 1000*Math.random(), 500*Math.random(), 300*Math.random()]
+                id: 7, label: "dog", score: Math.random(), color: [255*Math.random(), 255*Math.random(), 255*Math.random(), 100*Math.random()], bbox: [1920*Math.random(), 1080*Math.random(), 600*Math.random(), 400*Math.random()]
               }],
-              lines: [[100, 100, 200, 200], [151, 50, 360, 873], [900*Math.random(), 300*Math.random(), 700*Math.random(), 500*Math.random()], [11, 922, 536, 78]],
-              polygons: [[100, 100], [230, 160], [310, 281], [79, 502], [100, 100], [200*Math.random(), 400*Math.random()], [500*Math.random(), 300*Math.random()], [100, 100]]
+              lines: [
+                [100, 100, 600, 600],
+                [300, 200, 1200, 700],
+                [1920*Math.random(), 1080*Math.random(), 1920*Math.random(), 1080*Math.random()],
+                [1920*Math.random(), 1080*Math.random(), 1920*Math.random(), 1080*Math.random()]
+              ],
+              polygons: [
+                [100, 100], [500, 160], [900, 200], [400, 900],
+                [1920*Math.random(), 1080*Math.random()], [1920*Math.random(), 1080*Math.random()], [100, 100]
+              ]
             };
 
             this.detection.before = before;
             this.detection.after = after;
 
-            var diff = this.processDiff();
-            this.drawAll();
+            // var diff = this.processDiff();
+            // this.processAutoMark();
+            // this.drawAll();
+            var diff = this.processDiffAndAutoMark();
 
             // var diff = JSONResponse.deepMerge(JSON.parse(JSON.stringify(before)), JSON.parse(JSON.stringify(after)));
 

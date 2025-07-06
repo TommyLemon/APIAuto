@@ -2271,7 +2271,7 @@ var JSONResponse = {
     return value;
   },
 
-  getXYWH: function (bbox) {
+  getXYWHD: function (bbox) {
     if (bbox == null) {
       return null;
     }
@@ -2279,21 +2279,22 @@ var JSONResponse = {
       bbox = StringUtil.split(bbox, ',', true);
     }
     if (bbox instanceof Array) {
-      return [+ (bbox[0] || 0), + (bbox[1] || 0), + (bbox[2] || 0), + (bbox[3] || 0)];
+      return [+ (bbox[0] || 0), + (bbox[1] || 0), + (bbox[2] || 0), + (bbox[3] || 0), + (bbox[4] || 0)];
     }
 
     var x = bbox.x || bbox.x0 || bbox.x1 || bbox.leftTopX || bbox.topLeftX || bbox.left_top_x || bbox.top_left_x || 0;
     var y = bbox.y || bbox.y0 || bbox.y1 || bbox.leftTopY || bbox.topLeftY || bbox.left_top_y || bbox.top_left_y || 0;
     var w = bbox.w || bbox.width || ((bbox.x2 || bbox.x1 || bbox.rbx || bbox.brx || bbox.rightBottomX || bbox.bottomRightX || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
     var h = bbox.h || bbox.height || ((bbox.y2 || bbox.y1 || bbox.rby || bbox.bry || bbox.rightBottomY || bbox.bottomRightY || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
-    return [+ (x || 0), + (y || 0), + (w || 0), + (h || 0)];
+    var d = bbox.degree || bbox.angle || bbox.rotate || bbox.perspective || bbox.d || bbox.r || bbox.p || bbox.a;
+    return [+ (x || 0), + (y || 0), + (w || 0), + (h || 0), + (d || 0)];
   },
   /**
-   * 计算两个 bbox（[x, y, w, h]）的 IoU
+   * 计算两个 bbox（[x, y, w, h, r]）的 IoU
    */
   computeIoU: function(b1, b2) {
-    const [x1, y1, w1, h1] = JSONResponse.getXYWH(b1);
-    const [x2, y2, w2, h2] = JSONResponse.getXYWH(b2);
+    const [x1, y1, w1, h1, d1] = JSONResponse.getXYWHD(b1);
+    const [x2, y2, w2, h2, d2] = JSONResponse.getXYWHD(b2);
 
     const xA = Math.max(x1, x2);
     const yA = Math.max(y1, y2);
@@ -2307,8 +2308,9 @@ var JSONResponse = {
 
     const interArea = interW * interH;
     const unionArea = w1 * h1 + w2 * h2 - interArea;
+    const dd = (1 - Math.abs(d1 - d2)/360);
 
-    return interArea / unionArea;
+    return (interArea / unionArea) * dd;
   },
 
   /**
@@ -2401,6 +2403,170 @@ var JSONResponse = {
     b = JSONResponse.clamp(b * factor, 0, 255);
     a = JSONResponse.clamp(a * alphaFactor, 0, 255);
     return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
+  },
+
+  drawDetections: function(canvas, detection, options, img) {
+    if (!detection || typeof detection !== 'object') {
+      console.error('drawDetections: invalid detection input');
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    const height = canvas.height || (img || {}).height;
+    const width = canvas.width || (img || {}).width;
+    const fontSize = Math.max(12, Math.min(48, height * 0.05));
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = Math.max(1, Math.min(8, height * 0.005));
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textBaseline = 'top';
+
+    const placedLabels = [];
+    const rotateBoxes = options.rotateBoxes || false;
+    const rotateText = options.rotateText || false;
+    const showLabelBackground = options.labelBackground || false;
+    const hoverBoxId = options.hoverBoxId || null;
+    const visiblePaths = options.visiblePaths || null;
+    const markable = options.markable || false;
+
+    const nw = img == null ? 0 : (img.naturalWidth || 0);
+    const nh = img == null ? 0 : (img.naturalHeight || 0);
+    const xRate = nw < 1 ? 1 : width/nw;
+    const yRate = nh < 1 ? 1 : height/nh;
+
+    // Draw bboxes
+    detection.bboxes?.forEach((item, index) => {
+      const isHovered = item.id === hoverBoxId;
+      const visible = ! visiblePaths || visiblePaths.length <= 0 || visiblePaths.includes(item.path || item.id);
+      if (! visible) {
+        return;
+      }
+
+      var [x, y, w, h, d] = JSONResponse.getXYWHD(item.bbox || []);
+      const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
+      x = isRate ? x*width : x*xRate;
+      y = isRate ? y*height : y*yRate;
+      w = isRate ? w*width : w*xRate;
+      h = isRate ? h*height : h*yRate;
+      const angle = item.degree || item.rotate || item.angle || item.perspective || d || 0;
+
+      var color = item.color;
+      if (options.styleOverride) {
+        const override = options.styleOverride(item, item.isBefore);
+        if (override && override.color) {
+          color = override.color;
+        }
+      }
+
+      const [r, g, b, a] = color || [0, 255, 0, 255];
+      const rgba = `rgba(${r}, ${g}, ${b}, ${Math.min(0.5, a / 255)})`;
+
+      const reversedRgba = `rgba(${255 - r}, ${255 - g}, ${255 - b}`; // , 0.2`; // ${1 - a/255})`;
+      // const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      const backgroundFill = rgba; // 还是有些看不清 luma > 186 ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)';
+
+      ctx.strokeStyle = isHovered ? reversedRgba : rgba;
+      ctx.fillStyle = rgba;
+
+      // Draw horizontal box
+      ctx.strokeRect(x, y, w, h);
+
+      // Optionally draw rotated box
+      if (rotateBoxes && angle !== 0) {
+        ctx.save();
+        ctx.translate(x + w / 2, y + h / 2);
+        ctx.rotate((angle * Math.PI) / 180);
+        ctx.strokeRect(-w / 2, -h / 2, w, h);
+        ctx.restore();
+      }
+
+      // Label
+      const label = `${item.ocr || item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
+      // ctx.font = 'bold 36px';
+      // const size = ctx.measureText(label);
+      // const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
+      // 让字号约为 canvas 高度的 2%，并限定 12~48px
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      const size = ctx.measureText(label);
+      // 自动从 font 里提取 px 字号
+      const fontMatch = ctx.font.match(/(\d+)px/);
+      const textHeight = fontMatch ? parseInt(fontMatch[1]) : 36;  // fallback 到 36px
+      const textWidth = size.width; // *textHeight/size.height;
+      const padding = 2;
+
+      let positions = [
+        [x, y - textHeight - padding],
+        [x + w - textWidth, y - textHeight - padding],
+        [x, y + h + padding],
+        [x + w - textWidth, y + h + padding]
+      ];
+
+      let labelX = x, labelY = y - textHeight - padding;
+      for (const [lx, ly] of positions) {
+        const overlaps = placedLabels.some(({ x: ox, y: oy, w: ow, h: oh }) =>
+            lx < ox + ow && lx + textWidth > ox && ly < oy + oh && ly + textHeight > oy
+        );
+        if (!overlaps && lx >= 0 && ly >= 0 && lx + textWidth <= canvas.width && ly + textHeight <= canvas.height) {
+          labelX = lx;
+          labelY = ly;
+          break;
+        }
+      }
+
+      placedLabels.push({ x: labelX, y: labelY, w: textWidth, h: textHeight });
+
+      ctx.save();
+      if (rotateText && angle !== 0) {
+        ctx.translate(labelX + textWidth / 2, labelY + textHeight / 2);
+        ctx.rotate((angle * Math.PI) / 180);
+        ctx.translate(-textWidth / 2, -textHeight / 2);
+        labelX = 0;
+        labelY = 0;
+      }
+
+      if (showLabelBackground) {
+        ctx.fillStyle = backgroundFill;
+        ctx.fillRect(labelX - 2, labelY - 1, textWidth + 4, textHeight + 2);
+      }
+
+      ctx.fillStyle = showLabelBackground ? reversedRgba : rgba;
+      ctx.fillText(label, labelX, labelY);
+      ctx.restore();
+
+      if (markable) {
+        // 绘制 √ 和 ×
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.fillStyle = item.correct === false ? 'red' : 'green';
+        const checkX = labelX + textWidth + 4;
+        const checkY = labelY;
+        ctx.fillText(item.correct === false ? '×' : '√', checkX, checkY);
+
+        // 记录点击区域
+        if (!canvas._clickAreas) {
+          canvas._clickAreas = [];
+        }
+        canvas._clickAreas.push({x: checkX, y: checkY, w: 16, h: textHeight, item});
+      }
+    });
+
+    // Draw lines
+    detection.lines?.forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+
+    // Draw polygons
+    if (detection.polygons?.length > 1) {
+      ctx.beginPath();
+      detection.polygons.forEach(([x, y], i) => {
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.stroke();
+    }
   }
 
 };
