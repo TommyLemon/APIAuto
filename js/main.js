@@ -6907,16 +6907,7 @@ https://github.com/Tencent/APIJSON/issues
         this.$set(this.hoverIds, stage, found);
         this.draw(stage);
       },
-      onClick: function(stage, event) {
-        const [x, y] = this.getCanvasXY(stage, event);
-        for (const item of this.detection[stage].bboxes || []) {
-          if (this.isInsideBox(x, y, item.bbox)) {
-            item.correct = item.correct === true ? false : true;
-            break;
-          }
-        }
-        this.draw(stage);
-      },
+
       draw: function(stage) {
         const img = this.imgMap[stage];
         const canvas = this.canvasMap[stage];
@@ -6957,6 +6948,55 @@ https://github.com/Tencent/APIJSON/issues
         a.download = 'detection_export.json';
         a.click();
         URL.revokeObjectURL(url);
+      },
+
+      /**
+       * 修正光标坐标与 canvas 标签位置对应的问题
+       * 需要考虑 canvas 在页面上显示尺寸与实际 canvas 尺寸比例的缩放
+       */
+      getCanvasXY: function(stage, event) {
+        const canvas = this.canvasMap[stage];
+        const rect = canvas.getBoundingClientRect();
+
+        // canvas 上的实际像素坐标需要根据缩放计算
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+
+        return [x, y];
+      },
+      /**
+       * 在 drawDetections 里绘制标签按钮时也需要保证位置和点击检测使用相同的坐标体系
+       * 例如点击 √ / × 时：
+       */
+      onClick: function(stage, event) {
+        const [x, y] = this.getCanvasXY(stage, event);
+        for (const item of this.detection[stage].bboxes || []) {
+          const [bx, by, bw, bh] = item.bbox;
+          const labelX = bx + bw + 4; // 和 drawDetections 中计算按钮位置保持一致
+          const labelY = by; // 同上
+
+          const size = 16; // 按钮点击区域大小
+          if (x >= labelX && x <= labelX + size && y >= labelY && y <= labelY + size) {
+            item.correct = true;
+            this.draw(stage);
+            return;
+          } else if (x >= labelX + size + 4 && x <= labelX + size * 2 + 4 && y >= labelY && y <= labelY + size) {
+            item.correct = false;
+            this.draw(stage);
+            return;
+          }
+        }
+        // 其它情况，检测是否点击到框内
+        for (const item of this.detection[stage].bboxes || []) {
+          if (this.isInsideBox(x, y, item.bbox)) {
+            item.correct = item.correct === true ? false : true;
+            this.draw(stage);
+            return;
+          }
+        }
       },
 
       drawDetections: function(canvas, detection, options, img) {
@@ -7028,13 +7068,6 @@ https://github.com/Tencent/APIJSON/issues
             ctx.restore();
           }
 
-          // Draw correctness marker
-          if (item.correct === true || item.correct === false) {
-            ctx.font = '24px sans-serif';
-            ctx.fillStyle = item.correct ? 'green' : 'red';
-            ctx.fillText(item.correct ? '√' : '×', x + w + 4, y);
-          }
-
           // Label
           const label = `${item.ocr || item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
           ctx.font = 'bold 24px';
@@ -7081,6 +7114,19 @@ https://github.com/Tencent/APIJSON/issues
           ctx.fillStyle = rgba;
           ctx.fillText(label, labelX, labelY);
           ctx.restore();
+
+          // 绘制 √ 和 ×
+          ctx.font = '24px sans-serif';
+          ctx.fillStyle = item.correct === false ? 'red' : 'green';
+          const checkX = labelX + textWidth + 4;
+          const checkY = labelY;
+          ctx.fillText(item.correct === false ? '×' : '√', checkX, checkY);
+
+          // 记录点击区域
+          if (! canvas._clickAreas) {
+            canvas._clickAreas = [];
+          }
+          canvas._clickAreas.push({ x: checkX, y: checkY, w: 16, h: textHeight, item });
         });
 
         // Draw lines
@@ -13538,14 +13584,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     },
     mounted: function () {
       this.imgMap = {
-        before: document.getElementById("vBefore"),
-        diff: document.getElementById("vDiff"),
-        after: document.getElementById("vAfter")
+        before: vBefore || document.getElementById("vBefore"),
+        diff: vDiff || document.getElementById("vDiff"),
+        after: vAfter || document.getElementById("vAfter")
       };
       this.canvasMap = {
-        before: document.getElementById("vBeforeCanvas"),
-        diff: document.getElementById("vDiffCanvas"),
-        after: document.getElementById("vAfterCanvas")
+        before: vBeforeCanvas || document.getElementById("vBeforeCanvas"),
+        diff: vDiffCanvas || document.getElementById("vDiffCanvas"),
+        after: vAfterCanvas || document.getElementById("vAfterCanvas")
       };
     },
     created: function  () {
