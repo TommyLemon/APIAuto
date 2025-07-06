@@ -1241,11 +1241,7 @@ https://github.com/Tencent/APIJSON/issues
         beforeF1: (100*2*((8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
         before: { bboxes: [] }
       },
-      stageImages: {
-        before: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
-        diff: 'img/Screenshot_2020-11-07-16-37-36-400_apijson.demo.jpg',
-        after: 'img/Screenshot_2020-11-07-16-40-30-257_apijson.demo.jpg'
-      },
+      img: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
       visiblePaths: [],
       imgMap: {},
       canvasMap: {},
@@ -4938,7 +4934,7 @@ https://github.com/Tencent/APIJSON/issues
           if (err != null) {
             msg += '\nerr: ' + err.msg
           }
-          alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+          alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + msg)
 
           App.isCaseGroupEditable = ! isOk
           if (isOk) {
@@ -6707,6 +6703,7 @@ https://github.com/Tencent/APIJSON/issues
         const isSub = this.isRandomSubListShow;
         const items = (isSub ? this.randomSubs : this.randoms) || [];
         const cri = this.currentRandomItem || {}
+        const doc = (this.currentRemoteItem || {}).Document || {}
         const random = cri.Random || {}
         const ind = isSub && this.currentRandomSubIndex != null ? this.currentRandomSubIndex : this.currentRandomIndex;
 
@@ -6728,8 +6725,8 @@ https://github.com/Tencent/APIJSON/issues
               Random: {
                 id: -(index || 0) - 1, //表示未上传
                 toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
-                userId: random.userId,
-                documentId: random.documentId,
+                userId: random.userId || doc.userId,
+                documentId: random.documentId || doc.id,
                 count: 1,
                 name: '分析位于 ' + index + ' 的这张图片',
                 img: e.target.result,
@@ -6782,6 +6779,8 @@ https://github.com/Tencent/APIJSON/issues
                   } catch (e) {
                     console.error(e)
                   }
+
+                  App.updateRandom(r)
                 })
                 .catch(error => {
                   console.error('Upload failed:', error);
@@ -6826,7 +6825,7 @@ https://github.com/Tencent/APIJSON/issues
               var keys = StringUtil.split(data.path, '/');
               var fn = keys == null ? null : keys[keys.length - 1];
               random.name = random.file = StringUtil.isEmpty(fn, true) ? fn : random.file;
-              random.img = img;
+              App.img = random.img = img;
               random.size = (data.size || (StringUtil.length(img) * (3/4)) - (img.endsWith('==') ? 2 : 1));
               random.width = data.width || random.width;
               random.height = data.height || random.height;
@@ -6836,12 +6835,49 @@ https://github.com/Tencent/APIJSON/issues
                 console.error(e)
               }
 
+              App.updateRandom(random) // event 无效 App.doOnKeyUp(event, 'random', false, item)
             })
             .catch(error => {
               console.error('Upload failed:', error);
               alert('Failed to upload image.');
               item.status = 'failed';
             });
+      },
+
+      updateRandom: function (random) {
+        if (random == null) {
+          alert('上传/修改图片失败, random == null!');
+          return
+        }
+
+        var id = random.id
+        var isPost = id == null || id <= 0
+        var r = isPost ? JSON.parse(JSON.stringify(random)) : random;
+        if (isPost) {
+          r.id = undefined
+        }
+
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + (isPost ? '/post' : '/put'), {
+          Random: r,
+          TestRecord: isPost ? {
+            response: '',
+          } : undefined,
+          tag: 'Random'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var data = res.data
+          var isOk = JSONResponse.isSuccess(data)
+
+          var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((data || {}).msg))
+          if (err != null) {
+            msg += '\nerr: ' + err.msg
+          }
+          alert((isPost ? '新增' : '修改') + (isOk ? '成功' : '失败') + '\nname: ' + random.name + msg)
+          if (isPost) {
+            random.id = (data.Random || {}).id
+          }
+          App.isRandomEditable = ! isOk
+        })
       },
 
       syncCanvasSize: function(stage) {
@@ -8220,7 +8256,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (err != null) {
                 msg += '\nerr: ' + err.msg
               }
-              alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+              alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + msg)
 
               App.isCaseGroupEditable = ! isOk
             })
@@ -8271,7 +8307,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 msg += '\nerr: ' + err.msg
               }
               if (! isOk) {
-                alert(isOk ? '选择右侧接口来添加' : '查询失败！\ngroupName: ' + groupName + '\n' + msg)
+                alert(isOk ? '选择右侧接口来添加' : '查询失败！\ngroupName: ' + groupName + msg)
                 return
               }
 
@@ -8346,7 +8382,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               Random: {
                 id: r.id,
                 count: r.count,
-                name: r.name
+                name: r.name,
+                img: r.img,
+                file: r.file,
+                size: r.size,
+                width: r.width,
+                height: r.height
               },
               tag: 'Random'
             }, {}, function (url, res, err) {
@@ -8358,6 +8399,42 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 msg += '\nerr: ' + err.msg
               }
               alert('修改' + (isOk ? '成功' : '失败') + '！\nurl: ' + item.url + '\nname: ' + r.name + msg)
+
+              App.isRandomEditable = ! isOk
+            })
+
+            return
+          }
+
+          if (type == 'randomKeyPath') {
+            var d = (this.currentRemoteItem || {}).Document
+            if (d == null || d.id == null) {
+              alert('请选择有效的用例！item.Document.id == null !')
+              return
+            }
+
+            var path = (item || {}).path || vRandomKeyPath.value
+            if (StringUtil.isEmpty(path, true)) {
+              alert('请输入有效的图片 JSON key 路径！以 / 分隔，key 中 / 等特殊字符需要 encodeURLComponent 转义')
+              return
+            }
+
+            //修改 Document 的 path
+            this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+              Document: {
+                id: d.id,
+                path: path,
+              },
+              tag: 'Document'
+            }, {}, function (url, res, err) {
+              App.onResponse(url, res, err)
+              var isOk = JSONResponse.isSuccess(res.data)
+
+              var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+              if (err != null) {
+                msg += '\nerr: ' + err.msg
+              }
+              alert('修改' + (isOk ? '成功' : '失败') + '！\npath: ' + path)
 
               App.isRandomEditable = ! isOk
             })
@@ -10243,6 +10320,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const which = i;
           var rawConfig = testSubList && i < existCount ? ((subs[i] || {}).Random || {}).config : random.config
+          rawConfig = (StringUtil.isEmpty(rawConfig, true) ? '' : rawConfig + '\n') + vRandomKeyPath.value + ': '
+              + JSON.stringify(this.host.indexOf('localhost') >= 0 || this.host.indexOf('127.0.0.1') >= 0 ? (item.img || this.img) : random.img)
 
           var cb = function (url, res, err) {
             if (callback != null) {
@@ -11996,8 +12075,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.currentRandomSubIndex = index
           document = this.currentRemoteItem || {}
 
-          vBefore.src = vDiff.src = vAfter.src = random.img;
-
+          vBefore.src = vDiff.src = vAfter.src = this.img = random.img;
         }
         else {
           this.currentDocIndex = index
@@ -13771,7 +13849,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var target = event.target;
         if ([vAskAI, vSearch, vTestCaseSearch, vCaseGroupSearch
           , vChainGroupSearch, vChainGroupAdd, vChainAdd
-          , vAfterTotal, vAfterThreshold, vAfterCorrect, vAfterWrong, vAfterMiss
+          , vAfterTotal, vAfterThreshold, vRandomKeyPath
         ].indexOf(target) >= 0) {
           return
         }

@@ -419,7 +419,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <a > 实际 </a><input id="vAfterTotal" v-model="detection.afterTotal" style="width: 36px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterTotal', true)" placeholder="总数" />
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
-                            <img id="vAfter" :src="stageImages.after" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
+                            <img id="vAfter" :src="img" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
                             <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
                         </div>
                     </div>
@@ -429,7 +429,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 '  + detection.diffCorrect + ' 误报数 ' + detection.diffWrong + ' 漏检数 ' + detection.diffMiss : '召回率 ' + detection.diffRecall + ' 精确率 ' + detection.diffPrecision + ' F1 ' + detection.diffF1 }} </a>
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
-                            <img id="vDiff" :src="stageImages.diff" ref="vDiffImg" @load="syncCanvasSize('diff')" style="min-width: 240px; height: 100%; position: absolute;" />
+                            <img id="vDiff" :src="img" ref="vDiffImg" @load="syncCanvasSize('diff')" style="min-width: 240px; height: 100%; position: absolute;" />
                             <canvas id="vDiffCanvas" ref="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('diff', $event)" @click="onClick('diff', $event)" />
                         </div>
                     </div>
@@ -439,7 +439,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.beforeCorrect + ' 误报数 ' + detection.beforeWrong + ' 漏检数 ' + detection.beforeMiss : '召回率 ' + detection.beforeRecall + ' 精确率 ' + detection.beforePrecision + ' F1 ' + detection.beforeF1 }} </a>
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
-                            <img id="vBefore" :src="stageImages.before" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
+                            <img id="vBefore" :src="img" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
                             <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" @click="onClick('before', $event)" />
                         </div>
                     </div>
@@ -492,7 +492,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             </a>
                         </div>
 
-                        <input id="vRandomKeyPath" v-show="isRandomListShow || isRandomSubListShow" style="width: 100%; text-align: center; margin-top: 40px; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px"  @keyup="doOnKeyUp(event, 'randomKeyPath', false, {'path': vRandomKeyPath.value})" placeholder="图片的 JSON key 路径，以 / 分隔，key 中 / 等特殊字符需要 URL 转义" />
+                        <input id="vRandomKeyPath" v-show="isRandomListShow || isRandomSubListShow" v-model="((currentRemoteItem || {}).Document || {}).path" style="width: 100%; text-align: center; margin-top: 40px; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px"  @keyup="doOnKeyUp(event, 'randomKeyPath', false, {'path': vRandomKeyPath.value})" placeholder="图片的 JSON key 路径，以 / 分隔，转义特殊字符 / 等" />
 
                         <!-- 临时生成的配置子项 -->
                         <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent; overflow: hidden;overflow-y: scroll; padding-bottom: 150px">
@@ -530,8 +530,8 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <li style="width: 100%; display: inline-flex; background-color: rgba(255, 255, 255, 0.5)" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
                                 <img id="vRandomImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; min-width: 90px; background-color: rgba(255, 255, 255, 0.5); position: relative" @click="onClickAddRandom(index)" @load="var target = $event.target || {}; (item.Random || {}).width = target.naturalWidth; (item.Random || {}).height = target.naturalHeight">
 
-                                <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--left hint--no-animate" ref="randomTexts" :data-hint="(item.Random || {}).file" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') }}</a>
-                                <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" ></textarea>
+                                <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--left hint--no-animate" ref="randomTexts" :data-hint="(item.Random || {}).file" href="javascript:void(0)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') }}</a>
+                                <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" disabled></textarea>
 
                                 <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute; bottom: 6px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
                                 <div v-show="isStatisticsEnabled && ((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; bottom: 6px;right: 5px;display: inline-block" @click="handleTest(true, index, item, null, true)">
@@ -1105,6 +1105,7 @@ fun(true, 1, 'a'..);
   var vHeader = document.getElementById("vHeader");
   var vScript = document.getElementById("vScript");
   var vRandom = document.getElementById("vRandom");
+  var vRandomKeyPath = document.getElementById("vRandomKeyPath");
   var vOutput = document.getElementById("vOutput");
 
   var vAccount = document.getElementById("vAccount");
