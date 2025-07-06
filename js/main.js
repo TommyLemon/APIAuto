@@ -12171,12 +12171,26 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const detection = this.detection || {};
             if (testRecord.total != null && testRecord.total > 0) {
               detection.beforeTotal = detection.afterTotal = detection.diffTotal = testRecord.total;
+            } else {
+              testRecord.total = detection.beforeTotal || detection.afterTotal || detection.diffTotal;
             }
+
             detection.beforeCorrect = testRecord.correct;
             detection.beforeWrong = testRecord.wrong;
             detection.beforeMiss = testRecord.miss;
-            detection.beforeScore = testRecord.score;
-            detection.beforeIou = testRecord.iou;
+
+            if (testRecord.score != null && testRecord.score > 0) {
+              detection.afterThreshold = detection.beforeThreshold = testRecord.score;
+            } else {
+              testRecord.score = detection.beforeThreshold || detection.afterThreshold || 30;
+            }
+
+            if (testRecord.iou != null && testRecord.iou > 0) {
+              detection.diffThreshold = testRecord.iou;
+            } else {
+              testRecord.iou = detection.diffThreshold || 90;
+            }
+
             detection.beforeRecall = testRecord.recall;
             detection.beforePrecision = testRecord.precision;
             detection.beforeF1 = testRecord.f1;
@@ -12443,7 +12457,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             'invalid': 0,
             'host': this.getBaseUrl(),
             '@order': 'date-',
-            '@column': 'id,userId,testAccountId,documentId,randomId,reportId,duration,minDuration,maxDuration,response' + (this.isMLEnabled ? ',standard' : ''),
+            '@column': 'id,userId,testAccountId,documentId,randomId,reportId,duration,minDuration,maxDuration,total,correct,wrong,miss,score,iou,recall,precision,f1,response' + (this.isMLEnabled ? ',standard' : ''),
             'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  // '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
           }
         }, {}, function (url, res, err) {
