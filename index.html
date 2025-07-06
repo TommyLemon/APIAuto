@@ -459,7 +459,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                 
                 <div v-show="isRandomShow" style="position: absolute; right: 0px; width: 330px; height: 100%; z-index: 101;" >
 
-                    <div v-show="isRandomShow" style="position: absolute; width: 100%; height: 100%; " wrap="off" >
+                    <div v-show="isRandomShow" style="position: absolute; width: 100%; height: 100%;" wrap="off" >
                         <div class="left-bar" style="height: 40px; width: 100%; right: 0px; border-top: #DDD 1px solid; position: absolute; border-top: none; background-color: rgba(255, 255, 255, 0.5);">
                             <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
                             <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
@@ -492,12 +492,14 @@ Ctrl + S 或 Command + S 保存当前用例；
                             </a>
                         </div>
 
+                        <input id="vRandomKeyPath" v-show="isRandomListShow || isRandomSubListShow" style="width: 100%; text-align: center; margin-top: 40px; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px"  @keyup="doOnKeyUp(event, 'randomKeyPath', false, {'path': vRandomKeyPath.value})" placeholder="图片的 JSON key 路径，以 / 分隔，key 中 / 等特殊字符需要 URL 转义" />
+
                         <!-- 临时生成的配置子项 -->
-                        <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent; overflow: hidden;overflow-y: scroll; padding-bottom: 150px; margin-top: 36px">
+                        <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent; overflow: hidden;overflow-y: scroll; padding-bottom: 150px">
                             <li style="width: 100%; background-color: white; " v-for="(item, index) in randomSubs" :id="'randomSubItem' + index" >
                                 <img id="vRandomSubImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; min-width: 90px" @click="onClickAddRandom(currentRandomIndex, index)">
 
-                                <a class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') + '\n' + ((item.Random || {}).file || '') }}</a>
+                                <a class="hint--rounded hint--no-animate" ref="randomSubTexts" @mouseover="setRequestHint(index, item, true)" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomSubIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') }}</a>
                                 <input style="width: 96%" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'randomSub', false, item)" />
 
                                 <div :style="{ background: item.compareColor }" v-show="! isRandomEditable && item.compareType != null" style="position: absolute;top: 8px;right: 36px;display: inline-block;">
@@ -508,7 +510,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                                     <button class="hint--left" ref="testRandomSubHandleButtons" @mouseover="setTestHint(index, item, true, null, true)" v-show="(item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null)" @click="handleTest(true, index, item, null, true)">{{ item.showType == 'before' ? '错的，撤回' : '对的，纠正' }}</button><button v-show="! ((item.showType != 'before' && item.compareType != 0) || (item.showType == 'before' && (item.TestRecord || {}).id != null))" style="color: white;background: white;border-color: white;" disabled>对的，纠正</button><button style="padding-left: 1px; padding-right: 1px; width: 50px" :style="{ color: item.durationColor }" class="hint--left" ref="testRandomSubResultDurationButtons" @mouseover="setTestHint(index, item, true, true)" @click="handleTest(true, index, item, null, true, true)">{{ (item.showType == 'before' ? item.durationBeforeShowStr : item.durationShowStr) || '?' }}</button>
                                 </div>
 
-                                <img id="vRandomSubUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="margin-right: 27px; top: 13px" @click="uploadImage(currentRandomIndex, index)">
+<!--                                <img id="vRandomSubUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="margin-right: 27px; top: 13px" @click="uploadImage(currentRandomIndex, index)">-->
                                 <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="margin-right: 5px; top: 13px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
@@ -524,11 +526,11 @@ Ctrl + S 或 Command + S 保存当前用例；
                         </div>
 
                         <!-- 持久化存储的配置项 -->
-                        <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%; margin-top: 36px; background-color: transparent;overflow: hidden;overflow-y: scroll;padding-bottom: 150px">
-                            <li style="width: 100%; display: inline-flex; background-color: white" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
+                        <ul v-show="isRandomListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent;overflow: hidden;overflow-y: scroll;padding-bottom: 150px">
+                            <li style="width: 100%; display: inline-flex; background-color: rgba(255, 255, 255, 0.5)" v-for="(item, index) in randoms"  :id="'randomItem' + index" >
                                 <img id="vRandomImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; min-width: 90px; background-color: rgba(255, 255, 255, 0.5); position: relative" @click="onClickAddRandom(index)" @load="var target = $event.target || {}; (item.Random || {}).width = target.naturalWidth; (item.Random || {}).height = target.naturalHeight">
 
-                                <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--left hint--no-animate" ref="randomTexts" :data-hint="(item.Random || {}).file" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') + '\n' + ((item.Random || {}).file || '') }}</a>
+                                <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--left hint--no-animate" ref="randomTexts" :data-hint="(item.Random || {}).file" href="javascript:void(0)" @click="restoreRandom(index, item)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') }}</a>
                                 <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" ></textarea>
 
                                 <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute; bottom: 6px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
@@ -547,7 +549,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                                     </div>
                                 </div>
 
-                                <img v-show="StringUtil.isEmpty((item.Random || {}).file)" id="vRandomUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="position: absolute;right: 27px; top: 3px" @click="uploadImage(index)">
+<!--                                <img v-show="StringUtil.isEmpty((item.Random || {}).file)" id="vRandomUpload" :src="item.status == 'uploading' ? 'img/loading.gif' : 'img/add_light.png'" class="icon" style="position: absolute;right: 27px; top: 3px" @click="uploadImage(index)">-->
                                 <svg v-show="item.Random != null && item.Random.userId == User.id" class="icon" style="position: absolute;right: 5px; top: 6px" @click="remove(item, index, true, true)">
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>
@@ -562,7 +564,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <input id="vRandomCount" v-model="randomCount" style="width: 30px;text-align: center; margin-right: 4px"  type="number" @keyup="doOnKeyUp(event, 'random', true)" placeholder="条数" />
                         </div>
 
-                        <textarea id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%; margin-top: 36px; background-color: rgba(255, 255, 255, 0.5)" wrap="off"
+                        <textarea v-show="false" id="vRandom" @copy="doOnCopy" @paste="doOnPaste" style="width: 100%;height: 100%; margin-top: 36px; background-color: rgba(255, 255, 255, 0.5)" wrap="off"
                                   placeholder="# 常用：
 RANDOM_IN(val0:Any, val1:Any ...) // 从选项内随机取值
 RANDOM_INT(min:Integer, max:Integer) // 从范围内随机取整数
@@ -593,8 +595,10 @@ User/id: RANDOM_INT(82001, 82020) // 随机整数
 // Ctrl + S 或 Command + S 保存当前请求；
                         </textarea>
                     </div>
+                </div>
 
-                  <div v-show="isHeaderShow" style="width: 100%; height: 150px; position: relative;" >
+                <div style="width: 100%; position: absolute; bottom: 0px; background-color: white; z-index: 101;" >
+                  <div v-show="isHeaderShow" style="width: 100%; height: 150px; position: relative" >
                     <div class="left-bar" style="border-top: #DDD 1px solid; position: relative">
                       <a style="padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isEditResponse ? '响应头 Response Header' : '请求头 Request Header' ) }}<a style="display: flex;flex-grow: 1;padding-right: 10px;padding-top: 2px"> (每行都按 key: value 格式)</a></a>
                       <a class="hint--top @cli-tool" data-hint="隐藏" style="float: right;padding: 8px;height: 100%"  href="javascript:void(0)" @click="showConfig(false, 4)">
@@ -649,8 +653,7 @@ fun(true, 1, 'a'..);
                         </textarea>
                     </template>
                   </div>
-
-                </div>
+               </div>
             </div>
         </div>
     </div>

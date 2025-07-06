@@ -1322,7 +1322,7 @@ https://github.com/Tencent/APIJSON/issues
       isHeaderShow: false,
       isScriptShow: false,
       isRandomShow: true,  // 默认展示
-      isRandomListShow: false,
+      isRandomListShow: true,
       isRandomSubListShow: false,
       isRandomEditable: false,
       isCaseGroupEditable: false,
@@ -6739,7 +6739,7 @@ https://github.com/Tencent/APIJSON/issues
             item.status = 'uploading';
 
             const r = item.Random || {};
-            r.file = file.name;
+            r.name = r.file = file.name;
             r.size = file.size;
             r.width = file.width;
             r.height = file.height;
@@ -6825,7 +6825,7 @@ https://github.com/Tencent/APIJSON/issues
               const img = (path.startsWith('/') ? App.server + path : path) || item.img || '';
               var keys = StringUtil.split(data.path, '/');
               var fn = keys == null ? null : keys[keys.length - 1];
-              random.file = StringUtil.isEmpty(fn, true) ? fn : random.file;
+              random.name = random.file = StringUtil.isEmpty(fn, true) ? fn : random.file;
               random.img = img;
               random.size = (data.size || (StringUtil.length(img) * (3/4)) - (img.endsWith('==') ? 2 : 1));
               random.width = data.width || random.width;
@@ -12445,7 +12445,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             isLocalShow: false,
             isTestCaseShow: true,
             isRandomShow: true,
-            isRandomListShow: false,
+            isRandomListShow: true,
             isRandomSubListShow: false,
             isMLEnabled: true,
             isCrossEnabled: true,
