@@ -6724,7 +6724,7 @@ https://github.com/Tencent/APIJSON/issues
             var item = JSONResponse.deepMerge({
               Random: {
                 id: -(index || 0) - 1, //表示未上传
-                toId: random.id == null ? 1 : random.id,  // 1 为了没选择测试用例时避免用 toId 判断子项错误
+                toId: random.id,
                 userId: random.userId || doc.userId,
                 documentId: random.documentId || doc.id,
                 count: 1,
@@ -6871,8 +6871,8 @@ https://github.com/Tencent/APIJSON/issues
           var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((data || {}).msg))
           if (err != null) {
             msg += '\nerr: ' + err.msg
+            alert((isPost ? '新增' : '修改') + (isOk ? '成功' : '失败') + '\nname: ' + random.name + msg)
           }
-          alert((isPost ? '新增' : '修改') + (isOk ? '成功' : '失败') + '\nname: ' + random.name + msg)
           if (isPost) {
             random.id = (data.Random || {}).id
           }
