@@ -430,7 +430,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vDiff" :src="img" ref="vDiffImg" @load="syncCanvasSize('diff')" style="min-width: 240px; height: 100%; position: absolute;" />
-                            <canvas id="vDiffCanvas" ref="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('diff', $event)" @click="onClick('diff', $event)" />
+                            <canvas id="vDiffCanvas" ref="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('diff', $event)" />
                         </div>
                     </div>
                     <div style="min-width: 240px; height: 30%; position: relative; top: 50px">
@@ -440,7 +440,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vBefore" :src="img" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
-                            <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" @click="onClick('before', $event)" />
+                            <canvas id="vBeforeCanvas" ref="vBeforeCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('before', $event)" />
                         </div>
                     </div>
                 </div>
