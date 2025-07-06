@@ -1213,6 +1213,7 @@ https://github.com/Tencent/APIJSON/issues
       hoverIds: { before: null, diff: null, after: null },
       detection: {
         isShowNum: false,
+
         afterTotal: 10,
         afterThreshold: 35,
         afterCorrect: 9,
@@ -1222,7 +1223,8 @@ https://github.com/Tencent/APIJSON/issues
         afterRecallStr: (100*this.afterRecall).toFixed(0) + '%',
         afterPrecision: 9/(9+1),
         afterPrecisionStr: (100*this.afterPrecision).toFixed(0) + '%',
-        afterF1Str: (100*2*(this.afterRecall*this.afterPrecision)/(this.afterRecall + this.afterPrecision)).toFixed(0) + '%',
+        afterF1: 2*(this.afterRecall*this.afterPrecision)/(this.afterRecall + this.afterPrecision),
+        afterF1Str: (100*this.afterF1).toFixed(0) + '%',
         after: { bboxes: [] },
 
         beforeTotal: 10,
@@ -1233,9 +1235,9 @@ https://github.com/Tencent/APIJSON/issues
         beforeRecall: 8/(8+3),
         beforeRecallStr: (100*this.beforeRecall).toFixed(0) + '%',
         beforePrecision: 8/(8+2),
-        beforePrecisionStr: (100*this.beforePrecisionStr).toFixed(0) + '%',
-        beforeF1: (100*2*((8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
-        beforeF1Str: (100*2*(this.beforeRecall*this.beforePrecision)/(this.beforeRecall + this.beforePrecision)).toFixed(0) + '%',
+        beforePrecisionStr: (100*this.beforePrecision).toFixed(0) + '%',
+        beforeF1: 2*(this.beforeRecall*this.beforePrecision)/(this.beforeRecall + this.beforePrecision),
+        beforeF1Str: (100*this.beforeF1).toFixed(0) + '%',
         before: { bboxes: [] },
 
         diffTotal: 10,
@@ -1243,9 +1245,10 @@ https://github.com/Tencent/APIJSON/issues
         diffCorrectStr: '+' + 1,
         diffWrongStr: '-' + 2,
         diffMissStr: '-' + 1,
-        diffRecallStr: '+' + (100*(9/(9+1) - 8/(8+3))).toFixed(0) + '%',
-        diffPrecisionStr: '+' + (100*(9/(9+1) - 8/(8+2))).toFixed(0) + '%',
-        diffF1Str: '+' + (100*2*((9/(9+1))*(9/(9+1))/(9/(9+1) + (9/(9+1))) - (8/(8+3))*(8/(8+2))/(8/(8+3) + (8/(8+2))))).toFixed(0) + '%',
+        diffRecallStr: '+' + (100*(this.afterRecall - this.beforeRecall)).toFixed(0) + '%',
+        diffPrecisionStr: '+' + (100*(this.afterPrecision - this.beforePrecision)).toFixed(0) + '%',
+        diffF1: '+' + (100*(this.afterF1 - this.beforeF1)).toFixed(0) + '%',
+        diffF1Str: '+' + (100*this.diffF1).toFixed(0) + '%',
         diff: { bboxes: [] },
       },
       img: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
@@ -4833,7 +4836,7 @@ https://github.com/Tencent/APIJSON/issues
 //                'reportId': reportId <= 0 ? null : reportId,
 //                'invalid': reportId == null ? 0 : null,
                 '@order': 'date-',
-                '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (isMLEnabled ? ',standard' : ''),
+                '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,total,correct,wrong,miss,score,iou,recall,precision,f1,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (isMLEnabled ? ',standard' : ''),
                 'standard{}': isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               },
               'Script:pre': {
@@ -12165,8 +12168,22 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               ]
             };
 
-            this.detection.before = before;
-            this.detection.after = after;
+            const detection = this.detection || {};
+            if (testRecord.total != null && testRecord.total > 0) {
+              detection.beforeTotal = detection.afterTotal = detection.diffTotal = testRecord.total;
+            }
+            detection.beforeCorrect = testRecord.correct;
+            detection.beforeWrong = testRecord.wrong;
+            detection.beforeMiss = testRecord.miss;
+            detection.beforeScore = testRecord.score;
+            detection.beforeIou = testRecord.iou;
+            detection.beforeRecall = testRecord.recall;
+            detection.beforePrecision = testRecord.precision;
+            detection.beforeF1 = testRecord.f1;
+            detection.before = before;
+            detection.after = after;
+
+            this.detection = detection;
 
             // var diff = this.processDiff();
             // this.processAutoMark();
@@ -12285,6 +12302,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const chain = cri.Chain || {}
             const cgId = chain.groupId || 0
             const cId = chain.id || 0
+            const detection = this.detection || {};
 
             //TODO 先检查是否有重复名称的！让用户确认！
             // if (isML != true) {
@@ -12321,6 +12339,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 reportId: this.reportId,
                 host: baseUrl,
                 testAccountId: this.getCurrentAccountId(),
+                total: detection.afterTotal,
+                correct: detection.afterCorrect,
+                wrong: detection.afterWrong,
+                miss: detection.afterMiss,
+                score: detection.afterThreshold,
+                iou: detection.diffThreshold,
+                recall: detection.afterRecall,
+                precision: detection.afterPrecision,
+                f1: detection.afterF1,
                 compare: JSON.stringify(testRecord.compare || {}),
                 response: rawRspStr,
                 standard: isML ? JSON.stringify(stddObj) : null
