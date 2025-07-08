@@ -6945,7 +6945,7 @@ https://github.com/Tencent/APIJSON/issues
       },
       compute: function() {
         const detection = this.detection || {};
-        var total = detection.afterTotal;
+        var total = detection.total;
         ['before', 'after'].forEach(stage => {
           var det2 = detection[stage]
           var correctCount = 0;
@@ -6971,7 +6971,7 @@ https://github.com/Tencent/APIJSON/issues
         })
 
         if (total <= 0) {
-          detection.afterTotal = detection.beforeTotal = detection.diffTotal = total = detection.afterCorrect || detection.beforeCorrect;
+          detection.total = total = detection.afterCorrect || detection.beforeCorrect;
         }
 
         var diffCorrect = detection.afterCorrect - detection.beforeCorrect;
@@ -12249,9 +12249,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             const detection = this.detection || {};
             if (testRecord.total != null && testRecord.total > 0) {
-              detection.beforeTotal = detection.afterTotal = detection.diffTotal = testRecord.total;
+              detection.total = testRecord.total;
             } else {
-              testRecord.total = detection.beforeTotal || detection.afterTotal || detection.diffTotal;
+              testRecord.total = detection.total;
             }
 
             detection.beforeCorrect = testRecord.correct;
@@ -12432,7 +12432,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 reportId: this.reportId,
                 host: baseUrl,
                 testAccountId: this.getCurrentAccountId(),
-                total: detection.afterTotal,
+                total: detection.total,
                 correct: detection.afterCorrect,
                 wrong: detection.afterWrong,
                 miss: detection.afterMiss,
