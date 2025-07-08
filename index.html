@@ -417,7 +417,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <a style="font-weight: bold; color: black">本次: </a><a>置信度 </a><input id="vAfterThreshold" v-model="detection.afterThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterThreshold', true)" placeholder="阈值" />
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.afterCorrect + ' 误报数 ' + detection.afterWrong + ' 漏检数 ' + detection.afterMiss : '召回率 ' + detection.afterRecallStr + ' 精确率 ' + detection.afterPrecisionStr + ' F1 ' + detection.afterF1Str }} </a>
                             <a style="height: 25px; color: black; font-weight: bold; padding: 0" href="javascript:void(0)" @click="onClickFullScreen($event)" > 全屏 </a>
-                        </a>
+                        </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vAfter" :src="img" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
                             <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
