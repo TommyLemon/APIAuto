@@ -7066,7 +7066,7 @@ https://github.com/Tencent/APIJSON/issues
         });
 
         // 如果需要也展示 before 中 unmatched 的box，可遍历 beforeBoxes 进行差异补充
-        var diff = this.this.detection.diff || {};
+        var diff = this.detection.diff || {};
         diff.bboxes = diffBoxes;
         this.$set(this.detection, 'diff', { bboxes: diffBoxes });
         this.$set(this.detection, 'after', { bboxes: afterBoxes });  // 确保 after 被更新到 Vue
@@ -12183,6 +12183,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         const list = isRandom ? (random.toId == null || random.toId <= 0 ? this.randoms : this.randomSubs) : this.testCases
 
         var isBefore = item.showType == 'before'
+        this.file = random.file;
         if (right != true) {
           item.showType = isBefore ? 'after' : 'before'
           Vue.set(list, index, item);

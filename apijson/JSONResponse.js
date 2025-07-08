@@ -2547,7 +2547,7 @@ var JSONResponse = {
       }
 
       // Label
-      const label = (isDiff ? (item.isBefore ? '- ' : '+ ') : '') + `${item.ocr || item.label || ''}-${item.id || ''} ${((JSONResponse.getScore(item) || 0)*100).toFixed(0)}% ${Math.round(angle)}°`;
+      const label = (isDiff ? (item.isBefore ? '- ' : '+ ') : '') + `${item.ocr || item.label || ''}-${item.id || ''} ${((JSONResponse.getScore(item) || 0)*100).toFixed(0)}%${angle == 0 ? '' : ' ' + Math.round(angle) + '°'}`;
       // ctx.font = 'bold 36px';
       // const size = ctx.measureText(label);
       // const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
@@ -2614,7 +2614,7 @@ var JSONResponse = {
         canvas._clickAreas.push({x: checkX, y: checkY, w: 16, h: textHeight, item});
       }
 
-      JSONResponse.draw(canvas, item, options, img, ctx);
+      JSONResponse.drawDetections(canvas, item, options, img, ctx);
     });
 
     // Draw lines
@@ -2629,7 +2629,7 @@ var JSONResponse = {
         h = isRate ? h*height : h*yRate;
 
         const color = item.color || detection.color || detection.bbox?.color;
-        const rgba = color == null || color.length <= 0 ? null : `rgba(${(color.join(','))})`;
+        const rgba = color == null || color.length <= 0 ? null : `rgba(${color.join(',')})`;
         if (rgba != null) {
           ctx.fillStyle = rgba;
           ctx.strokeStyle = rgba;
@@ -2660,7 +2660,7 @@ var JSONResponse = {
         y = isRate ? y*height : y*yRate;
 
         const color = item.color || detection.color || detection.bbox?.color;
-        const rgba = color == null || color.length <= 0 ? null : `rgba(${(color.join(','))})`;
+        const rgba = color == null || color.length <= 0 ? null : `rgba(${color.join(',')})`;
         if (rgba != null) {
           ctx.fillStyle = rgba;
           ctx.strokeStyle = rgba;
