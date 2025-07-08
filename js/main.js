@@ -1210,11 +1210,12 @@ https://github.com/Tencent/APIJSON/issues
       urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
       allowMultiple: true,
+      isFullScreen: false,
       hoverIds: { before: null, diff: null, after: null },
       detection: {
         isShowNum: false,
+        total: 10,
 
-        afterTotal: 10,
         afterThreshold: 35,
         afterCorrect: 9,
         afterWrong: 1,
@@ -1227,7 +1228,6 @@ https://github.com/Tencent/APIJSON/issues
         afterF1Str: (100*this.afterF1).toFixed(0) + '%',
         after: { bboxes: [] },
 
-        beforeTotal: 10,
         beforeThreshold: 30,
         beforeCorrect: 8,
         beforeWrong: 3,
@@ -1240,7 +1240,6 @@ https://github.com/Tencent/APIJSON/issues
         beforeF1Str: (100*this.beforeF1).toFixed(0) + '%',
         before: { bboxes: [] },
 
-        diffTotal: 10,
         diffThreshold: 90,
         diffCorrectStr: '+' + 1,
         diffWrongStr: '-' + 2,
@@ -1251,7 +1250,8 @@ https://github.com/Tencent/APIJSON/issues
         diffF1Str: '+' + (100*this.diffF1).toFixed(0) + '%',
         diff: { bboxes: [] },
       },
-      img: 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
+      img: '', // 'img/Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
+      file: 'Screenshot_2020-11-07-16-35-27-473_apijson.demo.jpg',
       visiblePaths: [],
       imgMap: {},
       canvasMap: {},
@@ -5532,7 +5532,10 @@ https://github.com/Tencent/APIJSON/issues
                 'chainId': cId,
                 'documentId': isSub ? null : item.id,
                 '@order': "date-",
-                'name$': search
+                'name$': search,
+                '@combine': 'file[>,img[>',
+                'file[>': 0,
+                'img[>': 0
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
@@ -6896,27 +6899,20 @@ https://github.com/Tencent/APIJSON/issues
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         this.draw(stage);
-      },
-      isInsideBox: function(x, y, [bx, by, bw, bh]) {
-        return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+
+        const realWidth = this.isFullScreen ? 0 : (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 1920);
+        const maxTextWidth = realWidth <= 0 ? 0 : Math.max(vAfterTitle.clientWidth || 0, vDiffTitle.clientWidth || 0, vBeforeTitle.clientWidth || 0);
+        const imgWidth = maxTextWidth <= 0 ? 0 :  Math.max(maxTextWidth, img.width || vAfter.width || vDiff.width || vBefore.width || realWidth/(window.devicePixelRatio*3));
+        if (imgWidth <= 0 || imgWidth >= 700) {
+          return;
+        }
+
+        this.moveSplit(Math.min(0.7, Math.max(0.3, (imgWidth + 450)/realWidth)));
       },
       getCanvasXY: function(stage, event) {
         const el = this.canvasMap[stage];
         const rect = el.getBoundingClientRect();
         return [event.clientX - rect.left, event.clientY - rect.top];
-      },
-      onMousemove: function(stage, event) {
-        const [x, y] = this.getCanvasXY(stage, event);
-        let found = null;
-        var bboxes = JSONResponse.getBboxes(this.detection[stage]) || []
-        for (const item of bboxes) {
-          if (this.isInsideBox(x, y, item.bbox)) {
-            found = item.id;
-            break;
-          }
-        }
-        this.$set(this.hoverIds, stage, found);
-        this.draw(stage);
       },
 
       draw: function(stage) {
@@ -6932,6 +6928,7 @@ https://github.com/Tencent/APIJSON/issues
           labelBackground: true,
           rotateBoxes: true,
           rotateText: false,
+          stage: stage,
           markable: stage == 'after', // 'diff',
           styleOverride: isDiff ? (box, isBefore) => {
             if (! box.color) { // 防止空色
@@ -6998,29 +6995,60 @@ https://github.com/Tencent/APIJSON/issues
         const iouThreshold = (detection.diffThreshold || 90) / 100;
 
         const diffBoxes = [];
+        const total = detection.total || 0;
+        var correctCount = 0;
+        var file = StringUtil.trim(this.file).replaceAll(/'images'/ig, '').replaceAll(/'image'/ig, '').replaceAll(/'img'/ig, '')
+            .replaceAll(/'pictures'/ig, '').replaceAll(/'picture'/ig, '').replaceAll(/'pic'/ig, '')
+            .replaceAll(/'photos'/ig, '').replaceAll(/'photo'/ig, '')
+            .replaceAll(/'downloads'/ig, '').replaceAll(/'download'/ig, '')
+            .replaceAll(/'files'/ig, '').replaceAll(/'file'/ig, '')
+            .replaceAll(/'Unknown'/ig, '').replaceAll(/'Unknow'/ig, '')
+            .replaceAll(/'Unnamed'/ig, '').replaceAll(/'Unname'/ig, '')
+            .replaceAll(/'no name'/ig, '').replaceAll(/'Test'/ig, '')
+            .replaceAll(/'examples'/ig, '').replaceAll(/'example'/ig, '')
+            .replaceAll(/'new'/ig, '').replaceAll('测试', '')
+            .replaceAll('未命名', '').replaceAll('未知', '')
+            .replaceAll('示例', '').replaceAll('新建', '')
+            .replaceAll('图片', '');
+
+        var dotInd = file.lastIndexOf('.');
+        file = dotInd >= 0 ? file.substring(0, dotInd).trim() : file.trim();
 
         afterBoxes.forEach(curBox => {
           let bestIou = 0;
           let bestRef = null;
 
           beforeBoxes.forEach(refBox => {
-            const iou = JSONResponse.computeIoU(curBox.bbox, refBox.bbox);
+            var curBbox = JSONResponse.getXYWHD(JSONResponse.getBbox(curBox));
+            var refBbox = JSONResponse.getXYWHD(JSONResponse.getBbox(refBox));
+            const iou = JSONResponse.computeIoU(curBbox, refBbox);
             if (iou > bestIou) {
               bestIou = iou;
               bestRef = refBox;
             }
           });
 
-          if (bestIou >= iouThreshold && bestRef) {
+          var label = curBox.label;
+          if (bestIou >= iouThreshold && bestRef != null) {
             // 如果匹配到：标签一致→继承correct，标签不同→打X
-            curBox.correct = curBox.label === bestRef.label ? bestRef.correct : false;
+            curBox.correct = label === bestRef.label ? bestRef.correct : ! bestRef.correct;
+            bestRef.match = (bestRef.match || 0) + 1;
           } else {
             // 没有匹配→打X
-            curBox.correct = false;
+            var matchFile = StringUtil.isNotEmpty(file, true) && (
+                (StringUtil.isNotEmpty(label, true) && file.indexOf(label) >= 0)
+                || (StringUtil.isNotEmpty(curBox.ocr, true) && file.indexOf(curBox.ocr) >= 0)
+            );
+            // curBox.correct = total == 1 ? matchFile : (matchFile || total <= 0 || correctCount < total ? true : curBox.correct);
+            curBox.correct = total == 1 ? matchFile : (matchFile ? true : curBox.correct);
+          }
+
+          if (curBox.correct) {
+            correctCount ++;
           }
 
           // diff 结果逻辑：只把差异明显的保存到 diff
-          if (! bestRef || curBox.label !== bestRef.label || bestIou < iouThreshold) {
+          if (iouThreshold <= 0 || bestIou < iouThreshold || bestRef == null || label !== bestRef.label) {
             diffBoxes.push({
               ...curBox,
               isBefore: false
@@ -7028,14 +7056,24 @@ https://github.com/Tencent/APIJSON/issues
           }
         });
 
-        // 如果需要也展示 before 中 unmatched 的box，可遍历 beforeBoxes 进行差异补充
+        beforeBoxes.forEach(refBox => {
+          if (refBbox != null && (refBbox.match == null || refBbox.match <= 0)) {
+            diffBoxes.push({
+              ...refBox,
+              isBefore: true
+            });
+          }
+        });
 
-        this.detection.diff.bboxes = diffBoxes;
+        // 如果需要也展示 before 中 unmatched 的box，可遍历 beforeBoxes 进行差异补充
+        var diff = this.this.detection.diff || {};
+        diff.bboxes = diffBoxes;
         this.$set(this.detection, 'diff', { bboxes: diffBoxes });
         this.$set(this.detection, 'after', { bboxes: afterBoxes });  // 确保 after 被更新到 Vue
         this.drawAll();
         this.compute();
-        return this.detection.diff;
+        this.detection.diff = diff;
+        return diff;
       },
 
       exportJSON: function () {
@@ -7066,15 +7104,48 @@ https://github.com/Tencent/APIJSON/issues
 
         return [x, y];
       },
+
+      onMousemove: function(stage, event) {
+        const img = this.imgMap[stage];
+        const canvas = this.canvasMap[stage];
+        const [x, y] = this.getCanvasXY(stage, event);
+        let found = null;
+        var bboxes = JSONResponse.getBboxes(this.detection[stage]) || []
+        let len = bboxes.length;
+        var range = ((canvas || {}).height || (img || {}).height || 240) * (len <= 1 ? 0.5 : (len <= 5 ? 0.1/len : 0.02));
+        for (const item of bboxes) {
+          var bbox = JSONResponse.getXYWHD(JSONResponse.getBbox(item));
+          if (JSONResponse.isOnBorder(x, y, bbox, range)) {
+            found = item.id;
+            break;
+          }
+        }
+        this.$set(this.hoverIds, stage, found);
+        this.draw(stage);
+      },
+      onClickFullScreen: function(event) {
+        var isFullScreen = this.isFullScreen = ! this.isFullScreen;
+        this.isRandomShow = ! isFullScreen;
+        vContainer.style.display = isFullScreen ? '' : 'flex';
+        const realWidth = isFullScreen ? 0 : (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 1920);
+        const maxTextWidth = realWidth <= 0 ? 0 : Math.max(vAfterTitle.clientWidth || 0, vDiffTitle.clientWidth || 0, vBeforeTitle.clientWidth || 0);
+        const imgWidth = maxTextWidth <= 0 ? 0 :  Math.max(maxTextWidth, Math.min(700, vAfter.width || vDiff.width || vBefore.width || realWidth/(window.devicePixelRatio*3)));
+        this.moveSplit(isFullScreen ? 0.73 : Math.min(0.6, Math.max(0.3, (imgWidth + 450)/realWidth)));
+        event?.preventDefault();
+      },
       /**
        * 在 drawDetections 里绘制标签按钮时也需要保证位置和点击检测使用相同的坐标体系
        * 例如点击 √ / × 时：
        */
       onClick: function(stage, event) {
+        const img = this.imgMap[stage];
+        const canvas = this.canvasMap[stage];
         const [x, y] = this.getCanvasXY(stage, event);
         const bboxes = JSONResponse.getBboxes(this.detection[stage]) || []
+        let len = bboxes.length;
+        var range = ((canvas || {}).height || (img || {}).height || 240) * (len <= 1 ? 0.5 : (len <= 5 ? 0.1/len : 0.02));
         for (const item of bboxes) {
-          const [bx, by, bw, bh] = item.bbox;
+          const [bx, by, bw, bh, d] = JSONResponse.getXYWHD(JSONResponse.getBbox(item));
           const labelX = bx + bw + 4; // 和 drawDetections 中计算按钮位置保持一致
           const labelY = by; // 同上
 
@@ -7090,7 +7161,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           // 其它情况，检测是否点击到框内
-          if (this.isInsideBox(x, y, item.bbox)) {
+          if (JSONResponse.isOnBorder(x, y, [bx, by, bw, bh], range)) {
             item.correct = item.correct === false ? true : false;
             break;
           }
@@ -8410,7 +8481,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               return
             }
 
-            var path = (item || {}).path || vRandomKeyPath.value
+            var path = (item || {}).path || vRandomKeyPath.value || 'image'
             if (StringUtil.isEmpty(path, true)) {
               alert('请输入有效的图片 JSON key 路径！以 / 分隔，key 中 / 等特殊字符需要 encodeURLComponent 转义')
               return
@@ -11007,24 +11078,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
       },
 
-      onClickSend: function () {
-        this.isRandomTest = false
-        this.send(false)
-      },
-      onClickTest: function (callback) {
-        this.isRandomTest = false
-        this.isStatisticsEnabled = true
-        this.reportId = new Date().getTime()
-        this.caseShowType = 1
-
+      moveSplit: function (rate) {
         // 自动往右移动，避免断言结果遮挡太多接口名称、URL
+        rate = rate || 0.4;
+
         var split_obj = IS_BROWSER ? $('.splitx') : null
         var split_obj_left = split_obj == null ? 0 : parseInt(split_obj.css('left'))
         var width = split_obj_left <= 0 ? 0 : (window.innerWidth || 1280)
-        if (width > 0 && Math.abs(split_obj_left - 0.4*width) <= 5) {
+        if (width > 0) {
+          var w = rate*width;
           // 构造事件比较麻烦，即便用 JQuery 也是
           // split_obj[0].dispatchEvent(new TouchEvent('', new class implements TouchEventInit{
-          //   clientX: 0.6*width
+          //   clientX: w
           // }()))
 
           var left_ele = $('.side-left')
@@ -11035,11 +11100,24 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           //
           // var right_left = parseInt(right_ele.css('left'))
 
-          split_obj.css('left', 0.6*width)
-          left_ele.width(0.6*width);
-          right_ele.width(0.4*width).css('left', 0.6*width);
+          split_obj.css('left', w)
+          left_ele.width(w);
+          right_ele.width(width - w).css('left', w);
           // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
         }
+      },
+
+      onClickSend: function () {
+        this.isRandomTest = false
+        this.send(false)
+      },
+      onClickTest: function (callback) {
+        this.isRandomTest = false
+        this.isStatisticsEnabled = true
+        this.reportId = new Date().getTime()
+        this.caseShowType = 1
+
+        this.moveSplit(0.6)
 
         var isCross = this.isCrossEnabled
         var accountIndex = isCross ? -1 : this.currentAccountIndex
@@ -11400,7 +11478,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var it = item || {} //请求异步
         var cri = this.currentRemoteItem || {} //请求异步
         var d = (isRandom ? cri.Document : it.Document) || {} //请求异步
-        var r = isRandom ? it.Random : null //请求异步
+        var r = it.Random || {} // isRandom ? it.Random : null //请求异步
         var tr = it.TestRecord || {} //请求异步
 
         var bdt = tr.duration || 0
@@ -11435,7 +11513,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var rsp = (err.response || {}).data || {}
           tr.compare = {
             code: JSONResponse.COMPARE_ERROR, //请求出错
-            msg: StringUtil.trim(StringUtil.trim(rsp.code) + ' ' + StringUtil.trim(rsp.message)) || err.message || '请求出错！',
+            msg: StringUtil.trim(StringUtil.trim(rsp.code) + ' ' + StringUtil.trim(rsp.message || rsp.reason)) || err.message || '请求出错！',
             path: (status != null && status != 200 ? status + ' ' : '') + err.message
           }
         }
@@ -13898,6 +13976,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       // 快捷键 CTRL + I 格式化 JSON
       document.addEventListener('keydown', function(event) {
         // alert(event.key) 小写字母 i 而不是 KeyI
+        if (this.isFullScreen && (event.key == 'Esc' || event.keyCode == 27)) {
+          this.isFullScreen = false;
+          return;
+        }
 
         var target = event.target;
         if ([vAskAI, vSearch, vTestCaseSearch, vCaseGroupSearch

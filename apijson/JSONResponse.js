@@ -958,8 +958,8 @@ var JSONResponse = {
     };
 
     var realType = JSONResponse.getType(real);
-    if (type != null && type != realType && type != 'undefined' && (type != 'number' || realType != 'integer')) { //类型改变
-      log('compareWithStandard  type != realType && type != undefined && (type != number || realType != integer) >> return COMPARE_TYPE_CHANGE');
+    if (type != null && type != 'undefined' && type != realType && (type != 'number' || realType != 'integer')) { //类型改变
+      log('compareWithStandard  type != undefined && type != realType && (type != number || realType != integer) >> return COMPARE_TYPE_CHANGE');
 
       max = {
         code: JSONResponse.COMPARE_TYPE_CHANGE,
@@ -2282,10 +2282,10 @@ var JSONResponse = {
       return [+ (bbox[0] || 0), + (bbox[1] || 0), + (bbox[2] || 0), + (bbox[3] || 0), + (bbox[4] || 0)];
     }
 
-    var x = bbox.x || bbox.x0 || bbox.x1 || bbox.leftTopX || bbox.topLeftX || bbox.left_top_x || bbox.top_left_x || 0;
-    var y = bbox.y || bbox.y0 || bbox.y1 || bbox.leftTopY || bbox.topLeftY || bbox.left_top_y || bbox.top_left_y || 0;
-    var w = bbox.w || bbox.width || ((bbox.x2 || bbox.x1 || bbox.rbx || bbox.brx || bbox.rightBottomX || bbox.bottomRightX || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
-    var h = bbox.h || bbox.height || ((bbox.y2 || bbox.y1 || bbox.rby || bbox.bry || bbox.rightBottomY || bbox.bottomRightY || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
+    var x = bbox.x || bbox.x0 || bbox.x1 || bbox.startX || bbox.xStart || bbox.leftTopX || bbox.topLeftX || bbox.start_x || bbox.x_start || bbox.left_top_x || bbox.top_left_x || 0;
+    var y = bbox.y || bbox.y0 || bbox.y1 || bbox.startY || bbox.yStart || bbox.leftTopY || bbox.topLeftY || bbox.start_y || bbox.y_start || bbox.left_top_y || bbox.top_left_y || 0;
+    var w = bbox.w || bbox.width || ((bbox.x2 || bbox.x1 || bbox.rbx || bbox.brx || bbox.endX || bbox.xEnd || bbox.rightBottomX || bbox.bottomRightX || bbox.end_x || bbox.x_end || bbox.right_bottom_x || bbox.bottom_right_x || 0) - x);
+    var h = bbox.h || bbox.height || ((bbox.y2 || bbox.y1 || bbox.rby || bbox.bry || bbox.endY || bbox.yEnd || bbox.rightBottomY || bbox.bottomRightY || bbox.end_y || bbox.y_end || bbox.right_bottom_y || bbox.bottom_right_y || 0) - y);
     var d = bbox.degree || bbox.angle || bbox.rotate || bbox.perspective || bbox.d || bbox.r || bbox.p || bbox.a;
     return [+ (x || 0), + (y || 0), + (w || 0), + (h || 0), + (d || 0)];
   },
@@ -2308,7 +2308,7 @@ var JSONResponse = {
 
     const interArea = interW * interH;
     const unionArea = w1 * h1 + w2 * h2 - interArea;
-    const dd = (1 - Math.abs(d1 - d2)/360);
+    const dd = (1 - Math.abs(d1 - d2)/180);
 
     return (interArea / unionArea) * dd;
   },
@@ -2330,7 +2330,7 @@ var JSONResponse = {
 
     before.forEach(b1 => {
       const match = after.find((b2, i) => {
-        const iou = JSONResponse.computeIoU(b1.bbox, b2.bbox);
+        const iou = JSONResponse.computeIoU((b1.bbox || {}).box || b1.box || b1.bbox || [], (b2.bbox || {}).box || b2.box || b2.bbox || []);
         if (iou >= iouThreshold && ! usedAfter.has(i)) {
           usedAfter.add(i);
           return true;
@@ -2405,6 +2405,40 @@ var JSONResponse = {
     return [Math.round(r), Math.round(g), Math.round(b), Math.round(a)];
   },
 
+  isInsideBox: function(x, y, [bx, by, bw, bh]) {
+    return x >= bx && x <= bx + bw && y >= by && y <= by + bh;
+  },
+  isOnBorder: function(x, y, [bx, by, bw, bh], range) {
+    if (range == null || range <= 0) {
+      range = 0.3*Math.min(bh, bw);
+    }
+    var xr = Math.min(range, 0.5*bw);
+    var yr = Math.min(range, 0.5*bh);
+    return JSONResponse.isInsideBox(x, y, [bx, by, bw, bh])
+        && ! JSONResponse.isInsideBox(x, y, [bx + xr, by + yr, bw - 2*xr, bh - 2*yr]);
+  },
+
+  getPolygons: function (detection) {
+    if (! JSONResponse.isObject(detection)) {
+      return null;
+    }
+
+    return detection.polygons
+  },
+  getLines: function (detection) {
+    if (! JSONResponse.isObject(detection)) {
+      return null;
+    }
+
+    return detection.lines || detection.keyLines || detection.key_lines
+  },
+  getPoints: function (detection) {
+    if (! JSONResponse.isObject(detection)) {
+      return null;
+    }
+
+    return detection.points || detection.keyPoints || detection.key_points
+  },
   getBboxes: function (detection) {
     if (! JSONResponse.isObject(detection)) {
       return null;
@@ -2412,19 +2446,40 @@ var JSONResponse = {
 
     return detection.bboxes || detection.boxes || detection.targets
   },
+  getBbox: function (item) {
+    if (item instanceof Array || JSONResponse.isString(item)) {
+      return item;
+    }
+    if (! JSONResponse.isObject(item)) {
+      return null;
+    }
 
-  drawDetections: function(canvas, detection, options, img) {
+    var bb = JSONResponse.getBbox(item.bbox);
+    if (bb instanceof Object || JSONResponse.isString(bb)) {
+      return bb;
+    }
+
+    return item.bbox || item.box || item
+  },
+  getScore: function (item) {
+    return item.score || item.probability || item.possibility || item.feasibility || item.eventuality || item.odds || item.prob || item.possib || item.feasib || item.eventual;
+  },
+
+  drawDetections: function(canvas, detection, options, img, ctx) {
     if (!detection || typeof detection !== 'object') {
       console.error('drawDetections: invalid detection input');
       return;
     }
 
-    const ctx = canvas.getContext('2d');
     const height = canvas.height || (img || {}).height;
     const width = canvas.width || (img || {}).width;
     const fontSize = Math.max(12, Math.min(48, height * 0.05));
 
-    ctx.clearRect(0, 0, width, height);
+    const isRoot = ctx == null;
+    if (isRoot) {
+      ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
+    }
     ctx.lineWidth = Math.max(1, Math.min(8, height * 0.005));
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textBaseline = 'top';
@@ -2435,7 +2490,9 @@ var JSONResponse = {
     const showLabelBackground = options.labelBackground || false;
     const hoverBoxId = options.hoverBoxId || null;
     const visiblePaths = options.visiblePaths || null;
-    const markable = options.markable || false;
+    const stage = options.stage;
+    const isDiff = stage === 'diff';
+    const markable = options.markable || stage === 'after';
 
     const nw = img == null ? 0 : (img.naturalWidth || 0);
     const nh = img == null ? 0 : (img.naturalHeight || 0);
@@ -2451,7 +2508,7 @@ var JSONResponse = {
         return;
       }
 
-      var [x, y, w, h, d] = JSONResponse.getXYWHD(item.bbox || []);
+      var [x, y, w, h, d] = JSONResponse.getXYWHD(JSONResponse.getBbox(item) || []);
       const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
       x = isRate ? x*width : x*xRate;
       y = isRate ? y*height : y*yRate;
@@ -2490,7 +2547,7 @@ var JSONResponse = {
       }
 
       // Label
-      const label = `${item.ocr || item.label || ''}-${item.id || ''} ${(item.score * 100).toFixed(1)}% ${Math.round(angle)}°`;
+      const label = (isDiff ? (item.isBefore ? '- ' : '+ ') : '') + `${item.ocr || item.label || ''}-${item.id || ''} ${((JSONResponse.getScore(item) || 0)*100).toFixed(0)}% ${Math.round(angle)}°`;
       // ctx.font = 'bold 36px';
       // const size = ctx.measureText(label);
       // const textHeight = size.height || height*0.1; // Math.max(height*0.1, size.height);
@@ -2515,7 +2572,7 @@ var JSONResponse = {
         const overlaps = placedLabels.some(({ x: ox, y: oy, w: ow, h: oh }) =>
             lx < ox + ow && lx + textWidth > ox && ly < oy + oh && ly + textHeight > oy
         );
-        if (!overlaps && lx >= 0 && ly >= 0 && lx + textWidth <= canvas.width && ly + textHeight <= canvas.height) {
+        if (! overlaps && lx >= 0 && ly >= 0 && lx + textWidth <= canvas.width && ly + textHeight <= canvas.height) {
           labelX = lx;
           labelY = ly;
           break;
@@ -2556,22 +2613,89 @@ var JSONResponse = {
         }
         canvas._clickAreas.push({x: checkX, y: checkY, w: 16, h: textHeight, item});
       }
+
+      JSONResponse.draw(canvas, item, options, img, ctx);
     });
 
     // Draw lines
-    detection.lines?.forEach(([x1, y1, x2, y2]) => {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-    });
+    var lines = JSONResponse.getLines(detection);
+    if (lines instanceof Array) {
+      lines?.forEach((item) => {
+        var [x, y, w, h, d] = JSONResponse.getXYWHD(item);
+        const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
+        x = isRate ? x*width : x*xRate;
+        y = isRate ? y*height : y*yRate;
+        w = isRate ? w*width : w*xRate;
+        h = isRate ? h*height : h*yRate;
+
+        const color = item.color || detection.color || detection.bbox?.color;
+        const rgba = color == null || color.length <= 0 ? null : `rgba(${(color.join(','))})`;
+        if (rgba != null) {
+          ctx.fillStyle = rgba;
+          ctx.strokeStyle = rgba;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + w, y + h);
+        ctx.stroke();
+
+        if (isRoot) {
+          const label = (isDiff ? (item.isBefore || detection.isBefore ? '- ' : '+ ') : '')
+              + `${item.label || ''}-${item.id || item.idx || detection.id || detection.idx || ''} `
+              + `${((JSONResponse.getScore(item) || 0)*100).toFixed(0)}%`;
+          ctx.font = `${Math.max(16, height*0.015)}px sans-serif`;
+          ctx.fillText(label, x + 3, y + 3);
+        }
+      });
+    }
+
+    // Draw points
+    var points = JSONResponse.getPoints(detection);
+    if (points instanceof Array) {
+      points?.forEach((item) => {
+        var [x, y, w, h, d] = JSONResponse.getXYWHD(item);
+        const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
+        x = isRate ? x*width : x*xRate;
+        y = isRate ? y*height : y*yRate;
+
+        const color = item.color || detection.color || detection.bbox?.color;
+        const rgba = color == null || color.length <= 0 ? null : `rgba(${(color.join(','))})`;
+        if (rgba != null) {
+          ctx.fillStyle = rgba;
+          ctx.strokeStyle = rgba;
+        }
+
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(2, height*0.005), 0, 2*Math.PI);
+        ctx.fill();
+
+        if (isRoot) {
+          const label = (isDiff ? (item.isBefore || detection.isBefore ? '- ' : '+ ') : '')
+              + `${item.label || ''}-${item.id || item.idx || detection.id || detection.idx || ''} `
+              + `${((JSONResponse.getScore(item) || 0)*100).toFixed(0)}%`;
+          ctx.font = `${Math.max(16, height*0.015)}px sans-serif`;
+          ctx.fillText(label, x + 3, y + 3);
+        }
+      });
+    }
 
     // Draw polygons
-    if (detection.polygons?.length > 1) {
+    var polygons = JSONResponse.getPolygons(detection);
+    if (polygons instanceof Array && polygons?.length > 1) {
       ctx.beginPath();
-      detection.polygons.forEach(([x, y], i) => {
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      polygons.forEach((item, i) => {
+        var [x, y, w, h, d] = JSONResponse.getXYWHD(item);
+        const isRate = Math.abs(x) < 1 && Math.abs(y) < 1 && Math.abs(w) < 1 && Math.abs(h) < 1;
+        x = isRate ? x*width : x*xRate;
+        y = isRate ? y*height : y*yRate;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        }
+        else {
+          ctx.lineTo(x, y);
+        }
       });
       ctx.closePath();
       ctx.stroke();

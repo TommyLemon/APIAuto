@@ -5261,8 +5261,8 @@ res_data = rep.json()
     return StringUtil.firstCase(StringUtil.noBlank(columnName), false);
   },
   /**获取model方法名
-   * @param prefix @notNull 前缀，一般是get,set等
-   * @param field @notNull
+   * @param prefix @NotNull 前缀，一般是get,set等
+   * @param field @NotNull
    * @return {*}
    */
   getMethodName: function(prefix, field) {

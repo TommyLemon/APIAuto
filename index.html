@@ -411,20 +411,20 @@ Ctrl + S 或 Command + S 保存当前用例；
                 </div>
                 <div id="vRequestMarkdown" v-show="isPreviewEnabled" style="width: 100%;height: 100%;position: relative;"></div>
 
-                <div id="vContainer" v-show="view === 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100; background-color: white; display: flex; flex-direction: column">
-                    <div style="min-width: 240px; height: 30%; position: relative">
-                        <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
+                <div id="vContainer" v-show="isRandomListShow && currentRandomIndex >= 0 && view === 'code'" style="width: 100%; height: 100%; padding-bottom: 36px; position: absolute; z-index: 100; background-color: white; display: flex; flex-direction: column; overflow: scroll">
+                    <div style="min-width: 240px; position: relative" :style="{'height': isFullScreen ? '80%' : '30%' }">
+                        <div id="vAfterTitle" style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">本次: </a><a>置信度 </a><input id="vAfterThreshold" v-model="detection.afterThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterThreshold', true)" placeholder="阈值" />
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.afterCorrect + ' 误报数 ' + detection.afterWrong + ' 漏检数 ' + detection.afterMiss : '召回率 ' + detection.afterRecallStr + ' 精确率 ' + detection.afterPrecisionStr + ' F1 ' + detection.afterF1Str }} </a>
-                            <a > 实际 </a><input id="vAfterTotal" v-model="detection.afterTotal" style="width: 36px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterTotal', true)" placeholder="总数" />
-                        </div>
+                            <a style="height: 25px; color: black; font-weight: bold; padding: 0" href="javascript:void(0)" @click="onClickFullScreen($event)" > 全屏 </a>
+                        </a>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vAfter" :src="img" ref="vAfterImg" @load="syncCanvasSize('after')" style="min-width: 240px; height: 100%; position: absolute;" />
                             <canvas id="vAfterCanvas" ref="vAfterCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('after', $event)" @click="onClick('after', $event)" />
                         </div>
                     </div>
-                    <div style="min-width: 240px; height: 30%; position: relative; top: 25px">
-                        <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
+                    <div style="min-width: 240px; position: relative; top: 25px" :style="{'height': isFullScreen ? '80%' : '30%' }">
+                        <div id="vDiffTitle" style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; height: 25px; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">差异: </a><a>重合度 </a><input id="vDiffThreshold" v-model="detection.diffThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'diffThreshold', true)" placeholder="阈值" />
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 '  + detection.diffCorrectStr + ' 误报数 ' + detection.diffWrongStr + ' 漏检数 ' + detection.diffMissStr : '召回率 ' + detection.diffRecallStr + ' 精确率 ' + detection.diffPrecisionStr + ' F1 ' + detection.diffF1Str }} </a>
                         </div>
@@ -433,10 +433,11 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <canvas id="vDiffCanvas" ref="vDiffCanvas" style="min-width: 240px; height: 100%; position: absolute;" @mousemove="onMousemove('diff', $event)" />
                         </div>
                     </div>
-                    <div style="min-width: 240px; height: 30%; position: relative; top: 50px">
-                        <div style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
+                    <div style="min-width: 240px; position: relative; top: 50px" :style="{'height': isFullScreen ? '80%' : '30%' }">
+                        <div id="vBeforeTitle" style="padding: 0px 13px 0px 6px; position: absolute; width: 100%; z-index: 100" @click="detection.isShowNum = ! detection.isShowNum" >
                             <a style="font-weight: bold; color: black">之前: </a><a>置信度 </a><input id="vBeforeThreshold" v-model="detection.beforeThreshold" style="width: 24px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'beforeThreshold', true)" placeholder="阈值" disabled />
                             <a style="margin-left: -6px">% {{ detection.isShowNum ? '正确数 ' + detection.beforeCorrect + ' 误报数 ' + detection.beforeWrong + ' 漏检数 ' + detection.beforeMiss : '召回率 ' + detection.beforeRecallStr + ' 精确率 ' + detection.beforePrecisionStr + ' F1 ' + detection.beforeF1Str }} </a>
+                            <a > 实际 </a><input id="vAfterTotal" v-model="detection.total" style="width: 36px;text-align: center"  type="number" @keyup="doOnKeyUp(event, 'afterTotal', true)" placeholder="总数" />
                         </div>
                         <div style="min-width: 240px; height: 100%; top: 25px; left: 0px; position: absolute;">
                             <img id="vBefore" :src="img" ref="vBeforeImg" @load="syncCanvasSize('before')" style="min-width: 240px; height: 100%; position: absolute;" />
@@ -457,7 +458,7 @@ Ctrl + S 或 Command + S 保存当前用例；
 <!--                    </div>-->
 <!--                </div>-->
                 
-                <div v-show="isRandomShow" style="position: absolute; right: 0px; width: 330px; height: 100%; z-index: 101;" >
+                <div v-show="isRandomShow" style="position: absolute; right: 0px; width: 450px; height: 100%; z-index: 101;" >
 
                     <div v-show="isRandomShow" style="position: absolute; width: 100%; height: 100%;" wrap="off" >
                         <div class="left-bar" style="height: 40px; width: 100%; right: 0px; border-top: #DDD 1px solid; position: absolute; border-top: none; background-color: rgba(255, 255, 255, 0.5);">
@@ -492,7 +493,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             </a>
                         </div>
 
-                        <input id="vRandomKeyPath" v-show="isRandomListShow || isRandomSubListShow" v-model="((currentRemoteItem || {}).Document || {}).path" style="width: 100%; text-align: center; margin-top: 40px; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px"  @keyup="doOnKeyUp(event, 'randomKeyPath', false, {'path': vRandomKeyPath.value})" placeholder="图片的 JSON key 路径，以 / 分隔，转义特殊字符 / 等" />
+                        <input id="vRandomKeyPath" v-show="isRandomListShow || isRandomSubListShow" v-model="((currentRemoteItem || {}).Document || {}).path" style="width: 100%; text-align: center; margin-top: 40px; background-color: rgba(255, 255, 255, 0.5); border: #DDD 1px solid; border-radius: 2px"  @keyup="doOnKeyUp(event, 'randomKeyPath', false, {'path': vRandomKeyPath.value})" placeholder="image: 图片的 JSON key 路径，以 / 分隔，转义特殊字符 / 等" />
 
                         <!-- 临时生成的配置子项 -->
                         <ul v-show="isRandomSubListShow" class="historys" style="width: 100%;height: 100%; background-color: transparent; overflow: hidden;overflow-y: scroll; padding-bottom: 150px">
@@ -531,7 +532,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                                 <img id="vRandomImg" :src="(item.Random || {}).img || 'img/add_light.png'" style="height: 90px; min-width: 90px; background-color: rgba(255, 255, 255, 0.5); position: relative" @click="onClickAddRandom(index)" @load="var target = $event.target || {}; (item.Random || {}).width = target.naturalWidth; (item.Random || {}).height = target.naturalHeight">
 
                                 <a style="top: 6px; left: 173px; width: 120px; position: absolute" class="hint--left hint--no-animate" ref="randomTexts" :data-hint="(item.Random || {}).file" href="javascript:void(0)" :style="{ color: index == currentRandomIndex ? 'black' : 'gray' }">{{ Math.round(100*((item.Random || {}).size || 0)/8/1024/1024)/100 + 'M ' + ((item.Random || {}).width || '') + "x" + ((item.Random || {}).height || '') }}</a>
-                                <textarea v-show="true" style="top: 35px; left: 173px; width: 150px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" disabled></textarea>
+                                <textarea v-show="true" style="top: 35px; left: 173px; width: 270px; padding: 1px; position: absolute; display: inline-flex" v-model="(item.Random || {}).name" @keyup="doOnKeyUp(event, 'random', false, item)" disabled></textarea>
 
                                 <button v-show="((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) <= 0" style="position: absolute; bottom: 6px;right: 36px;display: inline-block;" @click="handleTest(true, index, item, null, true)">{{ '查看 ' + ((item.subs || item['[]']) || []).length + ' 个子项' }}</button>
                                 <div v-show="isStatisticsEnabled && ((item.Random || {}).count || 0) > 1 && (item.totalCount || 0) > 0" style="background: lightgray; position: absolute; padding: 1px; bottom: 6px;right: 5px;display: inline-block" @click="handleTest(true, index, item, null, true)">
@@ -1085,10 +1086,11 @@ fun(true, 1, 'a'..);
   var vDiffCanvas = document.getElementById("vDiffCanvas");
   var vAfterCanvas = document.getElementById("vAfterCanvas");
   var vAfterTotal = document.getElementById("vAfterTotal");
+  var vAfterTitle = document.getElementById("vAfterTitle");
   var vAfterThreshold = document.getElementById("vAfterThreshold");
-  var vDiffTotal = document.getElementById("vDiffTotal");
+  var vDiffTitle = document.getElementById("vDiffTitle");
   var vDiffThreshold = document.getElementById("vDiffThreshold");
-  var vBeforeTotal = document.getElementById("vBeforeTotal");
+  var vBeforeTitle = document.getElementById("vBeforeTitle");
   var vBeforeThreshold = document.getElementById("vBeforeThreshold");
 
   var vUrl = document.getElementById("vUrl");
