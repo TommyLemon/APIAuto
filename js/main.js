@@ -2587,9 +2587,10 @@ https://github.com/Tencent/APIJSON/issues
           var accounts = (StringUtil.isEmpty(testAccountId == null ? null : String(testAccountId), true) ? null : this.accounts) || []
           for (var i = 0; i < accounts.length; i ++) {
             var acc = accounts[i]
-            if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
-                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
-                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+            if (acc != null && (acc.id == chain.testAccountId || (
+               (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
+               (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+               || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
              ))) {
                this.currentAccountIndex = i
                acc.isLoggedIn = true
@@ -4795,13 +4796,18 @@ https://github.com/Tencent/APIJSON/issues
                 var find = false
                 for (var i = 0; i < accounts.length; i ++) {
                   var acc = accounts[i]
-                  if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
-                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                  if (acc != null && (acc.id == chain.testAccountId || (
+                    (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
+                    (StringUtil.isEmpty(testInfo.phone) && StringUtil.isEmpty(testInfo.email))
+                    || (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
                     || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
                   ))) {
-                    if (! map[chain.testAccountId]) {
+                    if (! map[acc.id]) {
+                        chain.testAccountId = acc.id
                         accountIndex = i
                         acc.isLoggedIn = true
+//                        acc.isLoggedIn = ! acc.isLoggedIn
+//                        this.onClickAccount(i, acc, null, true)
                     }
 
                     find = true
@@ -4810,13 +4816,15 @@ https://github.com/Tencent/APIJSON/issues
                 }
 
                 if (! find) {
-                    testInfo.isLoggedIn = false
+                    testInfo.isLoggedIn = ! testInfo.isLoggedIn
+                    chain.testAccountId = testInfo.testAccountId
                     accounts.push(testInfo)
 //                    this.saveAccounts()
 
                     var isStatisticsEnabled = this.isStatisticsEnabled
                     this.isStatisticsEnabled = false
-                    this.onClickAccount(accounts.length - 1, testInfo, null, true)
+                    accountIndex = accounts.length - 1
+                    this.onClickAccount(accountIndex, testInfo, null, true)
                     this.isStatisticsEnabled = isStatisticsEnabled
                 }
                 map[chain.testAccountId] = true
@@ -10909,46 +10917,48 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var stepCount = stepList == null ? 0 : stepList.length
                 allCount += (stepCount - 1)
 
-                var chain = item.Chain
-                var testInfo = chain == null ? null : chain.testInfo
-                var testAccount = testInfo == null ? null : testInfo.account
-                if (StringUtil.isEmpty(testAccount, true)) {
-                  continue
-                }
-
-                var map = {}
-                var find = false
-                for (var i = 0; i < accounts.length; i ++) {
-                  var acc = accounts[i]
-                  if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
-                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
-                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
-                  ))) {
-                    if (! map[chain.testAccountId]) {
-//                        this.currentAccountIndex = i
-                        acc.isLoggedIn = true
-                    }
-
-                    find = true
-                    break
-                  }
-                }
-
-                if (! find) {
-                    testInfo.isLoggedIn = false
-                    accounts.push(testInfo)
-//                    this.saveAccounts()
-
-                    var isStatisticsEnabled = this.isStatisticsEnabled
-                    this.isStatisticsEnabled = false
-//                    this.onClickAccount(accounts.length - 1, testInfo)
-                    this.isStatisticsEnabled = isStatisticsEnabled
-                }
-                map[chain.testAccountId] = true
+//                var chain = item.Chain
+//                var testInfo = chain == null ? null : chain.testInfo
+//                var testAccount = testInfo == null ? null : testInfo.account
+//                if (StringUtil.isEmpty(testAccount, true)) {
+//                  continue
+//                }
+//
+//                var map = {}
+//                var find = false
+//                for (var i = 0; i < accounts.length; i ++) {
+//                  var acc = accounts[i]
+//                  if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl == testInfo.baseUrl && (
+//                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+//                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+//                  ))) {
+//                    if (! map[chain.testAccountId]) {
+//                        chain.testAccountId = acc.id
+////                        this.currentAccountIndex = i
+//                        acc.isLoggedIn = true
+//
+//                    }
+//
+//                    find = true
+//                    break
+//                  }
+//                }
+//
+//                if (! find) {
+//                    testInfo.isLoggedIn = false
+//                    accounts.push(testInfo)
+////                    this.saveAccounts()
+//
+//                    var isStatisticsEnabled = this.isStatisticsEnabled
+//                    this.isStatisticsEnabled = false
+////                    this.onClickAccount(accounts.length - 1, testInfo)
+//                    this.isStatisticsEnabled = isStatisticsEnabled
+//                }
+//                map[chain.testAccountId] = true
             }
 
 //            this.currentAccountIndex = lastAccountIndex || 0
-            curAccount.isLoggedIn = isLoggedIn
+//            curAccount.isLoggedIn = isLoggedIn
         }
 
         if (isCross) {
@@ -11098,8 +11108,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 } else {
                     for (var i = 0; i < accounts.length; i ++) {
                       var acc = accounts[i]
-                      if (acc != null && (acc.id == testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
-                        (StringUtil.isNotEmpty(item.phone) && acc.phone == testInfo.phone)
+                      if (acc != null && (acc.id == testAccountId || (
+                        (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
+                        (StringUtil.isEmpty(testInfo.phone) && StringUtil.isEmpty(testInfo.email))
+                        || (StringUtil.isNotEmpty(item.phone) && acc.phone == testInfo.phone)
                         || (StringUtil.isNotEmpty(item.email) && acc.email == testInfo.email) )
                       ))) {
                         chain.testAccountId = acc.id
@@ -11881,7 +11893,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 const accounts = this.accounts || []
                 for (var i = 0; i < accounts.length; i ++) {
                     var acc = accounts[i]
-                    if (acc != null && (acc.id == testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                    if (acc != null && (acc.id == testAccountId || (
+                        (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
                         (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
                         || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
                     ))) {
