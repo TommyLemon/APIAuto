@@ -233,7 +233,7 @@
                           var standard = App.isMLEnabled ? tr.standard : tr.response;
                           var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
                           var curAccount = App.getCurrentAccount() || {}
-                          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
                           var tests = App.tests[accountIdStr] || {};
                           var responseObj = (tests[d.id] || {})[0]
 
@@ -294,7 +294,7 @@
                     var standard = App.isMLEnabled ? tr.standard : tr.response;
                     var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
                     var curAccount = App.getCurrentAccount() || {}
-                    var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                    var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
                     var tests = App.tests[accountIdStr] || {};
                     var responseObj = (tests[d.id] || {})[0]
 
@@ -479,7 +479,7 @@
                       var standard = App.isMLEnabled ? tr.standard : tr.response;
                       var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
                       var curAccount = App.getCurrentAccount() || {}
-                      var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                      var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
                       var tests = App.tests[accountIdStr] || {};
                       var responseObj = (tests[d.id] || {})[0]
 
@@ -527,7 +527,7 @@
               var standard = App.isMLEnabled ? tr.standard : tr.response;
               var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
               var curAccount = App.getCurrentAccount() || {}
-              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
               var tests = App.tests[accountIdStr] || {};
               var responseObj = (tests[d.id] || {})[0]
 
@@ -1577,7 +1577,7 @@ https://github.com/Tencent/APIJSON/issues
                               var standard = this.isMLEnabled ? tr.standard : tr.response;
                               var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
                               var curAccount = this.getCurrentAccount() || {}
-                              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
                               var tests = this.tests[accountIdStr] || {};
                               var responseObj = (tests[d.id] || {})[0]
 
@@ -1627,7 +1627,7 @@ https://github.com/Tencent/APIJSON/issues
                         var standard = this.isMLEnabled ? tr.standard : tr.response;
                         var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
                         var curAccount = this.getCurrentAccount() || {}
-                        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
                         var tests = this.tests[accountIdStr] || {};
                         var responseObj = (tests[d.id] || {})[0]
 
@@ -2409,17 +2409,18 @@ https://github.com/Tencent/APIJSON/issues
 
       // 删除接口文档
       deleteDoc: function () {
+        var isChainShow = this.isChainShow
         var isDeleteRandom = this.isDeleteRandom
         var isDeleteChainGroup = this.isDeleteChainGroup
         var item = (isDeleteRandom ? this.currentRandomItem : this.currentDocItem) || {}
-        var doc = (isDeleteRandom ? item.Random : (isDeleteChainGroup ? item.Chain : item.Document)) || {}
+        var doc = (isDeleteRandom ? item.Random : (isDeleteChainGroup || isChainShow ? item.Chain : item.Document)) || {}
 
         var type = isDeleteRandom ? '随机配置' : (isDeleteChainGroup ? '分组' : '接口')
         if ((isDeleteChainGroup && doc.groupId == null) || (isDeleteChainGroup != true && doc.id == null)) {
           alert('未选择' + type + '或' + type + '不存在！')
           return
         }
-        if ((isDeleteChainGroup && doc.groupName != this.exTxt.name) || (isDeleteChainGroup != true && doc.name != this.exTxt.name)) {
+        if ((isDeleteChainGroup && doc.groupName != this.exTxt.name) || (isDeleteChainGroup != true && doc.name != this.exTxt.name && doc.documentName != this.exTxt.name)) {
           alert('输入的' + type + '名和要删除的' + type + '名不匹配！')
           return
         }
@@ -2428,7 +2429,6 @@ https://github.com/Tencent/APIJSON/issues
 
         this.isTestCaseShow = false
         this.isRandomListShow = false
-        var isChainShow = this.isChainShow
 
         var url = this.server + '/delete'
         var req = isDeleteRandom ? {
@@ -2737,7 +2737,7 @@ https://github.com/Tencent/APIJSON/issues
         const testCases = App.testCases
         const position = index
 
-        const id = curAccount.id || 0
+        const id = curAccount.id || ''
         const name = curAccount.name || ''
         const account = curAccount.account || curAccount.phone || ''
         const info = JSON.stringify(curAccount) || '{}'
@@ -4605,7 +4605,7 @@ https://github.com/Tencent/APIJSON/issues
           this.currentAccountIndex = index
           this.changeScriptType(App.scriptType)
 
-          var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+          var accountIdStr = String(item != null && item.isLoggedIn ? item.id || '' : '')
           var tests = App.doneCount >= App.allCount && noShowCase != true && this.isCrossEnabled && this.isStatisticsEnabled && this.reportId != null && this.reportId > 0 ? this.tests[accountIdStr] : null
           if (JSONObject.isEmpty(tests) != true) {
             this.showCompare4TestCaseList(true)
@@ -4681,7 +4681,7 @@ https://github.com/Tencent/APIJSON/issues
                         item.isLoggedIn = true
                       }
 
-                      var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+                      var accountIdStr = String(item != null && item.isLoggedIn ? item.id || '' : '')
                       var tests = App.tests[accountIdStr]
                       if (JSONObject.isEmpty(tests) != true) {
                           App.showCompare4TestCaseList(true)
@@ -4702,7 +4702,7 @@ https://github.com/Tencent/APIJSON/issues
 //                item.isLoggedIn = true
 //              }
 //
-//              var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+//              var accountIdStr = String(item != null && item.isLoggedIn ? item.id || '' : '')
 //              var tests = this.tests[accountIdStr]
 //              if (JSONObject.isEmpty(tests) != true) {
 //                  this.showCompare4TestCaseList(true)
@@ -4774,7 +4774,7 @@ https://github.com/Tencent/APIJSON/issues
             reportId = null
           }
 
-          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
           var tests = this.tests[accountIdStr] // FIXME  account.phone + '@' + (account.baseUrl || baseUrl)]
           var hasTests = JSONObject.isEmpty(tests) != true
           if (hasTests || this.isChainShow || (reportId != null && reportId >= 0)) {
@@ -4929,7 +4929,7 @@ https://github.com/Tencent/APIJSON/issues
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'userId': userId,
                 'groupId@': '[]/Chain/groupId',
-                '@column': "id,groupId,documentId,randomId,rank,testAccountId,testName,testInfo",
+                '@column': "id,groupId,documentId,documentName,randomId,rank,testAccountId,testName,testInfo",
                 '@order': 'rank+,id+',
                 'documentId>': 0
               },
@@ -5065,7 +5065,8 @@ https://github.com/Tencent/APIJSON/issues
             'rank': this.formatDateTime(StringUtil.isEmpty(nextRank, true) ? null : new Date(new Date(nextRank).getTime() - 10)),
             'groupName': groupName,
             'groupId': groupId,
-            'documentId': item.id
+            'documentId': item.id,
+            'documentName': item.name
           },
           tag: 'Chain'
         }, {}, function (url, res, err) {
@@ -5571,7 +5572,7 @@ https://github.com/Tencent/APIJSON/issues
           this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
           var docId = ((this.currentRemoteItem || {}).Document || {}).id
 
-          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
           var tests = (this.tests[accountIdStr] || {})[docId]
           if (JSONObject.isEmpty(tests) != true) {
             // if (! isSub) {
@@ -11352,7 +11353,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var curAccount = this.accounts[accountIndex] || {}
-        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
         var tests = this.tests[accountIdStr] || {}
         var t = tests[documentId]
         if (t == null) {
@@ -11825,7 +11826,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
          */
         setTimeout(function () {
           var curAccount = App.getCurrentAccount() || {}
-          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
           var tests = App.tests[accountIdStr] || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/Tencent/APIJSON'
@@ -11913,7 +11914,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var lastKey = pathKeys[pathKeys.length - 1];
 
         var curAccount = this.getCurrentAccount() || {}
-        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
         var tests = this.tests[accountIdStr] || {}
         var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[
           isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
