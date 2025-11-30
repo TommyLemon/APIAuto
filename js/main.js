@@ -232,7 +232,9 @@
                           var d = cri.Document || {};
                           var standard = App.isMLEnabled ? tr.standard : tr.response;
                           var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                          var tests = App.tests[String(App.currentAccountIndex)] || {};
+                          var curAccount = App.getCurrentAccount() || {}
+                          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                          var tests = App.tests[accountIdStr] || {};
                           var responseObj = (tests[d.id] || {})[0]
 
                           var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
@@ -291,7 +293,9 @@
                     var d = cri.Document || {};
                     var standard = App.isMLEnabled ? tr.standard : tr.response;
                     var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                    var tests = App.tests[String(App.currentAccountIndex)] || {};
+                    var curAccount = App.getCurrentAccount() || {}
+                    var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                    var tests = App.tests[accountIdStr] || {};
                     var responseObj = (tests[d.id] || {})[0]
 
                     var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
@@ -474,7 +478,9 @@
                       var d = App.currentRemoteItem.Document || {};
                       var standard = App.isMLEnabled ? tr.standard : tr.response;
                       var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                      var tests = App.tests[String(App.currentAccountIndex)] || {};
+                      var curAccount = App.getCurrentAccount() || {}
+                      var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                      var tests = App.tests[accountIdStr] || {};
                       var responseObj = (tests[d.id] || {})[0]
 
                       var pathKeys = StringUtil.split(pathUri, '/');
@@ -520,7 +526,9 @@
               var d = App.currentRemoteItem.Document || {};
               var standard = App.isMLEnabled ? tr.standard : tr.response;
               var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-              var tests = App.tests[String(App.currentAccountIndex)] || {};
+              var curAccount = App.getCurrentAccount() || {}
+              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+              var tests = App.tests[accountIdStr] || {};
               var responseObj = (tests[d.id] || {})[0]
 
               var pathKeys = StringUtil.split(pathUri, '/');
@@ -1224,11 +1232,15 @@ https://github.com/Tencent/APIJSON/issues
       account: '13000082001',
       password: '123456',
       logoutSummary: {},
+      logoutMethod: REQUEST_TYPE_POST,
+      logoutType: REQUEST_TYPE_JSON,
+      logoutUrl: '/logout',
       accounts: [
         {
           'id': 82001,
           'isLoggedIn': false,
           'name': '测试账号1',
+          'account': '13000082001',
           'phone': '13000082001',
           'password': '123456'
         },
@@ -1236,6 +1248,7 @@ https://github.com/Tencent/APIJSON/issues
           'id': 82002,
           'isLoggedIn': false,
           'name': '测试账号2',
+          'account': '13000082002',
           'phone': '13000082002',
           'password': '123456'
         },
@@ -1243,6 +1256,7 @@ https://github.com/Tencent/APIJSON/issues
           'id': 82003,
           'isLoggedIn': false,
           'name': '测试账号3',
+          'account': '13000082003',
           'phone': '13000082003',
           'password': '123456'
         }
@@ -1251,6 +1265,7 @@ https://github.com/Tencent/APIJSON/issues
       otherEnvCookieMap: {},
       allSummary: {},
       currentAccountIndex: 0,
+      testAccountIndex: 0,
       currentChainGroupIndex: -1,
       currentDocIndex: -1,
       currentRandomIndex: -1,
@@ -1334,6 +1349,7 @@ https://github.com/Tencent/APIJSON/issues
       isStatisticsEnabled: false,
       isEncodeEnabled: true,
       isEditResponse: false,
+      isReportShow: false,
       isLocalShow: false,
       isChainShow: false,
       uploadTotal: 0,
@@ -1560,7 +1576,9 @@ https://github.com/Tencent/APIJSON/issues
                               var d = cri.Document || {};
                               var standard = this.isMLEnabled ? tr.standard : tr.response;
                               var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                              var tests = this.tests[String(this.currentAccountIndex)] || {};
+                              var curAccount = this.getCurrentAccount() || {}
+                              var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                              var tests = this.tests[accountIdStr] || {};
                               var responseObj = (tests[d.id] || {})[0]
 
                               var pathUri = (StringUtil.isEmpty(curPath, false) ? '' : curPath + '/') + k;
@@ -1608,7 +1626,9 @@ https://github.com/Tencent/APIJSON/issues
                         var d = cri.Document || {};
                         var standard = this.isMLEnabled ? tr.standard : tr.response;
                         var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                        var tests = this.tests[String(this.currentAccountIndex)] || {};
+                        var curAccount = this.getCurrentAccount() || {}
+                        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+                        var tests = this.tests[accountIdStr] || {};
                         var responseObj = (tests[d.id] || {})[0]
 
                         var pathUri = k;
@@ -2561,6 +2581,22 @@ https://github.com/Tencent/APIJSON/issues
 
         var scripts = item.scripts
         if (isRemote) {
+          var chain = item.Chain
+          var testAccountId = chain == null ? null : chain.testAccountId
+          var testInfo = (chain == null ? null : chain.testInfo) || {}
+          var accounts = (StringUtil.isEmpty(testAccountId == null ? null : String(testAccountId), true) ? null : this.accounts) || []
+          for (var i = 0; i < accounts.length; i ++) {
+            var acc = accounts[i]
+            if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+             ))) {
+               this.currentAccountIndex = i
+               acc.isLoggedIn = true
+               break
+            }
+          }
+
           var originItem = item
           item.random = (originItem.Random || {}).config
 
@@ -2688,6 +2724,54 @@ https://github.com/Tencent/APIJSON/issues
           }
 
         // })
+      },
+
+      bindAccount: function(index, item) {
+        var curAccount = this.getCurrentAccount() || {};
+        const chain = item.Chain || {}
+        if (StringUtil.isNotEmpty(chain.testAccount, true)) { // chain.testAccountId == curAccount.id) {
+          curAccount = {}
+        }
+
+        const testCases = App.testCases
+        const position = index
+
+        const id = curAccount.id || 0
+        const name = curAccount.name || ''
+        const account = curAccount.account || curAccount.phone || ''
+        const info = JSON.stringify(curAccount) || '{}'
+
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+            Chain: {
+                'id': chain.id,
+                'testAccountId': id,
+                'testName': name,
+                'testAccount': account,
+                'testInfo': info
+            },
+            tag: 'Chain'
+        }, {}, function (url, res, err) {
+            App.onResponse(url, res, err)
+            var isOk = JSONResponse.isSuccess(res.data)
+
+            var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+            if (err != null) {
+                msg += '\nerr: ' + err.msg
+            }
+
+            if (! isOk) {
+                alert('修改' + (isOk ? '成功' : '失败') +  msg)
+                return
+            }
+
+            chain.testAccountId = id
+            chain.testName = name
+            chain.testAccount = account
+            chain.testInfo = JSON.parse(info)
+            item.Chain = chain
+            Vue.set(testCases, position, item)
+        })
+
       },
 
       onClickHost: function(index, item) {
@@ -3211,7 +3295,7 @@ https://github.com/Tencent/APIJSON/issues
                 'method': method,
                 'type': App.type,
                 'url': '/' + path, // 'url': isReleaseRESTful ? ('/' + methodInfo.method + '/' + methodInfo.tag) : ('/' + path),
-                'request': JSON.stringify(reqObj, null, '    '),
+                'request': reqObj == null ? null : JSON.stringify(reqObj, null, '    '),
                 'apijson': btnIndex <= 0 ? undefined : JSON.stringify(constJson, null, '    '),
                 'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
                 'header': vHeader.value,
@@ -4489,7 +4573,8 @@ https://github.com/Tencent/APIJSON/issues
           }
       },
 
-      onClickAccount: function (index, item, callback) {
+      onClickAccount: function (index, item, callback, noShowCase) {
+        this.isReportShow = false
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
         if (index < 0 || index >= num) {
@@ -4508,6 +4593,8 @@ https://github.com/Tencent/APIJSON/issues
                 callback(false, index, err)
               }
             });
+
+            item.isLoggedIn = false
           } else {
             if (callback != null) {
               callback(false, index)
@@ -4516,6 +4603,16 @@ https://github.com/Tencent/APIJSON/issues
 
           this.currentAccountIndex = index
           this.changeScriptType(App.scriptType)
+
+          var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+          var tests = App.doneCount >= App.allCount && noShowCase != true && this.isCrossEnabled && this.isStatisticsEnabled && this.reportId != null && this.reportId > 0 ? this.tests[accountIdStr] : null
+          if (JSONObject.isEmpty(tests) != true) {
+            this.showCompare4TestCaseList(true)
+            if (App.deepDoneCount >= App.deepAllCount && ! this.isTestCaseShow) {
+                this.showCompare4RandomList(true, false)
+                this.showCompare4RandomList(true, true)
+            }
+          }
           return
         }
 
@@ -4543,9 +4640,6 @@ https://github.com/Tencent/APIJSON/issues
                   callback(false, index, err)
                 }
               });
-
-              this.currentAccountIndex = -1
-              this.changeScriptType(App.scriptType)
             }
             else {
               //login
@@ -4580,12 +4674,43 @@ https://github.com/Tencent/APIJSON/issues
                   if (callback != null) {
                       callback(true, index, err)
                   }
+
+                  if (App.doneCount >= App.allCount && noShowCase != true && App.isStatisticsEnabled && App.reportId != null && App.reportId > 0) {
+                      if (item != null) {
+                        item.isLoggedIn = true
+                      }
+
+                      var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+                      var tests = App.tests[accountIdStr]
+                      if (JSONObject.isEmpty(tests) != true) {
+                          App.showCompare4TestCaseList(true)
+                          if (App.deepDoneCount >= App.deepAllCount && ! App.isTestCaseShow) {
+                              App.showCompare4RandomList(true, false)
+                              App.showCompare4RandomList(true, true)
+                          }
+                      }
+                  }
                 }
               });
             }
 
           }
 
+//          if (this.isStatisticsEnabled && this.reportId != null && this.reportId > 0) {
+//              if (item != null) {
+//                item.isLoggedIn = true
+//              }
+//
+//              var accountIdStr = String(item != null && item.isLoggedIn ? item.id || 0 : 0)
+//              var tests = this.tests[accountIdStr]
+//              if (JSONObject.isEmpty(tests) != true) {
+//                  this.showCompare4TestCaseList(true)
+//                  if (! this.isTestCaseShow) {
+//                      this.showCompare4RandomList(true, false)
+//                      this.showCompare4RandomList(true, true)
+//                  }
+//              }
+//          }
           return;
         }
 
@@ -4629,15 +4754,18 @@ https://github.com/Tencent/APIJSON/issues
         this.showLogin(true, false)
       },
 
-      showCompare4TestCaseList: function (show) {
+      showCompare4TestCaseList: function (show, isCheckAccount) {
         var testCases = show ? App.testCases : null
         var allCount = testCases == null ? 0 : testCases.length
         App.allCount = allCount
         if (allCount > 0) {
-
-          var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
-          this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
-//          var account = this.accounts[accountIndex]
+          const accounts = this.accounts || []
+          const curAccount = accounts[this.currentAccountIndex] || {}
+          const isLoggedIn = curAccount.isLoggedIn
+//          var accountIndex = isLoggedIn || this.isCrossEnabled != true ? this.currentAccountIndex : -1
+          var accountIndex = this.currentAccountIndex || 0
+//          this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
+//          var account = this.accounts[curAccount.id]
 //          baseUrl = this.getBaseUrl()
 
           var reportId = this.reportId
@@ -4645,8 +4773,13 @@ https://github.com/Tencent/APIJSON/issues
             reportId = null
           }
 
-          var tests = this.tests[String(accountIndex)] // FIXME  account.phone + '@' + (account.baseUrl || baseUrl)]
-          if ((reportId != null && reportId >= 0) || (tests != null && JSONObject.isEmpty(tests) != true)) {
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var tests = this.tests[accountIdStr] // FIXME  account.phone + '@' + (account.baseUrl || baseUrl)]
+          var hasTests = JSONObject.isEmpty(tests) != true
+          if (hasTests || this.isChainShow || (reportId != null && reportId >= 0)) {
+
+            const lastAccountIndex = accountIndex || 0
+
             for (var i = 0; i < allCount; i++) {
               var item = testCases[i]
               var d = item == null ? null : item.Document
@@ -4654,7 +4787,45 @@ https://github.com/Tencent/APIJSON/issues
                 continue
               }
 
-              if (reportId != null && reportId >= 0) {
+              var chain = isCheckAccount ? item.Chain : null
+              var testInfo = chain == null ? null : chain.testInfo
+              var testAccount = testInfo == null ? null : testInfo.account
+              if (StringUtil.isNotEmpty(testAccount, true)) {
+                var map = {}
+                var find = false
+                for (var i = 0; i < accounts.length; i ++) {
+                  var acc = accounts[i]
+                  if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+                  ))) {
+                    if (! map[chain.testAccountId]) {
+                        accountIndex = i
+                        acc.isLoggedIn = true
+                    }
+
+                    find = true
+                    break
+                  }
+                }
+
+                if (! find) {
+                    testInfo.isLoggedIn = false
+                    accounts.push(testInfo)
+//                    this.saveAccounts()
+
+                    var isStatisticsEnabled = this.isStatisticsEnabled
+                    this.isStatisticsEnabled = false
+                    this.onClickAccount(accounts.length - 1, testInfo, null, true)
+                    this.isStatisticsEnabled = isStatisticsEnabled
+                }
+                map[chain.testAccountId] = true
+
+                accountIndex = lastAccountIndex || 0
+                curAccount.isLoggedIn = isLoggedIn
+              }
+
+              if (this.isReportShow && reportId != null && reportId >= 0) {
                 var tr = item.TestRecord || {}
                 var rsp = parseJSON(tr.response)
                 tests[d.id] = [rsp]
@@ -4668,8 +4839,13 @@ https://github.com/Tencent/APIJSON/issues
                 continue
               }
 
+              if (! hasTests) {
+                continue
+              }
+
               this.compareResponse(null, allCount, testCases, i, item, (tests[d.id] || {})[0], false, accountIndex, true)
             }
+
           }
         }
       },
@@ -4745,7 +4921,7 @@ https://github.com/Tencent/APIJSON/issues
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'userId': userId,
                 'groupId@': '[]/Chain/groupId',
-                '@column': "id,groupId,documentId,randomId,rank",
+                '@column': "id,groupId,documentId,randomId,rank,testAccountId,testName,testInfo",
                 '@order': 'rank+,id+',
                 'documentId>': 0
               },
@@ -5139,7 +5315,7 @@ https://github.com/Tencent/APIJSON/issues
           App.allCount = allCount
           if (allCount > 0) {
             if (! (this.isAllSummaryShow() || this.isCurrentSummaryShow())) {
-              this.showCompare4TestCaseList(show)
+              this.showCompare4TestCaseList(show, this.isChainShow)
             }
             return;
           }
@@ -5180,7 +5356,7 @@ https://github.com/Tencent/APIJSON/issues
               'Chain': isChainShow ? {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId': groupId,
-                '@column': "id,groupId,documentId,randomId,documentName,randomName,rank", // ;unix_timestamp(rank):rank",
+                '@column': "id,groupId,documentId,randomId,documentName,randomName,rank,testAccountId,testName,testInfo", // ;unix_timestamp(rank):rank",
                 '@order': 'rank+,id+',
                 'documentId>': 0
               } : null,
@@ -5292,7 +5468,7 @@ https://github.com/Tencent/APIJSON/issues
             this.showDoc()
           }
 
-          this.showCompare4TestCaseList(show)
+          this.showCompare4TestCaseList(show, this.isChainShow)
 
           //this.onChange(false)
         } else if (IS_BROWSER) { // 解决一旦错了，就只能清缓存
@@ -5382,12 +5558,14 @@ https://github.com/Tencent/APIJSON/issues
         var randoms = show ? (isSub ? this.randomSubs : this.randoms) : null
         var randomCount = randoms == null ? 0 : randoms.length
         if (randomCount > 0) {
-          var accountIndex = (this.accounts[this.currentAccountIndex] || {}).isLoggedIn ? this.currentAccountIndex : -1
+          var curAccount = this.accounts[this.currentAccountIndex] || {}
+          var accountIndex = curAccount.isLoggedIn ? this.currentAccountIndex : -1
           this.currentAccountIndex = accountIndex  //解决 onTestResponse 用 -1 存进去， handleTest 用 currentAccountIndex 取出来为空
           var docId = ((this.currentRemoteItem || {}).Document || {}).id
 
-          var tests = (this.tests[String(accountIndex)] || {})[docId]
-          if (tests != null && JSONObject.isEmpty(tests) != true) {
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var tests = (this.tests[accountIdStr] || {})[docId]
+          if (JSONObject.isEmpty(tests) != true) {
             // if (! isSub) {
             //   this.resetCount(this.currentRemoteItem, true, isSub, accountIndex)
             // }
@@ -5865,12 +6043,13 @@ https://github.com/Tencent/APIJSON/issues
           const baseUrl = this.getBaseUrl()
 
           if (IS_BROWSER && callback == null) {
-            var item
-            for (var i in this.accounts) {
-              item = this.accounts[i]
-              if (item != null && baseUrl == item.baseUrl && req.phone == item.phone) {
+            var accounts = this.accounts || []
+            for (var i in accounts) {
+              var item = accounts[i]
+              if (item != null && baseUrl == item.baseUrl && ( (StringUtil.isNotEmpty(item.phone) && req.phone == item.phone)
+                || (StringUtil.isNotEmpty(item.email) && req.email == item.email) ) ) {
                 recover()
-                alert(req.phone +  ' 已在测试账号中！')
+                alert(req.phone + '/' + req.email + ' 已在测试账号中！')
                 // this.currentAccountIndex = i
                 item.remember = vRemember.checked
                 this.onClickAccount(i, item)
@@ -5969,8 +6148,10 @@ https://github.com/Tencent/APIJSON/issues
           else {
             if (user != null) {
               var headers = res.headers || {}
+              user.isLoggedIn = true
               user.remember = data.remember
               user.phone = req.mobile || req.mobileNo || req.mobileNum || req.mobileNumber || req.phone || req.phoneNo || req.phoneNum || req.phoneNumber || req.mobile_no || req.mobile_num || req.mobile_number || req.phone_no || req.phone_num || req.phone_number
+              user.email = req.email
               user.password = req.password
               user.token = headers.token || headers.Token || data.token || data.Token || user.token || user.Token || user.accessToken || user.access_token || data.accessToken || data.access_token
               user.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
@@ -6010,9 +6191,14 @@ https://github.com/Tencent/APIJSON/issues
               baseUrl: App.getBaseUrl(),
               id: user.id,
               name: user.name || user.nickname || user.nickName || user.user_name || user.username || user.userName,
-              phone: req.phone,
+              account: req.account || req.phone || req.email,
+              phone: req.phone || user.phone,
+              email: req.email || user.email,
               password: req.password,
               remember: data.remember,
+              logoutMethod: App.logoutMethod,
+              logoutType: App.logoutType,
+              logoutUrl: App.logoutUrl,
               loginMethod: loginMethod,
               loginType: loginType,
               loginUrl: loginUrl,
@@ -6133,14 +6319,22 @@ https://github.com/Tencent/APIJSON/issues
           })
         }
         else {
+          var account = this.getCurrentAccount() || {}
+          const logoutMethod = account.logoutMethod || this.logoutMethod || '/logout'
+          const logoutType = account.logoutType || this.logoutType || '/logout'
+          const logoutUrl = account.logoutUrl || this.logoutUrl || '/logout'
+          const logoutHeader = account.logoutHeader || this.logoutHeader || this.getHeader(vHeader.value)
+          const logoutReq = account.logoutReq || {id: account.id}
           this.scripts = newDefaultScript()
-          this.showUrl(isAdminOperation, '/logout')
-          vInput.value = JSON.stringify(req, null, '    ')
-          this.method = REQUEST_TYPE_POST
-          this.type = REQUEST_TYPE_JSON
-          this.showTestCase(false, this.isLocalShow)
-          this.onChange(false)
-          this.send(isAdminOperation, function (url, res, err) {
+//          this.showUrl(isAdminOperation, '/logout')
+//          vInput.value = JSON.stringify(req, null, '    ')
+//          this.method = REQUEST_TYPE_POST
+//          this.type = REQUEST_TYPE_JSON
+//          this.showTestCase(false, this.isLocalShow)
+//          this.onChange(false)
+//          this.send(isAdminOperation, function (url, res, err) {
+          this.request(isAdminOperation, logoutMethod, logoutType, this.getBaseUrl() + logoutUrl
+            , logoutReq, logoutHeader, function (url, res, err) {
             if (App.isEnvCompareEnabled != true) {
               if (callback) {
                 callback(url, res, err)
@@ -6148,8 +6342,8 @@ https://github.com/Tencent/APIJSON/issues
               return
             }
 
-            App.request(isAdminOperation, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, App.getBaseUrl(App.otherEnv) + '/logout'
-                , req, App.getHeader(vHeader.value), function (url_, res_, err_) {
+            App.request(isAdminOperation, logoutMethod, logoutType, App.getBaseUrl(App.otherEnv) + logoutUrl
+                , logoutReq, logoutHeader, function (url_, res_, err_) {
               if (callback) {
                 callback(url, res, err)
                 return
@@ -7137,7 +7331,7 @@ https://github.com/Tencent/APIJSON/issues
           }
         } else if (IS_NODE) {
           var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
-          if (curUser != null && curUser[isEnvCompare ? 'phone' : 'cookie'] != null) {
+          if (curUser != null && curUser.isLoggedIn && curUser[isEnvCompare ? 'phone' : 'cookie'] != null) {
             if (header == null) {
               header = {}
             }
@@ -7549,7 +7743,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var curRandom = curItem.Random || {}
 
 //              var isRandom = this.isTestCaseShow != true && this.isRandomShow == true
-//              var tests = this.tests[String(this.currentAccountIndex)] || {}
+//              var tests = this.tests[String(curAccount.id)] || {}
 //              var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[
 //                  isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
 //              ]
@@ -7793,7 +7987,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               groupId = new Date().getTime()
             }
 
-            //修改 Document
+            //修改 Chain
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + (isAdd ? '/post' : '/put'), {
               Chain: {
                 'groupName': groupName,
@@ -7812,6 +8006,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
 
               App.isCaseGroupEditable = ! isOk
+              App.selectChainGroup(App.currentChainGroupIndex, null)
             })
 
             return
@@ -7977,6 +8172,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         type = type || ''
         var page
         switch (type) {
+          case 'chainGroup':
+            page = this.chainGroupPage
+            break
           case 'caseGroup':
             page = this.caseGroupPage
             break
@@ -8001,6 +8199,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (page > 0) {
           page --
           switch (type) {
+            case 'chainGroup':
+              this.chainGroupPage = page
+              break
             case 'caseGroup':
               this.caseGroupPage = page
               break
@@ -8024,6 +8225,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
       pageUp: function(type) {
         type = type || ''
         switch (type) {
+          case 'chainGroup':
+            this.chainGroupPage ++
+            break
           case 'caseGroup':
             this.caseGroupPage ++
             break
@@ -10555,7 +10759,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var isCross = this.isCrossEnabled
-        var accountIndex = isCross ? -1 : this.currentAccountIndex
+        var accountIndex = this.testAccountIndex = isCross ? -1 : this.currentAccountIndex
 
         var accounts = this.accounts
         var num = accounts == null ? 0 : accounts.length
@@ -10694,12 +10898,57 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         if (this.isChainShow) {
+            var lastAccountIndex = this.currentAccountIndex || 0
+            const accounts = this.accounts || []
+            const curAccount = accounts[lastAccountIndex] || {}
+            const isLoggedIn = curAccount.isLoggedIn
+
             for (var i = 0; i < list.length; i++) {
                 var item = list[i]
                 var stepList = item['[]'] || []
                 var stepCount = stepList == null ? 0 : stepList.length
                 allCount += (stepCount - 1)
+
+                var chain = item.Chain
+                var testInfo = chain == null ? null : chain.testInfo
+                var testAccount = testInfo == null ? null : testInfo.account
+                if (StringUtil.isEmpty(testAccount, true)) {
+                  continue
+                }
+
+                var map = {}
+                var find = false
+                for (var i = 0; i < accounts.length; i ++) {
+                  var acc = accounts[i]
+                  if (acc != null && (acc.id == chain.testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                    (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                    || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+                  ))) {
+                    if (! map[chain.testAccountId]) {
+//                        this.currentAccountIndex = i
+                        acc.isLoggedIn = true
+                    }
+
+                    find = true
+                    break
+                  }
+                }
+
+                if (! find) {
+                    testInfo.isLoggedIn = false
+                    accounts.push(testInfo)
+//                    this.saveAccounts()
+
+                    var isStatisticsEnabled = this.isStatisticsEnabled
+                    this.isStatisticsEnabled = false
+//                    this.onClickAccount(accounts.length - 1, testInfo)
+                    this.isStatisticsEnabled = isStatisticsEnabled
+                }
+                map[chain.testAccountId] = true
             }
+
+//            this.currentAccountIndex = lastAccountIndex || 0
+            curAccount.isLoggedIn = isLoggedIn
         }
 
         if (isCross) {
@@ -10839,6 +11088,29 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             const header = hdr
 
+            const chain = item.Chain
+            const testInfo = (chain || {}).testInfo || {}
+            if (chain != null) {
+                const testAccountId = chain.testAccountId
+                const accounts = this.accounts || []
+                if (StringUtil.isEmpty(testAccountId, true)) {
+                    chain.testAccountId = (accounts[accountIndex] || {}).id
+                } else {
+                    for (var i = 0; i < accounts.length; i ++) {
+                      var acc = accounts[i]
+                      if (acc != null && (acc.id == testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                        (StringUtil.isNotEmpty(item.phone) && acc.phone == testInfo.phone)
+                        || (StringUtil.isNotEmpty(item.email) && acc.email == testInfo.email) )
+                      ))) {
+                        chain.testAccountId = acc.id
+                        accountIndex = this.currentAccountIndex = i
+                        acc.isLoggedIn = testInfo.isLoggedIn == null || testInfo.isLoggedIn
+                        break
+                      }
+                    }
+                }
+            }
+
             const caseScript = {
               pre: (item['Script:pre'] || {}),
               post: (item['Script:post'] || {})
@@ -10848,13 +11120,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             const type = document.type
             const req = this.getRequest(document.request, null, true)
             const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
-            const curEnvUrl = baseUrl + document.url
+            const curEnvUrl = (testInfo.baseUrl || baseUrl) + document.url
             const cur = item
             const pre = list[index - 1] || {} // item.pre = item.pre || list[index - 1] || {}
 //            const ctx = item.ctx = item.ctx || {}
 
             var random = item.Random || {}
             this.parseRandom(req, random.config, random.id, true, false, false, function(randomName, constConfig, constJson) {
+                App.currentAccountIndex = accountIndex
                 App.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, constJson, header, function (url, res, err) {
                   try {
                     App.onResponse(url, res, err)
@@ -10880,6 +11153,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   tr[standardKey] = isMLEnabled ? JSON.stringify(JSONResponse.updateFullStandard({}, rsp, isMLEnabled)) : rspStr // res.data
                   item.TestRecord = tr
 
+                  App.currentAccountIndex = accountIndex
                   App.request(false, method, type, curEnvUrl, constJson, header, function (url, res, err) {
                     try {
                       App.onResponse(url, res, err)
@@ -11065,12 +11339,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.tests = {}
         }
 
-        var accountIndexStr = String(accountIndex)
-        if (this.tests[accountIndexStr] == null) {
-          this.tests[accountIndexStr] = {}
-        }
-
-        var tests = this.tests[accountIndexStr] || {}
+        var curAccount = this.accounts[accountIndex] || {}
+        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+        var tests = this.tests[accountIdStr] || {}
         var t = tests[documentId]
         if (t == null) {
           t = tests[documentId] = {}
@@ -11084,7 +11355,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.toTestDocIndexes.push(index);
         }
 
-        this.tests[accountIndexStr] = tests
+        this.tests[accountIdStr] = tests
         if (DEBUG) {
           this.log('tests = ' + JSON.stringify(tests, null, '    '))
         }
@@ -11107,7 +11378,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             App.deepDoneCount = 0;
             this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex, isCross)
           } else if (isCross && doneCount == allCount && accountIndex <= this.accounts.length) {
-            this.test(false, accountIndex + 1, isCross)
+            this.testAccountIndex = (this.testAccountIndex || 0) + 1
+            this.test(false, this.testAccountIndex, isCross)
           }
         }
       },
@@ -11144,7 +11416,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               App.testRandomProcess = ''
               if (isCross) {
                 if (deepDoneCount == deepAllCount) {
-                  App.test(false, accInd + 1, isCross)
+                  App.testAccountIndex = (App.testAccountIndex || 0) + 1
+                  App.test(false, App.testAccountIndex, isCross)
                 }
               } else {
                 if (deepDoneCount == deepAllCount) {
@@ -11168,7 +11441,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       setTimeout(function () {
                         var url = StringUtil.trim((App.coverage || {}).url)
                         if (StringUtil.isEmpty(url, false)) {
-                          url = App.getBaseUrl() + "/htmlcov/index.html"
+//                          url = App.getBaseUrl() + "/htmlcov/index.html"
+                          return
                         }
                         if (url.startsWith('/')) {
                           url = App.getBaseUrl() + url
@@ -11538,7 +11812,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
          * 导致必须先删除第一个文件内的后面与第二个文件重复的一段，再重新对比。
          */
         setTimeout(function () {
-          var tests = App.tests[String(App.currentAccountIndex)] || {}
+          var curAccount = App.getCurrentAccount() || {}
+          var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+          var tests = App.tests[accountIdStr] || {}
           saveTextAs(
             '# APIJSON自动化回归测试-后\n主页: https://github.com/Tencent/APIJSON'
             + '\n\n接口名称: \n' + (document.version > 0 ? 'V' + document.version : 'V*') + ' ' + document.name
@@ -11595,12 +11871,37 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         this.isFullAssert = true
 
+        const chain = item.Chain
+        if (chain != null) {
+            const testAccountId = chain.testAccountId
+            if (StringUtil.isEmpty(testAccountId, true)) {
+                this.currentAccountIndex = -1
+            } else {
+                const testInfo = chain.testInfo || {}
+                const accounts = this.accounts || []
+                for (var i = 0; i < accounts.length; i ++) {
+                    var acc = accounts[i]
+                    if (acc != null && (acc.id == testAccountId || ( acc.baseUrl = testInfo.baseUrl && (
+                        (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                        || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
+                    ))) {
+                        chain.testAccountId = acc.id
+                        this.currentAccountIndex = i
+                        acc.isLoggedIn = testInfo.isLoggedIn == null || testInfo.isLoggedIn
+                        break
+                    }
+                }
+            }
+        }
+
         var testRecord = item.TestRecord = item.TestRecord || {}
         var pathKeys = StringUtil.split(path, '/') || [];
         var pathNames = pathKeys.slice(0, pathKeys.length - 1);
         var lastKey = pathKeys[pathKeys.length - 1];
 
-        var tests = this.tests[String(this.currentAccountIndex)] || {}
+        var curAccount = this.getCurrentAccount() || {}
+        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || 0 : 0)
+        var tests = this.tests[accountIdStr] || {}
         var currentResponse = (tests[isRandom ? random.documentId : document.id] || {})[
           isRandom ? (random.id > 0 ? random.id : (random.toId + '' + random.id)) : 0
         ]
@@ -13219,6 +13520,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (Number.isNaN(App.reportId)) {
                 throw new Error('URL query 中 reportId= 的值必须是 0 以上整数！')
               }
+              App.isReportShow = true
               App.isStatisticsEnabled = true
               App.isRandomShow = true
               App.isRandomListShow = false
