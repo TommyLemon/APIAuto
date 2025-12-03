@@ -3105,7 +3105,7 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
-          if ((isExportRandom != true || btnIndex == 1) && StringUtil.isEmpty(this.exTxt.name, true)) {
+          if ((isExportRandom != true || btnIndex == 1) && StringUtil.isEmpty(this.exTxt.name, true) && ! this.isEditResponse) {
             alert('请输入接口名！')
             return
           }
@@ -3275,7 +3275,7 @@ https://github.com/Tencent/APIJSON/issues
               },
               'TestRecord': {
                 'userId': userId,
-                'documentId': documentId,
+                'documentId': did,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'chainGroupId': cgId,
                 'chainId': cId,
@@ -5388,11 +5388,12 @@ https://github.com/Tencent/APIJSON/issues
                 // '@having': StringUtil.isEmpty(groupUrl) ? null : "substring_index(substr,'/',1)<0"
               },
               'Random': isChainShow ? {
-                'id@': '/Chain/randomId',
-                'toId': 0, // isChainShow ? 0 : null,
-//                'chainId@': isChainShow ? '/Chain/id' : null,
-//                'documentId@': isChainShow ? null : '/Document/documentId',
-                'userId': userId
+//                'id@': '/Chain/randomId',
+                'toId': 0, // null,
+                'chainId@': '/Chain/id',
+//                'documentId@': '/Document/documentId',
+                'userId': userId,
+                '@order': 'date-'
               }: null,
               'TestRecord': {
                 'chainId@': isChainShow ? '/Chain/id' : null,
@@ -8543,6 +8544,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               // 'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
               'table_name$': search,
               'table_comment$': this.database == 'POSTGRESQL' ? null : search,
+              'table_schema!$': '\\_%',
+              'table_name!$': '\\_%',
               '@combine': search == null || this.database == 'POSTGRESQL' ? null : 'table_name$,table_comment$',
               'table_name{}@': 'sql',
               '@order': 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
@@ -10539,7 +10542,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             // reqCount ++;
-            App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, baseUrl + '/get', req, {}, function (url, res, err) {
+            App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, '/get', req, {}, function (url, res, err) {
               // respCount ++;
               try {
                 App.onResponse(url, res, err)
@@ -10654,10 +10657,36 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
               else if (fun == CTX_PUT) {
                 var as = StringUtil.split(value.substring(start + 1, end), ', ') || []
-                if (as.length >= 2) {
-                  as[1] = 'get4Path(((ctx || {}).pre || {}).data, ' + StringUtil.trim(as[1]) + ')'
+                if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_DATA') {
+                  as[1] = '((ctx || {}).pre || {}).data'
                 }
-                toEval = 'put4Path((ctx || {}).ctx, ' + (value == 'CTX_PUT()' ? JSON.stringify(path) : '') + as.join(', ') + value.substring(end);
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_REQ') {
+                  as[1] = '((ctx || {}).pre || {}).req'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_ARG') {
+                  as[1] = '((ctx || {}).pre || {}).arg'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_RES') {
+                  as[1] = '((ctx || {}).pre || {}).res'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_DATA') {
+                  as[1] = '((ctx || {}).cur || {}).data'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_REQ') {
+                  as[1] = '((ctx || {}).cur || {}).req'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_ARG') {
+                  as[1] = '((ctx || {}).cur || {}).arg'
+                }
+                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_RES') {
+                  as[1] = '((ctx || {}).cur || {}).res'
+                }
+
+                if (as.length >= 1) {
+                  as[0] = 'get4Path(' + as[1] + ', ' + StringUtil.trim(as[0]) + ')'
+                  as.splice(1, 1)
+                }
+                toEval = 'put4Path((ctx || {}).ctx, ' + JSON.stringify(path) + ', ' + as.join(', ') + value.substring(end);
               }
               else if (fun == CUR_REQ) {
                 toEval = 'get4Path(((ctx || {}).cur || {}).req, ' + (value == 'CUR_REQ()' ? JSON.stringify(path) : '') + value.substring(start + 1);
@@ -12663,9 +12692,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       type: stringType,
                       comment: "在上下文存放键值对 function(key:String?, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "CTX_PUT('userId', 'User/id', 'CUR_DATA')",
+                      name: "CTX_PUT('User/id', 'PRE_DATA')",
                       type: stringType,
-                      comment: "在上下文存放键值对 function(key:String, val:Any, from:String?, msg:String?)"
+                      comment: "在上下文存放键值对 function(path:String, from:String｜Object?, msg:String?)"
                     }, {
                       name: "PRE_RES('[]/page')",
                       type: stringType,

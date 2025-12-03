@@ -1811,6 +1811,15 @@ var JSONResponse = {
               }
             } catch (e) {
             }
+        } else if (tgt instanceof Object && tgt.type == 'array') {
+            try {
+              var n = Number.parseInt(k);
+              if (Number.isSafeInteger(n)) {
+                tgt = tgt.values[0];
+                continue;
+              }
+            } catch (e) {
+            }
         }
       }
 
@@ -1883,6 +1892,11 @@ var JSONResponse = {
           tgt.values[0] = child;
         }
 
+        if (k == 0) {
+          tgt = child;
+          continue;
+        }
+
         if (child[k] == null) {
           child[k] = {};
         }
@@ -1911,6 +1925,14 @@ var JSONResponse = {
     var name = nullable || notEmpty ? prefix.substring(0, prefix.length - 1) : prefix
     if (StringUtil.isName(name)) {
        tgt.name = name
+       if (tgt.type == 'array') {
+         var values = tgt.values || []
+         var child = values[0]
+         if (child != null && StringUtil.isEmpty(child.name, true)) {
+             child.name = name
+             child.comment = comment
+         }
+       }
     } else {
        nullable = notEmpty = null
     }

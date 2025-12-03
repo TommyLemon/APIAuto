@@ -6787,7 +6787,8 @@ res_data = rep.json()
     if (standardObj != null) {
       var parentObj = pathKeys == null || pathKeys.length <= 0 ? null : JSONResponse.getStandardByPath(standardObj, pathKeys.slice(0, pathKeys.length - 1));
       var targetValues = parentObj == null ? null : parentObj.values;
-      var targetObj = targetValues == null ? null : (targetValues[0] || {})[pathKeys[pathKeys.length - 1]]; // JSONResponse.getStandardByPath(standardObj, pathKeys);
+      var lastKey = pathKeys == null ? null : pathKeys[pathKeys.length - 1]
+      var targetObj = targetValues == null ? null : (targetValues[0] || {})[lastKey] || {}; // JSONResponse.getStandardByPath(standardObj, pathKeys);
 
       var t = targetObj == null ? null : targetObj.type;
       var targetComment = targetObj == null ? null : targetObj.comment;
@@ -6812,14 +6813,21 @@ res_data = rep.json()
       var name = targetObj == null || StringUtil.isEmpty(targetObj.name, true) ? null : targetObj.name;
       if (StringUtil.isNotEmpty(parentName, true) || StringUtil.isNotEmpty(name, true)) {
         var pn = parentName || tableName;
-        var n = name || columnName;
+        var n = name || columnName || lastKey;
         var isValObj = isValueNotObject != true; // && StringUtil.isName(pn)
 
         c = CodeUtil.getCommentFromDoc(tableList, isValObj ? n : pn, isValObj ? null : n
-          , method, database, language, onlyTableAndColumn, isReq, pathKeys, value, ignoreError, null, isSubquery, isWarning);
+          , method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, ignoreError, null, isSubquery, isWarning);
         if (StringUtil.isNotEmpty(c, true)) {
           return (isValObj && StringUtil.isNotEmpty(name, true) ? StringUtil.trim(name) : CodeUtil.getType4Language(language, t, true))
             + (targetObj.notEmpty ? '! ' : (targetObj.notNull ? ', ' : '? ')) + StringUtil.trim(c);
+        }
+
+        if (StringUtil.isEmpty(tableName, true)) {
+          tableName = isValObj ? n : pn;
+        }
+        if (StringUtil.isEmpty(columnName, true)) {
+          columnName = isValObj ? null : n;
         }
       }
     }
@@ -6947,7 +6955,8 @@ res_data = rep.json()
             return c;
           }
           else {
-            if (c != null) {  // 可能存在但只是没注释  StringUtil.isEmpty(c, true) == false) {
+//            if (c != null) {  // 可能存在但只是没注释
+            if (StringUtil.isEmpty(c, true) == false) {
               return isWarning ? ' ' : c;
             }
           }
@@ -7016,7 +7025,7 @@ res_data = rep.json()
       //Table
       table = item == null ? null : (isTSQL ? item.AllTable : (database != 'SQLSERVER' ? item.Table : item.SysTable));
       var table_name = table == null ? null : table.table_name;
-      if (table_name == null || table_name.replaceAll('_', '').toLowerCase().endsWith(tableName.replaceAll('_', '').toLowerCase()) != true) { // tableName != CodeUtil.getModelName(table.table_name)) {
+      if (table_name == null || table_name.replaceAll('_', '').toLowerCase() != tableName.replaceAll('_', '').toLowerCase()) { // tableName != CodeUtil.getModelName(table.table_name)) {
         continue;
       }
       log('getDoc [] for i=' + i + ': table = \n' + format(JSON.stringify(table)));
@@ -7253,7 +7262,7 @@ res_data = rep.json()
       for (var j = 0; j < columnList.length; j++) {
         column = (columnList[j] || {})[isTSQL ? 'AllColumn' : 'Column'];
         name = column == null ? null : column.column_name;
-        if (name == null || key != name) {
+        if (name == null || key.replaceAll('_', '').toLowerCase() != name.replaceAll('_', '').toLowerCase()) {
           if (name != null) {
             columnNames.push(name)
           }
