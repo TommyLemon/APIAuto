@@ -10,3 +10,4 @@ doc
 config/local_env.json
 *.config.json
 .idea
+.DS_Store

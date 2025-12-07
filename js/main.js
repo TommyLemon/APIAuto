@@ -1222,6 +1222,7 @@ https://github.com/Tencent/APIJSON/issues
       history: {name: '请求0'},
       remotes: [],
       locals: [],
+      chainTags: [{name: 'Home', selected: false}, {name: 'Category'}, {name: 'Search'}, {name: 'Moment'}, {name: 'Chat'}, {name: 'Tommy'}, {name: 'Lemon'}],
       chainPaths: [],
       casePaths: [],
       chainGroups: [],
@@ -4869,6 +4870,101 @@ https://github.com/Tencent/APIJSON/issues
       isChainItemShow: function () {
         return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
       },
+      removeChainTag: function (ind, tag, index, item) {
+        var chain  = (item || {}).Chain || {}
+        var tagList = chain.tagList || [];
+        tagList.splice(ind, 1)
+        this.setChainTag(index, chain, tagList)
+      },
+      addChainTag: function (index, group) {
+        this.isCaseGroupEditable = true
+        this.currentChainGroupIndex = index
+        var chain = (group || {}).Chain || {}
+        var tagList = chain.tagList || []
+        var chainTags = this.chainTags || []
+        for (var j = 0; j < chainTags.length; j ++) {
+          var tag = chainTags[j] || {}
+          tag.selected = false
+        }
+
+        for (var i = 0; i < tagList.length; i ++) {
+          var name = tagList[i]
+          if (StringUtil.isEmpty(name, true)) {
+            continue
+          }
+
+          var find = false
+          for (var j = 0; j < chainTags.length; j ++) {
+            var tag = chainTags[j] || {}
+            if (tag.name == name) {
+              tag.selected = true
+              find = true
+              break
+            }
+          }
+
+          if (! find) {
+            chainTags.push({name: name, selected: true})
+          }
+        }
+
+        this.chainTags = chainTags
+      },
+      setChainTag(index, item, tagList, isAdd) {
+        var chain = item || {} // (item || {}).Chain || {}
+        this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+          Chain: {
+            'id': chain.id,
+            'groupId': chain.groupId,
+            'groupId{}': [chain.groupId],
+            'groupName': chain.groupName,
+            'tagList': tagList
+          },
+          tag: 'Chain-group'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var isOk = JSONResponse.isSuccess(res.data)
+
+          var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get((res.data || {}).msg))
+          if (err != null) {
+            msg += '\nerr: ' + err.msg
+          }
+          alert((isAdd ? '新增' : '移除') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + chain.groupId) + '\ngroupName: ' + chain.groupName + '\n' + msg)
+
+          App.isCaseGroupEditable = ! isOk
+          if (isOk) {
+            App.selectChainGroup(App.currentChainGroupIndex, null)
+          }
+        })
+      },
+      selectChainTag: function (index, tag) {
+        tag.selected = ! tag.selected
+        var groupIndex = this.currentChainGroupIndex
+        if (this.isCaseGroupEditable != true || groupIndex < 0) {
+          this.selectChainGroup(groupIndex)
+          return
+        }
+
+        var group = this.chainGroups[groupIndex] || {}
+        var chain = group.Chain || {}
+        var tagList = chain.tagList || []
+        if (tag.selected) {
+          for (var i = 0; i < tagList.length; i ++) {
+            var name = tagList[i]
+            if (name == tag.name) {
+              return
+            }
+          }
+          tagList.push(tag.name)
+        } else {
+          var ind = tagList.indexOf(tag.name)
+          if (ind >= 0) {
+            tagList.splice(ind, 1)
+          }
+        }
+
+        this.setChainTag(groupIndex, chain, tagList, true)
+      },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
         this.currentDocIndex = -1
@@ -4885,7 +4981,7 @@ https://github.com/Tencent/APIJSON/issues
           this.chainPaths = [group] // .push(group)
         }
 
-       this.casePaths = this.chainPaths
+        this.casePaths = this.chainPaths
 
         var groupId = group == null ? 0 : group.groupId
         if (groupId != null && groupId > 0) { // group != null && groupId == 0) {
@@ -4904,6 +5000,14 @@ https://github.com/Tencent/APIJSON/issues
         var page = this.chainGroupPage = this.chainGroupPages[key] || 0
         var count = this.chainGroupCount = this.chainGroupCounts[key] || 0
         var search = this.chainGroupSearch = this.chainGroupSearches[key] || ''
+        var chainTags = this.chainTags || []
+        var tags = []
+        for (var i = 0; i < chainTags.length; i ++) {
+          var tag = chainTags[i] || {}
+          if (tag.selected) {
+            tags.push(tag.name)
+          }
+        }
 
         search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
         var req = {
@@ -4915,8 +5019,9 @@ https://github.com/Tencent/APIJSON/issues
               'userId': userId,
               'toGroupId': groupId,
               'groupName$': search,
-//              '@raw': '@column',
-              '@column': "groupId;any_value(groupName):groupName;count(*):count",
+              'tagList&<>': tags == null || tags.length <= 0 ? null : tags,
+              '@raw': '@column',
+              '@column': "groupId;any_value(groupName):groupName;any_value(tagList):tagList;count(*):count",
               '@group': 'groupId',
               '@order': 'groupId-',
 //              'documentId>': 0
@@ -4987,6 +5092,14 @@ https://github.com/Tencent/APIJSON/issues
               }
             },
           },
+          'Chain-tagList[]': {
+            'count': 0,
+            'Chain': {
+              'userId': userId,
+              '@column': "groupId;any_value(tagList):tagList",
+              '@group': 'groupId'
+            }
+          },
           '@role': IS_NODE ? null : 'LOGIN',
           key: IS_NODE ? this.key : undefined  // 突破常规查询数量限制
         }
@@ -5030,6 +5143,34 @@ https://github.com/Tencent/APIJSON/issues
             App.chainPaths.push(item.Chain)
           }
           App.remotes = App.testCases = item['[]'] || []
+
+          var tagLists = data['Chain-tagList[]'] || []
+          var chainTags = App.chainTags || []
+          for (var i = 0; i < tagLists.length; i ++) {
+            var tagList = tagLists[i] || []
+            for (var j = 0; j < tagList.length; j ++) {
+              var name = tagList[j]
+              if (StringUtil.isEmpty(name, true)) {
+                continue
+              }
+
+              var find = false
+              for (var k = 0; k < chainTags.length; k ++) {
+                var tag = chainTags[k] || {}
+                if (tag.name == name) {
+                  find = true
+                  break
+                }
+              }
+
+              if (! find) {
+                chainTags.push({name: name})
+              }
+            }
+          }
+
+          App.chainTags = chainTags
+
           App.isTestCaseShow = true
 //          App.showTestCase(true, false, null)
         })
@@ -7979,7 +8120,27 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return
           }
 
-          if (type == 'chainGroupAdd' || type == 'chainGroup') {
+          if (type == 'chainTagAdd') {
+            var name = StringUtil.trim(item.name)
+            if (StringUtil.isEmpty(name)) {
+              alert('请输入有效标签名！')
+              return
+            }
+
+            var chainTags = this.chainTags = this.chainTags || []
+            for (var j = 0; j < chainTags.length; j ++) {
+              var tag = chainTags[j] || {}
+              if (tag.name == name) {
+                if (find) {
+                  alert(name + ' 已存在，请勿重复添加！')
+                  return
+                }
+              }
+            }
+
+            chainTags.push({name: name})
+          }
+          else if (type == 'chainGroupAdd' || type == 'chainGroup') {
             var isAdd = type == 'chainGroupAdd'
             var groupName = item == null ? null : item.groupName
             if (StringUtil.isEmpty(groupName)) {
@@ -11039,7 +11200,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                res = res || {}
                var config = res.config || {}
-               cur.arg = App.getRequest(config.data || config.params, {})
+               var p = config.data || config.params
+               try {
+                 cur.arg = App.getRequest(config.data || config.params, {})
+               } catch (e) {
+                 if (typeof p != 'string' || p.indexOf('=') <= 0) {
+                   throw e
+                 }
+                 cur.arg = getRequestFromURL('?' + p, true)
+               }
                cur.req = {
                  method: method,
                  url: config.url,
@@ -13626,8 +13795,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         // alert(event.key) 小写字母 i 而不是 KeyI
 
         var target = event.target;
-        if (target == vAskAI || target == vSearch || target == vTestCaseSearch || target == vCaseGroupSearch
-          || target == vChainGroupSearch || target == vChainGroupAdd || target == vChainAdd) {
+        if ([vInput, vRandom, vHeader, vScript].indexOf(target) < 0) {
           return
         }
 
