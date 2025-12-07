@@ -242,7 +242,7 @@
                                     <li style="margin: 0px; padding: 2px; border: #DDD 1px solid; border-radius: 2px " v-for="(tag, ind) in item.Chain.tagList" :id="'tag' + index" >
                                         <a href="javascript:void(0)" style="position: relative; min-width: 6px; width: auto; height: 30px; " @click="removeChainTag(ind, tag, index, item)" >{{ tag }}</a>
                                     </li>
-                                </ul><button class="hint--left" data-hint="点底部标签来添加，或分组标签来移除" style="position: absolute; right: 60px; top: 6px;" href="javascript:void(0)" @click="addChainTag(index, item)"> + </button><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px" class="hint--left" :data-hint="item.Chain.groupName">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
+                                </ul><button class="hint--left" data-hint="新增标签" style="position: absolute; right: 60px; top: 6px;" href="javascript:void(0)" @click="changeChainTag(index, item)"> + </button><a style="right: 0px; position: absolute; z-index: 100; width: fit-content; background-color: white; margin-right: 24px" class="hint--left" :data-hint="item.Chain.groupName">{{' (' + (item.Chain.count - 1) + ')  '}}</a>
                                 <svg class="icon" @click="remove(item, index, true, false, false, true)" style="background-color: white; width: 27px; height: 18px; right: -2px; top: 10px; padding-left: 3px; padding-right: 4px; padding-top: 2px; padding-bottom: 2px;" >
                                     <use xlink:href="svg/icon.svg#trash"></use>
                                 </svg>

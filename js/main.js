@@ -4871,12 +4871,18 @@ https://github.com/Tencent/APIJSON/issues
         return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
       },
       removeChainTag: function (ind, tag, index, item) {
+        if (! this.isCaseGroupEditable) {
+          this.isCaseGroupEditable = true
+          this.changeChainTag(index, item)
+          return
+        }
+
         var chain  = (item || {}).Chain || {}
         var tagList = chain.tagList || [];
         tagList.splice(ind, 1)
         this.setChainTag(index, chain, tagList)
       },
-      addChainTag: function (index, group) {
+      changeChainTag: function (index, group) {
         this.isCaseGroupEditable = true
         this.currentChainGroupIndex = index
         var chain = (group || {}).Chain || {}
@@ -4909,6 +4915,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         this.chainTags = chainTags
+        alert('已进入编辑模式，点击底部标签即可添加/移除，点列表项标签也可移除')
       },
       setChainTag(index, item, tagList, isAdd) {
         var chain = item || {} // (item || {}).Chain || {}
@@ -4963,7 +4970,7 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
 
-        this.setChainTag(groupIndex, chain, tagList, true)
+        this.setChainTag(groupIndex, chain, tagList, tag.selected)
       },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
