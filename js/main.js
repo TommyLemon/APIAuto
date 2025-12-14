@@ -3452,7 +3452,11 @@ https://github.com/Tencent/APIJSON/issues
             this.isRandomSubListShow = false;
          } else if (StringUtil.isEmpty(vRandom.value, true)) {
             var req = this.getRequest(vInput.value, {})
-            vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req, Math.random() >= 0.5, Math.random() >= 0.3, Math.random() >= 0.8))
+            if (this.isChainShow) {
+                vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req))
+            } else {
+                vRandom.value = StringUtil.trim(this.newRandomConfig(null, '', req, Math.random() >= 0.5, Math.random() >= 0.3, Math.random() >= 0.8))
+            }
          } else {
             this.showExport(true, true, true)
          }
@@ -3465,6 +3469,8 @@ https://github.com/Tencent/APIJSON/issues
         if (path == '' && (key == 'tag' || key == 'version' || key == 'format')) {
           return ''
         }
+
+        var isChainShow = this.isChainShow;
 
         var config = ''
         var childPath = path == null || path == '' ? key : path + '/' + key
@@ -3556,6 +3562,9 @@ https://github.com/Tencent/APIJSON/issues
 
             var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep, isConst)
             if (StringUtil.isNotEmpty(cfg, true)) {
+              if (k != null && k.toLowerCase() == 'id') {
+                return cfg
+              }
               config += '\n' + cfg
             }
           }
@@ -3571,7 +3580,223 @@ https://github.com/Tencent/APIJSON/issues
             return config
           }
 
-          if (typeof value == 'boolean') {
+          if (isChainShow && StringUtil.isNotEmpty(key, true) && (typeof value != 'string' || ! key.endsWith('@'))) {
+            var keys = StringUtil.split(path, '/');
+            var table = keys == null ? '' : keys[keys.length - 1];
+            var isAPIJSONArray = childPath.indexOf('[]') >= 0;
+            var isId = key.toLowerCase() == 'id';
+            var isList = isAPIJSONArray || childPath.toLowerCase().indexOf('list') >= 0;
+            var isRestful = ! JSONObject.isAPIJSONPath(this.getMethod());
+
+            var tbl = StringUtil.getTableName(key)
+            tbl = StringUtil.firstCase(tbl, true)
+            var col = StringUtil.getColumnName(key)
+            col = StringUtil.firstCase(col, false)
+
+            var ks = keys == null ? [] : keys.slice(0, keys.length - 1)
+            ks.push(tbl)
+            var p = ks.join('/')
+            var cp = StringUtil.isNotEmpty(tbl) ? childPath : (StringUtil.isEmpty(p) ? '' : p + '/') + col
+            var kp = StringUtil.isEmpty(p) ? path : p;
+            var fd = StringUtil.isEmpty(kp) ? '' : kp + '/';
+
+            var ctxKey = StringUtil.isNotEmpty(tbl) ? key : StringUtil.firstCase(table, false) + StringUtil.firstCase(key, true)
+            var ctxPutPfx = ctxKey + ': '
+            var camelIdKey = StringUtil.firstCase((tbl || table) + 'Id');
+            var snakeIdKey = (tbl || table).toLowerCase() + '_id';
+
+            if (isList) {
+              if (isId) {
+                config += prefix + 'PRE_ARG("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                    }
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
+                if (isRestful && ! isAPIJSONArray) {
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + camelIdKey + '")';
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + snakeIdKey + '")';
+                }
+              }
+              else if (StringUtil.isIdKey(key)) {
+                config += prefix + 'PRE_ARG("' + key + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("id")';
+                if (key != cp) {
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + cp + '")';
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+
+                var idKey = key.toLowerCase().startsWith(table.toLowerCase()) ? key : "id";
+                if (isRestful && ! isAPIJSONArray) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                    }
+
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("list/0/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("list/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + (tbl || table) + '/' + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/' + (tbl || table) + '/' + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + (tbl || table) + '/' + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + (tbl || table) + '/' + (col || key) + '")';
+                } else {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("[]/0/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("[]/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + fd + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (path || '') + '[]/0/' + key + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (path || '') + '[]/0/id")';
+                }
+              }
+              else {
+                config += StringUtil.isEmpty(cp) ? '' : prefix + 'PRE_DATA("' + cp + '", get4Path(req,"' + childPath + '",null))';
+                config += (StringUtil.isEmpty(cp) ? '' : '\n// 可替代上面的 ') + prefix + 'PRE_DATA("' + cp + '", get4Path(req,"' + childPath + '"))';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                if (isRestful && ! isAPIJSONArray) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                      if (StringUtil.isNotEmpty(col)) {
+                          config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + (StringUtil.isEmpty(tbl) ? '' : tbl + '/') + col + '")';
+                          config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + col + '")';
+                      }
+                    }
+                }
+              }
+
+              config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + childPath + '")';
+              config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + cp + '")';
+              config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + ctxKey + '")';
+              if (key != childPath) {
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + key + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + ctxKey + '")';
+              }
+            } else {
+              if (isId) {
+                if (isRestful) {
+                    config += prefix + 'PRE_DATA("' + 'data/list/0/' + camelIdKey + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'data/0/' + snakeIdKey + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'list/0/' + camelIdKey + '")';
+                } else {
+                    config += prefix + 'PRE_DATA("' + kp + '[]/0/' + camelIdKey + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/' + snakeIdKey + '")';
+                }
+
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                    }
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + camelIdKey + '")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + snakeIdKey + '")';
+              }
+              else if (StringUtil.isIdKey(key)) {
+                if (isRestful) {
+                    config += prefix + 'PRE_DATA("data/list/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("list/0/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + fd + 'id")';
+                } else {
+                    config += prefix + 'PRE_DATA("[]/0/' + (StringUtil.isEmpty(p) ? '' : kp + '/') + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("[]/0/' + fd + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("[]/0/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/' + (col || key) + '")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/id")';
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + (col || key) + '")';
+                    }
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + ctxKey + '")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/id")';
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("id")';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + fd + 'id")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + fd + 'id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/id")';
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + fd + 'id")';
+                }
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + fd + 'id")';
+              }
+              else {
+                config += prefix + 'PRE_DATA("' + cp + '", get4Path(req,"' + key + '",null))';
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                if (isRestful) {
+                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+                    if (key != cp) {
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
+                      config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + key + '")';
+                    }
+                } else {
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + key + '")';
+                }
+              }
+
+              config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + childPath + '")';
+              if (key != childPath) {
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + key + '")';
+              }
+
+              if (isRestful) {
+                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
+              }
+              config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + ctxKey + '")';
+              if (isRestful) {
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/list/0/' + cp + '")';
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/0/' + cp + '")';
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("list/0/' + cp + '")';
+                  config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("[]/0/' + cp + '", "PRE_DATA")';
+                  config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("data/0/' + cp + '", "PRE_DATA")';
+                  config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("list/0'/ + cp + '", "PRE_DATA")';
+              } else {
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("[]/0/' + cp + '")';
+                  config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/' + (col || key) + '")';
+                  config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + kp + '[]/0/' + (col || key) + '", "PRE_DATA")';
+                  config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("[]/0/' + cp + '", "PRE_DATA")';
+              }
+            }
+
+            config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + key + '", App.getCurrentAccount())';
+            config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + cp + '", "PRE_DATA")';
+            config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + childPath + '", "PRE_ARG")';
+            if (key != childPath) {
+              config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + key + '", "PRE_DATA")';
+              config += '\n// 可替代上面的 ' + ctxPutPfx + 'CTX_PUT("' + key + '", "PRE_ARG")';
+            }
+          }
+          else if (typeof value == 'boolean') {
             if (isBad) {
               return prefix + (isRand ? 'RANDOM_BAD_BOOL' : 'ORDER_BAD_BOOL' + offset) + '()'
             }
@@ -5208,6 +5433,8 @@ https://github.com/Tencent/APIJSON/issues
 
         var groupName = group.groupName
         var isAdd = true
+        var reqObj = this.testCases == null || this.testCases.length <= 0 ? null : this.getRequest()
+        var config = reqObj == null ? '' : StringUtil.trim(this.newRandomConfig(null, '', reqObj))
         this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/post', {
           Chain: {
             'rank': this.formatDateTime(StringUtil.isEmpty(nextRank, true) ? null : new Date(new Date(nextRank).getTime() - 10)),
@@ -5215,6 +5442,13 @@ https://github.com/Tencent/APIJSON/issues
             'groupId': groupId,
             'documentId': item.id,
             'documentName': item.name
+          },
+          Random: {
+            toId: 0,
+            documentId: item.id,
+            count: 1,
+            name: '参数传递 ' + App.formatDateTime(),
+            config: config
           },
           tag: 'Chain'
         }, {}, function (url, res, err) {
@@ -7305,7 +7539,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           axios.interceptors.request.use(function (config) {
-            config.metadata = { startTime: new Date().getTime()}
+            config.metadata = { isChainShow: App.isChainShow, startTime: new Date().getTime() }
             return config;
           }, function (error) {
             return Promise.reject(error);
@@ -8201,7 +8435,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var methods = this.methods
             var types = this.types
 
-            //修改 Document
+            // Document
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get', {
                 format: false,
                 'Document[]': {
@@ -8834,8 +9068,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           return;
         }
 
-        var time = res.config == null || res.config.metadata == null ? 0 : (res.config.metadata.startTime || 0)
-        if (time < this.lastDocReqTime) {
+        var config = res.config
+        var metadata = config == null ? null : config.metadata
+        var time = metadata == null ? 0 : (metadata.startTime || 0)
+        if (time < this.lastDocReqTime || (metadata != null && metadata.isChainShow != null && metadata.isChainShow != this.isChainShow)) {
           return
         }
 

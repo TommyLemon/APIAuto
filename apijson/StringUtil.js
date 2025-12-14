@@ -153,6 +153,55 @@ var StringUtil = {
     return s.toLowerCase();
   },
 
+  getTableName: function(s) {
+    s = StringUtil.trim(s);
+    var keys = s.split('_');
+    if (keys.length > 1) {
+      return keys[keys.length - 2];
+    }
+
+    var hasBig = false;
+    var lastInd = -1;
+    for (var i = s.length - 1; i >= 0; i--) {
+      var c = s.substring(i, i + 1);
+      var isBig = /[A-Z]/.test(c)
+      if (lastInd >= 1 && (isBig || i <= 0)) {
+        return s.substring(i, lastInd + 1);
+      }
+
+      if (hasBig && lastInd < 0 && ! isBig) {
+        lastInd = i;
+      }
+      hasBig = hasBig || isBig
+    }
+
+    return '';
+  },
+  getColumnName: function(s) {
+    s = StringUtil.trim(s);
+    var keys = s.split('_');
+    if (keys.length > 1) {
+      return keys[keys.length - 1];
+    }
+
+    var hasBig = false;
+    var lastInd = -1;
+    for (var i = s.length - 1; i >= 0; i--) {
+      var c = s.substring(i, i + 1);
+      var isBig = /[A-Z]/.test(c)
+      if (lastInd >= 0 && (isBig != hasBig || i <= 0)) {
+        return s.substring(lastInd + (isBig ? 0 : 1));
+      }
+
+      if (hasBig && lastInd < 0 && ! isBig) {
+        lastInd = i;
+      }
+      hasBig = hasBig || isBig
+    }
+
+    return s;
+  },
+
   split: function (s, separator, trim) {
     if (StringUtil.isEmpty(s, trim)) {
       return null;
