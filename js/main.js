@@ -3580,6 +3580,7 @@ https://github.com/Tencent/APIJSON/issues
             return config
           }
 
+          // FIXME 似乎加了自动生成场景传参配置后，空配置时点击 + 添加配置后，切换用例列表会卡死
           if (isChainShow && StringUtil.isNotEmpty(key, true) && (typeof value != 'string' || ! key.endsWith('@'))) {
             var keys = StringUtil.split(path, '/');
             var table = keys == null ? '' : keys[keys.length - 1];
