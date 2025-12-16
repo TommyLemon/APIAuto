@@ -3398,11 +3398,11 @@ https://github.com/Tencent/APIJSON/issues
           };
 
           if (btnIndex == 1) {
-            // this.parseRandom(inputObj, config, null, true, true, false, callback)
-            callback(null, null, inputObj)
+            // this.parseRandom(inputObj, header, config, null, true, true, false, callback)
+            callback(null, null, null, inputObj)
           }
           else {
-            callback(null, null, inputObj)
+            callback(null, null, null, inputObj)
           }
 
         }
@@ -6496,15 +6496,15 @@ https://github.com/Tencent/APIJSON/issues
 
           this.scripts = newDefaultScript()
 
-          this.parseRandom(loginReq, loginRandom, 0, true, false, false, function(randomName, constConfig, constJson) {
-              App.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, constJson, loginHeader, function (url, res, err) {
+          this.parseRandom(loginReq, loginHeader, loginRandom, 0, true, false, false, function(randomName, constConfig, constJson, constHeader) {
+              App.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, constJson, constHeader, function (url, res, err) {
                 if (App.isEnvCompareEnabled != true) {
-                  loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, constJson, loginHeader)
+                  loginCallback(url, res, err, null, loginMethod, loginType, loginUrl, constJson, constHeader)
                   return
                 }
 
                 App.request(isAdminOperation, loginMethod, loginType, App.getBaseUrl(App.otherEnv) + loginUrl
-                    , loginReq, loginHeader, function(url_, res_, err_) {
+                    , loginReq, constHeader, function(url_, res_, err_) {
                       var data = res_.data
                       var user = data.user || data.userObj || data.userObject || data.userRsp || data.userResp || data.userBean || data.userData || data.data || data.User || data.Data
                       if (user != null) {
@@ -6521,7 +6521,7 @@ https://github.com/Tencent/APIJSON/issues
                       }
 
                       App.onResponse(url_, res_, err_);
-                      App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, constJson, loginRandom, loginHeader)
+                      App.onLoginResponse(isAdminOperation, req, url, res, err, loginMethod, loginType, loginUrl, constJson, loginRandom, constHeader)
                     }, App.scripts)
               })
           })
@@ -7380,7 +7380,7 @@ https://github.com/Tencent/APIJSON/issues
         const onHttpResponse = function (res) {
           App.currentHttpResponse = res
           clearTimeout(errHandler)
-          var postEvalResult = evalPostScript(url, res, null)
+          var postEvalResult = evalPostScript(method, type, url, req, header, callback, res, null)
           if (postEvalResult == BREAK_ALL) {
             return
           }
@@ -7452,7 +7452,7 @@ https://github.com/Tencent/APIJSON/issues
           var res = {status: errObj.status || (errObj.response || {}).status, request: {url: url, headers: header, data: req}, data: (errObj.response || {}).data}
           App.currentHttpResponse = res
 
-          var postEvalResult = evalPostScript(url, res, err)
+          var postEvalResult = evalPostScript(method, type, url, req, header, callback, res, err)
           if (postEvalResult == BREAK_ALL) {
             return
           }
@@ -7578,7 +7578,8 @@ https://github.com/Tencent/APIJSON/issues
             .catch(onHttpCatch)
         }
 
-        var evalScript = isAdminOperation || caseScript_ == null ? function () {} : function (isPre, code, res, err) {
+        var evalScript = isAdminOperation || caseScript_ == null ? function () {}
+            : function (isPre, code, method, type, url, req, header, callback, res, err) {
           var logger = console.log
           console.log = function(msg) {
             logger(msg)
@@ -7667,12 +7668,13 @@ https://github.com/Tencent/APIJSON/issues
 
           var preEvalResult = null;
           if (StringUtil.isNotEmpty(preScript, true)) {
-            preEvalResult = evalScript(true, preScript)
+            preEvalResult = evalScript(true, preScript, method, type, url, req, header, callback)
           }
 
         // }
 
-        evalPostScript = isAdminOperation || caseScript_ == null ? function () {} : function (url, res, err) {
+        evalPostScript = isAdminOperation || caseScript_ == null ? function () {}
+          : function (method, type, url, req, header, callback, res, err) {
           var postScript = ''
 
           var casePostScript = StringUtil.trim((caseScript.post || {}).script)
@@ -7695,7 +7697,7 @@ https://github.com/Tencent/APIJSON/issues
               postScript = preScript + '\n\n// request >>>>>>>>>>>>>>>>>>>>>>>>>> response \n\n' + postScript
             }
 
-            return evalScript(false, postScript, res, err)
+            return evalScript(false, postScript, method, type, url, req, header, callback, res, err)
           }
 
           return null;
@@ -8015,16 +8017,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           else if (target == vHeader || target == vRandom) {  // { "key": value } 转 key: value
             try {
-              var json = JSON5.parse(paste);
-              var newStr = '';
-              for (var k in json) {
-                var v = json[k];
-                if (v instanceof Object || v instanceof Array) {
-                  v = JSON.stringify(v);
-                }
-                newStr += '\n' + k + ': ' + (target != vHeader && typeof v == 'string' ? "'" + v.replaceAll("'", "\\'") + "'" : StringUtil.get(v));
-              }
-              target.value = StringUtil.trim(newStr);
+              target.value = StringUtil.toHeader(paste, target == vRandom);
               event.preventDefault();
             }
             catch (e) {
@@ -10465,9 +10458,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           try {
             this.parseRandom(
-              parseJSON(JSON.stringify(json)), rawConfig, random.id
+              parseJSON(JSON.stringify(json)), parseJSON(JSON.stringify(header)), rawConfig, random.id
               , ! testSubList, testSubList && i >= existCount, testSubList && i >= existCount
-              , function (randomName, constConfig, constJson) {
+              , function (randomName, constConfig, constJson, constHeader) {
 
                 respCount ++;
 
@@ -10503,10 +10496,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 else {
                   if (show == true) {
                     vInput.value = JSON.stringify(constJson, null, '    ');
+                    vHeader.value = StringUtil.toHeader(constHeader);
                     App.send(false, cb, caseScript);
                   }
                   else {
-                    App.request(false, method, type, url, constJson, header, cb, caseScript);
+                    App.request(false, method, type, url, constJson, constHeader, cb, caseScript);
                   }
                 }
 
@@ -10747,14 +10741,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param show
        * @param callback
        */
-      parseRandom: function (json, config, randomId, generateJSON, generateConfig, generateName, callback, preScript, ctx) {
+      parseRandom: function (json, head, config, randomId, generateJSON, generateConfig, generateName, callback, preScript, ctx) {
         var lines = config == null ? null : config.trim().split('\n')
         if (lines == null || lines.length <= 0) {
           // return null;
-          callback('', '', json);
+          callback('', '', json, head);
           return
         }
         json = json || {};
+        head = head || {};
 
         baseUrl = this.getBaseUrl();
 
@@ -10782,7 +10777,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (cn.length > 50) {
                 cn = cn.substring(0, 30) + ' ..' + randomNameKeys.length + '.. ' + cn.substring(cn.length - 12)
               }
-              callback(cn, constConfigLines.join('\n'), json);
+              callback(cn, constConfigLines.join('\n'), json, head);
             }
             continue;
           }
@@ -10854,7 +10849,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (generateJSON) {
                 //先按照单行简单实现
                 //替换 JSON 里的键值对 key: value
-                var parent = json;
+                var isHead = key.startsWith('- ');
+                var targetObj = isHead ? head : json;
+                var parent = targetObj;
                 var current = null;
                 for (var j = 0; j < pathKeys.length - 1; j ++) {
                   current = parent[pathKeys[j]]
@@ -10869,15 +10866,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 }
 
                 if (current == null) {
-                  current = json;
+                  current = targetObj;
                 }
                 // alert('< current = ' + JSON.stringify(current, null, '    '))
 
+                // FIXME 还需要吗？之前的替换字段功能都废弃了，这个导致顺序变化
                 if (key != lastKeyInPath || current.hasOwnProperty(key) == false) {
                   delete current[lastKeyInPath];
                 }
 
-                current[key] = val;
+                current[isHead ? key.substring(2) : key] = val;
               }
 
             }
@@ -10891,7 +10889,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (cn.length > 50) {
                 cn = cn.substring(0, 30) + ' ..' + randomNameKeys.length + '.. ' + cn.substring(cn.length - 12)
               }
-              callback(cn, constConfigLines.join('\n'), json);
+              callback(cn, constConfigLines.join('\n'), json, head);
             }
           };
 
@@ -11155,8 +11153,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var method = null;
           var type = null;
           var url = null;
-          var req = null;
-          var header = null;
+          var req = json;
+          var header = head;
           var res = {};
           var data = res.data;
           var err = null;
@@ -11438,7 +11436,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
          }
          var header = cur.header = doc.header
 //
-//         this.parseRandom(json, rawConfig, random.id, true, false, function (randomName, constConfig, constJson) {
+//         this.parseRandom(json, header, rawConfig, random.id, true, false, function (randomName, constConfig, constJson) {
              this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, callback
                , function(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross) {
 
@@ -11446,7 +11444,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                var config = res.config || {}
                var p = config.data || config.params
                try {
-                 cur.arg = App.getRequest(config.data || config.params, {})
+                 cur.arg = App.getRequest(p, {})
                } catch (e) {
                  if (typeof p != 'string' || p.indexOf('=') <= 0) {
                    throw e
@@ -11581,9 +11579,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 //            const ctx = item.ctx = item.ctx || {}
 
             var random = item.Random || {}
-            this.parseRandom(req, random.config, random.id, true, false, false, function(randomName, constConfig, constJson) {
+            this.parseRandom(req, header, random.config, random.id, true, false, false, function(randomName, constConfig, constJson, constHeader) {
                 App.currentAccountIndex = accountIndex
-                App.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, constJson, header, function (url, res, err) {
+                App.request(false, method, type, isEnvCompare ? otherEnvUrl : curEnvUrl, constJson, constHeader, function (url, res, err) {
                   try {
                     App.onResponse(url, res, err)
                     if (DEBUG) {
@@ -11609,7 +11607,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   item.TestRecord = tr
 
                   App.currentAccountIndex = accountIndex
-                  App.request(false, method, type, curEnvUrl, constJson, header, function (url, res, err) {
+                  App.request(false, method, type, curEnvUrl, constJson, constHeader, function (url, res, err) {
                     try {
                       App.onResponse(url, res, err)
                       if (DEBUG) {

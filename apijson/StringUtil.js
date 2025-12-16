@@ -654,6 +654,30 @@ var StringUtil = {
   },
   CATEGORY_MAP: { // from TYPE_CATEGORY_KEYS
 //    'count': 'integer'
+  },
+
+  toRandom: function (s) {
+    return StringUtil.toForm(s, true)
+  },
+  toHeader: function (s) {
+    return StringUtil.toForm(s)
+  },
+  toForm: function (s, quote) {
+    if (s == null) {
+      return '';
+    }
+
+    var json = parseJSON(s);
+    var newStr = '';
+    for (var k in json) {
+      var v = json[k];
+      if (v instanceof Object || v instanceof Array) {
+        v = JSON.stringify(v);
+      }
+      newStr += '\n' + k + ': ' + (quote && typeof v == 'string' ? "'" + v.replaceAll("'", "\\'") + "'" : StringUtil.get(v));
+    }
+
+    return StringUtil.trim(newStr);
   }
 
 };
