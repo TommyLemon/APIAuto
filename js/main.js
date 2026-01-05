@@ -10782,9 +10782,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             continue;
           }
 
+          const isHead = line.startsWith('- ');
+          const line2 = isHead ? line.substring(2) : line;
           // path User/id  key id@
-          const index = line.indexOf(': '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(': '); // indexOf(': '); 可能会有 Comment:to
-          const p_k = line.substring(0, index);
+          const index = line2.indexOf(': '); //APIJSON Table:alias 前面不会有空格 //致后面就接 { 'a': 1} 报错 Unexpected token ':'   lastIndexOf(': '); // indexOf(': '); 可能会有 Comment:to
+          const p_k = line2.substring(0, index);
           const bi = -1;  //没必要支持，用 before: undefined, after: .. 同样支持替换，反而这样导致不兼容包含空格的 key   p_k.indexOf(' ');
           const path = decodeURI(bi < 0 ? p_k : p_k.substring(0, bi)); // User/id
 
@@ -10809,7 +10811,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           // value RANDOM_DB
-          const value = line.substring(index + ': '.length);
+          const value = line2.substring(index + ': '.length);
 
           var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
             try {
@@ -10849,7 +10851,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (generateJSON) {
                 //先按照单行简单实现
                 //替换 JSON 里的键值对 key: value
-                var isHead = key.startsWith('- ');
                 var targetObj = isHead ? head : json;
                 var parent = targetObj;
                 var current = null;
