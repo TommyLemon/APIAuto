@@ -10876,7 +10876,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   delete current[lastKeyInPath];
                 }
 
-                current[isHead ? key.substring(2) : key] = val;
+                current[key] = val;
               }
 
             }
