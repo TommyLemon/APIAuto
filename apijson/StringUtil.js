@@ -24,7 +24,7 @@ var StringUtil = {
    * @return
    */
   get: function(s) {
-    return s == null ? '' : (JSONResponse.isString(s) ? s : JSON.stringify(s));
+    return s == null ? '' : (typeof s == 'string' ? s : JSON.stringify(s));
   },
 
   /**获取去掉前后空格后的string,为null则返回''
@@ -40,7 +40,7 @@ var StringUtil = {
    * @return
    */
   noBlank: function(s) {
-    return s == null ? '' : s.replace(/ /g, '');
+    return StringUtil.get(s).replace(/ /g, '');
   },
 
   /**判断字符是否为空

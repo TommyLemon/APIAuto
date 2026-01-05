@@ -5704,7 +5704,7 @@ https://github.com/Tencent/APIJSON/issues
         if (show) {
           var testCases = this.testCases
           var allCount = testCases == null ? 0 : testCases.length
-          App.allCount = allCount
+          this.allCount = allCount
           if (allCount > 0) {
             if (! (this.isAllSummaryShow() || this.isCurrentSummaryShow())) {
               this.showCompare4TestCaseList(show, this.isChainShow)
@@ -9033,7 +9033,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               'detail()': 'getFunctionDetail()',
               'name$': search,
               'detail$': search,
-              '@combine': search == null ? null : 'name$,detail$',
+              '@combine': StringUtil.isEmpty(search) ? null : 'name$,detail$',
             }
           },
           'Request[]': {
@@ -10897,7 +10897,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const start = value.indexOf('(');
           const end = value.lastIndexOf(')');
 
-          var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step) {
+          var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step, body) {
             // const tableName = JSONResponse.getTableName(pathKeys[pathKeys.length - 2]);
             vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
 
@@ -10917,19 +10917,32 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               column = column.substring(1, column.length - 1);
             }
 
-            const finalTableName = StringUtil.isEmpty(table, true) ? tableName : table;
+            var sch_tbl = StringUtil.isEmpty(table, true) ? tableName : table;
+            var ind = sch_tbl.indexOf('.');
+            var schema = ind < 0 ? App.schema : sch_tbl.substring(0, ind);
+            const finalTableName = StringUtil.firstCase(ind < 0 ? sch_tbl : sch_tbl.substring(ind + 1), true);
             const finalColumnName = StringUtil.isEmpty(column, true) ? lastKeyInPath : column;
 
-            const tableReq = {
+            var tableReq = {
               '@column': isRandom ? finalColumnName : ('DISTINCT ' + finalColumnName),
-              '@order': isRandom ? 'rand()' : (finalColumnName + (isDesc ? '-' : '+'))
+              '@order': isRandom ? 'rand()' : (finalColumnName + (isDesc ? '-' : '+')),
+              '@schema': StringUtil.isEmpty(schema, true) ? undefined : schema
             };
             tableReq[finalColumnName + '>='] = min;
             tableReq[finalColumnName + '<='] = max;
+            try {
+              body = parseJSON(body);
+            } catch (e) {
+              console.log(e);
+            }
 
-            const req = {};
+            var req = {};
             const listName = isRandom ? null : finalTableName + '-' + finalColumnName + '[]';
-            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null)
+            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null);
+
+            if (body != null && body[finalTableName] == null && (isRandom || body[listName] == null)) {
+              tableReq = Object.assign(tableReq, body);
+            }
 
             if (isRandom) {
               req[finalTableName] = tableReq;
@@ -10941,11 +10954,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，lastKeyInPath 未必是 id
               };
               listReq[finalTableName] = tableReq;
+
+              if (body != null && body[finalTableName] != null) {
+                listReq = Object.assign(listReq, body);
+              }
               req[listName] = listReq;
             }
 
+            if (body != null && body[isRandom ? finalTableName : listName] != null) {
+              req = Object.assign(req, body);
+            }
+
             // reqCount ++;
-            App.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, '/get', req, {}, function (url, res, err) {
+            App.adminRequest('/get', req, {}, function (url, res, err) {
               // respCount ++;
               try {
                 App.onResponse(url, res, err)
@@ -10968,7 +10989,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //越界，重新获取
                 if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
                   ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
-                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step);
+                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step, body);
                 }
                 else {
                   invoke(val, which, p_k, pathKeys, key, lastKeyInPath);
@@ -11025,12 +11046,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   + '\n+，-，step 前后都不能有空格等其它字符！');
               }
 
+              var args = parseJSON('[' + value.substring(start + 1, end) + ']') // StringUtil.split(value.substring(start + 1, end), ', ') || []
+
               if (fun == ORDER_DB) {
-                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step); //request4Db(key + (isDesc ? '-' : '+'), step);
+                request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step, args[4]); //request4Db(key + (isDesc ? '-' : '+'), step);
                 continue;
               }
-
-              var args = StringUtil.split(value.substring(start + 1, end))
 
               toEval = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : (fun == ORDER_BAD_BOOL ? 'orderBadBool' : (fun == ORDER_BAD_NUM
                ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
@@ -11107,7 +11128,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
 
                   if (fun == RANDOM_DB) {
-                    request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true); //'random()');
+                    var args = parseJSON('[' + value.substring(start + 1, end) + ']') // StringUtil.split(value.substring(start + 1, end), ', ') || []
+                    request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true, null, null, args[4]); //'random()');
                     continue;
                   }
 

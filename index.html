@@ -806,9 +806,9 @@ fun(true, 1, 'a'..);
             <use xlink:href="svg/icon.svg#close"></use>
         </svg>
 
-        <input type="text" placeholder="请输入" v-model="history.name" />
-        <button   @click="save()" >保存</button>
-    </div>
+    <input type="text" placeholder="请输入名称" v-model="history.name" />
+    <button   @click="save()" >保存</button>
+  </div>
 
     <!--弹出下载文本框-->
     <div class="save-box" v-show="isExportShow">

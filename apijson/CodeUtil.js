@@ -6783,11 +6783,12 @@ res_data = rep.json()
     var typeOfValue = CodeUtil.getType4Request(value);
     var isValueNotArray = typeOfValue != 'array';
     var isValueNotObject = typeOfValue != 'object';
-
+    var lastKey = pathKeys == null ? null : pathKeys[pathKeys.length - 1];
+      
     if (standardObj != null) {
       var parentObj = pathKeys == null || pathKeys.length <= 0 ? null : JSONResponse.getStandardByPath(standardObj, pathKeys.slice(0, pathKeys.length - 1));
       var targetValues = parentObj == null ? null : parentObj.values;
-      var lastKey = pathKeys == null ? null : pathKeys[pathKeys.length - 1]
+
       var targetObj = targetValues == null ? null : (targetValues[0] || {})[lastKey] || {}; // JSONResponse.getStandardByPath(standardObj, pathKeys);
 
       var t = targetObj == null ? null : targetObj.type;
