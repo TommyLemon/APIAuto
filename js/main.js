@@ -349,9 +349,12 @@
        * @param key
        * @param $event
        */
-      Vue.prototype.setResponseHint = function (val, key, $event, isAssert, color) {
+      Vue.prototype.setResponseHint = function (val, key, $event, isAssert, color, isDynamic) {
         console.log('setResponseHint')
-        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event, isAssert, color));
+        if (! isDynamic) {
+          CodeUtil.tableList = (docObj || {})['[]'] || CodeUtil.tableList;
+        }
+        this.$refs.responseKey.setAttribute('data-hint', isSingle ? '' : this.getResponseHint(val, key, $event, isAssert, color, isDynamic));
       }
       /**获取 Response JSON 的注释
        * 方案一：
@@ -371,8 +374,9 @@
        * @param key
        * @param $event
        */
-      Vue.prototype.getResponseHint = function (val, key, $event, isAssert, color) {
+      Vue.prototype.getResponseHint = function (val, key, $event, isAssert, color, isDynamic) {
         // alert('setResponseHint  key = ' + key + '; val = ' + JSON.stringify(val))
+        var vue = this;
 
         var s = ''
 
@@ -386,66 +390,89 @@
           }
 
           var path = null
+          var schema = App.schema
           var table = null
           var column = null
+          var isWarning = null
+          var isAPIJSONRouter = null;
+          var search = App.search;
 
           var method = App.isTestCaseShow ? ((App.currentRemoteItem || {}).Document || {}).url : App.getMethod();
           var isRestful = ! JSONObject.isAPIJSONPath(method);
+          var tableList = CodeUtil.tableList || (docObj || {})['[]']
 
-          if (val instanceof Object && (val instanceof Array == false)) {
-
-            var parent = $event.currentTarget.parentElement.parentElement
-            var valString = parent.textContent
-
-            // alert('valString = ' + valString)
-
-            var i = valString.indexOf('"_$_this_$_":')
-            if (i >= 0) {
-              valString = valString.substring(i + '"_$_this_$_":'.length)
-              i = valString.indexOf('}"')
-              var i2 = valString.indexOf('"{')
-              if (i >= 0 && i2 >= 0 && i2 < i) {
-                valString = valString.substring(i2 + 1, i + 1)
-                // alert('valString = ' + valString)
-                var _$_this_$_ = parseJSON(valString) || {}
-                path = _$_this_$_._$_path_$_
-                table = _$_this_$_._$_table_$_
+          var loaded = false;
+          var posssibleColumns = [];
+          var posssibleTables = [];
+          function loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys) {
+            if (isRestful && StringUtil.isEmpty(c, true) && ! (loaded || isDynamic || isWarning)) { // || val instanceof Object)) {
+              loaded = true;
+              if (posssibleColumns == null || posssibleColumns.length <= 0) {
+                posssibleColumns = [column, key]
+              }
+              if (posssibleTables == null || posssibleTables.length <= 0) {
+                posssibleTables = CodeUtil.extractTableNames(pathKeys == null || pathKeys.length <= 1 ? null : pathKeys.slice(0, -1)) || [table];
               }
 
+              App.lastTarget = $event.target
+              setTimeout(function () {
+                if ($event.target != App.lastTarget) {
+                  vue.setResponseHint(val, key, $event, isAssert, color, true)
+                  return
+                }
+
+                App.loadColumnDoc(posssibleColumns, posssibleTables, schema, App.database, function (d, url, res, err) {
+                  var data = res == null ? null : res.data;
+                  var list = data == null ? null : data['[]']
+                  if ((list != null && list.length > 0) || $event.target != App.lastTarget || posssibleTables == null || posssibleTables.length <= 0) {
+                    vue.setResponseHint(val, key, $event, isAssert, color, true)
+                    return
+                  }
+
+                  App.loadColumnDoc(posssibleColumns, null, schema, App.database, function (d, url, res, err) {
+                    vue.setResponseHint(val, key, $event, isAssert, color, true)
+                  })
+                })
+              }, 1000)
+
+              return '...'
+            }
+
+            return c
+          }
+
+          var parent = ($event.target || {}).parentElement || {}
+          parent = parent.parentElement || parent || {}
+          var valString = parent.textContent || ''
+          // alert('valString = ' + valString)
+          var i = valString.indexOf('"_$_this_$_":')
+          if (i >= 0) {
+            valString = valString.substring(i + '"_$_this_$_":'.length)
+            i = valString.indexOf('}"')
+            var i2 = valString.indexOf('"{')
+            if (i >= 0 && i2 >= 0 && i2 < i) {
+              valString = valString.substring(i2 + 1, i + 1)
+              // alert('valString = ' + valString)
+              var _$_this_$_ = parseJSON(valString)
+              path = _$_this_$_ == null ? null : _$_this_$_._$_path_$_
+              table = _$_this_$_ == null ? null : _$_this_$_._$_table_$_
+            }
+
+            if (val instanceof Object && (val instanceof Array == false)) {
               var aliaIndex = key == null ? -1 : key.indexOf(':');
               var objName = aliaIndex < 0 ? key : key.substring(0, aliaIndex);
 
               if (JSONObject.isTableKey(objName, val, isRestful)) {
                 table = objName
-              }
-              else if (JSONObject.isTableKey(table, val, isRestful)) {
+                schema = val['@schema'] || schema
+              } else if (JSONObject.isTableKey(table, val, isRestful)) {
                 column = key
+                schema = val['@schema'] || schema
               }
 
               // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
             }
-          }
-          else {
-            var parent = $event.currentTarget.parentElement.parentElement
-            var valString = parent.textContent
-
-            // alert('valString = ' + valString)
-
-            var i = valString.indexOf('"_$_this_$_":')
-            if (i >= 0) {
-              valString = valString.substring(i + '"_$_this_$_":'.length)
-              i = valString.indexOf('}"')
-              var i2 = valString.indexOf('"{')
-              if (i >= 0 && i2 >= 0 && i2 < i) {
-                valString = valString.substring(i2 + 1, i + 1)
-                // alert('valString = ' + valString)
-                var _$_this_$_ = parseJSON(valString) || {}
-                path = _$_this_$_ == null ? '' : _$_this_$_._$_path_$_
-                table = _$_this_$_ == null ? '' : _$_this_$_._$_table_$_
-              }
-            }
-
-            if (val instanceof Array && JSONObject.isArrayKey(key, val, isRestful)) {
+            else if (val instanceof Array && JSONObject.isArrayKey(key, val, isRestful)) {
               var key2 = key == null ? null : key.substring(0, key.lastIndexOf('[]'));
 
               var aliaIndex = key2 == null ? -1 : key2.indexOf(':');
@@ -457,6 +484,8 @@
               // alert('key = ' + key + '; firstKey = ' + firstKey + '; firstIndex = ' + firstIndex)
               if (JSONObject.isTableKey(firstKey || '', null, isRestful)) {
                 table = firstKey
+                var tblObj = val[0]
+                schema = (tblObj instanceof Object && ! Array.isArray(tblObj) ? tblObj['@schema'] : null) || schema
 
                 var s0 = '';
                 if (firstIndex > 0) {
@@ -465,60 +494,78 @@
                   column = firstIndex < 0 ? objName : objName.substring(0, firstIndex)
 
                   var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+                  var pathKeys = StringUtil.splitPath(pathUri)
 
-                  var c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj); // this.getResponseHint({}, table, $event
+                  var c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
+                    , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning
+                    , isAPIJSONRouter, search, null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
+                       posssibleColumns = callbackColumns;
+                       posssibleTables = callbackTables;
+                    }, isDynamic
+                  ); // this.getResponseHint({}, table, $event
+                  c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
                   s0 = column + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
                 }
 
                 var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + (StringUtil.isEmpty(column) ? key : column);
+                var pathKeys = StringUtil.splitPath(pathUri)
                 var c;
                 if (isAssert) {
-                    try {
-                      var tr = App.currentRemoteItem.TestRecord || {};
-                      var d = App.currentRemoteItem.Document || {};
-                      var standard = App.isMLEnabled ? tr.standard : tr.response;
-                      var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
-                      var curAccount = App.getCurrentAccount() || {}
-                      var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
-                      var tests = App.tests[accountIdStr] || {};
-                      var responseObj = (tests[d.id] || {})[0]
+                  try {
+                    var tr = App.currentRemoteItem.TestRecord || {};
+                    var d = App.currentRemoteItem.Document || {};
+                    var standard = App.isMLEnabled ? tr.standard : tr.response;
+                    var standardObj = StringUtil.isEmpty(standard, true) ? null : parseJSON(standard);
+                    var curAccount = App.getCurrentAccount() || {}
+                    var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
+                    var tests = App.tests[accountIdStr] || {};
+                    var responseObj = (tests[d.id] || {})[0]
 
-                      var pathKeys = StringUtil.split(pathUri, '/');
-                      var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
-                      var real = JSONResponse.getValByPath(responseObj, pathKeys);
-        //              c = JSONResponse.compareWithBefore(target, real, path);
-                      var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
+                    var pathKeys = StringUtil.split(pathUri, '/');
+                    var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
+                    var real = JSONResponse.getValByPath(responseObj, pathKeys);
+                    //              c = JSONResponse.compareWithBefore(target, real, path);
+                    var cmp = App.isMLEnabled ? JSONResponse.compareWithStandard(target, real, path) : JSONResponse.compareWithBefore(target, real, path);
 //                      cmp.path = pathUri;
-                      return JSONResponse.getCompareShowObj(cmp);
-                    } catch (e) {
-                      s += '\n' + e.message
-                    }
+                    return JSONResponse.getCompareShowObj(cmp);
+                  } catch (e) {
+                    s += '\n' + e.message
+                  }
                 } else {
-                    c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : null, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+                  c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
+                      , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning, isAPIJSONRouter, search
+                      , null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
+                        posssibleColumns = callbackColumns;
+                        posssibleTables = callbackTables;
+                      }, isDynamic
+                  );
+                  c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
                 }
 
                 s = (StringUtil.isEmpty(path) ? '' : path + '/') + key + ' 中 '
-                  + (
-                    StringUtil.isEmpty(c, true) ? '' : table + ': '
-                      + c + ((StringUtil.isEmpty(s0, true) ? '' : '  -  ' + s0) )
-                  );
+                    + (
+                        StringUtil.isEmpty(c, true) ? '' : table + ': '
+                            + c + ((StringUtil.isEmpty(s0, true) ? '' : '  -  ' + s0))
+                    );
 
                 return s;
               }
               //导致 key[] 的 hint 显示为  key[]key[]   else {
               //   s = (StringUtil.isEmpty(path) ? '' : path + '/') + key
               // }
-            }
-            else {
+            } else {
               if (isRestful || JSONObject.isTableKey(table)) {
                 column = key
               }
               // alert('path = ' + path + '; table = ' + table + '; column = ' + column)
             }
           }
+
           // alert('setResponseHint  table = ' + table + '; column = ' + column)
 
           var pathUri = (StringUtil.isEmpty(path) ? '' : path + '/') + key;
+          var pathKeys = StringUtil.splitPath(pathUri);
+
           var c;
           if (isAssert) {
             try {
@@ -542,7 +589,14 @@
               s += '\n' + e.message
             }
           } else {
-            c = CodeUtil.getCommentFromDoc(docObj == null ? null : docObj['[]'], table, isRestful ? key : column, method, App.database, App.language, true, false, pathUri.split('/'), isRestful, val, true, standardObj);
+            c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
+                , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning, isAPIJSONRouter, search
+                , null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
+                  posssibleColumns = callbackColumns;
+                  posssibleTables = callbackTables;
+                }, isDynamic
+            );
+            c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
           }
 
           s += pathUri + (StringUtil.isEmpty(c, true) ? '' : ': ' + c)
@@ -673,7 +727,7 @@ https://github.com/Tencent/APIJSON/issues
 There may be something wrong, you can follow by the steps:
 1. Check whether the network connection is available, you can open the address with a browser: https://www.google.com/search?q=%22APIJSON%22
 2. Check whether the URL is an available domain name/IPV4 address, try opening it with a browser: if return the result normally or return a Whitelabel Error Page for a non-GET request, generally the URL is available
-3. Turn it on or off at the top right, Settings>Server Proxy, and try again: If it is enabled, it should be a CORS cross-domain problem; and if it is turned off, it should be caused by using an external network service proxy to access the intranet, You can log out and modify the logout server address to the APIJSON proxy service address of the intranet
+3. Turn it on or off at the top right, Settings>Server Proxy, and try again: If it is enabled, it should be a CORS cross-domain problem; and if it is turned off, it should be caused by using an external network service proxy to access the internet, You can log out and modify the logout server address to the APIJSON proxy service address of the internet
 4. Disable the network proxy software App client on the computer/phone/tablet such as VPN, or switch the proxy server address, and then try again
 5. Press Fn+F12 or right-click the webpage>Inspect to view the Network interface call information and Console console log
 6. Check the log on the request target server, and give priority to find the abnormal error content
@@ -685,6 +739,9 @@ https://github.com/TommyLemon/APIAuto/issues
 
 If you are requesting an APIJSON backend service, use the following link:
 https://github.com/Tencent/APIJSON/issues
+
+
+
 `;
 
 
@@ -1525,7 +1582,7 @@ https://github.com/Tencent/APIJSON/issues
           return
         }
         try {
-          if (this.jsoncon.trim() === '') {
+          if (StringUtil.isEmpty(this.jsoncon, true)) {
             this.view = 'empty'
           } else {
             this.view = 'code'
@@ -1543,7 +1600,7 @@ https://github.com/Tencent/APIJSON/issues
             var path = null;
             var key = null;
 
-            if (isSingle || ! JSONResponse.isObject(vi)) {
+            if (isSingle || ! JSONResponse.isObject(ret)) {
               var val = ret;
               if (isSingle != true && val instanceof Array) {
                   // alert('onRenderJSONItem  key = ' + key + '; val = ' + JSON.stringify(val))
@@ -1671,13 +1728,13 @@ https://github.com/Tencent/APIJSON/issues
           if (isAdminOperation != true) {
             baseUrl = this.getBaseUrl(vUrl.value, true)
           }
-          vUrl.value = (isAdminOperation ? this.server : baseUrl) + branchUrl
+          vUrl.value = ((isAdminOperation ? this.server : baseUrl) + branchUrl).replaceAll('\n', '')
         }
         else {  //隐藏(固定)URL Host
           if (isAdminOperation) {
             this.host = this.server
           }
-          vUrl.value = branchUrl
+          vUrl.value = (branchUrl || '').replaceAll('\n', '')
         }
 
         vUrlComment.value = isSingle || StringUtil.isEmpty(this.urlComment, true)
@@ -1736,7 +1793,7 @@ https://github.com/Tencent/APIJSON/issues
       },
       getUrl: function () {
         var url = StringUtil.get(this.host) + vUrl.value
-        return url.replaceAll(' ', '')
+        return url.replaceAll(' ', '').replaceAll('\n', '')
       },
       //获取基地址
       getBaseUrl: function (url_, fixed) {
@@ -1772,7 +1829,7 @@ https://github.com/Tencent/APIJSON/issues
       },
       //获取操作方法
       getMethod: function (url, noQuery) {
-        var url = StringUtil.get(url == null ? vUrl.value : url).trim()
+        var url = StringUtil.trim(url == null ? vUrl.value : url).replaceAll('\n', '')
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
         index = noQuery ? url.indexOf("?") : -1
@@ -1782,7 +1839,7 @@ https://github.com/Tencent/APIJSON/issues
         return url.startsWith('/') ? url.substring(1) : url
       },
       getBranchUrl: function (url) {
-        var url = StringUtil.get(url == null ? vUrl.value : url).trim()
+        var url = StringUtil.trim(url == null ? vUrl.value : url).replaceAll('\n', '')
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url : '/' + url
@@ -1829,14 +1886,13 @@ https://github.com/Tencent/APIJSON/issues
         var hs = StringUtil.isEmpty(text, true) ? null : StringUtil.split(text, '\n')
 
         if (hs != null && hs.length > 0) {
-          var item
           for (var i = 0; i < hs.length; i++) {
-            item = hs[i] || ''
+            var item = hs[i] || ''
 
             // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
             var index = StringUtil.trim(item).startsWith('//') ? 0 : item.lastIndexOf(' //')  // 不加空格会导致 http:// 被截断  ('//')  //这里只支持单行注释，不用 removeComment 那种带多行的去注释方式
             var item2 = index < 0 ? item : item.substring(0, index)
-            item2 = item2.trim()
+            item2 = StringUtil.trim(item2)
             if (item2.length <= 0) {
               continue;
             }
@@ -2247,7 +2303,7 @@ https://github.com/Tencent/APIJSON/issues
                         detail: name
                         + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
                         + '\nhttp://apijson.cn/yapi/project/1/interface/api/' + api._id
-                        + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_'))
+                        + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : StringUtil.trim(api.markdown).replace(/\\_/g, '_'))
                       }
                     }
                     else {
@@ -2337,8 +2393,8 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
         else if (index == 3) {
-          var host = StringUtil.get(this.host)
-          var branch = StringUtil.get(vUrl.value)
+          var host = StringUtil.get(this.host).replaceAll('\n', '')
+          var branch = StringUtil.get(vUrl.value).replaceAll('\n', '')
           this.host = ''
           vUrl.value = host + branch //保证 showUrl 里拿到的 baseUrl = this.host (http://apijson.cn:8080/put /balance)
           this.setBaseUrl() //保证自动化测试等拿到的 baseUrl 是最新的
@@ -2483,13 +2539,15 @@ https://github.com/Tencent/APIJSON/issues
 
       // 保存当前的JSON
       save: function () {
-        if (this.history.name.trim() === '') {
+        var name = (this.history || {}).name
+        if (StringUtil.isEmpty(name)) {
           Helper.alert('名称不能为空！', 'danger')
           return
         }
+
         var val = {
-          name: this.history.name,
-          detail: this.history.name,
+          name: name,
+          detail: name,
           type: this.type,
           url: '/' + this.getMethod(),
           request: inputted,
@@ -2553,7 +2611,15 @@ https://github.com/Tencent/APIJSON/issues
         vRandom.value = StringUtil.get(random.config)
 
         var response = ((item || {}).TestRecord || {}).response
-        if (StringUtil.isEmpty(response, true) == false) {
+        var curAccount = this.getCurrentAccount() || {}
+        var accountIdStr = String(curAccount.isLoggedIn ? curAccount.id || '' : '')
+        var tests = this.tests[accountIdStr] || {}
+        var currentResponse = (tests[random.documentId] || {})[random.id > 0 ? random.id : (random.toId + '' + random.id)]
+        if (StringUtil.isNotEmpty(currentResponse, true)) {
+          response = JSON.stringify(currentResponse, null, 4);
+        }
+
+        if (! StringUtil.isEmpty(response, true)) {
             this.jsoncon = StringUtil.trim(response)
             this.view = 'code'
         }
@@ -3141,7 +3207,7 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
-            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], path, this.database, this.language, isEditResponse != true, commentObj, true);
+            CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], path, this.schema, this.database, this.language, isEditResponse != true, commentObj, true);
 
             if (isEditResponse) {
               inputObj.code = code_
@@ -3213,7 +3279,7 @@ https://github.com/Tencent/APIJSON/issues
                 var t = JSONResponse.getType(v);
                 typeObj[k] = t == 'integer' ? 'NUMBER' : (t == 'number' ? 'DECIMAL' : t.toUpperCase());
 
-                newCfg += (i <= 0 ? '' : '\n') + k + ': ' + cfgLine.substring(ind+2).trim();
+                newCfg += (i <= 0 ? '' : '\n') + k + ': ' + StringUtil.trim(cfgLine.substring(ind+2));
               }
 
               refuseKeys.push('!');
@@ -3484,7 +3550,7 @@ https://github.com/Tencent/APIJSON/issues
                config += prefix + '[]'
                for (var i = 0; i < value.length; i ++) {
                   var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst)
-                  config += '\n' + (StringUtil.isEmpty(cfg, true) ? 'null' : cfg.trim())
+                  config += '\n' + (StringUtil.isEmpty(cfg, true) ? 'null' : StringUtil.trim(cfg))
                }
                return config
           }
@@ -3521,7 +3587,7 @@ https://github.com/Tencent/APIJSON/issues
                    break
                  }
 
-                 config += '\n' + cfg.trim()
+                 config += '\n' + StringUtil.trim(cfg)
               }
           }
 
@@ -4185,7 +4251,7 @@ https://github.com/Tencent/APIJSON/issues
         var tp = StringUtil.trim(thirdParty)
         var index = tp.indexOf(' ')
         var platform = index < 0 ? PLATFORM_SWAGGER : tp.substring(0, index).toUpperCase()
-        var docUrl = index <= 0 ? tp.trim() : tp.substring(index + 1).trim()
+        var docUrl = index <= 0 ? tp : StringUtil.trim(tp.substring(index + 1))
 
         var jsonData = null
         try {
@@ -4214,8 +4280,8 @@ https://github.com/Tencent/APIJSON/issues
         else if (platform == PLATFORM_RAP || platform == PLATFORM_YAPI) {
           var isRap = platform == PLATFORM_RAP
           index = docUrl.indexOf(' ')
-          listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : docUrl.substring(0, index).trim()
-          itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : docUrl.substring(index + 1).trim()
+          listUrl = index < 0 ? docUrl + (isRap ? '/repository/joined' : '/api/interface/list_menu') : StringUtil.trim(docUrl.substring(0, index))
+          itemUrl = index < 0 ? docUrl + (isRap ? '/repository/get' : '/api/interface/get') : StringUtil.trim(docUrl.substring(index + 1))
 
           if (listUrl.startsWith('/')) {
             listUrl = host + listUrl
@@ -4321,7 +4387,7 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             var val = paraItem.value
-            header += (k <= 0 ? '' : '\n') + name + ': ' + (val == null ? '' : val)
+            header += (k <= 0 ? '' : '\n') + name + ': ' + StringUtil.trim(val)
                 + (StringUtil.isEmpty(paraItem.description, true) ? '' : ' // ' + paraItem.description)
           }
         }
@@ -4430,7 +4496,7 @@ https://github.com/Tencent/APIJSON/issues
             var val = paraItem.value
 
             if (paraItem.pos == 1) { //header
-              header += (k <= 0 ? '' : '\n') + name + ': ' + (val == null ? '' : val)
+              header += (k <= 0 ? '' : '\n') + name + ': ' + StringUtil.trim(val)
                 + (StringUtil.isEmpty(paraItem.description, true) ? '' : '  // ' + paraItem.description)
               continue
             }
@@ -4467,8 +4533,8 @@ https://github.com/Tencent/APIJSON/issues
           if (name == null) {
             continue
           }
-          header += (i <= 0 ? '' : '\n') + name + ': ' + item.value
-            + (StringUtil.isEmpty(item.description, true) ? '' : '  // ' + item.description)
+          header += (i <= 0 ? '' : '\n') + name + ': ' + StringUtil.trim(item.value)
+            + (StringUtil.isEmpty(item.description, true) ? '' : ' // ' + StringUtil.trim(item.description))
         }
 
         var typeAndParam = this.parseYApiTypeAndParam(api)
@@ -4478,7 +4544,7 @@ https://github.com/Tencent/APIJSON/issues
           ,  (StringUtil.trim(api.username) + ': ' + StringUtil.trim(api.title)
           + '\n' + (api.up_time == null ? '' : (typeof api.up_time != 'number' ? api.up_time : new Date(1000*api.up_time).toLocaleString()))
           + '\nhttp://apijson.cn/yapi/project/1/interface/api/' + api._id
-          + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : api.markdown.trim().replace(/\\_/g, '_')))
+          + '\n\n' + (StringUtil.isEmpty(api.markdown, true) ? StringUtil.trim(api.description) : StringUtil.trim(api.markdown).replace(/\\_/g, '_')))
           , api.username
         )
       },
@@ -4628,7 +4694,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         var commentObj = JSONResponse.updateStandard({}, reqObj);
-        CodeUtil.parseComment(req, null, url, this.database, this.language, true, commentObj, true)
+        CodeUtil.parseComment(req, null, url, this.schema, this.database, this.language, true, commentObj, true)
         var standard = this.isMLEnabled ? JSONResponse.updateStandard({}, data) : null
 
         name = StringUtil.get(name)
@@ -4649,7 +4715,7 @@ https://github.com/Tencent/APIJSON/issues
               'Document': isRandom ? undefined : {
                 'creator': creator,
                 'testAccountId': currentAccountId,
-                'method': StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase(),
+                'method': StringUtil.isEmpty(method, true) ? null : StringUtil.toUpperCase(method, true),
                 'operation': CodeUtil.getOperation(path.substring(1), reqObj),
                 'type': type,
                 'name': StringUtil.get(name),
@@ -4709,7 +4775,7 @@ https://github.com/Tencent/APIJSON/issues
         else {
             this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/get/Document?format=false&@role=OWNER', {
                url: path,
-               method: StringUtil.isEmpty(method, true) ? null : method.trim().toUpperCase()
+               method: StringUtil.isEmpty(method, true) ? null : StringUtil.toUpperCase(method, true)
             }, {}, callback)
         }
 
@@ -4815,7 +4881,8 @@ https://github.com/Tencent/APIJSON/issues
               item.isLoggedIn = false
               App.saveAccounts()
 
-              App.changeScriptType(App.scriptType)
+              // App.changeScriptType(App.scriptType)
+              // App.listScript()
 
               if (callback != null) {
                 callback(false, index, err)
@@ -4830,10 +4897,12 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           this.currentAccountIndex = index
-          this.changeScriptType(App.scriptType)
+          // this.changeScriptType(App.scriptType)
+          // this.listScript()
 
           var accountIdStr = String(item != null && item.isLoggedIn ? item.id || '' : '')
-          var tests = App.doneCount >= App.allCount && noShowCase != true && this.isCrossEnabled && this.isStatisticsEnabled && this.reportId != null && this.reportId > 0 ? this.tests[accountIdStr] : null
+          var tests = App.doneCount >= App.allCount && noShowCase != true && this.isCrossEnabled && this.isStatisticsEnabled
+            && this.reportId != null && this.reportId > 0 ? this.tests[accountIdStr] : null
           if (JSONObject.isEmpty(tests) != true) {
             this.showCompare4TestCaseList(true)
             if (App.deepDoneCount >= App.deepAllCount && ! this.isTestCaseShow) {
@@ -4862,7 +4931,8 @@ https://github.com/Tencent/APIJSON/issues
 
                 item.isLoggedIn = false
                 App.saveAccounts()
-                App.changeScriptType(App.scriptType)
+                // App.changeScriptType(App.scriptType)
+                // App.listScript()
 
                 if (callback != null) {
                   callback(false, index, err)
@@ -4897,7 +4967,8 @@ https://github.com/Tencent/APIJSON/issues
                   App.accounts[App.currentAccountIndex] = item
                   App.saveAccounts()
 
-                  App.changeScriptType(App.scriptType)
+                  // App.changeScriptType(App.scriptType)
+                  // App.listScript()
 
                   if (callback != null) {
                       callback(true, index, err)
@@ -4951,7 +5022,8 @@ https://github.com/Tencent/APIJSON/issues
 
         //切换到这个tab
         this.currentAccountIndex = index
-        this.changeScriptType(App.scriptType)
+        // this.changeScriptType(App.scriptType)
+        // this.listScript()
 
         //目前还没做到同一标签页下测试账号切换后，session也跟着切换，所以干脆每次切换tab就重新登录
         if (item != null) {
@@ -5242,7 +5314,7 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
 
-        search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+        search = StringUtil.split(search)
         var req = {
           format: false,
           '[]': {
@@ -5251,7 +5323,7 @@ https://github.com/Tencent/APIJSON/issues
             'Chain': {
               'userId': userId,
               'toGroupId': groupId,
-              'groupName$': search,
+              'groupName%$': search,
               'tagList&<>': tags == null || tags.length <= 0 ? null : tags,
               '@raw': '@column',
               '@column': "groupId;any_value(groupName):groupName;any_value(tagList):tagList;count(*):count",
@@ -5277,12 +5349,12 @@ https://github.com/Tencent/APIJSON/issues
                 '@order': 'version-,date-',
                 'userId': userId,
                 'project': StringUtil.isEmpty(project, true) ? null : project,
-                'name$': search,
                 'operation$': search,
-                'url$': search,
+                'name%$': search,
+                'url%$': search,
                 // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
                 // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
-                '@combine': search == null ? null : 'name$,operation$,url$',
+                '@combine': StringUtil.isEmpty(search) ? null : 'operation$,name%$,url%$',
 //                'method{}': methods == null || methods.length <= 0 ? null : methods,
 //                'type{}': types == null || types.length <= 0 ? null : types,
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
@@ -5539,7 +5611,7 @@ https://github.com/Tencent/APIJSON/issues
         var count = this.caseGroupCount = this.caseGroupCounts[groupUrl] || 0
         var search = this.caseGroupSearch = this.caseGroupSearches[groupUrl] || ''
 
-        search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+        search = StringUtil.split(search)
         var req = {
           format: false,
           'Document[]': {
@@ -5552,10 +5624,10 @@ https://github.com/Tencent/APIJSON/issues
                   '@column': "substr(url,1,length(url)-length(substring_index(url,'/',-1))-1):groupUrl;group:groupName", // (CASE WHEN length(`group`) > 0 THEN `group` ELSE '-' END):name",
                   'userId': this.User.id,
                   'project': StringUtil.isEmpty(project, true) ? null : project,
-                  'group$': search,
-                  'url$': search,
+                  'group%$': search,
+                  'url%$': search,
                   // 'url&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
-                  '@combine': search == null ? null : 'group$,url$',
+                  '@combine': StringUtil.isEmpty(search) ? null : 'group%$,url%$',
                   '@null': 'sqlauto', //'sqlauto{}': '=null',
                   'url{}': 'length(url)>0',
                   'url&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%']
@@ -5564,9 +5636,9 @@ https://github.com/Tencent/APIJSON/issues
                 }
               },
               'groupUrl&$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
-              'groupName$': search,
-              'groupUrl$': search,
-              '@combine': search == null ? null : 'groupName$,groupUrl$',
+              'groupName%$': search,
+              'groupUrl%$': search,
+              '@combine': StringUtil.isEmpty(search) ? null : 'groupName%$,groupUrl%$',
               '@column': "groupName,groupUrl;any_value(groupName):rawName;length(groupName):groupNameLen;length(groupUrl):groupUrlLen;count(*):count",
               '@group': 'groupName,groupUrl',
               '@order': 'groupNameLen+,groupName-,groupUrlLen+,groupUrl+',
@@ -5732,7 +5804,7 @@ https://github.com/Tencent/APIJSON/issues
           var count = this.testCaseCount = this.testCaseCounts[groupKey] || 100
           var search = this.testCaseSearch = this.testCaseSearches[groupKey] || ''
 
-          search = StringUtil.isEmpty(search, true) ? null : '%' + StringUtil.trim(search).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+          search = StringUtil.split(search)
 
           var url = this.server + '/get'
           var userId = this.User.id
@@ -5758,13 +5830,13 @@ https://github.com/Tencent/APIJSON/issues
                 '@order': 'version-,date-',
                 'userId': userId,
                 'project': StringUtil.isEmpty(project, true) ? null : project,
-                'name$': search,
                 'operation$': search,
-                'url$': search,
+                'name%$': search,
+                'url%$': search,
                 'url|$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl, groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
                 // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
                 // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
-                '@combine': search == null ? null : 'name$,operation$,url$',
+                '@combine': search == null ? null : 'operation$,name%$,url%$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
@@ -6031,10 +6103,8 @@ https://github.com/Tencent/APIJSON/issues
         if (show && this.isRandomShow && randoms.length <= 0 && item != null && item.id != null) {
           this.isRandomListShow = false
 
-          var subSearch = StringUtil.isEmpty(this.randomSubSearch, true)
-            ? null : '%' + StringUtil.trim(this.randomSubSearch) + '%'
-          var search = isSub ? subSearch : (StringUtil.isEmpty(this.randomSearch, true)
-            ? null : '%' + StringUtil.trim(this.randomSearch) + '%')
+          var subSearch = StringUtil.split(this.randomSubSearch)
+          var search = isSub ? subSearch : StringUtil.split(this.randomSearch)
 
           var url = this.server + '/get'
           baseUrl = this.getBaseUrl(vUrl.value, true)
@@ -6051,7 +6121,7 @@ https://github.com/Tencent/APIJSON/issues
                 'chainId': cId,
                 'documentId': isSub ? null : item.id,
                 '@order': "date-",
-                'name$': search
+                'name%$': search
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
@@ -6067,7 +6137,7 @@ https://github.com/Tencent/APIJSON/issues
                   'chainId': cId,
                   'documentId': item.id,
                   '@order': "date-",
-                  'name$': subSearch
+                  'name%$': subSearch
                 },
                 'TestRecord': {
                   'randomId@': '/Random/id',
@@ -6271,6 +6341,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           App.scripts = Object.assign(newDefaultScript(), scripts)
+          App.restoreRemote(App.currentDocIndex, App.currentRemoteItem)
         })
       },
 
@@ -6358,7 +6429,7 @@ https://github.com/Tencent/APIJSON/issues
           vRandom.value = `phone: App.account\npassword: App.password\nremember: vRemember.checked`
         }
 
-        this.scripts = newDefaultScript()
+        // this.scripts = newDefaultScript()
         this.method = REQUEST_TYPE_POST
         this.type = REQUEST_TYPE_JSON
         this.showTestCase(false, this.isLocalShow)
@@ -6451,7 +6522,7 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
-          this.scripts = newDefaultScript()
+          // this.scripts = this.scripts || newDefaultScript()
 
           const isLoginShow = this.isLoginShow
           var curUser = this.getCurrentAccount() || {}
@@ -6494,7 +6565,7 @@ https://github.com/Tencent/APIJSON/issues
             return
           }
 
-          this.scripts = newDefaultScript()
+          // this.scripts = newDefaultScript()
 
           this.parseRandom(loginReq, loginHeader, loginRandom, 0, true, false, false, function(randomName, constConfig, constJson, constHeader) {
               App.request(isAdminOperation, loginMethod, loginType, baseUrl + loginUrl, constJson, constHeader, function (url, res, err) {
@@ -6617,7 +6688,7 @@ https://github.com/Tencent/APIJSON/issues
       /**注册
        */
       register: function (isAdminOperation) {
-        this.scripts = newDefaultScript()
+        // this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/register')
         vInput.value = JSON.stringify(
           {
@@ -6652,7 +6723,7 @@ https://github.com/Tencent/APIJSON/issues
       /**重置密码
        */
       resetPassword: function (isAdminOperation) {
-        this.scripts = newDefaultScript()
+        // this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/put/password')
         vInput.value = JSON.stringify(
           {
@@ -6718,7 +6789,7 @@ https://github.com/Tencent/APIJSON/issues
           const logoutUrl = account.logoutUrl || this.logoutUrl || '/logout'
           const logoutHeader = account.logoutHeader || this.logoutHeader || this.getHeader(vHeader.value)
           const logoutReq = account.logoutReq || {id: account.id}
-          this.scripts = newDefaultScript()
+          // this.scripts = newDefaultScript()
 //          this.showUrl(isAdminOperation, '/logout')
 //          vInput.value = JSON.stringify(req, null, '    ')
 //          this.method = REQUEST_TYPE_POST
@@ -6750,7 +6821,7 @@ https://github.com/Tencent/APIJSON/issues
       /**获取验证码
        */
       getVerify: function (isAdminOperation) {
-        this.scripts = newDefaultScript()
+        // this.scripts = newDefaultScript()
         this.showUrl(isAdminOperation, '/post/verify')
         var type = this.loginType == 'login' ? 0 : (this.loginType == 'register' ? 1 : 2)
         vInput.value = JSON.stringify(
@@ -6895,8 +6966,8 @@ https://github.com/Tencent/APIJSON/issues
             }
 
             var m = this.getMethod();
-            var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, true, isAPIJSONRouter));
-            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.database, this.language, this.isEditResponse != true, standardObj, null, null, isAPIJSONRouter));
+            var w = isSingle || this.isEditResponse ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.schema, this.database, this.language, this.isEditResponse != true, standardObj, null, true, isAPIJSONRouter, this.search));
+            var c = isSingle ? '' : StringUtil.trim(CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], m, this.schema, this.database, this.language, this.isEditResponse != true, standardObj, null, null, isAPIJSONRouter, this.search));
 
             //TODO 统计行数，补全到一致 vInput.value.lineNumbers
             if (isSingle != true) {
@@ -7115,7 +7186,7 @@ https://github.com/Tencent/APIJSON/issues
           CodeUtil.type = this.type;
         }
 
-        var url = StringUtil.get(vUrl.value)
+        var url = StringUtil.get(vUrl.value).replaceAll('\n', '')
         var index = url.indexOf('?')
         if (index >= 0) {
           var paramObj = getRequestFromURL(url.substring(index), true)
@@ -7509,7 +7580,7 @@ https://github.com/Tencent/APIJSON/issues
                 if (k == null || k.toLowerCase() == 'apijson-delegate-id') {
                     continue
                 }
-                hs += '\n' + k + ': ' + (v instanceof Object ? JSON.stringify(v) : v)
+                hs += '\n' + k + ': ' + (v instanceof Object ? JSON.stringify(v) : StringUtil.trim(v))
             }
           }
 
@@ -7562,7 +7633,7 @@ https://github.com/Tencent/APIJSON/issues
                   App.server + '/delegate?$_type=' + (type || REQUEST_TYPE_JSON)
                   + (StringUtil.isEmpty(App.delegateId, true) ? '' : '&$_delegate_id=' + App.delegateId)
                   + '&$_delegate_url=' + encodeURIComponent(url)
-                  + (StringUtil.isEmpty(hs, true) ? '' : '&$_headers=' + encodeURIComponent(hs.trim()))
+                  + (StringUtil.isEmpty(hs, true) ? '' : '&$_headers=' + encodeURIComponent(StringUtil.trim(hs)))
                 ) : (
                   App.isEncodeEnabled ? encodeURI(url) : url
                 )
@@ -7579,7 +7650,7 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         var evalScript = isAdminOperation || caseScript_ == null ? function () {}
-            : function (isPre, code, method, type, url, req, header, callback, res, err) {
+            : function (isPre, script, method, type, url, req, header, callback, res, err) {
           var logger = console.log
           console.log = function(msg) {
             logger(msg)
@@ -7589,6 +7660,10 @@ https://github.com/Tencent/APIJSON/issues
           App.view = 'output'
           vOutput.value = ''
 
+          script = StringUtil.get(script)
+          var isTest = false;
+          var isInject = false;
+          var data = res == null ? null : res.data
           try {
 //             var s = `(function () {
 // var App = ` + App + `;
@@ -7607,11 +7682,7 @@ https://github.com/Tencent/APIJSON/issues
 //           })()`
 //
 //             eval(s)
-
-            var isTest = false;
-            var isInject = false;
-            var data = res == null ? null : res.data
-            var result = eval(code)
+            var result = eval(script)
             console.log = logger
             return result
           }
@@ -7620,11 +7691,12 @@ https://github.com/Tencent/APIJSON/issues
             console.log = logger
 
             App.loadingCount --
+            e.message = '执行脚本报错：\n' + e.message + '; 脚本：\n' + script
 
             // TODO if (isPre) {
             App.view = 'error'
             App.error = {
-              msg: '执行脚本报错：\n' + e.message
+              msg: e.message + '\n\n' + (data == null || typeof data == 'string' ? StringUtil.get(data) : JSON.stringify(data, null, 4))
             }
 
             if (callback != null) {
@@ -7636,7 +7708,7 @@ https://github.com/Tencent/APIJSON/issues
               // }
 
               // TODO 右侧底部新增断言列表
-              App.onResponse(url, null, new Error('执行脚本报错：\n' + e.message)) // this.onResponse is not a function
+              App.onResponse(url, null, Object.assign({response: res}, e)) // this.onResponse is not a function
               // callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
           }
@@ -7798,8 +7870,9 @@ https://github.com/Tencent/APIJSON/issues
         if (err != null) {
           if (IS_BROWSER) {
             var errObj = err instanceof Array == false && err instanceof Object ? err : {}
-            var data = (errObj.response || {}).data
+            var data = res.data || (errObj.response || {}).data
             var msg = typeof data == 'string' ? StringUtil.trim(data) : JSON.stringify(data, null, '    ')
+            this.jsoncon = msg
             msg = "Response:\nurl = " + url + "\nerror = " + err.message + (StringUtil.isEmpty(msg) ? '' : '\n\n' + msg) + '\n\n' + ERR_MSG
             // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
             this.view = 'error';
@@ -7851,7 +7924,7 @@ https://github.com/Tencent/APIJSON/issues
             if (header != null) {
               for (var k in header) {
                 var v = header[k];
-                headerStr += '\n' + k + ': ' + StringUtil.get(v);
+                headerStr += '\n' + k + ': ' + StringUtil.trim(v);
               }
             }
 
@@ -7914,7 +7987,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           || selectionStart <= 0 && selectionEnd >= StringUtil.get(target.value).length)) {
           if (target == vUrl) {  // TODO 把 Chrome 或 Charles 等抓到的 Response Header 和 Content 自动粘贴到 vUrl, vHeader
             try {
-              if (paste.trim().indexOf('\n') > 0) {  // 解决正常的 URL 都粘贴不了
+              if (StringUtil.trim(paste).indexOf('\n') > 0) {  // 解决正常的 URL 都粘贴不了
                 var contentStart = 0;
                 var lines = StringUtil.split(paste, '\n');
                 var header = '';
@@ -7926,7 +7999,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                   if (/^[a-zA-Z0-9\- ]+$/g.test(left)) {
                     var lowerKey = left.toLowerCase();
-                    var value = l.substring(ind + 1).trim();
+                    var value = StringUtil.trim(l.substring(ind + 1));
 
                     if (lowerKey == 'host') {
                       this.setBaseUrl(value.endsWith(':443') ? 'https://' + value.substring(0, value.length - ':443'.length) : 'http://' + value);
@@ -7973,7 +8046,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       this.method = t
                       this.type = t == 'GET' ? 'PARAM' : (t == 'POST' ? 'JSON' : t);
 
-                      l = l.substring(ind).trim();
+                      l = StringUtil.trim(l.substring(ind));
                       ind = l.indexOf(' ');
                       var url = ind < 0 ? l : l.substring(0, ind);
                       if (url.length > 0 && url != '/') {
@@ -8119,7 +8192,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (headers != null) {
                   for (var k in headers) {
                     var v = headers[k];
-                    headerStr += '\n' + k + ': ' + StringUtil.get(v);
+                    headerStr += '\n' + k + ': ' + StringUtil.trim(v);
                   }
               }
 
@@ -8336,6 +8409,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var obj = event.srcElement ? event.srcElement : event.target;
         if ($(obj).attr('id') == 'vUrl') {
+          vUrl.value = StringUtil.trim(vUrl.value).replaceAll('\n', '')
           vUrlComment.value = ''
           this.currentDocItem = null
           this.currentRemoteItem = null
@@ -8425,7 +8499,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                return
             }
 
-            var search = StringUtil.isEmpty(groupName, true) ? null : '%' + StringUtil.trim(groupName).replaceAll('_', '\\_').replaceAll('%', '\\%') + '%'
+            var search = StringUtil.split(groupName)
             var methods = this.methods
             var types = this.types
 
@@ -8440,12 +8514,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     '@order': 'version-,date-',
                     'userId': this.User.id,
                     'project': StringUtil.isEmpty(project, true) ? null : project,
-                    'name$': search,
                     'operation$': search,
-                    'url$': search,
+                    'name%$': search,
+                    'url%$': search,
                     // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
                     // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
-                    '@combine': search == null ? null : 'name$,operation$,url$',
+                    '@combine': search == null ? null : 'operation$,name%$,url%$',
                     'method{}': methods == null || methods.length <= 0 ? null : methods,
                     'type{}': types == null || types.length <= 0 ? null : types,
                     '@null': 'sqlauto', //'sqlauto{}': '=null'
@@ -8895,32 +8969,60 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         return true;
       },
 
+      /**
+       * 获取文档
+       */
+      loadColumnDoc: function (column, table, schema, database, callback) {
+        var isLoggedIn = this.User != null && this.User.id > 0
+        if (isLoggedIn != true) {
+          return
+        }
+
+        this.getDoc(callback
+          , (column instanceof Array ? column.join() : StringUtil.get(column)).replaceAll('_', '%')
+          , StringUtil.isEmpty(table) ? null : (table instanceof Array ? table.join() : StringUtil.get(table)).replaceAll('_', '%')
+          , schema instanceof Array ? schema.join() : schema, true
+        )
+      },
 
       /**
        * 获取文档
        */
-      getDoc: function (callback) {
+      getDoc: function (callback, columnSearch, tableSearch, schemaSearch, isBackground) {
 
       	var isTSQL = ['ORACLE', 'DAMENG'].indexOf(this.database) >= 0
       	var isNotTSQL = ! isTSQL
 
-        var count = this.count || 100  //超过就太卡了
-        var page = this.page || 0
+        var count = isBackground ? Math.min(10, this.count) : this.count || 100  //超过就太卡了
+        var page = isBackground ? 0 : this.page || 0
+
+        // var isLoggedIn = this.User != null && this.User.id > 0
+        // if (isLoggedIn != true) {
+        //   if (! isBackground) {
+        //     setTimeout(function () {
+        //       App.onDocumentListResponse(App.server + '/get', {data:{}}, null, callback)
+        //     }, 3000)
+        //   }
+        //   return
+        // }
 
         var schemas = StringUtil.isEmpty(this.schema, true) ? null : StringUtil.split(this.schema)
+        var tblSearch = StringUtil.split(tableSearch)
+        var isTblNameSearch = tblSearch != null && tblSearch.length > 0;
+        var search = isTblNameSearch ? tblSearch : StringUtil.split(this.search)
+        var colSearch = StringUtil.split(columnSearch)
 
-        var search = StringUtil.isEmpty(this.search, true) ? null : '%' + StringUtil.trim(this.search) + '%'
         this.request(false, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.getBaseUrl() + '/get', {
           format: false,
           '@database': StringUtil.isEmpty(this.database, true) ? undefined : this.database,
           // '@schema': StringUtil.isEmpty(this.schema, true) ? undefined : this.schema,
-          'sql@': {
+          'sql@': isBackground ? null : {
             'from': 'Access',
             'Access': {
               '@column': 'name'
             }
           },
-          'Access[]': {
+          'Access[]': isBackground ? null : {
             'count': count,
             'page': page,
             'Access': {
@@ -8938,14 +9040,29 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               'table_schema{}': schemas,
               'table_type': 'BASE TABLE',
               // 'table_name!$': ['\\_%', 'sys\\_%', 'system\\_%'],
-              'table_name$': search,
-              'table_comment$': this.database == 'POSTGRESQL' ? null : search,
+              'table_name%$': isBackground || search == null || search.length <= 0 ? null : search,
+              'table_name$': isBackground != true || tblSearch == null || tblSearch.length <= 0 ? null : tblSearch,
+              'table_comment%$': isBackground || isTblNameSearch || this.database == 'POSTGRESQL' || search == null || search.length <= 0 ? null : search,
               'table_schema!$': '\\_%',
               'table_name!$': '\\_%',
-              '@combine': search == null || this.database == 'POSTGRESQL' ? null : 'table_name$,table_comment$',
-              'table_name{}@': 'sql',
-              '@order': 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
-              '@column': (schemas != null && schemas.length == 1 ? '' : 'table_schema:table_schema,') + (this.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment')
+              '@combine': isTblNameSearch || this.database == 'POSTGRESQL' || search == null || search.length <= 0 ? null : 'table_name%$,table_comment%$',
+              'table_name{}@': isBackground ? null : 'sql',
+              '@order': isBackground ? 'rand()' : 'table_name+', //MySQL 8 SELECT `table_name` 返回的仍然是大写的 TABLE_NAME，需要 AS 一下
+              '@column': (schemas != null && schemas.length == 1 ? '' : 'table_schema:table_schema,') + (this.database == 'POSTGRESQL' ? 'table_name' : 'table_name:table_name,table_comment:table_comment'),
+              '@key': 'table_name_table_schema:(table_name,table_schema)',
+              'table_name_table_schema{}@': isBackground ? {
+                'from': 'Column',
+                'Column': { // FIXME POSTGRESQL, Oracle
+                  'table_schema{}': schemas,
+                  'table_name%$': isBackground || search == null || search.length <= 0 ? null : search,
+                  'table_name$': isBackground != true || tblSearch == null || tblSearch.length <= 0 ? null : tblSearch,
+                  'table_name!$': '\\_%',
+                  'column_name$': colSearch == null || colSearch.length <= 0 ? null : colSearch,
+                  'column_comment[>': 2,
+                  // '@order': this.database == 'SQLSERVER' ? null : 'column_name+',
+                  '@column': 'table_name:table_name,table_schema:table_schema'
+                }
+              } : null
             },
             'PgClass': this.database != 'POSTGRESQL' ? null : {
               'relname@': '/Table/table_name',
@@ -8989,10 +9106,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 'table_schema{}': schemas,
                 'table_schema@': schemas != null && schemas.length == 1 ? null : '[]/Table/table_schema',
                 'table_name@': this.database != 'SQLSERVER' ? '[]/Table/table_name' : "[]/SysTable/table_name",
-                "@order": this.database != 'SQLSERVER' ? null : "table_name+",
-                '@column': this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
+                // 'table_schema!$': '\\_%',
+                // 'table_name!$': '\\_%',
+                'column_name$': colSearch == null || colSearch.length <= 0 ? null : colSearch,
+                'column_comment[>': 2,
+                "@order": isBackground ? 'rand()' : (this.database != 'SQLSERVER' ? null : "table_name+"), // 'column_name_len+,table_name+' : "table_name+"),
+                '@column': (this.database == 'POSTGRESQL' || this.database == 'SQLSERVER'  //MySQL 8 SELECT `column_name` 返回的仍然是大写的 COLUMN_NAME，需要 AS 一下
                   ? 'column_name;data_type;numeric_precision,numeric_scale,character_maximum_length'
-                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_default:column_default,column_comment:column_comment'
+                  : 'column_name:column_name,column_type:column_type,is_nullable:is_nullable,column_default:column_default,column_comment:column_comment')
+                  // + (isBackground ? ';length(column_name):column_name_len' : '')
               },
               'PgAttribute': this.database != 'POSTGRESQL' ? null : {
                 'attrelid@': '[]/PgClass/oid',
@@ -9023,7 +9145,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
             }
           },
-          'Function[]': {
+          'Function[]': isBackground ? null : {
             'count': count,
             'page': page,
             'Function': {
@@ -9036,7 +9158,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               '@combine': StringUtil.isEmpty(search) ? null : 'name$,detail$',
             }
           },
-          'Request[]': {
+          'Request[]': isBackground ? null : {
             'count': count,
             'page': page,
             'Request': {
@@ -9048,16 +9170,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
           }
         }, {}, function (url, res, err) {
-          App.onDocumentListResponse(url, res, err, callback)
+          App.onDocumentListResponse(url, res, err, callback, isBackground)
         })
       },
 
       lastDocReqTime: 0,
-      onDocumentListResponse: function(url, res, err, callback) {
+      onDocumentListResponse: function(url, res, err, callback, isBackground) {
         if (err != null || res == null || res.data == null) {
           log('getDoc  err != null || res == null || res.data == null >> return;');
           if (callback != null) {
-            callback('')
+            callback('', url, res, err)
           }
           return;
         }
@@ -9072,14 +9194,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.lastDocReqTime = time;
 
 //        log('getDoc  docRq.responseText = \n' + docRq.responseText);
-        docObj = res.data || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
+        var data = res.data || docObj || {}
+        if (! isBackground) {
+          docObj = res.data || docObj || {};  //避免后面又调用 onChange ，onChange 又调用 getDoc 导致死循环
+        }
 
         var map = {};
 
         //Access[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         var ad = ''
-        var list = docObj == null ? null : docObj['Access[]'];
-        CodeUtil.accessList = list;
+
+        var list = data == null ? null : data['Access[]'];
+        CodeUtil.accessList = list || CodeUtil.accessList;
         if (list != null) {
           if (DEBUG) {
             log('getDoc  Access[] = \n' + format(JSON.stringify(list)));
@@ -9141,9 +9267,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var doc = '';
 
           //[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['[]'];
+          list = data == null ? null : data['[]'];
           map = {};
-          CodeUtil.tableList = list;
+
+          CodeUtil.tableList = list || CodeUtil.tableList;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  [] = \n' + format(JSON.stringify(list)));
@@ -9173,22 +9300,22 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var schema = table.table_schema
               var modelName = App.getModelName(i)
               map[StringUtil.toLowerCase(schema) + '.' + StringUtil.toLowerCase(modelName)] = table
+              var argStr = i + ",'" + modelName + "'" + (StringUtil.isEmpty(schema, true) ? '' : ",'" + schema + "'")
 
               // TODO 对 isAPIJSON 和 isRESTful 生成不一样的
-              doc += '\n### ' + (i + 1) + '. ' + modelName
-                + (StringUtil.isEmpty(schema, true) ? '' : ': { @schema: ' + schema + ' }')
-                + ' - <a href="javascript:void(0)" onclick="window.App.onClickPost(' + i + ',\'' + modelName + '\')">POST</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickPut(' + i + ',\'' + modelName + '\')">PUT</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickDelete(' + i + ',\'' + modelName + '\')">DELETE</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickGet(' + i + ',\'' + modelName + '\')">GET</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickGets(' + i + ',\'' + modelName + '\')">GETS</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickHead(' + i + ',\'' + modelName + '\')">HEAD</a>'
-                + ' <a href="javascript:void(0)" onclick="window.App.onClickHeads(' + i + ',\'' + modelName + '\')">HEADS</a>'
+              doc += isBackground ? '' : '\n### ' + (i + 1) + '. ' + (StringUtil.isEmpty(schema, true) ? '' : schema + '.') + modelName
+                + ' - <a href="javascript:void(0)" onclick="window.App.onClickPost(' + argStr + ')">POST</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickPut(' + argStr + ')">PUT</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickDelete(' + argStr + ')">DELETE</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickGet(' + argStr + ')">GET</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickGets(' + argStr + ')">GETS</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickHead(' + argStr + ')">HEAD</a>'
+                + ' <a href="javascript:void(0)" onclick="window.App.onClickHeads(' + argStr + ')">HEADS</a>'
                 + '\n' + App.toMD(table_comment);
 
               //Column[]
-              doc += '\n\n 名称  |  类型  |  最大长度  |  详细说明' +
-                ' \n --------  |  ------------  |  ------------  |  ------------ ';
+              doc += isBackground ? '' : '\n\n 名称  |  类型  |  最大长度  |  详细说明'
+                + ' \n --------  |  ------------  |  ------------  |  ------------ ';
 
               var columnList = item['[]'];
               if (columnList == null) {
@@ -9223,7 +9350,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 var column_default = column.column_default
 
                 // column.column_comment = column_comment
-                doc += '\n' + ' <a href="javascript:void(0)" onclick="window.App.onClickColumn(' + i + ",'" + modelName + "'," + j + ",'" + name + "'" + ')">' + name + '</a>'
+                doc += isBackground ? '' : '\n' + ' <a href="javascript:void(0)" onclick="window.App.onClickColumn(' + i + ",'" + modelName + "'," + j + ",'" + name + "'" + ')">' + name + '</a>'
                   + '  |  ' + type.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '  |  ' + length + '  |  ' + App.toMD(column_comment);
 
               }
@@ -9233,20 +9360,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
           }
-          CodeUtil.tableMap = map;
+          CodeUtil.tableMap = map || CodeUtil.tableMap;
           //[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
           doc += ad;
 
           //Function[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['Function[]'];
-          CodeUtil.functionList = list;
+          list = data == null ? null : data['Function[]'];
+          CodeUtil.functionList = list || CodeUtil.functionList;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  Function[] = \n' + format(JSON.stringify(list)));
             }
 
-            doc += '\n\n\n\n\n\n\n\n\n### 远程函数\n自动查 Function 表写入的数据来生成\n'
+            doc += isBackground ? '' : '\n\n\n\n\n\n\n\n\n### 远程函数\n自动查 Function 表写入的数据来生成\n'
               + ' \n 说明  |  示例'
               + ' \n --------  |  -------------- ';
 
@@ -9266,27 +9393,27 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               // doc += '\n' + item.detail + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ",'"
               //   + demoStr.replaceAll("'", "\'") + ')">' + demoStr + '</a>';
-              doc += '\n' + name + '(' + StringUtil.get(item.arguments) + '): '
+              doc += isBackground ? '' : '\n' + name + '(' + StringUtil.get(item.arguments) + '): '
                 + CodeUtil.getType4Language(App.language, item.returnType) + ', ' + (item.rawDetail || item.detail)
                 + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickFunction(' + i + ')">' + demoStr + '</a>';
             }
 
             doc += '\n' //避免没数据时表格显示没有网格
           }
-          CodeUtil.functionMap = map;
+          CodeUtil.functionMap = map || CodeUtil.functionMap;
           //Function[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
           //Request[] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-          list = docObj == null ? null : docObj['Request[]'];
+          list = data == null ? null : data['Request[]'];
           map = {};
-          CodeUtil.requestList = list;
+          CodeUtil.requestList = list || CodeUtil.requestList;
           if (list != null) {
             if (DEBUG) {
               log('getDoc  Request[] = \n' + format(JSON.stringify(list)));
             }
 
-            doc += '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
+            doc += isBackground ? '' : '\n\n\n\n\n\n\n\n\n### 非开放请求\n自动查 Request 表写入的数据来生成\n'
               + ' \n 版本  |  方法  |  请求标识  |  数据和结构'
               + ' \n --------  |  ------------  |  ------------  |  ------------  |  ------------ ';
 
@@ -9303,21 +9430,23 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var jsonStr = JSON.stringify(App.getStructure(false, null, item.structure, item.method, item.tag, item.version))
 
-              doc += '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
+              doc += isBackground ? '' : '\n' + item.version + '  |  ' + item.method + '  |  ' + item.tag
                 + '  |  ' + ' <a href="javascript:void(0)" onclick="window.App.onClickRequest(' + i + ')">' + jsonStr + '</a>'
             }
 
             doc += '\n注: \n1.GET,HEAD方法不受限，可传任何 数据、结构。\n2.可在最外层传版本version来指定使用的版本，不传或 version <= 0 则使用最新版。\n\n\n\n\n\n\n';
           }
-          CodeUtil.requestMap = map;
+          CodeUtil.requestMap = map || CodeUtil.requestMap;
 
 
           //Request[] >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-          App.onChange(false);
+          if (! isBackground) {
+            App.onChange(false);
+          }
 
           if (callback != null) {
-            callback(doc);
+            callback(doc, url, res, err);
           }
 
 //      	  log('getDoc  callback(doc); = \n' + doc);
@@ -9556,7 +9685,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var arrName = modelName + '[]'
 
-        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
+        this.showCRUD('/get' + (isSingle ? '/' + arrName : ''),
           isSingle ? `{
     '` + modelName + `': {` + (StringUtil.isEmpty(role, true) ? '' : `
         '@role': '` + role + "',") + (StringUtil.isEmpty(schemaName, true) ? '' : `
@@ -9583,8 +9712,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         "page": 0,
         "query": 2
     },
-    "total@": "` + modelName + `[]/total",
-    "info@": "` + modelName + `[]/info",
     "@explain": true
 }`)
       },
@@ -9725,7 +9852,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         var arrName = modelName + '[]'
 
-        this.showCRUD('/get' + (isSingle ? '/' + arrName + '?total@=' + arrName + '/total' + '&info@=' + arrName + '/info' : ''),
+        this.showCRUD('/get' + (isSingle ? '/' + arrName : ''),
           isSingle ? `{
     '` + modelName + `': {
         '@column': 'DISTINCT ` + columnName + `',
@@ -9744,8 +9871,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         "page": 0,
         "query": 2
     },
-    "total@": "` + modelName + '-' + columnName + `[]/total",
-    "info@": "` + modelName + '-' + columnName + `[]/info",
     "@explain": true
 }`)
       },
@@ -9963,7 +10088,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           log('getStructure  tag = ' + tag + '; version = ' + version + '; isDemo = ' + isDemo + '; obj = \n' + format(obj));
         }
 
-        method = method == null ? 'GET' : method.trim().toUpperCase()
+        method = method == null ? 'GET' : StringUtil.toUpperCase(method, true)
 
         var isArrayKey = tag != null && tag.endsWith('[]');
         var isMultiArrayKey = isArrayKey && tag.endsWith(":[]")
@@ -10238,6 +10363,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         this.view = 'output'
         vOutput.value = ''
+        var script = StringUtil.get(vScript.value)
 
         try {
           var isTest = true
@@ -10260,15 +10386,16 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             App.request(isAdminOperation, method, type, url, req, header, callback)
           }
 
-          eval(vScript.value);
+          eval(script);
         }
         catch(e) {
           console.log(e);
           console.log = logger
+          e.message = '执行脚本报错：\n' + e.message + '; 脚本：\n' + script
 
           this.view = 'error'
           this.error = {
-            msg: '执行脚本报错：\n' + e.message
+            msg: e.message
           }
         }
 
@@ -10742,7 +10869,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param callback
        */
       parseRandom: function (json, head, config, randomId, generateJSON, generateConfig, generateName, callback, preScript, ctx) {
-        var lines = config == null ? null : config.trim().split('\n')
+        var lines = config == null ? null : StringUtil.trim(config).split('\n')
         if (lines == null || lines.length <= 0) {
           // return null;
           callback('', '', json, head);
@@ -10768,7 +10895,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           // remove comment   // 解决整体 trim 后第一行  // 被当成正常的 key 路径而不是注释
           const commentIndex = StringUtil.trim(lineItem).startsWith('//') ? 0 : lineItem.lastIndexOf(' //'); //  -1; // eval 本身支持注释 eval('1 // test') = 1 lineItem.indexOf(' //');
-          const line = commentIndex < 0 ? lineItem : lineItem.substring(0, commentIndex).trim();
+          const line = commentIndex < 0 ? lineItem : StringUtil.trim(lineItem.substring(0, commentIndex));
 
           if (line.length <= 0) {
             respCount ++;
@@ -10802,7 +10929,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const lastKeyInPath = pathKeys[pathKeys.length - 1]
           const customizeKey = bi > 0;
           const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
-          if (key == null || key.trim().length <= 0) {
+          if (key == null || StringUtil.length(key, true) <= 0) {
             throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
               '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
               '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
@@ -10821,12 +10948,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   configVal = JSON.stringify(val);
                 }
                 else if (typeof val == 'string') {
-                  configVal = '"' + val + '"';
+                  configVal = '"' + StringUtil.trim(val) + '"';
                 }
                 else {
                   configVal = val;
                 }
-                constConfigLines[which] = p_k + ': ' + configVal;
+                constConfigLines[which] = (isHead ? '- ' : '') + p_k + ': ' + configVal;
               }
 
               if (generateName) {
@@ -12320,6 +12447,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        * @param item
        */
       handleTest: function (right, index, item, path, isRandom, isDuration, isCross) {
+        CodeUtil.tableList = (docObj || {})['[]'] || CodeUtil.tableList
         item = item || {}
         var random = item.Random = item.Random || {}
         var document;
@@ -13041,6 +13169,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var isRestful = ! JSONObject.isAPIJSONPath(method);
               var ind = method == null ? -1 : method.lastIndexOf('/');
               var ind2 = ind < 0 ? -1 : method.substring(0, ind).lastIndexOf('/');
+              var schema = App.schema;
               var table = method == null ? null : (ind < 0 ? method : (isRestful
                 ? StringUtil.firstCase(method.substring(ind2+1, ind), true) : method.substring(ind+1))
               );
@@ -13065,7 +13194,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 App.options.push({
                   name: target != vScript ? path : JSONResponse.formatKey(ks.join('_'), true, true, true, true, true, true),
                   type: t == null ? null : (t == 'string' ? stringType : (t == 'integer' ? intType : CodeUtil.getType4Language(App.language, t))),
-                  comment: CodeUtil.getComment4Request(tableList, tbl, k, v, method, false, App.database, App.language
+                  comment: CodeUtil.getComment4Request(tableList, schema, tbl, k, v, method, false, App.database, App.language
                     , isReq, ks, isRestful, standardObj, false, isAPIJSONRouter)
                 })
               }
@@ -13208,7 +13337,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var lastIndex = before.lastIndexOf('\n');
             var lastLine = before.substring(lastIndex + 1, before.length);
             lastIndex = lastLine.lastIndexOf(':');
-            lastLine = lastIndex < 0 ? '' : lastLine.substring(0, lastIndex).trim();
+            lastLine = lastIndex < 0 ? '' : StringUtil.trim(lastLine.substring(0, lastIndex));
 
             var endsWithDoubleQuote = lastLine.endsWith('"')
             if (endsWithDoubleQuote || lastLine.endsWith("'")) {
@@ -13964,7 +14093,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           if (StringUtil.isNotEmpty(rawReq.url, true)) {
             hasTestArg = true
-            vUrl.value = StringUtil.trim(rawReq.url)
+            vUrl.value = StringUtil.trim(rawReq.url).replaceAll('\n', '')
           }
 
           var decode = false
@@ -14188,7 +14317,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
             var prefixEnd = 0;
             for (var i = 0; i < lastLine.length; i++) {
-              if (lastLine.charAt(i).trim().length > 0) {
+              if (StringUtil.length(lastLine.charAt(i), true) > 0) {
                 if (isDel) {
                   prefixEnd = 0;
                 }
@@ -14239,7 +14368,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               hasComma = isJSON && isStart != true && isEnd != true && hasRight != true && tll.endsWith(',') != true;
               if (hasComma) {
                 for (var i = before.length; i >= 0; i--) {
-                  if (before.charAt(i).trim().length > 0) {
+                  if (StringUtil.length(before.charAt(i), true) > 0) {
                     break;
                   }
 

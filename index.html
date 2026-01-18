@@ -781,7 +781,7 @@ fun(true, 1, 'a'..);
 
             <!--格式化错误视图-->
             <div class="view-error" v-show="view == 'error'">
-                <pre v-cloak>{{error.msg}}</pre>
+                <pre style="max-height: 760px; overflow-x: scroll; overflow-y: scroll;" v-cloak>{{error.msg}}</pre>
             </div>
 
             <!--diff视图-->

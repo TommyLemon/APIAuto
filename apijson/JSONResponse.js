@@ -553,10 +553,10 @@ var JSONResponse = {
     // }
 
     if (tCode == null) {
-      if (typeof rCode == 'number' && (rCode%10 != 0 || (rCode >= 400 && rCode < 600))) {
+      if (rCode != JSONResponse.CODE_SUCCESS && rCode != 200) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且状态码 ' + rCode + ' 在 [400, 599] 内或不是 0, 200 等以 0 结尾的数',
+          msg: '没有校验标准，且状态码 ' + rCode + ' 不是成功值！',
           path: folder == null ? '' : folder
         };
       }
@@ -1922,19 +1922,57 @@ var JSONResponse = {
     comment = ind < 0 ? comment : comment.substring(ind + 1)
     var nullable = prefix.endsWith('?')
     var notEmpty = prefix.endsWith('!')
-    var name = nullable || notEmpty ? prefix.substring(0, prefix.length - 1) : prefix
-    if (StringUtil.isName(name)) {
-       tgt.name = name
-       if (tgt.type == 'array') {
-         var values = tgt.values || []
-         var child = values[0]
-         if (child != null && StringUtil.isEmpty(child.name, true)) {
-             child.name = name
-             child.comment = comment
-         }
-       }
-    } else {
-       nullable = notEmpty = null
+    var path = nullable || notEmpty ? prefix.substring(0, prefix.length - 1) : prefix
+    // sys.User.id|apijson.Moment.userId
+    var names = StringUtil.split(path, '/', true) || []
+    for (var i = 0; i < names.length; i ++) {
+      var name = names[i] || ''
+
+      var ks = name.split('.') || []
+      var grandName = ks[ks.length - 3]
+      var parentName = ks[ks.length - 2]
+      name = ks[ks.length - 1] || name
+
+      if (StringUtil.isName(name)) {
+        if (StringUtil.isNotEmpty(grandName, true)) {
+          var gn = tgt.grandName
+          var gns = gn instanceof Array ? gn.concat(grandName) : (StringUtil.isEmpty(gn, true) ? [grandName] : [gn, grandName])
+          tgt.grandName = gns.length <= 1 ? gns[0] : gns.join('|') // gns
+        }
+
+        if (StringUtil.isNotEmpty(parentName, true)) {
+          var pn = tgt.parentName
+          var pns = pn instanceof Array ? pn.concat(parentName) : (StringUtil.isEmpty(pn, true) ? [parentName] : [pn, parentName])
+          tgt.parentName = pns.length <= 1 ? pns[0] : pns.join('|') // pns
+        }
+
+        var n = tgt.name
+        var ns = n instanceof Array ? n.concat(name) : (StringUtil.isEmpty(n, true) ? [name] : [n, name])
+        tgt.name = ns.length <= 1 ? ns[0] : ns.join('|') // ns
+
+        tgt.comment = comment
+
+        if (tgt.type == 'array') {
+          var values = tgt.values || []
+          var child = values[0]
+          if (child instanceof Object && ! Array.isArray(child)) {
+            if (StringUtil.isEmpty(child.parentName, true)) {
+              child.grandName = tgt.grandName
+              child.parentName = tgt.parentName
+            }
+
+            if (StringUtil.isEmpty(child.name, true)) {
+              child.name = tgt.name
+            }
+
+            if (StringUtil.isEmpty(child.comment, true)) {
+              child.comment = tgt.comment
+            }
+          }
+        }
+      } else {
+        nullable = notEmpty = null
+      }
     }
 
     tgt.type = JSONResponse.getType(real)
