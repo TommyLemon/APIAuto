@@ -105,7 +105,9 @@ var StringUtil = {
 
   SYNTAX_NAMES: ['bool', 'boolean', 'int', 'integer', 'num', 'number', 'str', 'string', 'arr', 'array', 'obj', 'object'
     , 'type', 'class', 'fun', 'func', 'function', 'var', 'variable', 'val', 'value', 'const', 'is', 'as', 'id', 'index', 'unique'
+    , 'select', 'insert', 'update', 'delete', 'query', 'mutate', 'sleep', 'no', 'yes', 'and', 'or', 'not', 'cast', 'first', 'last'
     , 'from', 'join', 'on', 'at', 'in', 'out', 'where', 'by', 'having', 'limit', 'offset', 'find', 'list', 'get', 'set', 'put', 'remove'
+    , 'slice', 'splice', 'reduce', 'add', 'minus', 'push', 'pop', 'list', 'dict', 'map', 'trim', 'of'
   ],
   COLUMN_NAMES: ['page', 'count', 'size', 'pagesize', 'pagenum', 'pageno', 'col', 'column', 'name', 'age', 'sex', 'gender', 'amount'
     , 'email', 'phone', 'tel', 'telephone', 'detail', 'describe', 'description', 'total', 'index', 'position', 'key', 'row', 'len', 'length', 'data'

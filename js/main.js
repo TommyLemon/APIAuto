@@ -402,16 +402,16 @@
           var tableList = CodeUtil.tableList || (docObj || {})['[]']
 
           var loaded = false;
-          var posssibleColumns = [];
-          var posssibleTables = [];
+          var possibleColumns = [];
+          var possibleTables = [];
           function loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys) {
             if (isRestful && StringUtil.isEmpty(c, true) && ! (loaded || isDynamic || isWarning)) { // || val instanceof Object)) {
               loaded = true;
-              if (posssibleColumns == null || posssibleColumns.length <= 0) {
-                posssibleColumns = [column, key]
+              if (possibleColumns == null || possibleColumns.length <= 0) {
+                possibleColumns = [column, key]
               }
-              if (posssibleTables == null || posssibleTables.length <= 0) {
-                posssibleTables = CodeUtil.extractTableNames(pathKeys == null || pathKeys.length <= 1 ? null : pathKeys.slice(0, -1)) || [table];
+              if (possibleTables == null || possibleTables.length <= 0) {
+                possibleTables = CodeUtil.extractTableNames(pathKeys == null || pathKeys.length <= 1 ? null : pathKeys.slice(0, -1)) || [table];
               }
 
               App.lastTarget = $event.target
@@ -421,15 +421,15 @@
                   return
                 }
 
-                App.loadColumnDoc(posssibleColumns, posssibleTables, schema, App.database, function (d, url, res, err) {
+                App.loadColumnDoc(possibleColumns, possibleTables, schema, App.database, function (d, url, res, err) {
                   var data = res == null ? null : res.data;
                   var list = data == null ? null : data['[]']
-                  if ((list != null && list.length > 0) || $event.target != App.lastTarget || posssibleTables == null || posssibleTables.length <= 0) {
+                  if ((list != null && list.length > 0) || $event.target != App.lastTarget || possibleTables == null || possibleTables.length <= 0) {
                     vue.setResponseHint(val, key, $event, isAssert, color, true)
                     return
                   }
 
-                  App.loadColumnDoc(posssibleColumns, null, schema, App.database, function (d, url, res, err) {
+                  App.loadColumnDoc(possibleColumns, null, schema, App.database, function (d, url, res, err) {
                     vue.setResponseHint(val, key, $event, isAssert, color, true)
                   })
                 })
@@ -499,8 +499,8 @@
                   var c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
                     , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning
                     , isAPIJSONRouter, search, null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
-                       posssibleColumns = callbackColumns;
-                       posssibleTables = callbackTables;
+                       possibleColumns = callbackColumns;
+                       possibleTables = callbackTables;
                     }, isDynamic
                   ); // this.getResponseHint({}, table, $event
                   c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
@@ -521,7 +521,6 @@
                     var tests = App.tests[accountIdStr] || {};
                     var responseObj = (tests[d.id] || {})[0]
 
-                    var pathKeys = StringUtil.split(pathUri, '/');
                     var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
                     var real = JSONResponse.getValByPath(responseObj, pathKeys);
                     //              c = JSONResponse.compareWithBefore(target, real, path);
@@ -532,11 +531,11 @@
                     s += '\n' + e.message
                   }
                 } else {
-                  c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
+                  c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, isRestful ? key : null, method
                       , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning, isAPIJSONRouter, search
                       , null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
-                        posssibleColumns = callbackColumns;
-                        posssibleTables = callbackTables;
+                        possibleColumns = callbackColumns;
+                        possibleTables = callbackTables;
                       }, isDynamic
                   );
                   c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
@@ -553,7 +552,8 @@
               //导致 key[] 的 hint 显示为  key[]key[]   else {
               //   s = (StringUtil.isEmpty(path) ? '' : path + '/') + key
               // }
-            } else {
+            }
+            else {
               if (isRestful || JSONObject.isTableKey(table)) {
                 column = key
               }
@@ -578,7 +578,6 @@
               var tests = App.tests[accountIdStr] || {};
               var responseObj = (tests[d.id] || {})[0]
 
-              var pathKeys = StringUtil.split(pathUri, '/');
               var target = App.isMLEnabled ? JSONResponse.getStandardByPath(standardObj, pathKeys) : JSONResponse.getValByPath(standardObj, pathKeys);
               var real = JSONResponse.getValByPath(responseObj, pathKeys);
 //              c = JSONResponse.compareWithBefore(target, real, path);
@@ -589,11 +588,11 @@
               s += '\n' + e.message
             }
           } else {
-            c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, column, method
+            c = CodeUtil.getCommentFromDoc(tableList, schema, isDynamic ? null : table, isRestful ? key : column, method
                 , App.database, App.language, true, false, pathKeys, isRestful, val, true, standardObj, isWarning, isAPIJSONRouter, search
                 , null, isDynamic ? true : null, function (callbackColumns, callbackTables) {
-                  posssibleColumns = callbackColumns;
-                  posssibleTables = callbackTables;
+                  possibleColumns = callbackColumns;
+                  possibleTables = callbackTables;
                 }, isDynamic
             );
             c = loadColumnIfNeed(c, isWarning, column, table, schema, pathKeys)
@@ -875,7 +874,7 @@ https://github.com/Tencent/APIJSON/issues
   var CTX_PUT = 'CTX_PUT' // CTX_PUT('key', val)
 
   function get4Path(obj, path, defaultVal, msg) {
-    var val = path == null || path == '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'))
+    var val = path == null || path == '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
     if (val == null && defaultVal == undefined) {
       throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！' + StringUtil.get(msg))
     }
@@ -2654,7 +2653,7 @@ https://github.com/Tencent/APIJSON/issues
           var accounts = (StringUtil.isEmpty(testAccountId == null ? null : String(testAccountId), true) ? null : this.accounts) || []
           for (var i = 0; i < accounts.length; i ++) {
             var acc = accounts[i]
-            if (acc != null && (acc.id == chain.testAccountId || (
+            if (acc != null && (acc.id == testAccountId || (
                (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
                (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
                || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
@@ -3465,10 +3464,10 @@ https://github.com/Tencent/APIJSON/issues
 
           if (btnIndex == 1) {
             // this.parseRandom(inputObj, header, config, null, true, true, false, callback)
-            callback(null, null, null, inputObj)
+            callback(null, null, inputObj)
           }
           else {
-            callback(null, null, null, inputObj)
+            callback(null, null, inputObj)
           }
 
         }
@@ -4938,6 +4937,9 @@ https://github.com/Tencent/APIJSON/issues
                   callback(false, index, err)
                 }
               });
+
+              // this.currentAccountIndex = -1
+              // this.changeScriptType(App.scriptType)
             }
             else {
               //login
@@ -6341,7 +6343,10 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           App.scripts = Object.assign(newDefaultScript(), scripts)
-          App.restoreRemote(App.currentDocIndex, App.currentRemoteItem)
+          var cri = App.currentRemoteItem || {}
+          if (App.currentDocIndex >= 0 && StringUtil.isNotEmpty((cri.Document))) { // || {}).request)) {
+            App.restoreRemote(App.currentDocIndex, cri)
+          }
         })
       },
 
@@ -6613,12 +6618,12 @@ https://github.com/Tencent/APIJSON/issues
             if (user != null) {
               var headers = res.headers || {}
               user.isLoggedIn = true
-              user.remember = data.remember
-              user.phone = req.mobile || req.mobileNo || req.mobileNum || req.mobileNumber || req.phone || req.phoneNo || req.phoneNum || req.phoneNumber || req.mobile_no || req.mobile_num || req.mobile_number || req.phone_no || req.phone_num || req.phone_number
-              user.email = req.email
-              user.password = req.password
-              user.token = headers.token || headers.Token || data.token || data.Token || user.token || user.Token || user.accessToken || user.access_token || data.accessToken || data.access_token
-              user.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie']
+              user.remember = data.remember == null ? user.remember : data.remember
+              user.phone = req.mobile || req.mobileNo || req.mobileNum || req.mobileNumber || req.phone || req.phoneNo || req.phoneNum || req.phoneNumber || req.mobile_no || req.mobile_num || req.mobile_number || req.phone_no || req.phone_num || req.phone_number || user.phone
+              user.email = req.email || user.email
+              user.password = req.password || user.password
+              user.token = headers.token || headers.Token || data.token || data.Token || user.token || user.Token || user.accessToken || user.access_token || data.accessToken || data.access_token || user.token
+              user.cookie = res.cookie || headers.cookie || headers.Cookie || headers['set-cookie'] || headers['Set-Cookie'] || user.cookie
               App.User = user
             }
 
@@ -7186,7 +7191,7 @@ https://github.com/Tencent/APIJSON/issues
           CodeUtil.type = this.type;
         }
 
-        var url = StringUtil.get(vUrl.value).replaceAll('\n', '')
+        var url = StringUtil.trim(vUrl.value).replaceAll('\n', '')
         var index = url.indexOf('?')
         if (index >= 0) {
           var paramObj = getRequestFromURL(url.substring(index), true)
@@ -7420,7 +7425,7 @@ https://github.com/Tencent/APIJSON/issues
             'method': method,
             'type': this.type,
             'url': '/' + path,
-            'request': JSON.stringify(req, null, '    '),
+            'request': req == null ? null : JSON.stringify(req, null, '    '),
             'header': vHeader.value,
             'scripts': this.scripts
           }
@@ -7691,7 +7696,7 @@ https://github.com/Tencent/APIJSON/issues
             console.log = logger
 
             App.loadingCount --
-            e.message = '执行脚本报错：\n' + e.message + '; 脚本：\n' + script
+            e.message = '执行脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
 
             // TODO if (isPre) {
             App.view = 'error'
@@ -7707,8 +7712,7 @@ https://github.com/Tencent/APIJSON/issues
               //   throw e
               // }
 
-              // TODO 右侧底部新增断言列表
-              App.onResponse(url, null, Object.assign({response: res}, e)) // this.onResponse is not a function
+              App.onResponse(url, null, Object.assign({response: res, message: e.message})) // this.onResponse is not a function
               // callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
           }
@@ -7788,6 +7792,30 @@ https://github.com/Tencent/APIJSON/issues
         var isDelegate = (isAdminOperation == false && this.isDelegateEnabled)
          || (isAdminOperation && (url.indexOf('://apijson.cn:9090') > 0 || url.indexOf('.devin.ai') > 0))
 
+        if (header == null) {
+          header = {};
+        }
+
+        var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
+        if (StringUtil.isEmpty(header.authorization)) {
+          if (curUser != null && StringUtil.isNotEmpty(curUser.authorization)) {
+            header.authorization = curUser.authorization;
+          } else if (curUser != null && StringUtil.isNotEmpty(curUser.token)) {
+            header.authorization = curUser.token;
+          } else if (StringUtil.isNotEmpty(header.Authorization)) {
+            header.authorization = header.Authorization;
+          } else if (StringUtil.isNotEmpty(header['X-Authorization'])) {
+            header.authorization = header['X-Authorization'];
+          } else if (StringUtil.isNotEmpty(header['x-authorization'])) {
+            header.authorization = header['x-authorization'];
+          }
+        }
+
+        // header.Authorization = header['X-Authorization'] = header['x-authorization'] = undefined;
+        delete header.Authorization;
+        delete header['X-Authorization'];
+        delete header['x-authorization'];
+
         if (header != null && header.Cookie != null) {
           if (isDelegate) {
             header['Set-Cookie'] = header.Cookie
@@ -7797,12 +7825,7 @@ https://github.com/Tencent/APIJSON/issues
             document.cookie = header.Cookie
           }
         } else if (IS_NODE) {
-          var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
           if (curUser != null && curUser.isLoggedIn && curUser[isEnvCompare ? 'phone' : 'cookie'] != null) {
-            if (header == null) {
-              header = {}
-            }
-
             // Node 环境内通过 headers 设置 Cookie 无效
             header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone + '@' + baseUrl] : curUser.cookie
           }
@@ -7872,7 +7895,7 @@ https://github.com/Tencent/APIJSON/issues
             var errObj = err instanceof Array == false && err instanceof Object ? err : {}
             var data = res.data || (errObj.response || {}).data
             var msg = typeof data == 'string' ? StringUtil.trim(data) : JSON.stringify(data, null, '    ')
-            this.jsoncon = msg
+            // this.jsoncon = msg
             msg = "Response:\nurl = " + url + "\nerror = " + err.message + (StringUtil.isEmpty(msg) ? '' : '\n\n' + msg) + '\n\n' + ERR_MSG
             // vOutput.value = "Response:\nurl = " + url + "\nerror = " + err.message;
             this.view = 'error';
@@ -8980,8 +9003,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         this.getDoc(callback
           , (column instanceof Array ? column.join() : StringUtil.get(column)).replaceAll('_', '%')
-          , StringUtil.isEmpty(table) ? null : (table instanceof Array ? table.join() : StringUtil.get(table)).replaceAll('_', '%')
-          , schema instanceof Array ? schema.join() : schema, true
+          , StringUtil.isEmpty(table) ? null : '%' + (table instanceof Array ? table.join('%,%') : StringUtil.get(table)).replaceAll('_', '%') + '%'
+            , schema instanceof Array ? schema.join() : schema, true
         )
       },
 
@@ -9058,7 +9081,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   'table_name$': isBackground != true || tblSearch == null || tblSearch.length <= 0 ? null : tblSearch,
                   'table_name!$': '\\_%',
                   'column_name$': colSearch == null || colSearch.length <= 0 ? null : colSearch,
-                  'column_comment[>': 2,
+                  'column_comment[>': isBackground ? 2 : null,
                   // '@order': this.database == 'SQLSERVER' ? null : 'column_name+',
                   '@column': 'table_name:table_name,table_schema:table_schema'
                 }
@@ -10391,7 +10414,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         catch(e) {
           console.log(e);
           console.log = logger
-          e.message = '执行脚本报错：\n' + e.message + '; 脚本：\n' + script
+          e.message = '执行脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
 
           this.view = 'error'
           this.error = {
@@ -11024,12 +11047,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const start = value.indexOf('(');
           const end = value.lastIndexOf(')');
+          var _args = [];
+          try { // JSON 中不能出现 undefined
+            _args = parseJSON('[' + value.substring(start + 1, end) + ']');
+          } catch (e) {
+            console.log(e);
+            _args = StringUtil.split(value.substring(start + 1, end), ', ');
+          }
+          const args = _args || [];
 
           var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step, body) {
             // const tableName = JSONResponse.getTableName(pathKeys[pathKeys.length - 2]);
             vOutput.value = 'requesting value for ' + tableName + '/' + key + ' from database...';
 
-            const args = StringUtil.split(value.substring(start + 1, end)) || [];
             var min = StringUtil.trim(args[0]);
             var max = StringUtil.trim(args[1]);
             var table = StringUtil.trim(args[2]) || '';
@@ -11174,8 +11204,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   + '\n+，-，step 前后都不能有空格等其它字符！');
               }
 
-              var args = parseJSON('[' + value.substring(start + 1, end) + ']') // StringUtil.split(value.substring(start + 1, end), ', ') || []
-
               if (fun == ORDER_DB) {
                 request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step, args[4]); //request4Db(key + (isDesc ? '-' : '+'), step);
                 continue;
@@ -11212,25 +11240,25 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_DATA') {
                   as[1] = '((ctx || {}).pre || {}).data'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_REQ') {
+                else if (as[1] == 'PRE_REQ') {
                   as[1] = '((ctx || {}).pre || {}).req'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_ARG') {
+                else if (as[1] == 'PRE_ARG') {
                   as[1] = '((ctx || {}).pre || {}).arg'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_RES') {
+                else if (as[1] == 'PRE_RES') {
                   as[1] = '((ctx || {}).pre || {}).res'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_DATA') {
+                else if (as[1] == 'CUR_DATA') {
                   as[1] = '((ctx || {}).cur || {}).data'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_REQ') {
+                else if (as[1] == 'CUR_REQ') {
                   as[1] = '((ctx || {}).cur || {}).req'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_ARG') {
+                else if (as[1] == 'CUR_ARG') {
                   as[1] = '((ctx || {}).cur || {}).arg'
                 }
-                else if (StringUtil.isEmpty(as[1], true) || as[1] == 'CUR_RES') {
+                else if (as[1] == 'CUR_RES') {
                   as[1] = '((ctx || {}).cur || {}).res'
                 }
 
@@ -11256,7 +11284,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
 
                   if (fun == RANDOM_DB) {
-                    var args = parseJSON('[' + value.substring(start + 1, end) + ']') // StringUtil.split(value.substring(start + 1, end), ', ') || []
                     request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true, null, null, args[4]); //'random()');
                     continue;
                   }
@@ -11666,8 +11693,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               return
             }
-            if (document.url == '/login' || document.url == '/logout') { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
-              this.log('startTestSingle  document.url == "/login" || document.url == "/logout" >> continue')
+
+            var url = document.url || ''
+            if (this.isChainShow != true && (url.indexOf('login') >= 0 || url.indexOf('logout') >= 0)) { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
+              this.log('startTestSingle  this.isChainShow != true && (url.indexOf("login") >= 0 || url.indexOf("logout") >= 0) >> continue')
               if (isRandom) {
                 App.randomDoneCount ++
               } else {
@@ -11702,8 +11731,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       if (acc != null && (acc.id == testAccountId || (
                         (StringUtil.isEmpty(testInfo.baseUrl) || acc.baseUrl == testInfo.baseUrl) && (
                         (StringUtil.isEmpty(testInfo.phone) && StringUtil.isEmpty(testInfo.email))
-                        || (StringUtil.isNotEmpty(item.phone) && acc.phone == testInfo.phone)
-                        || (StringUtil.isNotEmpty(item.email) && acc.email == testInfo.email) )
+                        || (StringUtil.isNotEmpty(acc.phone) && acc.phone == testInfo.phone)
+                        || (StringUtil.isNotEmpty(acc.email) && acc.email == testInfo.email) )
                       ))) {
                         chain.testAccountId = acc.id
                         accountIndex = this.currentAccountIndex = i
@@ -11886,7 +11915,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           case JSONResponse.COMPARE_TYPE_CHANGE:
           case JSONResponse.COMPARE_CODE_CHANGE:
           case JSONResponse.COMPARE_THROW_CHANGE:
-            var code = response == null ? null : response[JSONResponse.KEY_CODE]
+            var code = response == null ? null : response[JSONResponse.KEY_CODE] || JSONResponse.CODE_SUCCESS
             it.compareColor = 'red'
             it.hintMessage = (code != null && code != JSONResponse.CODE_SUCCESS
              ? code + ' ' : (status != null && status != 200 ? status + ' ' : '')) + '状态码/异常/值类型 改变等'
@@ -13257,7 +13286,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     }, {
                       name: "CTX_PUT('User/id', 'PRE_DATA')",
                       type: stringType,
-                      comment: "在上下文存放键值对 function(path:String, from:String｜Object?, msg:String?)"
+                      comment: "在上下文存放键值对 function(path:String, from:String|Object?, msg:String?)"
                     }, {
                       name: "PRE_RES('[]/page')",
                       type: stringType,
@@ -13889,7 +13918,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         return result
       }
     },
-    created: function  () {
+    created: function () {
       try { //可能URL_BASE是const类型，不允许改，这里是初始化，不能出错
         var url = this.getCache('', 'URL_BASE')
         if (StringUtil.isEmpty(url, true) == false) {
@@ -14450,7 +14479,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var end = ind < 0 ? text.length : selectionEnd + ind - 1;
 
             var selection = text.substring(start, end);
-            var lines = StringUtil.split(selection, '\n');
+            var lines = StringUtil.split(selection, '\n', false);
 
             var newStr = text.substring(0, start);
 
@@ -14504,7 +14533,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 vInput.value = inputted = isSingle ? App.switchQuote(json) : json;
               }
               else {
-                var lines = StringUtil.split(target.value, '\n');
+                var lines = StringUtil.split(target.value, '\n', false);
                 var newStr = '';
 
                 for (var i = 0; i < lines.length; i ++) {
@@ -14551,7 +14580,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var end = ind < 0 ? text.length : selectionEnd + ind - 1;
 
               var selection = text.substring(start, end);
-              var lines = StringUtil.split(selection, '\n');
+              var lines = StringUtil.split(selection, '\n', false);
 
               var newStr = text.substring(0, start);
 

@@ -102,7 +102,7 @@ var CodeUtil = {
         k = k.substring(0, k.length - 4);
       }
       else if (StringUtil.isArrKey(k)) {
-        k = k.substring(0, k.length - (k.toLowerCase().endsWith('array') ? 5 : 4));
+        k = k.substring(0, k.length - (k.toLowerCase().endsWith('array') ? 5 : (k.toLowerCase().endsWith('arr') ? 3 : 1)));
       }
       else if (StringUtil.isSetKey(k)) {
         k = k.substring(0, k.length - 3);
@@ -133,7 +133,7 @@ var CodeUtil = {
     var reqObj = JSON5.parse(reqStr);
 
     var possibleTables = CodeUtil.extractTableNames(StringUtil.split(method, '/', true)) || [];
-    var searchTables = CodeUtil.extractTableNames(StringUtil.split(search, '/', true)) || [];
+    var searchTables = CodeUtil.extractTableNames(StringUtil.split(search, ',', true)) || [];
     for (var i = 0; i < possibleTables.length; i ++) {
       var t = possibleTables[i];
       if (StringUtil.isEmpty(t) || searchTables.indexOf(t) >= 0) {
@@ -238,7 +238,7 @@ var CodeUtil = {
           isInSubquery = false;
 
           if (line.endsWith('{}')) { //对象，判断是不是Table，再加对应的注释
-            hintComment = CodeUtil.getComment4Request(tableList, names[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj, isWarning, isAPIJSONRouter);
+            hintComment = CodeUtil.getComment4Request(tableList, schema, nnames[depth - 1], key, value, method, false, database, language, isReq, names, isRestful, standardObj, isWarning, isAPIJSONRouter);
           }
           else {
             depth --;
@@ -3829,7 +3829,7 @@ res_data = rep.json()
       delete reqObj.orderBy;
     }
 
-    // var columnStr = (StringUtil.isEmpty(colums, true) ? '' : StringUtil.trim(colums));
+    // var columnStr = (StringUtil.isEmpty(columns, true) ? '' : StringUtil.trim(columns));
     var quote = database == 'MYSQL' ? '`' : '"';
     var tablePath = (StringUtil.isEmpty(schema, true) ? '' : quote + schema + quote + '.') + quote + modelName + quote;
     if (isPost) {
@@ -3848,11 +3848,11 @@ res_data = rep.json()
         '    DELETE FROM ' + tablePath;
     }
     else {
-      var colums = Object.keys(reqObj);
+      var columns = Object.keys(reqObj);
       var cs = '';
-      if (colums != null && colums.length > 0) {
-        for (var i = 0; i < colums.length; i++) {
-          cs += (i <= 0 ? '' : ', ') + quote + colums[i] + quote; //需要尽可能保留原字段 [] 肯定不是字段名 JSONResponse.getVariableName(colums[i]) + quote;
+      if (columns != null && columns.length > 0) {
+        for (var i = 0; i < columns.length; i++) {
+          cs += (i <= 0 ? '' : ', ') + quote + columns[i] + quote; //需要尽可能保留原字段 [] 肯定不是字段名 JSONResponse.getVariableName(columns[i]) + quote;
         }
       }
 
@@ -5291,15 +5291,23 @@ res_data = rep.json()
    * @param tableName
    * @return {*}
    */
-  getModelName: function(tableName) {
+  getModelName: function(tableName, schemaName) {
     var model = StringUtil.noBlank(tableName);
     if (model == '') {
       return model;
     }
-    var lastIndex = model.lastIndexOf('_');
-    if (lastIndex >= 0) {
-      model = model.substring(lastIndex + 1);
+
+    var accessMap = CodeUtil.accessMap
+    var access = accessMap == null ? null : accessMap[StringUtil.toLowerCase(schemaName) + '.' + StringUtil.toLowerCase(tableName)]
+    var alias = access == null ? null : access.alias
+    if (StringUtil.isNotEmpty(alias)) {
+      return alias
     }
+
+    // var lastIndex = model.lastIndexOf('_');
+    // if (lastIndex >= 0) {
+    //   model = model.substring(lastIndex + 1);
+    // }
     return StringUtil.firstCase(model, true);
   },
   /**获取model成员变量名
@@ -6855,7 +6863,7 @@ res_data = rep.json()
     var possibleCount = 0;
     var comment = '';
 
-    var callbackColums = [];
+    var callbackColumns = [];
     var callbackTables = [];
 
     var lk = isWarning || isDynamic || lastKey == null || StringUtil.isBoolKey(lastKey) || StringUtil.isIdKey(lastKey) || StringUtil.isUrlKey(lastKey)
@@ -6864,11 +6872,11 @@ res_data = rep.json()
       lk = lk.substring(0, lk.length - 1);
     }
 
-    var lks = StringUtil.split(lk, '/', true);
-    if (lks != null && lks.length <= 1) {
+    var lks = StringUtil.split(lk, '_', true);
+    if (lks == null || lks.length <= 1) {
       var tbl = StringUtil.getTableName(lk);
       var col = StringUtil.getColumnName(lk);
-      lks = StringUtil.isEmpty(tbl, true) || StringUtil.isEmpty(col, true) ? null : [tbl, col];
+      lks = StringUtil.isEmpty(tbl) || StringUtil.isEmpty(col) ? null : [tbl, col];
     }
 
     var keyTables = lks == null || lks.length <= 1 ? [] : CodeUtil.extractTableNames(lks.slice(0, -1)) || [];
@@ -6884,29 +6892,29 @@ res_data = rep.json()
         var ind2 = ind <= 0 ? tbl.length : ind + tbl.length;
         tbl2 += rest.substring(0, ind2);
         rest = rest.substring(ind2);
-        if (rest.endsWith('_')) {
+        if (rest.startsWith('_')) {
           rest = rest.substring(1);
         }
 
         var col2 = rest;
 
-        var tblCols = StringUtil.isEmpty(tbl2, true) || StringUtil.isEmpty(col2, true) ? [] : [[tbl2, col2]];
-        if (col2 != col && StringUtil.isNotEmpty(col2, true) && StringUtil.isNotEmpty(tbl2, true)) {
+        var tblCols = StringUtil.isEmpty(tbl2) || StringUtil.isEmpty(col2) ? [] : [[tbl2, col2]];
+        if (col2 != col && StringUtil.isNotEmpty(col2) && StringUtil.isNotEmpty(tbl2)) {
           tblCols.push([tbl2, col2]);
         }
 
-        if (tbl2 != tbl && StringUtil.isNotEmpty(tbl, true)) {
-          if (StringUtil.isNotEmpty(col2, true)) {
+        if (tbl2 != tbl && StringUtil.isNotEmpty(tbl)) {
+          if (StringUtil.isNotEmpty(col2)) {
             tblCols.push([tbl, col2]);
           }
 
-          if (col2 != col && StringUtil.isNotEmpty(col, true)) {
+          if (col2 != col && StringUtil.isNotEmpty(col)) {
             tblCols.push([tbl, col]);
           }
         }
 
         for (var j = 0; j < tblCols.length; j ++) {
-          var tblCol = tblCols[i] || [];
+          var tblCol = tblCols[j] || [];
           var tblName = tblCol[0];
           var colName = tblCol[1];
           var ic = CodeUtil.getCommentFromDoc(tableList, sch, tblName, colName, method, database, language, true
@@ -6916,8 +6924,8 @@ res_data = rep.json()
             comment += (possibleCount <= 0 ? '' : ' | ') + ic;
             possibleCount ++;
           } else if (callback != null) {
-            if (StringUtil.isNotEmpty(colName, true) && callbackColums.indexOf(colName) < 0) {
-              callbackColums.push(colName);
+            if (StringUtil.isNotEmpty(colName, true) && callbackColumns.indexOf(colName) < 0) {
+              callbackColumns.push(colName);
             }
             if (StringUtil.isNotEmpty(tblName, true) && callbackTables.indexOf(tblName) < 0) {
               callbackTables.push(tblName);
@@ -6928,10 +6936,10 @@ res_data = rep.json()
 
       if (possibleTables == null) {
         possibleTables = CodeUtil.extractTableNames(StringUtil.split(method, '/', true)) || [];
-        var searchTables = CodeUtil.extractTableNames(StringUtil.split(search, '/', true)) || [];
+        var searchTables = CodeUtil.extractTableNames(StringUtil.split(search, ',', true)) || [];
         for (var i = 0; i < possibleTables.length; i ++) {
           var t = possibleTables[i];
-          if (StringUtil.isEmpty(t, true) || searchTables.indexOf(t) >= 0) {
+          if (StringUtil.isEmpty(t) || searchTables.indexOf(t) >= 0) { // || keyTables.indexOf(t) >= 0
             continue;
           }
           searchTables.push(t);
@@ -6942,7 +6950,7 @@ res_data = rep.json()
       var len = pathKeys == null ? 0 : pathKeys.length;
       var pathTables = CodeUtil.extractTableNames(len <= 1 ? null : pathKeys.slice(Math.max(0, len - 4), isValueNotObject ? len - 1 : len)) || [];
       for (var i = 0; i < possibleTables.length; i ++) {
-        var t = pathTables[i];
+        var t = possibleTables[i];
         if (StringUtil.isEmpty(t, true) || pathTables.indexOf(t) >= 0) {
           continue;
         }
@@ -6955,7 +6963,7 @@ res_data = rep.json()
     if (standardObj == null && ! isDynamic) {
       var pn = tableName;
       var n = columnName || lastKey;
-      if (StringUtil.isEmpty(possibleTables, true) && ! (isWarning || isValObj)) {
+      if (StringUtil.isNotEmpty(possibleTables, true) && ! (isWarning || isValObj)) {
         isFuzzTable = true;
         pn = possibleTables[0];
       }
@@ -6976,8 +6984,8 @@ res_data = rep.json()
             comment += (possibleCount <= 0 ? '' : ' | ') + ic;
             possibleCount ++;
           } else if (callback != null) {
-            if (StringUtil.isNotEmpty(col, true) && callbackColums.indexOf(col) < 0) {
-              callbackColums.push(col);
+            if (StringUtil.isNotEmpty(col, true) && callbackColumns.indexOf(col) < 0) {
+              callbackColumns.push(col);
             }
             if (StringUtil.isNotEmpty(tbl, true) && callbackTables.indexOf(tbl) < 0) {
               callbackTables.push(tbl);
@@ -7013,7 +7021,7 @@ res_data = rep.json()
           throw new Error(c);
         }
 
-        if (isWarning) {
+        if (isWarning && ! isFuzzTable) {
           return c;
         }
       }
@@ -7027,7 +7035,7 @@ res_data = rep.json()
         possibleCount ++;
       }
 
-      var grandName = targetObj == null ? null : targetObj.name;
+      var grandName = targetObj == null ? null : targetObj.grandName;
       if (StringUtil.isEmpty(grandName, true)) {
         grandName = parentObj == null ? null : parentObj.parentName;
       }
@@ -7073,11 +7081,13 @@ res_data = rep.json()
                 , isReq, pathKeys, isRestful, value, ignoreError, null, isSubquery, isWarning, null, [], isFuzzTable, null, isDynamic);
 
             if (StringUtil.isNotEmpty(ic, true)) {
-              comment += (possibleCount <= 0 ? '' : ' | ') + ic;
+              comment += (possibleCount <= 0 ? '' : ' | ') + (isFuzzTable || ! isRestful ? ic : (StringUtil.isEmpty(sch) ? '' : sch + '.')
+                  + (StringUtil.isEmpty(tbl) ? '' : tbl + (isValObj ? '' : '.'))
+                  + (StringUtil.isEmpty(col) ? '' : col) + ': ' + ic);
               possibleCount ++;
             } else if (callback != null) {
-              if (StringUtil.isNotEmpty(col, true) && callbackColums.indexOf(col) < 0) {
-                callbackColums.push(col);
+              if (StringUtil.isNotEmpty(col, true) && callbackColumns.indexOf(col) < 0) {
+                callbackColumns.push(col);
               }
               if (StringUtil.isNotEmpty(tbl, true) && callbackTables.indexOf(tbl) < 0) {
                 callbackTables.push(tbl);
@@ -7085,7 +7095,10 @@ res_data = rep.json()
             }
           }
         } else {
-          c = CodeUtil.getCommentFromDoc(tableList, isValObj ? parentName : gn, isValObj ? n : pn, isValObj ? null : n
+          var sch = isValObj ? parentName : gn;
+          var tbl = isValObj ? n : pn;
+          var col = isValObj ? null : n;
+          c = CodeUtil.getCommentFromDoc(tableList, sch, tbl, col
               , method, database, language, onlyTableAndColumn, isReq, pathKeys, isRestful, value, ignoreError, null, isSubquery, isWarning, null, [], isFuzzTable);
           if (StringUtil.isNotEmpty(c, true)) {
             if (targetObj != null) {
@@ -7093,15 +7106,17 @@ res_data = rep.json()
                   + (targetObj.notEmpty ? '! ' : (targetObj.notNull ? ', ' : '? ')) + StringUtil.trim(c);
             }
 
-            comment += (possibleCount <= 0 ? '' : ' | ') + c;
+            comment += (possibleCount <= 0 ? '' : ' | ') + (isFuzzTable || ! isRestful ? c : (StringUtil.isEmpty(sch) ? '' : sch + '.')
+                + (StringUtil.isEmpty(tbl) ? '' : tbl + (isValObj ? '' : '.'))
+                + (StringUtil.isEmpty(col) ? '' : col) + ': ' + c);
             possibleCount ++;
           }
 
           if (StringUtil.isEmpty(tableName, true)) {
-            tableName = isValObj ? n : pn;
+            tableName = tbl;
           }
           if (StringUtil.isEmpty(columnName, true)) {
-            columnName = isValObj ? null : n;
+            columnName = col;
           }
         }
 
@@ -7298,16 +7313,17 @@ res_data = rep.json()
       var table = item == null ? null : (isTSQL ? item.AllTable : (database != 'SQLSERVER' ? item.Table : item.SysTable));
       var table_name = table == null ? null : table.table_name;
       var tbl_name = StringUtil.isEmpty(table_name, true) ? null : table_name.trim().replaceAll('_', '').replaceAll('-', '').toLowerCase();
-      if (StringUtil.isEmpty(tbl_name, true) || (isRestful != true && tableName != CodeUtil.getModelName(table_name))
+      var table_schema = StringUtil.isEmpty(tbl_name, true) ? null : table.table_schema;
+      if (table_schema != schemaName && StringUtil.isNotEmpty(table_schema, true) && StringUtil.isNotEmpty(schemaName, true)) { // tableName != CodeUtil.getModelName(table.table_name)) {
+        continue;
+      }
+
+      var modelName = isRestful ? table_name : CodeUtil.getModelName(table_name, table_schema);
+      if (StringUtil.isEmpty(tbl_name, true) || (isRestful != true && tableName != modelName)
           || (isRestful && ((isDynamic != true || StringUtil.isNotEmpty(tblName, true))
               && ((tbl_name != tblName && ! isFuzzTable) || (isFuzzTable && tbl_name.indexOf(tblName) < 0)))
           )
       ) { // tableName != CodeUtil.getModelName(table_name)) {
-        continue;
-      }
-
-      var table_schema = table.table_schema;
-      if (table_schema != schemaName && StringUtil.isNotEmpty(table_schema, true) && StringUtil.isNotEmpty(schemaName, true)) { // tableName != CodeUtil.getModelName(table.table_name)) {
         continue;
       }
 
@@ -7357,7 +7373,7 @@ res_data = rep.json()
           }
 
           if (isWarning) {
-            return ' ';
+            return comment;
           }
 
           var priority = '';
@@ -7542,8 +7558,9 @@ res_data = rep.json()
 
       var columnNames = []
       for (var j = 0; j < columnList.length; j++) {
-        var column = (columnList[j] || {})[isTSQL ? 'AllColumn' : 'Column'];
-        var name = column == null ? null : column.column_name;
+        var colObj = columnList[j] || {};
+        var columnObj = colObj[isTSQL ? 'AllColumn' : 'Column'];
+        var name = columnObj == null ? null : columnObj.column_name;
         if (name == null || key.replaceAll('_', '').toLowerCase() != name.replaceAll('_', '').toLowerCase()) {
           if (name != null) {
             columnNames.push(name)
@@ -7555,13 +7572,13 @@ res_data = rep.json()
           + (fun.length <= 0 ? '' : fun + ' < ')
           + (logic.length <= 0 ? '' : logic + ' < ');
 
-        var o = isTSQL ? column.AllColumnComment : (database == 'POSTGRESQL' ? column.PgAttribute : (database == 'SQLSERVER' ? column.ExtendedProperty : column));
+        var o = isTSQL ? colObj.AllColumnComment : (database == 'POSTGRESQL' ? colObj.PgAttribute : (database == 'SQLSERVER' ? colObj.ExtendedProperty : columnObj));
 
-        column.column_type = CodeUtil.getColumnType(column, database);
-        var t = CodeUtil.getType4Language(language, column.column_type, true);
-        var c = (p.length <= 0 ? '' : p + key + ': ') + t + (column.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
+        columnObj.column_type = CodeUtil.getColumnType(columnObj, database);
+        var t = CodeUtil.getType4Language(language, columnObj.column_type, true);
+        var c = (p.length <= 0 ? '' : p + key + ': ') + t + (columnObj.is_nullable == 'YES' ? '? ' : ', ') + (o || {}).column_comment;
 
-        var ct = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, column.column_type, false);
+        var ct = CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, columnObj.column_type, false);
         if (verifyType && t != null && CodeUtil.isTypeMatch(ct, CodeUtil.getType4Language(CodeUtil.LANGUAGE_JAVA_SCRIPT, typeOfValue)) != true) {
           // c = ' ! value必须是' + t + '类型！' + CodeUtil.getComment(c, false, ' ')
           // if (ignoreError != true) {
@@ -7571,16 +7588,16 @@ res_data = rep.json()
         }
 
         if (isFuzzTable) {
-          if (tbl_name != tblName && StringUtil.isNotEmpty(tblName, true)) {
+          if (StringUtil.isNotEmpty(tblName, true) && ((isRestful && tbl_name != tblName) || (tableName != modelName && ! isRestful))) {
             continue;
           }
 
           if (StringUtil.isNotEmpty(c, true) && ! isWarning) {
-            comment = (StringUtil.isEmpty(comment, true) ? '' : comment + ' | ')
-              + (StringUtil.isEmpty(table_schema, true) || table_schema == schemaName ? '' : table_schema + '.')
-              + table_name + '.' + name + ': ' + c;
+            comment = (StringUtil.isEmpty(comment) ? '' : comment + ' | ')
+              + ( ! isRestful ? c : (StringUtil.isEmpty(table_schema) || table_schema == schemaName ? '' : table_schema + '.')
+              + table_name + '.' + name + ': ' + c);
             possibleCount ++;
-            if (possibleCount > 0) {
+            if (possibleCount > 10) {
               return comment;
             }
             continue;
@@ -7590,7 +7607,9 @@ res_data = rep.json()
         return isWarning ? ' ' : c;
       }
 
-      if (isFuzzTable || (tbl_name != tblName && StringUtil.isNotEmpty(tblName, true))) {
+      if (isFuzzTable || (StringUtil.isNotEmpty(tblName, true) && ((isRestful && tbl_name != tblName)
+          || (tableName != modelName && ! isRestful)))
+      ) {
         continue;
       }
 
@@ -7598,8 +7617,8 @@ res_data = rep.json()
     }
 
     if (callback != null) {
-      if (StringUtil.isNotEmpty(columnName, true) && callbackColums.indexOf(columnName) < 0) {
-        callbackColums.push(columnName);
+      if (StringUtil.isNotEmpty(columnName, true) && callbackColumns.indexOf(columnName) < 0) {
+        callbackColumns.push(columnName);
       }
       if (StringUtil.isNotEmpty(tableName, true) && callbackTables.indexOf(tableName) < 0) {
         callbackTables.push(tableName);
@@ -7613,7 +7632,7 @@ res_data = rep.json()
         }
       }
 
-      callback(callbackColums, callbackTables);
+      callback(callbackColumns, callbackTables);
     }
 
     return comment;

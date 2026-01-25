@@ -540,8 +540,8 @@ var JSONResponse = {
       }
     }
     codeName = StringUtil.isEmpty(codeName, true) ? JSONResponse.KEY_CODE : codeName;
-    var tCode = (isMachineLearning != true && noBizCode) ? 0 : (target || {})[codeName];
-    var rCode = noBizCode ? tCode : (real || {})[codeName];
+    var tCode = (isMachineLearning != true && noBizCode) ? JSONResponse.CODE_SUCCESS : (target || {})[codeName];
+    var rCode = noBizCode ? tCode : (real || {})[codeName] || (real == null || real == {} ? null : JSONResponse.CODE_SUCCESS);
 
     //解决了弹窗提示机器学习更新标准异常，但导致所有项测试结果都变成状态码 code 改变
     // if (real == null) {
@@ -1924,7 +1924,7 @@ var JSONResponse = {
     var notEmpty = prefix.endsWith('!')
     var path = nullable || notEmpty ? prefix.substring(0, prefix.length - 1) : prefix
     // sys.User.id|apijson.Moment.userId
-    var names = StringUtil.split(path, '/', true) || []
+    var names = StringUtil.split(path, '|') || []
     for (var i = 0; i < names.length; i ++) {
       var name = names[i] || ''
 
