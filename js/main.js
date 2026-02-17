@@ -3200,23 +3200,23 @@ https://github.com/Tencent/APIJSON/issues
               log(e)
             }
 
-            var code_ = inputObj.code
+            var code_ = inputObj[JSONResponse.KEY_CODE]
             if (isEditResponse) {
-              inputObj.code = null  // delete inputObj.code
+              inputObj[JSONResponse.KEY_CODE] = typeof code_ == 'undefined' ? undefined : null  // delete inputObj.code
             }
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
             CodeUtil.parseComment(after, docObj == null ? null : docObj['[]'], path, this.schema, this.database, this.language, isEditResponse != true, commentObj, true);
 
             if (isEditResponse) {
-              inputObj.code = code_
+              inputObj[JSONResponse.KEY_CODE] = code_
             }
           }
 
           var rawRspStr = JSON.stringify(currentResponse || {})
-          const code = currentResponse.code;
+          const code = currentResponse[JSONResponse.KEY_CODE];
           const thrw = currentResponse.throw;
-          delete currentResponse.code; // currentResponse.code = null; //code必须一致
+          currentResponse[JSONResponse.KEY_CODE] = typeof code == 'undefined' ? undefined : null; // delete currentResponse.code; // currentResponse.code = null; //code必须一致
           delete currentResponse.throw; // currentResponse.throw = null; // throw必须一致
 
           const isML = this.isMLEnabled;
@@ -3224,7 +3224,7 @@ https://github.com/Tencent/APIJSON/issues
           stddObj.status = (this.currentHttpResponse || {}).status || 200;
           stddObj.code = code || 0;
           stddObj.throw = thrw;
-          currentResponse.code = code;
+          currentResponse[JSONResponse.KEY_CODE] = code;
           currentResponse.throw = thrw;
 
           var config = vRandom.value;
@@ -3374,7 +3374,7 @@ https://github.com/Tencent/APIJSON/issues
                 'documentId': isEditResponse ? did : undefined,
                 'randomId': 0,
                 'host': baseUrl,
-//                'testAccountId': currentAccountId,
+               'testAccountId': currentAccountId,
                 'response': isEditResponse ? rawInputStr : rawRspStr,
                 'standard': isML || isEditResponse ? JSON.stringify(isEditResponse ? commentObj : stddObj) : undefined,
                 // 没必要，直接都在请求中说明，查看也方便 'detail': (isEditResponse ? App.getExtraComment() : null) || ((App.currentRemoteItem || {}).TestRecord || {}).detail,
@@ -5375,7 +5375,7 @@ https://github.com/Tencent/APIJSON/issues
                 'documentId@': '/Document/id',
                 'userId': userId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
-//                'testAccountId': this.getCurrentAccountId(),
+               'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
 //                'reportId': reportId <= 0 ? null : reportId,
 //                'invalid': reportId == null ? 0 : null,
@@ -5858,7 +5858,7 @@ https://github.com/Tencent/APIJSON/issues
                 'documentId@': '/Document/id',
                 'userId': userId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
-//                'testAccountId': this.getCurrentAccountId(),
+                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
                 'reportId': reportId <= 0 ? null : reportId,
                 'invalid': reportId == null ? 0 : null,
@@ -6113,6 +6113,7 @@ https://github.com/Tencent/APIJSON/issues
           const cri = this.currentRemoteItem || {}
           const chain = cri.Chain || {}
           const cId = chain.id || 0
+          const currentAccountId = this.getCurrentAccountId();
 
           var req = {
             '[]': {
@@ -6127,7 +6128,7 @@ https://github.com/Tencent/APIJSON/issues
               },
               'TestRecord': {
                 'randomId@': '/Random/id',
-//                'testAccountId': this.getCurrentAccountId(),
+                'testAccountId': currentAccountId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 '@order': 'date-'
               },
@@ -6143,7 +6144,7 @@ https://github.com/Tencent/APIJSON/issues
                 },
                 'TestRecord': {
                   'randomId@': '/Random/id',
-//                  'testAccountId': this.getCurrentAccountId(),
+                  'testAccountId': currentAccountId,
                   'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                   '@order': 'date-'
                 }
@@ -8440,6 +8441,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (isEnter) { // enter
           if (isFilter) {
+            if (['chainGroup', 'caseGroup', 'testCase', 'random', 'randomSub'].indexOf(type) >= 0) {
+              this.reportId = 0;
+            }
             this.onFilterChange(type)
             return
           }
@@ -10961,7 +10965,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
 
           // value RANDOM_DB
-          const value = line2.substring(index + ': '.length);
+          const value = StringUtil.trim(line2.substring(index + ': '.length));
 
           var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
             try {

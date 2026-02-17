@@ -530,18 +530,27 @@ var JSONResponse = {
    */
   compareResponse: function(res, target, real, folder, isMachineLearning, codeName, exceptKeys, ignoreTrend, noBizCode) {
     target = target || {}
-    var tStatus = target.status || 200;
-    var rStatus = (res || {}).status;
-    if (rStatus != null && rStatus != tStatus) {
+    codeName = StringUtil.isEmpty(codeName, true) ? JSONResponse.KEY_CODE : codeName;
+
+    var tStatus = target.status; // || 200;
+    if (tStatus == null && StringUtil.isNotEmpty(target)) { // target[codeName] != null) {
+      tStatus = 200;
+    }
+    var rStatus = (res || {}).status || 200;
+    // if (rStatus == null && real[codeName] != null) {
+    //   rStatus = 200;
+    // }
+
+    if (tStatus != null && rStatus != tStatus) {
       return {
         code: JSONResponse.COMPARE_CODE_CHANGE,
         msg: 'HTTP Status Code 改变！' + tStatus + ' -> ' + rStatus,
         path: ''
       }
     }
-    codeName = StringUtil.isEmpty(codeName, true) ? JSONResponse.KEY_CODE : codeName;
+
     var tCode = (isMachineLearning != true && noBizCode) ? JSONResponse.CODE_SUCCESS : (target || {})[codeName];
-    var rCode = noBizCode ? tCode : (real || {})[codeName] || (real == null || real == {} ? null : JSONResponse.CODE_SUCCESS);
+    var rCode = noBizCode ? tCode : (real || {})[codeName]; // || (real == null || real == {} ? null : JSONResponse.CODE_SUCCESS);
 
     //解决了弹窗提示机器学习更新标准异常，但导致所有项测试结果都变成状态码 code 改变
     // if (real == null) {
@@ -552,7 +561,7 @@ var JSONResponse = {
     //   };
     // }
 
-    if (tCode == null) {
+    if (tStatus == null) { // tCode == null) {
       if (rCode != JSONResponse.CODE_SUCCESS && rCode != 200) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
@@ -602,7 +611,7 @@ var JSONResponse = {
       if (find != null) {
         return {
           code: JSONResponse.COMPARE_EQUAL_EXCEPTION,
-          msg: '符合异常分支 ' + rCode + (StringUtil.isEmpty(rThrw) ? '' : ' ' + rThrw + ':') + ' ' + StringUtil.trim(find.msg),
+          msg: '符合异常分支 ' + rCode + (StringUtil.isEmpty(rThrw) ? '' : ' ' + rThrw + ':') + ' ' + StringUtil.trim(find[JSONResponse.KEY_MSG]),
           path: folder == null ? '' : folder
         };
       }
@@ -620,9 +629,9 @@ var JSONResponse = {
 
     if (noBizCode != true) {
         delete target[codeName];
-        delete real[codeName];
+        real[codeName] = typeof rCode == 'undefined' ? undefined : null; // delete real[codeName];
         delete target.throw;
-        delete real.throw;
+        real.throw = typeof rCode == 'undefined' ? rThrw : null; // delete real.throw;
     }
 
     //可能提示语变化，也要提示
@@ -873,6 +882,9 @@ var JSONResponse = {
 
     var type = target.type;
     log('compareWithStandard  type = target.type = ' + type + ' >>');
+    if (StringUtil.isEmpty(type) || ['null', 'undefined'].indexOf(type) >= 0) {
+      type = null;
+    }
 
     var valueLevel = target.valueLevel;
     log('compareWithStandard  valueLevel = target.valueLevel = ' + valueLevel + ' >>');
@@ -923,7 +935,11 @@ var JSONResponse = {
     };
 
     var realType = JSONResponse.getType(real);
-    if (type != realType && type != 'undefined' && (type != 'number' || realType != 'integer')) { //类型改变
+    if (StringUtil.isEmpty(realType) || ['null', 'undefined'].indexOf(realType) >= 0) {
+      realType = null;
+    }
+
+    if (type != realType && type != null && (type != 'number' || realType != 'integer')) { //类型改变
       log('compareWithStandard  type != realType && type != undefined && (type != number || realType != integer) >> return COMPARE_TYPE_CHANGE');
 
       max = {
@@ -1268,16 +1284,18 @@ var JSONResponse = {
       standard = {};
     }
 
-    var code = currentResponse.code;
+    var code = currentResponse[JSONResponse.KEY_CODE];
     var thrw = currentResponse.throw;
-    var msg = currentResponse.msg;
+    var msg = currentResponse[JSONResponse.KEY_MSG];
 
     var hasCode = standard.code != null;
     var isCodeChange = noBizCode != true && standard.code != code;
     var exceptions = standard.exceptions || [];
 
-    delete currentResponse.code; //code必须一致
-    delete currentResponse.throw; //throw必须一致
+    // delete currentResponse[JSONResponse.KEY_CODE]; //code必须一致
+    // delete currentResponse.throw; //throw必须一致
+    currentResponse[JSONResponse.KEY_CODE] = null; //code必须一致
+    currentResponse.throw = null; //throw必须一致
 
     var find = false;
     if (isCodeChange && hasCode) {  // 走异常分支
@@ -1291,14 +1309,15 @@ var JSONResponse = {
       }
 
       if (find) {
-        delete currentResponse.msg;
+        // delete currentResponse[JSONResponse.KEY_MSG];
+        currentResponse[JSONResponse.KEY_MSG] = null;
       }
     }
 
     var stddObj = isML ? (isCodeChange && hasCode ? standard : JSONResponse.updateStandard(standard, currentResponse)) : {};
 
 //    if (noBizCode != true) {
-        currentResponse.code = code;
+        currentResponse[JSONResponse.KEY_CODE] = code;
         currentResponse.throw = thrw;
 //    }
 
@@ -1312,7 +1331,7 @@ var JSONResponse = {
         stddObj.throw = thrw;
       }
       else {  // 走异常分支
-        currentResponse.msg = msg;
+        currentResponse[JSONResponse.KEY_MSG] = msg;
 
         if (find != true) {
           exceptions.push({
@@ -2062,7 +2081,7 @@ var JSONResponse = {
 
       //String 类型在 长度超过一定值 或 不是 常量名 时，改成 无限模型
       //不用 type 判断类型，这样可以保证 lengthType 不会自动升级
-      if (isLength != true && typeof real == 'string' && (real.length > 20 || StringUtil.isConstName(real) != true)) {
+      if (isLength != true && typeof real == 'string' && (real.length > StringUtil.MAX_NAME_LENGTH || StringUtil.isConstName(real) != true)) {
         if (level != 2) { //自定义模型不受影响
           target[levelName] = 3;
         }

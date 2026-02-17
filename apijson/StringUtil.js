@@ -18,6 +18,9 @@
  */
 var StringUtil = {
   TAG: 'StringUtil',
+  MAX_NAME_LENGTH: 30,
+  MAX_NICK_NAME_LENGTH: 20,
+  MAX_CONST_NAME_LENGTH: 30,
 
   /**获取string,为null则返回''
    * @param s
@@ -80,7 +83,8 @@ var StringUtil = {
    * @return
    */
   isName: function(s) {
-    return s != null && s.length > 0 && /[a-zA-Z_]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+    var l = StringUtil.length(s);
+    return l >= 2 && l <= StringUtil.MAX_NAME_LENGTH && /[a-zA-Z_]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
   },
 
   /**判断是否为代码名称，只能包含字母，数字或下划线
@@ -88,7 +92,8 @@ var StringUtil = {
    * @return
    */
   isBigName: function(s) {
-    return s != null && s.length > 0 && /[A-Z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+    var l = StringUtil.length(s);
+    return l >= 2 && l <= StringUtil.MAX_NAME_LENGTH && /[A-Z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
   },
 
   /**判断是否为代码名称，只能包含字母，数字或下划线
@@ -96,11 +101,13 @@ var StringUtil = {
    * @return
    */
   isSmallName: function(s) {
-    return s != null && s.length > 0 && /[a-z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
+    var l = StringUtil.length(s);
+    return l >= 1 && l <= StringUtil.MAX_NAME_LENGTH && /[a-z]/.test(s.substring(0, 1)) && /^[0-9a-zA-Z_]+$/.test(s);
   },
 
   isConstName: function(s) {
-    return s != null && s.length > 0 && /[A-Z_]/.test(s.substring(0, 1)) && /^[0-9A-Z_]+$/.test(s);
+    var l = StringUtil.length(s);
+    return l >= 2 && l <= StringUtil.MAX_CONST_NAME_LENGTH && /[A-Z_]/.test(s.substring(0, 1)) && /^[0-9A-Z_]+$/.test(s);
   },
 
   SYNTAX_NAMES: ['bool', 'boolean', 'int', 'integer', 'num', 'number', 'str', 'string', 'arr', 'array', 'obj', 'object'
@@ -728,7 +735,8 @@ var StringUtil = {
      return StringUtil.isKeyOfCategory(key, 'Latitude');
   },
   isNameKey: function (key) {
-     return StringUtil.isKeyOfCategory(key, 'Name');
+     var l = StringUtil.length(key);
+     return l >= 2 && l <= 30 && StringUtil.isKeyOfCategory(key, 'Name');
   },
   isPathKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Path');
