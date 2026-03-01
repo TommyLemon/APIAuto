@@ -121,11 +121,11 @@ Bilibili：https://search.bilibili.com/all?keyword=APIAuto
 
 ### 相关推荐
 [别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg) <br />
-[APIAuto: 最先进的HTTP接口工具](https://blog.csdn.net/Nifc666/article/details/141966487) <br />
-[APIAuto 开源项目教程](https://damodev.csdn.net/68a7c70a4e4959284dac25fc.html) <br />
-[Github 2.2k Star！一款开源的机器学习HTTP接口工具！](https://mp.weixin.qq.com/s/4ZS80QP-WN-holFQkrxK-w) 
+[APIAuto: 最先进的 HTTP 接口工具](https://blog.csdn.net/Nifc666/article/details/141966487) <br />
+[APIAuto 开源项目教程](https://blog.csdn.net/gitblog_00138/article/details/142802330) <br />
+[Github 2.2k Star！一款开源的机器学习 HTTP 接口工具！](https://mp.weixin.qq.com/s/4ZS80QP-WN-holFQkrxK-w) 
 
-### 百度、搜狗、抖音公网接口调用演示<br />
+### 百度、搜狗、抖音公网接口调用演示 <br />
 因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
 可以复制 Chrome 等浏览器、Charles 等抓包工具的请求文本，<br />
 粘贴到 APIAuto 的 URL 输入框，会自动填充 URL, JSON, Header 等。<br />
@@ -343,6 +343,7 @@ https://github.com/TommyLemon/APIAuto/commits/master
 
 **创作不易、坚持更难，右上角点亮 ⭐Star 支持/收藏下本项目吧，谢谢 ^_^** <br />
 https://github.com/TommyLemon/APIAuto
+
 
 
 
