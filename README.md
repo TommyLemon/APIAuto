@@ -255,6 +255,9 @@ https://github.com/TommyLemon/APIAuto/issues/12
 托管服务地址改为 http://47.98.196.224:8080  <br />
 https://github.com/TommyLemon/APIAuto/issues/13
 
+#### 5.如何清除多余的表记录？
+https://github.com/TommyLemon/APIAuto/issues/82
+
 更多问题及解答 <br />
 https://github.com/TommyLemon/APIAuto/issues
 
