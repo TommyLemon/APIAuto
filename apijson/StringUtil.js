@@ -368,9 +368,37 @@ var StringUtil = {
   isFileUrl: function (s) {
     return StringUtil.isUrl(s, ['file']);
   },
-  isPath: function (s) {
+  isFilePath: function (s) {
+    return StringUtil.isPath(s, false);
+  },
+  isUrlPath: function (s) {
+    return StringUtil.isPath(s, true);
+  },
+  isPath: function (s, allowQuery) {
+    if (StringUtil.isEmpty(s)) {
+      return false;
+    }
+
+    if (allowQuery) {
+      var ind = s.indexOf('#')
+      if (ind >= 0) {
+        s = s.substring(0, ind);
+      }
+      ind = s.indexOf('?')
+      if (ind >= 0) {
+        s = s.substring(0, ind);
+      }
+    }
+
+    if (s.startsWith('/')) {
+      s = s.substring(1);
+    }
+    if (s.endsWith('/')) {
+      s = s.substring(0, s.length - 1);
+    }
+
     var arr = StringUtil.split(s, '/');
-    if (arr == null || arr.length <= 1) {
+    if (arr == null || arr.length <= 0) { // 1) {
       return false;
     }
 

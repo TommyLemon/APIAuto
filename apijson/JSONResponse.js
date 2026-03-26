@@ -190,9 +190,9 @@ var JSONResponse = {
    * @return
    */
   isSuccess: function(obj) {
-//    if (obj == null) {
-//      return false
-//    }
+    if (obj == null) {
+      return false
+    }
 
     if (obj instanceof Array == false && obj instanceof Object) {
       obj = obj[JSONResponse.KEY_CODE];

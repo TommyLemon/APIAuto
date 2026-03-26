@@ -1278,7 +1278,9 @@ https://github.com/Tencent/APIJSON/issues
       history: {name: '请求0'},
       remotes: [],
       locals: [],
-      chainTags: [{name: 'Home', selected: false}, {name: 'Category'}, {name: 'Search'}, {name: 'Moment'}, {name: 'Chat'}, {name: 'Tommy'}, {name: 'Lemon'}],
+      tagCombineIndex: 0,
+      tagCombines: ['&', '|', '!'],
+      tags: [{name: 'P0', selected: false}, {name: 'P1', selected: false}, {name: 'P2', selected: false}, {name: 'P3', selected: false}, {name: 'Home', selected: false}, {name: 'Category'}, {name: 'Search'}, {name: 'Moment'}, {name: 'Chat'}, {name: 'Tommy'}, {name: 'Lemon'}],
       chainPaths: [],
       casePaths: [],
       chainGroups: [],
@@ -3139,8 +3141,13 @@ https://github.com/Tencent/APIJSON/issues
               var ok = JSONResponse.isSuccess(data)
               alert((isPut ? '修改' : '上传') + (ok ? '成功' : '失败！\n' + StringUtil.get(err != null ? err.message : data.msg)))
 
-              if (ok && ! isPut) {
-                script.id = (data.Script || {}).id
+              if (ok) {
+                if (! isPut) {
+                  script.id = (data.Script || {}).id
+                }
+
+                App.remotes = []
+                App.showTestCase(true, false, null, group)
               }
             })
 
@@ -3288,6 +3295,13 @@ https://github.com/Tencent/APIJSON/issues
             commentObj = JSONResponse.updateStandard({}, mapReq2);
           }
 
+          var isChainShow = this.isChainShow
+          var paths = (isChainShow ? this.chainPaths : this.casePaths) || []
+          var index = paths.length - 1
+          const group = paths[index]
+          const isSub = this.isRandomSubListShow
+          const item = isSub ? this.currentRandomItem : this.currentRemoteItem
+
           var callback = function (randomName, constConfig, constJson) {
             // 用现成的测试过的更好，Response 与 Request 严格对应
             // var mapReq = {};
@@ -3403,8 +3417,17 @@ https://github.com/Tencent/APIJSON/issues
                   }
                 }
                 else {
-                  App.remotes = []
-                  App.showTestCase(true, false)
+                  if (isExportRandom && btnIndex <= 0) {
+                    if (isSub) {
+                      App.randoms = []
+                    } else {
+                      App.randomSubs = []
+                    }
+                    App.showRandomList(true, item, isSub)
+                  } else {
+                    App.remotes = []
+                    App.showTestCase(true, false, null, group)
+                  }
 
                   if (isPut) {  // 修改失败就转为新增
                     alert('修改成功')
@@ -3445,8 +3468,6 @@ https://github.com/Tencent/APIJSON/issues
                   var req = isGenerate != true ? null : (isReleaseRESTful ? mapReq : App.getRequest(vInput.value, {}))
                   App.newAndUploadRandomConfig(baseUrl, req, (data.Document || {}).id, config, App.requestCount, function (url, res, err) {
 
-
-
                         if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
                           alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
                           App.isRandomListShow = true
@@ -3485,7 +3506,7 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           configs.push(config)
-          config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
+          var config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
           if (StringUtil.isNotEmpty(config2, true)) {
             configs.push(config2)
           }
@@ -5165,31 +5186,45 @@ https://github.com/Tencent/APIJSON/issues
         this.selectChainGroup(0, path)
       },
       isChainGroupShow: function () {
-        return this.chainShowType != 1 && (this.chainGroups.length > 0) // || this.chainPaths.length <= 0)
+        return (this.chainShowType != 1 && (this.chainGroups.length > 0)) || ! this.isChainItemShow() // || this.chainPaths.length <= 0)
       },
       isChainItemShow: function () {
         return this.chainShowType != 2 || (this.chainGroups.length <= 0 && this.chainPaths.length > 0)
       },
-      removeChainTag: function (ind, tag, index, item) {
+
+      changeTagCombine: function () {
+        this.tagCombineIndex = (this.tagCombineIndex + 1) % this.tagCombines.length
+        if (this.isChainShow) {
+          this.selectChainGroup(this.currentChainGroupIndex)
+        } else {
+          this.onFilterChange('testCase')
+        }
+      },
+      removeTag: function (ind, tag, index, item, isDoc) {
         if (! this.isCaseGroupEditable) {
           this.isCaseGroupEditable = true
-          this.changeChainTag(index, item)
+          this.changeTag(index, item, isDoc)
           return
         }
 
-        var chain  = (item || {}).Chain || {}
+        var chain = (item || {})[isDoc ? 'Document' : 'Chain'] || {}
         var tagList = chain.tagList || [];
         tagList.splice(ind, 1)
-        this.setChainTag(index, chain, tagList)
+        this.setTag(index, chain, tagList, null, isDoc)
       },
-      changeChainTag: function (index, group) {
+      changeTag: function (index, group, isDoc) {
         this.isCaseGroupEditable = true
-        this.currentChainGroupIndex = index
-        var chain = (group || {}).Chain || {}
+        if (isDoc) {
+          this.currentDocIndex = index
+        } else {
+          this.currentChainGroupIndex = index
+        }
+
+        var chain = (group || {})[isDoc ? 'Document' : 'Chain'] || {}
         var tagList = chain.tagList || []
-        var chainTags = this.chainTags || []
-        for (var j = 0; j < chainTags.length; j ++) {
-          var tag = chainTags[j] || {}
+        var tags = this.tags || []
+        for (var j = 0; j < tags.length; j ++) {
+          var tag = tags[j] || {}
           tag.selected = false
         }
 
@@ -5200,8 +5235,8 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           var find = false
-          for (var j = 0; j < chainTags.length; j ++) {
-            var tag = chainTags[j] || {}
+          for (var j = 0; j < tags.length; j ++) {
+            var tag = tags[j] || {}
             if (tag.name == name) {
               tag.selected = true
               find = true
@@ -5210,24 +5245,25 @@ https://github.com/Tencent/APIJSON/issues
           }
 
           if (! find) {
-            chainTags.push({name: name, selected: true})
+            tags.push({name: name, selected: true})
           }
         }
 
-        this.chainTags = chainTags
+        this.tags = tags
         alert('已进入编辑模式，点击底部标签即可添加/移除，点列表项标签也可移除')
       },
-      setChainTag(index, item, tagList, isAdd) {
+      setTag(index, item, tagList, isAdd, isDoc) {
+        var table = isDoc ? 'Document' : 'Chain'
         var chain = item || {} // (item || {}).Chain || {}
         this.request(true, REQUEST_TYPE_POST, REQUEST_TYPE_JSON, this.server + '/put', {
-          Chain: {
+          [table]: {
             'id': chain.id,
-            'groupId': chain.groupId,
-            'groupId{}': [chain.groupId],
-            'groupName': chain.groupName,
+            'groupId': isDoc ? undefined : chain.groupId,
+            'groupId{}': isDoc ? undefined : [chain.groupId],
+            'groupName': isDoc ? undefined : chain.groupName,
             'tagList': tagList
           },
-          tag: 'Chain-group'
+          tag: isDoc ? 'Document' : 'Chain-group'
         }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
           var isOk = JSONResponse.isSuccess(res.data)
@@ -5236,24 +5272,36 @@ https://github.com/Tencent/APIJSON/issues
           if (err != null) {
             msg += '\nerr: ' + err.msg
           }
-          alert((isAdd ? '新增' : '移除') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + chain.groupId) + '\ngroupName: ' + chain.groupName + '\n' + msg)
+
+          alert((isAdd ? '新增' : '移除') + (isOk ? '成功' : '失败')
+              + (isAdd ? '! \n' : (isDoc ? '\nid: ' + chain.id : '！\ngroupId: ' + chain.groupId))
+              + (isDoc ? '\nname: ' + chain.name : '\ngroupName: ' + chain.groupName) + '\n' + msg
+          )
 
           App.isCaseGroupEditable = ! isOk
           if (isOk) {
-            App.selectChainGroup(App.currentChainGroupIndex, null)
+            if (isDoc) {
+              App.onFilterChange('testCase')
+            } else {
+              App.selectChainGroup(App.currentChainGroupIndex, null)
+            }
           }
         })
       },
-      selectChainTag: function (index, tag) {
+      selectTag: function (index, tag, isDoc) {
         tag.selected = ! tag.selected
-        var groupIndex = this.currentChainGroupIndex
+        var groupIndex = isDoc ? this.currentDocIndex : this.currentChainGroupIndex
         if (this.isCaseGroupEditable != true || groupIndex < 0) {
-          this.selectChainGroup(groupIndex)
+          if (isDoc) {
+            this.onFilterChange('testCase')
+          } else {
+            this.selectChainGroup(groupIndex)
+          }
           return
         }
 
-        var group = this.chainGroups[groupIndex] || {}
-        var chain = group.Chain || {}
+        var group = (isDoc ? this.testCases[groupIndex] : this.chainGroups[groupIndex]) || {}
+        var chain = (isDoc ? group.Document : group.Chain) || {}
         var tagList = chain.tagList || []
         if (tag.selected) {
           for (var i = 0; i < tagList.length; i ++) {
@@ -5263,6 +5311,10 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
           tagList.push(tag.name)
+
+          if (this.isCaseGroupEditable) {
+            tag.selected = false
+          }
         } else {
           var ind = tagList.indexOf(tag.name)
           if (ind >= 0) {
@@ -5270,7 +5322,7 @@ https://github.com/Tencent/APIJSON/issues
           }
         }
 
-        this.setChainTag(groupIndex, chain, tagList, tag.selected)
+        this.setTag(groupIndex, chain, tagList, tag.selected, isDoc)
       },
       selectChainGroup: function (index, group) {
         this.currentChainGroupIndex = index
@@ -5307,10 +5359,12 @@ https://github.com/Tencent/APIJSON/issues
         var page = this.chainGroupPage = this.chainGroupPages[key] || 0
         var count = this.chainGroupCount = this.chainGroupCounts[key] || 0
         var search = this.chainGroupSearch = this.chainGroupSearches[key] || ''
-        var chainTags = this.chainTags || []
+
+        var logic = this.tagCombines[this.tagCombineIndex] || '&'
+        var tagList = this.tags || []
         var tags = []
-        for (var i = 0; i < chainTags.length; i ++) {
-          var tag = chainTags[i] || {}
+        for (var i = 0; i < tagList.length; i ++) {
+          var tag = tagList[i] || {}
           if (tag.selected) {
             tags.push(tag.name)
           }
@@ -5326,7 +5380,7 @@ https://github.com/Tencent/APIJSON/issues
               'userId': userId,
               'toGroupId': groupId,
               'groupName%$': search,
-              'tagList&<>': tags == null || tags.length <= 0 ? null : tags,
+              ['tagList' + logic + '<>']: tags == null || tags.length <= 0 ? null : tags,
               '@raw': '@column',
               '@column': "groupId;any_value(groupName):groupName;any_value(tagList):tagList;count(*):count",
               '@group': 'groupId',
@@ -5404,7 +5458,8 @@ https://github.com/Tencent/APIJSON/issues
             'Chain': {
               'userId': userId,
               '@column': "groupId;any_value(tagList):tagList",
-              '@group': 'groupId'
+              '@group': 'groupId',
+              'tagList[>': 0
             }
           },
           '@role': IS_NODE ? null : 'LOGIN',
@@ -5452,7 +5507,7 @@ https://github.com/Tencent/APIJSON/issues
           App.remotes = App.testCases = item['[]'] || []
 
           var tagLists = data['Chain-tagList[]'] || []
-          var chainTags = App.chainTags || []
+          var tags = App.tags || []
           for (var i = 0; i < tagLists.length; i ++) {
             var tagList = tagLists[i] || []
             for (var j = 0; j < tagList.length; j ++) {
@@ -5462,8 +5517,8 @@ https://github.com/Tencent/APIJSON/issues
               }
 
               var find = false
-              for (var k = 0; k < chainTags.length; k ++) {
-                var tag = chainTags[k] || {}
+              for (var k = 0; k < tags.length; k ++) {
+                var tag = tags[k] || {}
                 if (tag.name == name) {
                   find = true
                   break
@@ -5471,12 +5526,12 @@ https://github.com/Tencent/APIJSON/issues
               }
 
               if (! find) {
-                chainTags.push({name: name})
+                tags.push({name: name})
               }
             }
           }
 
-          App.chainTags = chainTags
+          App.tags = tags
 
           App.isTestCaseShow = true
 //          App.showTestCase(true, false, null)
@@ -5811,6 +5866,16 @@ https://github.com/Tencent/APIJSON/issues
           var url = this.server + '/get'
           var userId = this.User.id
 
+          var logic = this.tagCombines[this.tagCombineIndex] || '&'
+          var tagList = (isChainShow ? null : this.tags) || []
+          var tags = []
+          for (var i = 0; i < tagList.length; i ++) {
+            var tag = tagList[i] || {}
+            if (tag.selected) {
+              tags.push(tag.name)
+            }
+          }
+
           this.coverage = {}
           this.view = 'markdown'
           var req = {
@@ -5818,7 +5883,7 @@ https://github.com/Tencent/APIJSON/issues
             '[]': {
               'count': count || 100, //200 条测试直接卡死 0,
               'page': page || 0,
-              'join':  isChainShow ? '&/Document,@/Random' : '@/TestRecord,@/Script:pre,@/Script:post',
+              'join': isChainShow ? '&/Document,@/Random' : '@/TestRecord,@/Script:pre,@/Script:post',
               'Chain': isChainShow ? {
                 // TODO 后续再支持嵌套子组合 'toGroupId': groupId,
                 'groupId': groupId,
@@ -5834,6 +5899,7 @@ https://github.com/Tencent/APIJSON/issues
                 'project': StringUtil.isEmpty(project, true) ? null : project,
                 'operation$': search,
                 'name%$': search,
+                ['tagList' + logic + '<>']: tags == null || tags.length <= 0 ? null : tags,
                 'url%$': search,
                 'url|$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl, groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
                 // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
@@ -8463,9 +8529,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               return
             }
 
-            var chainTags = this.chainTags = this.chainTags || []
-            for (var j = 0; j < chainTags.length; j ++) {
-              var tag = chainTags[j] || {}
+            var tags = this.tags = this.tags || []
+            for (var j = 0; j < tags.length; j ++) {
+              var tag = tags[j] || {}
               if (tag.name == name) {
                 if (find) {
                   alert(name + ' 已存在，请勿重复添加！')
@@ -8474,7 +8540,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
             }
 
-            chainTags.push({name: name})
+            tags.push({name: name})
           }
           else if (type == 'chainGroupAdd' || type == 'chainGroup') {
             var isAdd = type == 'chainGroupAdd'
@@ -10947,10 +11013,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
             throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
-              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
-              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
-              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
+                '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+                '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+                '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+                '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           const lastKeyInPath = pathKeys[pathKeys.length - 1]
@@ -10958,10 +11024,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || StringUtil.length(key, true) <= 0) {
             throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
-              '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
-              '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
-              '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
-              '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
+                '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
+                '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
+                '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
+                '\nkey: 多行代码 必须用 function f() { var a = 1; return a; } f() 这种一行代码格式！');
           }
 
           // value RANDOM_DB
@@ -11015,7 +11081,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                   if (parent instanceof Object == false) {
                     throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
-                      ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
+                        ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
                   }
                   parent = current;
                 }
@@ -11197,15 +11263,15 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var step = stepStr == null || stepStr.length <= 0 ? 1 : +stepStr; //都会自动忽略空格 Number(stepStr); //Number.parseInt(stepStr); //+stepStr;
 
               if (Number.isSafeInteger(step) != true || step <= 0
-                || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
+                  || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
               ) {
                 throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
-                  + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
-                  + '\n  ORDER_DB+step(arg0, arg1...)\n  ORDER_DB-step(arg0, arg1...)'
-                  + '\n  ORDER_INT+step(arg0, arg1...)\n  ORDER_INT-step(arg0, arg1...)'
-                  + '\n  ORDER_IN+step(start, end)\n  ORDER_IN-step(start, end)'
-                  + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
-                  + '\n+，-，step 前后都不能有空格等其它字符！');
+                    + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
+                    + '\n  ORDER_DB+step(arg0, arg1...)\n  ORDER_DB-step(arg0, arg1...)'
+                    + '\n  ORDER_INT+step(arg0, arg1...)\n  ORDER_INT-step(arg0, arg1...)'
+                    + '\n  ORDER_IN+step(start, end)\n  ORDER_IN-step(start, end)'
+                    + '\n其中：\n  + 为升序，后面没有 step 时可省略；\n  - 为降序，不可省略；' + '\n  step 为跨步值，类型为 正整数，默认为 1，可省略。'
+                    + '\n+，-，step 前后都不能有空格等其它字符！');
               }
 
               if (fun == ORDER_DB) {
@@ -11214,56 +11280,77 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               toEval = (fun == ORDER_IN ? 'orderIn' : (fun == ORDER_INT ? 'orderInt' : (fun == ORDER_BAD_BOOL ? 'orderBadBool' : (fun == ORDER_BAD_NUM
-               ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
-                + '(' + (fun == ORDER_BAD ? 'BADS, ' : '') + isDesc + ', ' + getOrderIndex(
-                  randomId, line
-                  , (fun == ORDER_INT || args == null ? 0 : args.length)
-                  + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
-                   ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : (fun == ORDER_BAD ? BADS.length : 0))))))
-                  , step
-                ) + ', ' + value.substring(start + 1);
+                      ? 'orderBadNum' : (fun == ORDER_BAD_STR ? 'orderBadStr' : (fun == ORDER_BAD_ARR ? 'orderBadArr' : (fun == ORDER_BAD_OBJ ? 'orderBadObj' : 'orderBad')))))))
+                  + '(' + (fun == ORDER_BAD ? 'BADS, ' : '') + isDesc + ', ' + getOrderIndex(
+                      randomId, line
+                      , (fun == ORDER_INT || args == null ? 0 : args.length)
+                      + (fun == ORDER_BAD_BOOL ? BAD_BOOLS.length : (fun == ORDER_BAD_NUM ? BAD_NUMS.length : (fun == ORDER_BAD_STR
+                          ? BAD_STRS.length : (fun == ORDER_BAD_ARR ? BAD_ARRS.length : (fun == ORDER_BAD_OBJ ? BAD_OBJS.length : (fun == ORDER_BAD ? BADS.length : 0))))))
+                      , step
+                  ) + ', ' + value.substring(start + 1);
             }
             else {  //随机函数
+              var as = StringUtil.split(value.substring(start + 1, end), ', ') || []
+              var as0 = as[0] // key path
+              var as1 = as[1] // default value
+              var as2 = as[2] // GET /users
+              var as3 = as[3] // account@host/index
+              var accountHostIndexPath = StringUtil.isEmpty(as3) ? '/' : as3 + (as3.indexOf('/') < 0 ? '/' : '')
+              var isChain = StringUtil.isNotEmpty(as2)
+              var chainArr = isChain ? '((ctx || {}).map || {})[' + as2 + ']' : null; // [GET /users] = { account@host: [] }
+              if (isChain) {
+                as2 = parseJSON(as2, as2, true)
+                as.splice(2, 2)
+              }
+
               if (fun == PRE_REQ) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).req, ' + (value == 'PRE_REQ()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                var source = isChain ? 'get4Path(' + chainArr + ', "' + accountHostIndexPath + '/req")' : 'get4Path(((ctx || {}).pre || {}).req'
+                toEval = 'get4Path(' + source + ', ' + (value == 'PRE_REQ()' ? JSON.stringify(path) : '') + (isChain ? as.join(', ') + value.substring(end) : value.substring(start + 1));
               }
               else if (fun == PRE_ARG) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).arg, ' + (value == 'PRE_ARG()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                var source = isChain ? 'get4Path(' + chainArr + ', "' + accountHostIndexPath + '/arg")' : 'get4Path(((ctx || {}).pre || {}).arg'
+                toEval = 'get4Path(' + source + ', ' + (value == 'PRE_ARG()' ? JSON.stringify(path) : '') + (isChain ? as.join(', ') + value.substring(end) : value.substring(start + 1));
               }
               else if (fun == PRE_RES) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).res, ' + (value == 'PRE_RES()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                var source = isChain ? 'get4Path(' + chainArr + ', "' + accountHostIndexPath + '/res")' : 'get4Path(((ctx || {}).pre || {}).res'
+                toEval = 'get4Path(' + source + ', ' + (value == 'PRE_RES()' ? JSON.stringify(path) : '') + (isChain ? as.join(', ') + value.substring(end) : value.substring(start + 1));
               }
               else if (fun == PRE_DATA) {
-                toEval = 'get4Path(((ctx || {}).pre || {}).data, ' + (value == 'PRE_DATA()' ? JSON.stringify(path) : '') + value.substring(start + 1);
+                var source = isChain ? 'get4Path(' + chainArr + ', "' + accountHostIndexPath + '/data")' : 'get4Path(((ctx || {}).pre || {}).data'
+                toEval = 'get4Path(' + source + ', ' + (value == 'PRE_DATA()' ? JSON.stringify(path) : '') + (isChain ? as.join(', ') + value.substring(end) : value.substring(start + 1));
               }
               else if (fun == CTX_GET) {
                 toEval = 'get4Path((ctx || {}).ctx, ' + (value == 'CTX_GET()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else if (fun == CTX_PUT) {
-                var as = StringUtil.split(value.substring(start + 1, end), ', ') || []
-                if (StringUtil.isEmpty(as[1], true) || as[1] == 'PRE_DATA') {
+                as1 = parseJSON(as1, as1, true)
+
+                if (StringUtil.isEmpty(as1, true) || as1 == 'PRE_DATA') {
                   as[1] = '((ctx || {}).pre || {}).data'
                 }
-                else if (as[1] == 'PRE_REQ') {
+                else if (as1 == 'PRE_REQ') {
                   as[1] = '((ctx || {}).pre || {}).req'
                 }
-                else if (as[1] == 'PRE_ARG') {
+                else if (as1 == 'PRE_ARG') {
                   as[1] = '((ctx || {}).pre || {}).arg'
                 }
-                else if (as[1] == 'PRE_RES') {
+                else if (as1 == 'PRE_RES') {
                   as[1] = '((ctx || {}).pre || {}).res'
                 }
-                else if (as[1] == 'CUR_DATA') {
+                else if (as1 == 'CUR_DATA') {
                   as[1] = '((ctx || {}).cur || {}).data'
                 }
-                else if (as[1] == 'CUR_REQ') {
+                else if (as1 == 'CUR_REQ') {
                   as[1] = '((ctx || {}).cur || {}).req'
                 }
-                else if (as[1] == 'CUR_ARG') {
+                else if (as1 == 'CUR_ARG') {
                   as[1] = '((ctx || {}).cur || {}).arg'
                 }
-                else if (as[1] == 'CUR_RES') {
+                else if (as1 == 'CUR_RES') {
                   as[1] = '((ctx || {}).cur || {}).res'
+                }
+                else if (as1 == 'MAP') {
+                  as[1] = '((ctx || {}).map || {})'
                 }
 
                 if (as.length >= 1) {
@@ -11285,43 +11372,43 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 toEval = 'get4Path(((ctx || {}).cur || {}).data, ' + (value == 'CUR_DATA()' ? JSON.stringify(path) : '') + value.substring(start + 1);
               }
               else {
-                  fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
+                fun = funWithOrder;  //还原，其它函数不支持 升降序和跨步！
 
-                  if (fun == RANDOM_DB) {
-                    request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true, null, null, args[4]); //'random()');
-                    continue;
-                  }
+                if (fun == RANDOM_DB) {
+                  request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, true, null, null, args[4]); //'random()');
+                  continue;
+                }
 
-                  if (fun == RANDOM_IN) {
-                    toEval = 'randomIn' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_INT) {
-                    toEval = 'randomInt' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_NUM) {
-                    toEval = 'randomNum' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_STR) {
-                    toEval = 'randomStr' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD) {
-                    toEval = 'randomBad' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD_BOOL) {
-                    toEval = 'randomBadBool' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD_NUM) {
-                    toEval = 'randomBadNum' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD_STR) {
-                    toEval = 'randomBadStr' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD_ARR) {
-                    toEval = 'randomBadArr' + value.substring(start);
-                  }
-                  else if (fun == RANDOM_BAD_OBJ) {
-                    toEval = 'randomBadObj' + value.substring(start);
-                  }
+                if (fun == RANDOM_IN) {
+                  toEval = 'randomIn' + value.substring(start);
+                }
+                else if (fun == RANDOM_INT) {
+                  toEval = 'randomInt' + value.substring(start);
+                }
+                else if (fun == RANDOM_NUM) {
+                  toEval = 'randomNum' + value.substring(start);
+                }
+                else if (fun == RANDOM_STR) {
+                  toEval = 'randomStr' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD) {
+                  toEval = 'randomBad' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD_BOOL) {
+                  toEval = 'randomBadBool' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD_NUM) {
+                  toEval = 'randomBadNum' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD_STR) {
+                  toEval = 'randomBadStr' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD_ARR) {
+                  toEval = 'randomBadArr' + value.substring(start);
+                }
+                else if (fun == RANDOM_BAD_OBJ) {
+                  toEval = 'randomBadObj' + value.substring(start);
+                }
               }
 
             }
@@ -11339,7 +11426,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           var res = {};
           var data = res.data;
           var err = null;
-          invoke(eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')'), which, p_k, pathKeys, key, lastKeyInPath);
+          try {
+            var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
+            invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
+          } catch (e) {
+            throw new Error(e.message + '\n; 第 ' + i + ' 行：' + line)
+          }
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
         }
@@ -11616,6 +11708,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
            data: json
          }
          var header = cur.header = doc.header
+         var accountInfo = this.getCurrentAccount() || {}
+         const account = StringUtil.trim(accountInfo.account || accountInfo.phone || accountInfo.email)
 //
 //         this.parseRandom(json, header, rawConfig, random.id, true, false, function (randomName, constConfig, constJson) {
              this.startTestSingle(list, allCount, index, item, isRandom, accountIndex, isCross, callback
@@ -11623,15 +11717,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                res = res || {}
                var config = res.config || {}
-               var p = config.data || config.params
-               try {
-                 cur.arg = App.getRequest(p, {})
-               } catch (e) {
-                 if (typeof p != 'string' || p.indexOf('=') <= 0) {
-                   throw e
-                 }
-                 cur.arg = getRequestFromURL('?' + p, true)
-               }
+               cur.arg = App.getRequest(config.data || config.params, {})
                cur.req = {
                  method: method,
                  url: config.url,
@@ -11642,6 +11728,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                cur.statusText = res.statusText
                cur.res = res
                cur.data = res.data
+               var map = ctx.map = ctx.map || {}
+               var m = map[method + ' ' + url] = map[method + ' ' + url] || {}
+
+               const baseUrl = App.getBaseUrl(config.url)
+               const accountKey = StringUtil.trim(account) + '@' + StringUtil.trim(baseUrl)
+               var arr = m[accountKey] = m[accountKey] || []
+               arr.push({
+                 type: type,
+                 req: req,
+                 arg: json,
+                 res: res,
+                 data: res.data
+               })
+
                App.startTestChain(list, allCount, index + 1, list[index + 1], item, ctx, isRandom, accountIndex, isCross, callback)
              }, ctx)
              return true
@@ -11856,10 +11956,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (err != null) {
           var status = res == null ? null : res.status
           var rsp = (err.response || {}).data || {}
+          var message = err.message
+          var msg = StringUtil.trim(StringUtil.trim(rsp.code) + ' ' + StringUtil.trim(rsp.message || rsp.reason)) || err.message || '请求出错！'
           tr.compare = {
             code: JSONResponse.COMPARE_ERROR, //请求出错
-            msg: StringUtil.trim(StringUtil.trim(rsp.code) + ' ' + StringUtil.trim(rsp.message)) || err.message || '请求出错！',
-            path: (status != null && status != 200 ? status + ' ' : '') + err.message
+            msg: msg,
+            path: (status != null && status != 200 ? status + ' ' : '') + (StringUtil.isEmpty(message) || msg.indexOf(message) >= 0 ? '' : message)
           }
         }
         else {

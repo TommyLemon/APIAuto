@@ -20,7 +20,7 @@
 
 const TAG_REQUEST_UTIL = 'RequestUtil';
 
-var URL_BASE = "http://apijson.cn:8080"; // 基地址
+var URL_BASE = "http://localhost:8080"; // 基地址
 var URL_GET = URL_BASE + "/get"; // 常规获取数据方式
 var URL_HEAD = URL_BASE + "/head"; // 检查，默认是非空检查，返回数据总数
 var URL_GETS = URL_BASE + "/gets"; // 通过POST来GET数据，不显示请求内容和返回结果，一般用于对安全要求比较高的请求
@@ -188,16 +188,24 @@ function toFormData(data) {
     return null
   }
   if (data instanceof Object == false || data instanceof Array) {
-    alert('toFormData  data instanceof Object == false || data instanceof Array ! >> return')
-    return
+    // alert('toFormData  data instanceof Object == false || data instanceof Array ! >> return')
+    throw new Error('data must be Object!')
   }
 
   var first = true
   var ret = ''
   for (var key in data) {
     var val = data[key]
-    if (typeof val != 'string') {
-      val = JSON.stringify(val)
+    if (val == null) {
+      val = ''
+    }
+    else if (typeof val != 'string') {
+      try {
+        val = JSON.stringify(val)
+      } catch (e) {
+        console.log(e)
+        val = new String(val)
+      }
     }
     ret += (first ? '' : '&') + encodeURIComponent(key) + '=' + encodeURIComponent(val)
     first = false
