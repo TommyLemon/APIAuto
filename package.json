@@ -1,0 +1,19 @@
+{
+  "name": "apijson-api-auto",
+  "version": "1.0.0",
+  "description": "APIAuto headless regression server",
+  "main": "js/server.js",
+  "scripts": {
+    "start": "node js/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.14.0",
+    "json5": "^2.2.3",
+    "koa": "^3.2.0",
+    "koa-bodyparser": "^4.4.1"
+  },
+  "private": true
+}
