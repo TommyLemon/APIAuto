@@ -11141,7 +11141,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // value RANDOM_DB
           const value = StringUtil.trim(line2.substring(index + ': '.length));
 
-          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath) {
+          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath, isIn) {
             try {
               if (generateConfig) {
                 var configVal;
@@ -11199,8 +11199,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 if (isRes) {
                   var real = current[key]
-                  if (real !== val) {
+                  if (isIn != true && real !== val) {
                     throw new Error(p_k + ' != ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
+                  }
+                  if (isIn && (val instanceof Array == false || ! val.includes(real))) {
+                    throw new Error(p_k + ' not in ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
                   }
                 } else {
                   current[key] = val;
@@ -11267,6 +11270,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             };
             tableReq[finalColumnName + '>='] = min;
             tableReq[finalColumnName + '<='] = max;
+
+            if (isRes) {
+              var targetObj = isHead ? head : json;
+              var arr = []; // FIXME 改成遍历每项再独立 request4Db ？
+              JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr);
+              tableReq[finalColumnName + '{}'] = arr; // arr == null || arr.length <= 0 ? null : arr;
+            }
+
             try {
               body = parseJSON(body);
             } catch (e) {
@@ -11274,20 +11285,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             var req = {};
-            const listName = isRandom ? null : finalTableName + '-' + finalColumnName + '[]';
-            const orderIndex = isRandom ? null : getOrderIndex(randomId, line, null);
+            const listName = isRandom && ! isRes ? null : finalTableName + '-' + finalColumnName + '[]';
+            const orderIndex = isRandom ? 0 : getOrderIndex(randomId, line, null);
 
             if (body != null && body[finalTableName] == null && (isRandom || body[listName] == null)) {
               tableReq = Object.assign(tableReq, body);
             }
 
-            if (isRandom) {
+            if (isRandom && ! isRes) {
               req[finalTableName] = tableReq;
             }
             else {
               // 从数据库获取时不考虑边界，不会在越界后自动循环
-              var listReq = {
-                count: 1, // count <= 100 ? count : 0,
+              var listReq = { // FIXME 改成遍历每项再独立 request4Db ？
+                count: isRes ? 0 : 1, // count <= 100 ? count : 0,
                 page: (step*orderIndex) % 100  //暂时先这样，APIJSON 应该改为 count*page <= 10000  //FIXME 上限 100 怎么破，lastKeyInPath 未必是 id
               };
               listReq[finalTableName] = tableReq;
@@ -11318,18 +11329,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 // throw new Error('参数注入 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
               }
 
+              var arr = data[listName] || [];
               if (isRandom) {
-                invoke((data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath);
+                invoke(isRes ? arr : (data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath, isRes);
+                // invoke((data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath);
               }
               else {
-                var val = (data[listName] || [])[0];
+                var val = isRes ? arr : arr[0];
                 //越界，重新获取
                 if (val == null && orderIndex > 0 && ORDER_MAP[randomId] != null && ORDER_MAP[randomId][line] != null) {
                   ORDER_MAP[randomId][line] = null;  //重置，避免还是在原来基础上叠加
                   request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step, body);
                 }
                 else {
-                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath);
+                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath, isRes);
                 }
               }
 

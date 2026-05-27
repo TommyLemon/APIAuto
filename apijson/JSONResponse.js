@@ -1648,7 +1648,7 @@ var JSONResponse = {
 
   /**根据 APIJSON 引用赋值路径精准地获取值
    */
-  getValByPath: function(target, pathKeys, isTry, isDesc) {
+  getValByPath: function(target, pathKeys, isTry, isDesc, arr4Multi) {
     var depth = target == null || pathKeys == null ? 0 : pathKeys.length
     if (depth <= 0) {
       return target;
@@ -1668,42 +1668,60 @@ var JSONResponse = {
       k = decodeURI(k)
 
       if (tgt instanceof Object) {
-        if (k == '') {
+        if (k == '') { // TODO 用 * 表示多个？
           if (tgt instanceof Array) {
               for (var j = 0; j < tgt.length; j ++) {
-                var ind = isDesc ? tgt.length - 1 : j;
+                var ind = isDesc ? tgt.length - 1 - j : j;
                 var val = tgt[ind];
                 if (i >= depth - 1) {
                   if (val == null) {
                     continue
                   }
-                  return val;
+
+                  if (arr4Multi == null) {
+                    return val;
+                  }
+
+                  arr4Multi.push(val);
                 }
 
                 var ks = pathKeys.slice(i + 1);
-                var child = JSONResponse.getValByPath(val, ks, isTry, isDesc);
+                var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi);
                 if (child != null) {
-                  return child;
+                  if (arr4Multi == null) {
+                    return child;
+                  }
+
+                  arr4Multi.push(child);
                 }
               }
 
           } else {
             var tks = Object.keys(tgt)
             for (var j = 0; j < tks.length; j ++) {
-              var ind = isDesc ? tks.length - 1 : j;
+              var ind = isDesc ? tks.length - 1 - j : j;
               var k2 = tks[ind];
               var val = tgt[k2];
               if (i >= depth - 1) {
                 if (val == null) {
                   continue
                 }
-                return val;
+
+                if (arr4Multi == null) {
+                  return val;
+                }
+
+                arr4Multi.push(val);
               }
 
               var ks = pathKeys.slice(i + 1);
-              var child = JSONResponse.getValByPath(val, ks, isTry, isDesc);
+              var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi);
               if (child != null) {
-                return child;
+                if (arr4Multi == null) {
+                  return child;
+                }
+
+                arr4Multi.push(child);
               }
             }
 
