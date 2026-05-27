@@ -11141,7 +11141,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // value RANDOM_DB
           const value = StringUtil.trim(line2.substring(index + ': '.length));
 
-          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath, isIn) {
+          var invoke = function (val, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isIn) {
             try {
               if (generateConfig) {
                 var configVal;
@@ -11178,35 +11178,45 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //先按照单行简单实现
                 //替换 JSON 里的键值对 key: value
                 var targetObj = isHead ? head : json;
-                var parent = targetObj;
-                var current = null;
-                for (var j = 0; j < pathKeys.length - 1; j ++) {
-                  current = parent[pathKeys[j]]
-                  if (current == null) {
-                    current = parent[pathKeys[j]] = {}
-                  }
-                  if (parent instanceof Object == false) {
-                    throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
-                        ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
-                  }
-                  parent = current;
-                }
-
-                if (current == null) {
-                  current = targetObj;
-                }
+                // var parent = targetObj;
+                // var current = null;
+                // for (var j = 0; j < pathKeys.length - 1; j ++) {
+                //   current = parent[pathKeys[j]]
+                //   if (current == null) {
+                //     current = parent[pathKeys[j]] = {}
+                //   }
+                //   if (parent instanceof Object == false) {
+                //     throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
+                //         ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
+                //   }
+                //   parent = current;
+                // }
+                //
+                // if (current == null) {
+                //   current = targetObj;
+                // }
                 // alert('< current = ' + JSON.stringify(current, null, '    '))
 
                 if (isRes) {
-                  var real = current[key]
+                  var arr = []
+                  var real = JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr) // current[key]
                   if (isIn != true && real !== val) {
                     throw new Error(p_k + ' != ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
                   }
-                  if (isIn && (val instanceof Array == false || ! val.includes(real))) {
-                    throw new Error(p_k + ' not in ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
+
+                  if (isRandom) {
+                    arr.sort();
+                    if (val instanceof Array) {
+                      val.sort();
+                    }
+                  }
+
+                  if (isIn && (val instanceof Array == false || StringUtil.get(arr) !== StringUtil.get(val))) {
+                    throw new Error(p_k + ' = ' + StringUtil.limitLength(StringUtil.get(arr), 20) + ' != ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
                   }
                 } else {
-                  current[key] = val;
+                  // current[key] = val;
+                  targetObj = JSONResponse.setValByPath(targetObj, pathKeys, val)
                 }
               }
 
@@ -11331,7 +11341,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var arr = data[listName] || [];
               if (isRandom) {
-                invoke(isRes ? arr : (data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath, isRes);
+                invoke(isRes ? arr : (data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath, isRandom, isRes);
                 // invoke((data[finalTableName] || {})[finalColumnName], which, p_k, pathKeys, key, lastKeyInPath);
               }
               else {
@@ -11342,7 +11352,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   request4Db(JSONResponse.getTableName(pathKeys[pathKeys.length - 2]), which, p_k, pathKeys, key, lastKeyInPath, false, isDesc, step, body);
                 }
                 else {
-                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath, isRes);
+                  invoke(val, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isRes);
                 }
               }
 
