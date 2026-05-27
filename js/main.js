@@ -14911,16 +14911,36 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     window.App = App
   }
   else {
+    var nodeApp = Object.assign({}, App)
     var methods = App.methods
     if (methods instanceof Object && (methods instanceof Array == false)) {
-      App = Object.assign(App, methods)
+      Object.keys(methods).forEach(function (key) {
+        var method = methods[key]
+        nodeApp[key] = typeof method == 'function' ? method.bind(nodeApp) : method
+      })
     }
     App.autoTest = App.autoTest || methods.autoTest
 
     var data = App.data
     if (data instanceof Object && (data instanceof Array == false)) {
-      App = Object.assign(App, data)
+      Object.keys(data).forEach(function (key) {
+        Object.defineProperty(nodeApp, key, {
+          configurable: true,
+          enumerable: true,
+          get: function () {
+            return data[key]
+          },
+          set: function (value) {
+            data[key] = value
+          }
+        })
+      })
     }
+
+    nodeApp.data = data
+    nodeApp.$data = data
+    nodeApp._data = data
+    App = nodeApp
 
     module.exports = {getRequestFromURL, App}
   }
