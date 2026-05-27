@@ -883,8 +883,8 @@ https://github.com/Tencent/APIJSON/issues
   var CUR_DATA = 'CUR_DATA' // CUR_DATA('[]/0/User/id')
   var CTX_PUT = 'CTX_PUT' // CTX_PUT('key', val)
 
-  function get4Path(obj, path, defaultVal, msg) {
-    var val = path == null || path == '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true)
+  function get4Path(obj, path, defaultVal, msg, isDesc) {
+    var val = path == null || path == '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true, isDesc)
     if (val == null && defaultVal == undefined) {
       throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！' + StringUtil.get(msg))
     }

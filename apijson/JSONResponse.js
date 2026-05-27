@@ -1648,16 +1648,13 @@ var JSONResponse = {
 
   /**根据 APIJSON 引用赋值路径精准地获取值
    */
-  getValByPath: function(target, pathKeys, isTry) {
-    if (target == null) {
-      return null;
-    }
-
-    var tgt = target;
-    var depth = pathKeys == null ? 0 : pathKeys.length
+  getValByPath: function(target, pathKeys, isTry, isDesc) {
+    var depth = target == null || pathKeys == null ? 0 : pathKeys.length
     if (depth <= 0) {
       return target;
     }
+
+    var tgt = target;
 
     for (var i = 0; i < depth; i ++) {
       if (tgt == null) {
@@ -1673,17 +1670,47 @@ var JSONResponse = {
       if (tgt instanceof Object) {
         if (k == '') {
           if (tgt instanceof Array) {
-              k = 0;
-          } else {
-              ks = Object.keys(tgt);
-              k = ks == null ? null : ks[0];
-              if (k == null) {
-                return null;
+              for (var j = 0; j < tgt.length; j ++) {
+                var ind = isDesc ? tgt.length - 1 : j;
+                var val = tgt[ind];
+                if (i >= depth - 1) {
+                  if (val == null) {
+                    continue
+                  }
+                  return val;
+                }
+
+                var ks = pathKeys.slice(i + 1);
+                var child = JSONResponse.getValByPath(val, ks, isTry, isDesc);
+                if (child != null) {
+                  return child;
+                }
               }
+
+          } else {
+            var tks = Object.keys(tgt)
+            for (var j = 0; j < tks.length; j ++) {
+              var ind = isDesc ? tks.length - 1 : j;
+              var k2 = tks[ind];
+              var val = tgt[k2];
+              if (i >= depth - 1) {
+                if (val == null) {
+                  continue
+                }
+                return val;
+              }
+
+              var ks = pathKeys.slice(i + 1);
+              var child = JSONResponse.getValByPath(val, ks, isTry, isDesc);
+              if (child != null) {
+                return child;
+              }
+            }
+
+            return null;
           }
         }
         else {
-          k = decodeURI(k)
           if (tgt instanceof Array) {
             try {
               var n = Number.parseInt(k);
@@ -1732,7 +1759,7 @@ var JSONResponse = {
           if (tgt instanceof Array) {
               k = 0;
           } else {
-              ks = Object.keys(tgt);
+              var ks = Object.keys(tgt);
               k = ks == null ? null : ks[0];
               if (k == null) {
                 return null;
@@ -1751,21 +1778,25 @@ var JSONResponse = {
           }
         }
 
-        parent = tgt;
+        if (tgt[k] != null) {
+          parent = tgt;
+        }
         tgt = tgt[k];
         continue;
       }
 
       if (tgt == null) {
-        try {
-          var n = Number.parseInt(k);
-          if (Number.isSafeInteger(n)) {
-            k = n >= 0 ? n : n + tgt.length;
+        if (parent instanceof Array) {
+          try {
+            var n = Number.parseInt(k);
+            if (Number.isSafeInteger(n)) {
+              k = n >= 0 ? n : n + parent.length;
+            }
+          } catch (e) {
           }
-        } catch (e) {
         }
 
-        tgt = Number.isInteger(k) ? [] : {};
+        tgt = Number.isInteger(pathKeys[i + 1]) ? [] : {};
         if (i == 0 && parent == null) {
           parent = target = tgt;
         } else {
@@ -1773,9 +1804,13 @@ var JSONResponse = {
         }
 
         parent = tgt;
-        tgt = tgt[k];
+        // tgt = tgt[k];
 
         continue;
+      }
+
+      if (tgt instanceof Object) {
+        continue
       }
 
       if (isTry != true) {
