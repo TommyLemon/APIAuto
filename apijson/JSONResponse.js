@@ -631,7 +631,7 @@ var JSONResponse = {
         delete target[codeName];
         real[codeName] = typeof rCode == 'undefined' ? undefined : null; // delete real[codeName];
         delete target.throw;
-        real.throw = typeof rCode == 'undefined' ? rThrw : null; // delete real.throw;
+        real.throw = typeof rThrw == 'undefined' ? rThrw : null; // delete real.throw;
     }
 
     //可能提示语变化，也要提示
@@ -1039,7 +1039,7 @@ var JSONResponse = {
         var format = target.format;
         if (typeof format == 'string' && FORMAT_PRIORITIES[format] != null) {
           var verifier = max.code < JSONResponse.COMPARE_FORMAT_CHANGE && StringUtil.isNotEmpty(format, true)
-              ? FORMAT_VERIFIERS[format] : null;
+             && StringUtil.isNotEmpty(real, true) ? FORMAT_VERIFIERS[format] : null;
           if (typeof verifier == 'function' && verifier(real) != true) {
               max.code = JSONResponse.COMPARE_FORMAT_CHANGE - (guess != true ? 0 : 1);
               max.msg = '不是 ' + format + " 格式！";
@@ -1377,7 +1377,7 @@ var JSONResponse = {
 
     var notEmpty = target.notEmpty;
     log('updateStandard  notEmpty = target.notEmpty = ' + notEmpty + ' >>');
-    if (real != null && typeof real != 'boolean' && typeof real != 'number') {
+    if (notEmpty !== false && real != null && typeof real != 'boolean' && typeof real != 'number') {
       notEmpty = target.notEmpty = StringUtil.isNotEmpty(real, true);
     }
 
@@ -1648,10 +1648,14 @@ var JSONResponse = {
 
   /**根据 APIJSON 引用赋值路径精准地获取值
    */
-  getValByPath: function(target, pathKeys, isTry, isDesc, arr4Multi) {
+  getValByPath: function(target, pathKeys, isTry, isDesc, arr4Multi, isUnique) {
     var depth = target == null || pathKeys == null ? 0 : pathKeys.length
     if (depth <= 0) {
       return target;
+    }
+
+    if (StringUtil.isString(pathKeys)) {
+      pathKeys = StringUtil.splitPath(pathKeys, false);
     }
 
     var tgt = target;
@@ -1674,25 +1678,15 @@ var JSONResponse = {
                 var ind = isDesc ? tgt.length - 1 - j : j;
                 var val = tgt[ind];
                 if (i >= depth - 1) {
-                  if (val == null) {
-                    continue
-                  }
-
-                  if (arr4Multi == null) {
+                  if (val != null && arr4Multi == null) {
                     return val;
                   }
-
-                  arr4Multi.push(val);
                 }
 
                 var ks = pathKeys.slice(i + 1);
-                var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi);
-                if (child != null) {
-                  if (arr4Multi == null) {
-                    return child;
-                  }
-
-                  arr4Multi.push(child);
+                var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi, isUnique);
+                if (child != null && arr4Multi == null) {
+                  return child;
                 }
               }
 
@@ -1703,25 +1697,15 @@ var JSONResponse = {
               var k2 = tks[ind];
               var val = tgt[k2];
               if (i >= depth - 1) {
-                if (val == null) {
-                  continue
-                }
-
-                if (arr4Multi == null) {
+                if (val != null && arr4Multi == null) {
                   return val;
                 }
-
-                arr4Multi.push(val);
               }
 
               var ks = pathKeys.slice(i + 1);
-              var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi);
-              if (child != null) {
-                if (arr4Multi == null) {
-                  return child;
-                }
-
-                arr4Multi.push(child);
+              var child = JSONResponse.getValByPath(val, ks, isTry, isDesc, arr4Multi, isUnique);
+              if (child != null && arr4Multi == null) {
+                return child;
               }
             }
 
@@ -1750,6 +1734,10 @@ var JSONResponse = {
       }
 
       return null;
+    }
+
+    if (arr4Multi != null && ! (isUnique && arr4Multi.includes(tgt))) {
+      arr4Multi.push(tgt);
     }
 
     return tgt;
@@ -1800,7 +1788,7 @@ var JSONResponse = {
           parent = tgt;
         }
         tgt = tgt[k];
-        continue;
+        // continue;
       }
 
       if (tgt == null) {
@@ -2297,8 +2285,10 @@ var JSONResponse = {
     switch (type) {
       case 'boolean':
         return 2;
-      case 'number':
+      case 'integer':
         return 10;
+      case 'number':
+        return 5;
       case 'string':
         return 10;
     }

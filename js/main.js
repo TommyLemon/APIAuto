@@ -884,8 +884,8 @@ https://github.com/Tencent/APIJSON/issues
   var CTX_PUT = 'CTX_PUT' // CTX_PUT('key', val)
 
   function get4Path(obj, path, defaultVal, msg, isDesc) {
-    var val = path == null || path == '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true, isDesc)
-    if (val == null && defaultVal == undefined) {
+    var val = path == null || path === '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true, isDesc)
+    if (val == null && defaultVal === undefined) {
       throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！' + StringUtil.get(msg))
     }
     return val
@@ -5402,6 +5402,7 @@ https://github.com/Tencent/APIJSON/issues
         var isMLEnabled = this.isMLEnabled
         var userId = this.User.id
         var project = this.projectHost.project
+        var reportId = this.reportId
         baseUrl = this.getBaseUrl(vUrl.value, true)
 
         var key = groupId + ''
@@ -5420,6 +5421,8 @@ https://github.com/Tencent/APIJSON/issues
         }
 
         search = StringUtil.split(search)
+        var notShowReport = ! this.isShowReport()
+
         var req = {
           format: false,
           '[]': {
@@ -5467,6 +5470,7 @@ https://github.com/Tencent/APIJSON/issues
               },
               'Random':  {
 //                'id@': '/Chain/randomId',
+                'count>=': 1,
                 'res': 0,
                 'toId': 0,
                 'chainId@': '/Chain/id',
@@ -5490,8 +5494,8 @@ https://github.com/Tencent/APIJSON/issues
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
-//                'reportId': reportId <= 0 ? null : reportId,
-//                'invalid': reportId == null ? 0 : null,
+                'reportId': notShowReport ? null : reportId,
+                'invalid': notShowReport ? 0 : null,
                 '@order': 'date-',
                 '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (isMLEnabled ? ',standard' : ''),
                 'standard{}': isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
@@ -5924,6 +5928,7 @@ https://github.com/Tencent/APIJSON/issues
             }
           }
 
+          var notShowReport = ! this.isShowReport()
           this.coverage = {}
           this.view = 'markdown'
           var req = {
@@ -5984,9 +5989,24 @@ https://github.com/Tencent/APIJSON/issues
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
                 'testAccountId': this.getCurrentAccountId(),
                 'randomId': 0,
-                'reportId': reportId <= 0 ? null : reportId,
-                'invalid': reportId == null ? 0 : null,
-                '@order': 'date-',
+                'reportId': notShowReport || reportId <= 0 ? null : reportId,
+                'invalid': notShowReport ? 0 : null,
+                '@order': 'id-,date-',
+                '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,status,throw,msg,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (this.isMLEnabled ? ',standard' : ''),
+                'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
+              },
+              'TestRecord:old': notShowReport || reportId <= 0 ? undefined : {
+                'id<@': '/TestRecord/id',
+                'chainId@': isChainShow ? '/Chain/id' : null,
+                'chainId': isChainShow ? null : 0,
+                'documentId@': '/Document/id',
+                'userId': userId,
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
+                'testAccountId': this.getCurrentAccountId(),
+                'randomId': 0,
+                'reportId<': reportId, // reportId <= 0 ? null : reportId,
+                'invalid': null, // reportId == null ? 0 : null,
+                '@order': 'id-,date-',
                 '@column': 'id,userId,documentId,testAccountId,reportId,duration,minDuration,maxDuration,response' + (this.isStatisticsEnabled ? ',compare' : '')+ (this.isMLEnabled ? ',standard' : ''),
                 'standard{}': this.isMLEnabled ? (this.database == 'SQLSERVER' ? 'len(standard)>2' : 'length(standard)>2') : null  //用 MySQL 5.6   '@having': this.isMLEnabled ? 'json_length(standard)>0' : null
               },
@@ -6192,6 +6212,10 @@ https://github.com/Tencent/APIJSON/issues
         }
       },
 
+      isShowReport: function () {
+        return this.isReportShow && this.reportId != null && ! (IS_NODE || typeof App.autoTestCallback == 'function')
+      },
+
       //显示远程的随机配置文档
       showRandomList: function (show, item, isSub, callback) {
         this.isRandomEditable = false
@@ -6237,7 +6261,9 @@ https://github.com/Tencent/APIJSON/issues
           const cri = this.currentRemoteItem || {}
           const chain = cri.Chain || {}
           const cId = chain.id || 0
-          const currentAccountId = this.getCurrentAccountId();
+          const currentAccountId = this.getCurrentAccountId()
+          var reportId = this.reportId
+          var notShowReport = ! this.isShowReport()
 
           var req = {
             '[]': {
@@ -6262,7 +6288,18 @@ https://github.com/Tencent/APIJSON/issues
                 'randomId@': '/Random/id',
                 'testAccountId': currentAccountId,
                 'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
-                '@order': 'date-'
+                'reportId<=': notShowReport || reportId <= 0 ? null : reportId,
+                'invalid': notShowReport ? 0 : reportId,
+                '@order': 'id-,date-'
+              },
+              'TestRecord:old': notShowReport || reportId <= 0 ? undefined : {
+                'id<@': '/TestRecord/id',
+                'randomId@': '/Random/id',
+                'testAccountId': currentAccountId,
+                'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
+                'reportId<': reportId,
+                'invalid': 0,
+                '@order': 'id-,date-'
               },
               '[]': isSub ? null : {
                 'count': this.randomSubCount || 100,
@@ -6286,7 +6323,18 @@ https://github.com/Tencent/APIJSON/issues
                   'randomId@': '/Random/id',
                   'testAccountId': currentAccountId,
                   'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
-                  '@order': 'date-'
+                  'reportId<=': notShowReport || reportId <= 0 ? null : reportId,
+                  'invalid': notShowReport ? null : 0,
+                  '@order': 'id-,date-'
+                },
+                'TestRecord:old': notShowReport || reportId <= 0 ? undefined : {
+                  'id<@': '/TestRecord/id',
+                  'randomId@': '/Random/id',
+                  'testAccountId': currentAccountId,
+                  'host': StringUtil.isEmpty(baseUrl, true) ? null : baseUrl,
+                  'reportId<': reportId,
+                  'invalid': 0,
+                  '@order': 'id-,date-'
                 }
               }
             },
@@ -10665,13 +10713,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
           summaryItem.totalCount = allCount
 
-          const isRes = ! this.isEditReqLink
           var methods = this.methods
           var method = this.isShowMethod() ? this.method : null
           var type = this.type
-          var json = this.getRequest(isRes ? this.jsoncon : vInput.value, {})
+          var json = this.getRequest(vInput.value, {})
           var url = this.getUrl()
-          var header = (isRes ? (this.currentHttpResponse || {}).headers : this.getHeader(vHeader.value)) || {}
+          var header = this.getHeader(vHeader.value) || {}
 
           ORDER_MAP = {}  //重置
 
@@ -11034,11 +11081,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             totalCount: count
           }
 
-          const isRes = ! this.isEditReqLink
           this.testRandomSingle(show, false, this.isRandomSubListShow, this.currentRandomItem,
             this.isShowMethod() ? this.method : null, this.type, this.getUrl()
-            , this.getRequest(isRes ? this.jsoncon : vInput.value, {})
-            , (isRes ? (this.currentHttpResponse || {}).headers : this.getHeader(vHeader.value)) || {}
+            , this.getRequest(vInput.value, {}), this.getHeader(vHeader.value) || {}
             , false, false, callback
           )
         }
@@ -11199,7 +11244,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
                 if (isRes) {
                   var arr = []
-                  var real = JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr) // current[key]
+                  var real = JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr, true) // current[key]
                   if (isIn != true && real !== val) {
                     throw new Error(p_k + ' != ' + (val == null ? 'null' : StringUtil.limitLength(StringUtil.get(val), 20)) + '！')
                   }
@@ -11284,7 +11329,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (isRes) {
               var targetObj = isHead ? head : json;
               var arr = []; // FIXME 改成遍历每项再独立 request4Db ？
-              JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr);
+              JSONResponse.getValByPath(targetObj, pathKeys, null, null, arr, true);
               tableReq[finalColumnName + '{}'] = arr; // arr == null || arr.length <= 0 ? null : arr;
             }
 
@@ -11332,10 +11377,21 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
               var data = (res || {}).data || {}
               if (JSONResponse.isSuccess(data) != true) {
-                respCount = -reqCount;
-                vOutput.value = '参数注入 为第 ' + (which + 1) + ' 行\n  ' + p_k + '  \n获取数据库数据 异常：\n' + data.msg;
-                alert(StringUtil.get(vOutput.value));
-                return
+                respCount ++; // respCount = -reqCount;
+                var err = p_k + '  \n获取数据库数据 异常：\n' + data.msg
+                vOutput.value = '参数注入 为第 ' + (which + 1) + ' 行\n  ' + err;
+                if (callback == null) {
+                  alert(err);
+                } else {
+                  if (respCount >= reqCount) {
+                    var cn = randomNameKeys.join(', ')
+                    if (cn.length > 50) {
+                      cn = cn.substring(0, 30) + ' ..' + randomNameKeys.length + '.. ' + cn.substring(cn.length - 12)
+                    }
+                    callback(cn, constConfigLines.join('\n'), json, head);
+                  }
+                }
+                throw new Error(err)
                 // throw new Error('参数注入 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
               }
 
@@ -12168,7 +12224,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           if (StringUtil.isNotEmpty(resCfg)) {
             try {
               caseScript = caseScript || {}
-              this.parseRandom(response, res.headers, resCfg, resRandom.id, true, false, false, function (randomName, constConfig, constJson, constHeader) {
+              this.parseRandom(response, (res || {}).headers, resCfg, resRandom.id, true, false, false, function (randomName, constConfig, constJson, constHeader) {
                 App.onTestResponse(res, allCount, list, index, it, d, r, tr, response, err, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback);
               }, StringUtil.trim((caseScript.pre || {}).script) + '\n' + StringUtil.trim((caseScript.post || {}).script), ctx, true)
               return
@@ -12316,11 +12372,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           // alert('onTestResponse  accountIndex = ' + accountIndex)
 
-          const deepAllCount = this.toTestDocIndexes == null ? 0 : this.toTestDocIndexes.length
+          const deepAllCount = IS_NODE || this.toTestDocIndexes == null ? 0 : this.toTestDocIndexes.length
           App.deepAllCount = deepAllCount
           if (isRandom != true && deepAllCount > 0 && ! this.isChainShow) { // 自动给非 红色 报错的接口跑参数注入
             App.deepDoneCount = 0;
-            this.startRandomTest4Doc(list, this.toTestDocIndexes, 0, deepAllCount, accountIndex, isCross)
+            this.startRandomTest4Doc(list, this.toTestDocIndexes.sort(), 0, deepAllCount, accountIndex, isCross)
           } else if (isCross && doneCount == allCount && accountIndex <= this.accounts.length) {
             this.testAccountIndex = (this.testAccountIndex || 0) + 1
             this.test(false, this.testAccountIndex, isCross)
@@ -13520,7 +13576,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               var tableList = docObj == null ? null : docObj['[]']
               var isAPIJSONRouter = false // TODO
 
-              var json = App.getRequest(vInput.value)
+              var isRes = ! App.isEditReqLink
+              var json = App.getRequest(isRes ? (this.currentHttpResponse || {}).data || App.jsoncon : vInput.value)
               var map = App.toPathValuePairMap(json) || {}
               for (var path in map) {
                 if (StringUtil.isEmpty(path)) {
