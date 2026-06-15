@@ -7309,18 +7309,23 @@ https://github.com/Tencent/APIJSON/issues
 
       /**请求类型切换
        */
-      changeMethod: function () {
-        var methods = this.methods
-        var count = methods == null ? 0 : methods.length
-        if (count <= 0) {
-          methods = HTTP_METHODS
-          count = HTTP_METHODS.length
+      changeMethod: function (method) {
+        if (StringUtil.isNotEmpty(method)) {
+          CodeUtil.method = this.method = method
+        } else {
+          var methods = this.methods
+          var count = methods == null ? 0 : methods.length
+          if (count <= 0) {
+            methods = HTTP_METHODS
+            count = HTTP_METHODS.length
+          }
+
+          if (count > 1) {
+            var index = methods.indexOf(this.method) + 1
+            CodeUtil.method = this.method = methods[index % count]
+          }
         }
 
-        if (count > 1) {
-          var index = methods.indexOf(this.method) + 1
-          CodeUtil.method = this.method = methods[index % count]
-        }
         this.onChange(false);
       },
 
@@ -7366,18 +7371,22 @@ https://github.com/Tencent/APIJSON/issues
       },
       /**请求类型切换
        */
-      changeType: function () {
-        var types = this.types
-        var count = types == null ? 0 : types.length
-        if (count <= 0) {
-          types = HTTP_CONTENT_TYPES
-          count = HTTP_CONTENT_TYPES.length
-        }
+      changeType: function (type) {
+        if (StringUtil.isNotEmpty(type)) {
+          CodeUtil.type = this.type = type
+        } else {
+          var types = this.types
+          var count = types == null ? 0 : types.length
+          if (count <= 0) {
+            types = HTTP_CONTENT_TYPES
+            count = HTTP_CONTENT_TYPES.length
+          }
 
-        if (count > 1) {
-          var index = types.indexOf(this.type) + 1
-          this.type = types[index % count]
-          CodeUtil.type = this.type;
+          if (count > 1) {
+            var index = types.indexOf(this.type) + 1
+            this.type = types[index % count]
+            CodeUtil.type = this.type;
+          }
         }
 
         var url = StringUtil.trim(vUrl.value).replaceAll('\n', '')

@@ -176,9 +176,13 @@ a:active svg, a:hover svg{
   top: 0px;
   display: flex;
   align-items: center;
-  z-index: 100;
+  z-index: 101;
   background-color: #FFF;
   box-shadow: 1px 1px 1px rgba(244, 243, 243, 0.64)
+}
+
+.side-left > .left-bar {
+  z-index: 101;
 }
 
 .left-panel {
@@ -272,7 +276,7 @@ textarea {
   padding-right: 10px;
   display: flex;
   align-items: center;
-  z-index: 100;
+  z-index: 101;
   background-color: #FFF;
   box-shadow: 1px 1px 1px rgba(244, 243, 243, 0.64)
 }
@@ -336,7 +340,7 @@ textarea {
   display: inline-block;
   position: relative
 }
-.pop-btn:hover .pop, .pop:hover {
+.pop-btn:hover .pop, .pop:hover, .pop:focus-within {
   display: block;
 }
 
@@ -489,7 +493,7 @@ textarea {
   top: 50px;
   bottom: 0;
   left: 40%;
-  z-index: 100;
+  z-index: 1000;
   cursor: w-resize;
   border-right: rgba(221, 221, 221, 0.34) 1px solid;
   border-left: rgba(221, 221, 221, 0.34) 1px solid;
@@ -580,6 +584,58 @@ table.diff thead th.texttitle {
   height: 15px;
 }
 
+.method-pop {
+  left: 0;
+  right: auto;
+  top: 100%
+}
+
+.method-pop li {
+  display: block;
+  padding: 0;
+  padding-right: 0;
+  border-bottom: 0;
+  overflow: visible;
+}
+
+.method-pop li a {
+  display: block;
+  width: 100%;
+  height: 28px;
+  line-height: 28px;
+  padding: 0;
+  border-bottom: #DDD 1px solid;
+  box-sizing: border-box;
+  color: black;
+  text-align: center;
+}
+
+.type-pop {
+  left: 0;
+  right: auto;
+  top: 100%
+}
+
+.type-pop li {
+  display: block;
+  padding: 0;
+  padding-right: 0;
+  border-bottom: 0;
+  overflow: visible;
+}
+
+.type-pop li a {
+  display: block;
+  width: 100%;
+  height: 28px;
+  line-height: 28px;
+  padding: 0;
+  padding-left: 4px;
+  border-bottom: #DDD 1px solid;
+  box-sizing: border-box;
+  color: black;
+  text-align: left;
+}
 
 .projects {
   margin: 0;

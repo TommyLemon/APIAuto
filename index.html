@@ -158,8 +158,32 @@
     <div class="side-left" style="padding-bottom: -4px">
         <div v-show="! isTestCaseShow" class="left-bar" >
             <button class="transfer" id="vTransfer" @click="transfer()">' / "</button>
-            <button v-show="isShowMethod()" class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ getMethodName(method, type) }}</button>
-            <button v-show="isShowType()" class="transfer" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type, method) }}</button>
+
+            <span v-show="isShowMethod()" class="pop-btn transfer" style="width: 60px">
+                <button class="transfer" style="width: 60px" id="vMethod" :disabled="isEditResponse" @click="changeMethod()">{{ getMethodName(method, type) }}</button>
+                <ul class="historys pop method-pop" style="width: 60px;">
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'GET' ? 'red' : 'black'}" @click="changeMethod('GET')" >GET</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'POST' ? 'red' : 'black'}" @click="changeMethod('POST')" >POST</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'PUT' ? 'red' : 'black'}" @click="changeMethod('PUT')" >PUT</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'PATCH' ? 'red' : 'black'}" @click="changeMethod('PATCH')" >PATCH</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'DELETE' ? 'red' : 'black'}" @click="changeMethod('DELETE')" >DELETE</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'HEAD' ? 'red' : 'black'}" @click="changeMethod('HEAD')" >HEAD</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'OPTIONS' ? 'red' : 'black'}" @click="changeMethod('OPTIONS')" >OPTIONS</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: method == 'TRACE' ? 'red' : 'black'}" @click="changeMethod('TRACE')" >TRACE</a></li>
+                </ul>
+            </span>
+
+            <span v-show="isShowType()" class="pop-btn transfer">
+            <button class="transfer" id="vType" :disabled="isEditResponse" @click="changeType()">{{ getTypeName(type, method) }}</button>
+                <ul class="historys pop type-pop" style="width: 250px;">
+                    <li ><a href="javascript:void(0)" :style="{color: type == 'PARAM' ? 'red' : 'black'}" @click="changeType('PARAM')" >PARAM // ?a=1&b=c&key=value</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: type == 'FORM' ? 'red' : 'black'}" @click="changeType('FORM')" >FORM // x-www-form-urlencoded</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: type == 'DATA' ? 'red' : 'black'}" @click="changeType('DATA')" >DATA // form-data</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: type == 'JSON' ? 'red' : 'black'}" @click="changeType('JSON')" >JSON // application/json</a></li>
+                    <li ><a href="javascript:void(0)" :style="{color: type == 'GRPC' ? 'red' : 'black'}" @click="changeType('GRPC')" >GRPC // application/json</a></li>
+                </ul>
+            </span>
+
             <div style="height: 100%;display: flex;flex-grow: 1">
                 <input class="url" id="vUrlComment" :disabled="isEditResponse" type="text" style="width: 100%; position: absolute; z-index: -100; color: darkseagreen;background: #0000;"  ></input>
                 <textarea class="url" id="vUrl" :disabled="isEditResponse" type="text" @copy="doOnCopy" @paste="doOnPaste" @keyup="doOnKeyUp(event)"
