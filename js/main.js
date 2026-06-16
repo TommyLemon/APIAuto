@@ -898,6 +898,20 @@ https://github.com/Tencent/APIJSON/issues
     obj[key] = val
   }
 
+  var DB_SELECT = 'DB_SELECT'
+  // var DB_COUNT = 'DB_COUNT'
+  var DB_INSERT = 'DB_INSERT'
+  var DB_UPDATE = 'DB_UPDATE'
+  var DB_DELETE = 'DB_DELETE'
+
+  var DB_API_MAP = {
+    [DB_SELECT]: '/get',
+    // [DB_COUNT]: '/head',
+    [DB_INSERT]: '/post',
+    [DB_UPDATE]: '/put',
+    [DB_DELETE]: '/delete'
+  }
+
   var RANDOM_DB = 'RANDOM_DB'
   var RANDOM_IN = 'RANDOM_IN'
   var RANDOM_INT = 'RANDOM_INT'
@@ -11442,6 +11456,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           // }
 
           var toEval = value;
+          var isInject = true;
+          var isPre = false; // 避免执行副作用代码 true;
+          var isTest = false;
+          var method = null;
+          var type = null;
+          var url = null;
+          var req = json;
+          var header = head;
+          var res = {};
+          var data = res.data;
+          var err = null;
+
           if (start > 0 && end > start) {
             var funWithOrder = value.substring(0, start);
             var prefixEnd = funWithOrder.indexOf('ORDER_')
@@ -11453,6 +11479,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   prefixEnd = funWithOrder.indexOf('CTX_')
                   if (prefixEnd < 0) {
                     prefixEnd = funWithOrder.indexOf('CUR_')
+                    if (prefixEnd < 0) {
+                      prefixEnd = funWithOrder.indexOf('DB_')
+                    }
                   }
                 }
               }
@@ -11474,6 +11503,47 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             var fun = splitIndex < 0 ? funWithOrder : funWithOrder.substring(0, splitIndex);
+            var url = DB_API_MAP[fun]
+            if (StringUtil.isNotEmpty(url)) {
+              var arg = args[0]
+              var isSQL = ! JSONResponse.isObject(arg)
+              var url = isSQL ? '/sql/execute' : url
+              var uri = arg[1] || App.schema
+              // if (StringUtil.isString(uri) && StringUtil.isNotEmpty(uri) && ! uri.includes('://')) {
+              //   uri = App.getBaseUrl() + '/' + uri
+              // }
+              var req2 = isSQL ? {
+                database: arg[0] || App.database,
+                // uri: uri,
+                schema: uri,
+                sql: arg[2],
+                args: args[3] // TODO 尝试 eval 获取变量对应值
+              } : arg;
+
+              App.adminRequest(url, req2, head, function (url, res, err) {
+                try {
+                  App.onResponse(url, res, err)
+                } catch (e) {}
+
+                var data = (res || {}).data || {}
+                args[0] = 'data'
+                if (err != null) {
+                  var arg1 = args[1]
+                  args[1] = StringUtil.isEmpty(arg1) ? err : StringUtil.get(arg1) + '; \n' + StringUtil.get(err);
+                }
+
+                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.join() + ')';
+                try {
+                  var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
+                  invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
+                } catch (e) {
+                  throw new Error(e.message + '\n; 第 ' + i + ' 行：' + line)
+                }
+
+              });
+
+              continue;
+            }
 
             if (fun.startsWith('ORDER_') && /^[_A-Z]+$/g.test(fun)) { // [ORDER_DB, ORDER_IN, ORDER_INT].indexOf(fun) >= 0) {  //顺序函数
               var stepStr = splitIndex < 0 ? null : funWithOrder.substring(splitIndex + 1, funWithOrder.length);
@@ -11644,17 +11714,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             toEval = prefix + toEval
           }
 
-          var isInject = true;
-          var isPre = false; // 避免执行副作用代码 true;
-          var isTest = false;
-          var method = null;
-          var type = null;
-          var url = null;
-          var req = json;
-          var header = head;
-          var res = {};
-          var data = res.data;
-          var err = null;
           try {
             var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
             invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
