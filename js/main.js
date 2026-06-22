@@ -832,10 +832,15 @@ https://github.com/Tencent/APIJSON/issues
   var PLATFORM_RAP = 'RAP'
 
   var REQUEST_TYPE_PARAM = 'PARAM'  // GET ?a=1&b=c&key=value
-  var REQUEST_TYPE_FORM = 'FORM'  // POST x-www-form-urlencoded
-  var REQUEST_TYPE_DATA = 'DATA'  // POST form-data
+  var REQUEST_TYPE_FORM = 'FORM'  // POST application/x-www-form-urlencoded
+  var REQUEST_TYPE_DATA = 'DATA'  // POST multipart/form-data
   var REQUEST_TYPE_JSON = 'JSON'  // POST application/json
   var REQUEST_TYPE_GRPC = 'GRPC'  // POST application/json
+  var REQUEST_TYPE_PLAIN = 'TEXT'  // text/plain
+  var REQUEST_TYPE_TXML = 'TXML'  // text/xml
+  var REQUEST_TYPE_AXML = 'AXML'  // application/xml
+  var REQUEST_TYPE_HTML = 'HTML'  // text/html
+  var REQUEST_TYPE_XHTML = 'XHTML'  // application/xhtml+xml
   var HTTP_METHOD_GET = 'GET'  // GET ?a=1&b=c&key=value
   var HTTP_METHOD_POST = 'POST'  // POST application/json
   var HTTP_METHOD_PUT = 'PUT'  // PUT
@@ -851,7 +856,7 @@ https://github.com/Tencent/APIJSON/issues
   var HTTP_FORM_TYPES = [REQUEST_TYPE_FORM, HTTP_METHOD_PUT, HTTP_METHOD_DELETE]
   var HTTP_DATA_TYPES = [REQUEST_TYPE_DATA, HTTP_METHOD_PUT, HTTP_METHOD_DELETE]
   var HTTP_FORM_DATA_TYPES = [REQUEST_TYPE_DATA, HTTP_METHOD_PUT, HTTP_METHOD_DELETE]
-  var HTTP_CONTENT_TYPES = [REQUEST_TYPE_PARAM, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA, REQUEST_TYPE_JSON, REQUEST_TYPE_GRPC]
+  var HTTP_CONTENT_TYPES = [REQUEST_TYPE_PARAM, REQUEST_TYPE_FORM, REQUEST_TYPE_DATA, REQUEST_TYPE_JSON, REQUEST_TYPE_GRPC, REQUEST_TYPE_PLAIN, REQUEST_TYPE_TXML, REQUEST_TYPE_AXML, REQUEST_TYPE_HTML, REQUEST_TYPE_XHTML]
 
   var CONTENT_TYPE_MAP = {
     // 'PARAM': 'text/plain',
@@ -859,12 +864,21 @@ https://github.com/Tencent/APIJSON/issues
     'DATA': 'multipart/form-data',
     'JSON': 'application/json',
     'GRPC': 'application/json',
+    'TEXT': 'text/plain',
+    'TXML': 'text/xml',
+    'AXML': 'application/xml',
+    'HTML': 'text/html',
+    'XHTML': 'application/xhtml+xml',
   }
   var CONTENT_VALUE_TYPE_MAP = {
-    'text/plain': 'JSON',
     'application/x-www-form-urlencoded': 'FORM',
     'multipart/form-data': 'DATA',
-    'application/json': 'JSON'
+    'application/json': 'JSON',
+    'text/plain': 'TEXT',
+    'text/xml': 'TXML',
+    'application/xml': 'AXML',
+    'text/html': 'HTML',
+    'application/xhtml+xml': 'XHTML',
   }
 
   var IGNORE_HEADERS = ['status code', 'remote address', 'referrer policy', 'connection', 'content-length'
@@ -913,6 +927,22 @@ https://github.com/Tencent/APIJSON/issues
     [DB_INSERT]: '/post',
     [DB_UPDATE]: '/put',
     [DB_DELETE]: '/delete'
+  }
+
+  var HTTP_GET = 'HTTP_GET'
+  var HTTP_POST = 'HTTP_POST'
+  var HTTP_PUT = 'HTTP_PUT'
+  var HTTP_PATCH = 'HTTP_PATCH'
+  var HTTP_DELETE = 'HTTP_DELETE'
+  var HTTP_HEAD = 'HTTP_HEAD'
+
+  var HTTP_METHOD_MAP = {
+    [HTTP_GET]: HTTP_METHOD_GET,
+    [HTTP_POST]: HTTP_METHOD_POST,
+    [HTTP_PUT]: HTTP_METHOD_PUT,
+    [HTTP_PATCH]: HTTP_METHOD_PATCH,
+    [HTTP_DELETE]: HTTP_METHOD_DELETE,
+    [HTTP_HEAD]: HTTP_METHOD_HEAD
   }
 
   var RANDOM_DB = 'RANDOM_DB'
@@ -1300,7 +1330,7 @@ https://github.com/Tencent/APIJSON/issues
       requestCount: 1,
       urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
-      isEditReqLink: false,
+      isEditReqLink: true,
       options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],
       history: {name: '请求0'},
@@ -1308,7 +1338,7 @@ https://github.com/Tencent/APIJSON/issues
       locals: [],
       tagCombineIndex: 0,
       tagCombines: ['&', '|', '!'],
-      tags: [{name: 'P0', selected: false}, {name: 'P1', selected: false}, {name: 'P2', selected: false}, {name: 'P3', selected: false}, {name: 'Home', selected: false}, {name: 'Category'}, {name: 'Search'}, {name: 'Moment'}, {name: 'Chat'}, {name: 'Tommy'}, {name: 'Lemon'}],
+      tags: [{name: '造数据', selected: false}, {name: 'P0', selected: false}, {name: 'P1', selected: false}, {name: 'P2', selected: false}, {name: 'P3', selected: false}, {name: 'Home', selected: false}, {name: 'Category'}, {name: 'Search'}, {name: 'Moment'}, {name: 'Chat'}, {name: 'Tommy'}, {name: 'Lemon'}],
       chainPaths: [],
       casePaths: [],
       chainGroups: [],
@@ -7678,6 +7708,10 @@ https://github.com/Tencent/APIJSON/issues
       request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript, timeout_, wait_, retry_) {
         this.loadingCount ++
 
+        if (url != null && url.indexOf('://') <= 0) {
+          url = (isAdminOperation ? this.server : this.getBaseUrl()) + url
+        }
+
         const isEnvCompare = this.isEnvCompareEnabled
 
         const scripts = (isAdminOperation || caseScript_ == null ? null : this.scripts) || {}
@@ -7856,21 +7890,24 @@ https://github.com/Tencent/APIJSON/issues
             req = newReq
           }
 
-          axios.interceptors.request.use(function (config) {
-            config.metadata = { isChainShow: App.isChainShow, startTime: new Date().getTime() }
-            return config;
-          }, function (error) {
-            return Promise.reject(error);
-          });
-          axios.interceptors.response.use(function (response) {
-            response.config.metadata.endTime = new Date().getTime()
-            response.duration = response.config.metadata.endTime - response.config.metadata.startTime
-            return response;
-          }, function (error) {
-            error.config.metadata.endTime = new Date().getTime();
-            error.duration = error.config.metadata.endTime - error.config.metadata.startTime;
-            return Promise.reject(error);
-          });
+          var interceptors = axios.interceptors
+          if (interceptors != null) {
+            interceptors.request.use(function (config) {
+              config.metadata = {isChainShow: App.isChainShow, startTime: new Date().getTime()}
+              return config;
+            }, function (error) {
+              return Promise.reject(error);
+            });
+            interceptors.response.use(function (response) {
+              response.config.metadata.endTime = new Date().getTime()
+              response.duration = response.config.metadata.endTime - response.config.metadata.startTime
+              return response;
+            }, function (error) {
+              error.config.metadata.endTime = new Date().getTime();
+              error.duration = error.config.metadata.endTime - error.config.metadata.startTime;
+              return Promise.reject(error);
+            });
+          }
 
           // Object.defineProperty(req, 'constructor', {
           //   value: 'getInstance',
@@ -7879,11 +7916,16 @@ https://github.com/Tencent/APIJSON/issues
           //   writable: true
           // })
 
+          header = header || {}
           var isJSON = HTTP_JSON_TYPES.indexOf(type) >= 0;
           if (isJSON && JSONResponse.isObject(req) && (req.constructor != null || req.package != null || req.class != null || req.method != null || req.prototype != null)) {
             req = JSON.stringify(req)
-            header = header || {}
             header['Content-Type'] = 'application/json'
+          }
+
+          var contentType = header['Content-Type'] || header['content-type']
+          if (StringUtil.isEmpty(contentType) && [REQUEST_TYPE_FORM, REQUEST_TYPE_DATA, REQUEST_TYPE_PLAIN, REQUEST_TYPE_TXML, REQUEST_TYPE_AXML, REQUEST_TYPE_HTML, REQUEST_TYPE_XHTML].includes(type)) {
+            header['Content-Type'] = CONTENT_TYPE_MAP[type]
           }
 
           // axios.defaults.withcredentials = true
@@ -7901,7 +7943,7 @@ https://github.com/Tencent/APIJSON/issues
             params: isParam ? req : null,
             data: isJSON ? req : (HTTP_FORM_DATA_TYPES.indexOf(type) >= 0 ? toFormData(req) : null),
             headers: header,  //Accept-Encoding（HTTP Header 大小写不敏感，SpringBoot 接收后自动转小写）可能导致 Response 乱码
-            withCredentials: true, //Cookie 必须要  type == REQUEST_TYPE_JSON
+            withCredentials: true, //Cookie 必须要 type == REQUEST_TYPE_JSON
             // crossDomain: true
             timeout: timeout
           })
@@ -11501,6 +11543,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     prefixEnd = funWithOrder.indexOf('CUR_')
                     if (prefixEnd < 0) {
                       prefixEnd = funWithOrder.indexOf('DB_')
+                      if (prefixEnd < 0) {
+                        prefixEnd = funWithOrder.indexOf('HTTP_')
+                      }
                     }
                   }
                 }
@@ -11527,32 +11572,66 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             if (StringUtil.isNotEmpty(url)) {
               var arg = args[0]
               var isSQL = ! JSONResponse.isObject(arg)
-              var url = isSQL ? '/sql/execute' : url
-              var uri = arg[1] || App.schema
+              url = isSQL ? '/sql/execute' : url
+              var arg1 = args[1]
+              var uri = args[2] || App.schema
               // if (StringUtil.isString(uri) && StringUtil.isNotEmpty(uri) && ! uri.includes('://')) {
               //   uri = App.getBaseUrl() + '/' + uri
               // }
               var req2 = isSQL ? {
-                database: arg[0] || App.database,
+                database: args[3] || App.database,
                 // uri: uri,
                 schema: uri,
-                sql: arg[2],
-                args: args[3] // TODO 尝试 eval 获取变量对应值
-              } : arg;
+                sql: arg,
+                args: arg1 // TODO 尝试 eval 获取变量对应值
+              } : (arg1 == null ? arg : Object.assign(arg, {tag: arg1}));
 
-              App.adminRequest(url, req2, head, function (url, res, err) {
+              App.adminRequest(isSQL || arg1 == null ? url : url + (url.endsWith('/get') || url.endsWith('/head') ? 's/' : '/') + arg1, req2, {}, function (url, res, err) {
                 try {
                   App.onResponse(url, res, err)
                 } catch (e) {}
 
                 var data = (res || {}).data || {}
-                args[0] = 'data'
+                args[5] = 'data'
                 if (err != null) {
-                  var arg1 = args[1]
-                  args[1] = StringUtil.isEmpty(arg1) ? err : StringUtil.get(arg1) + '; \n' + StringUtil.get(err);
+                  var arg6 = args[6]
+                  args[6] = StringUtil.isEmpty(arg6) ? err : StringUtil.get(arg6) + '; \n' + StringUtil.get(err);
                 }
 
-                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.join() + ')';
+                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.slice(5).join() + ')';
+                try {
+                  var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
+                  invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
+                } catch (e) {
+                  throw new Error(e.message + '\n; 第 ' + i + ' 行：' + line)
+                }
+
+              });
+
+              continue;
+            }
+
+            method = HTTP_METHOD_MAP[fun]
+            if (StringUtil.isNotEmpty(method)) {
+              url = args[0]
+              var body = args[1]
+              type = args[2]
+              var head2 = args[3]
+              var delegate = args[4]
+
+              App.request(delegate != null ? delegate : App.isDelegateEnabled, method, type, url, body, head2, function (url, res, err) {
+                try {
+                  App.onResponse(url, res, err)
+                } catch (e) {}
+
+                var data = (res || {}).data || {}
+                args[5] = 'data'
+                if (err != null) {
+                  var arg6 = args[6]
+                  args[6] = StringUtil.isEmpty(arg6) ? err : StringUtil.get(arg6) + '; \n' + StringUtil.get(err);
+                }
+
+                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.slice(5).join() + ')';
                 try {
                   var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
                   invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
@@ -13721,6 +13800,62 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   name: "RANDOM_STR()",
                   type: stringType,
                   comment: "从长度范围内随机取字符串 function(minLength:Integer, maxLength:Integer, regexp:String)"
+                }, {
+                  name: "DB_SELECT({'User':{'@column': 'id'}})",
+                  type: stringType,
+                  comment: "从数据库查询记录 function(apijson:Object, tag:String?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_SELECT('SELECT id FROM sys.apijson_user LIMIT ?', [1])",
+                  type: stringType,
+                  comment: "从数据库查询记录 function(sql:String, args:Array, datasource:String?, schema:String?, database:String, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_INSERT({'content': 'Good!'}, 'Moment')",
+                  type: stringType,
+                  comment: "从数据库新增记录 function(apijson:Object, tag:String, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_INSERT('INSERT INTO sys.Moment(content) VALUES(?)', ['Good!'])",
+                  type: stringType,
+                  comment: "从数据库新增记录 function(sql:String, args:Array, datasource:String?, schema:String?, database:String?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_UPDATE({'id': 1, 'content': 'Hello~'}, 'User')",
+                  type: stringType,
+                  comment: "从数据库修改记录 function(apijson:Object, tag:String, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_UPDATE('UPDATE sys.Comment SET content = 'Hello~' WHERE id=', [1])",
+                  type: stringType,
+                  comment: "从数据库修改记录 function(sql:String, args:Array, datasource:String?, schema:String?, database:String?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_DELETE({'id': 1}, 'Comment')",
+                  type: stringType,
+                  comment: "从数据库删除记录 function(apijson:Object, tag:String, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "DB_DELETE('DELETE FROM sys.Comment WHERE id=? LIMIT 1', [1])",
+                  type: stringType,
+                  comment: "从数据库删除记录 function(sql:String, args:Array, datasource:String?, schema:String?, database:String?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_GET('/get/User', {'id': 82001})",
+                  type: stringType,
+                  comment: "请求 HTTP GET 接口 function(url:Object, params:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_POST('/post/Moment', {'content': 'Good!'})",
+                  type: stringType,
+                  comment: "请求 HTTP POST 接口 function(url:Object, body:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_PUT('/put/Comment', {'id': 1, 'content': 'hello~'})",
+                  type: stringType,
+                  comment: "请求 HTTP PUT 接口 function(url:Object, form:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_PATCH('/patch/Comment', {'id': 1, 'content': 'hello~'})",
+                  type: stringType,
+                  comment: "请求 HTTP PATCH 接口 function(url:Object, data:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_DELETE('/delete/Comment', {'id': 1})",
+                  type: stringType,
+                  comment: "请求 HTTP DELETE 接口 function(url:Object, form:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
+                }, {
+                  name: "HTTP_HEAD('/head/User', {'id': 82001})",
+                  type: stringType,
+                  comment: "请求 HTTP HEAD 接口 function(url:Object, params:Object?, contentType:String?, headers:Object?, isDelegate:Boolean?, defaultVal:Any?, msg:String?)"
                 }, {
                   name: "undefined", type: "undefined", comment: '未定义'
                 }, {
