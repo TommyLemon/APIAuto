@@ -842,14 +842,24 @@ fun(true, 1, 'a'..);
     <!--</div>-->
 
     <!--弹出保存框-->
+    <div class="save-box" v-show="isAlertShow">
+        <svg class="icon close-icon" @click="showAlert(false)">
+            <use xlink:href="svg/icon.svg#close"></use>
+        </svg>
+
+        <a type="text" style="background-color: white; padding: 6px 10px 6px 10px">{{alertMsg}}</a><br/>
+        <button  @click="showAlert(false)" >确定</button>
+    </div>
+
+    <!--弹出保存框-->
     <div class="save-box" v-show="isSaveShow">
         <svg class="icon close-icon" @click="showSave(false)">
             <use xlink:href="svg/icon.svg#close"></use>
         </svg>
 
-    <input type="text" placeholder="请输入名称" v-model="history.name" />
-    <button   @click="save()" >保存</button>
-  </div>
+      <input type="text" placeholder="请输入名称" v-model="history.name" />
+      <button   @click="save()" >保存</button>
+    </div>
 
     <!--弹出下载文本框-->
     <div class="save-box" v-show="isExportShow">

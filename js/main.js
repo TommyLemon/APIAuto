@@ -1402,9 +1402,11 @@ https://github.com/Tencent/APIJSON/issues
       wait: 0, // 每个请求前的等待延迟
       timeout: null, // 每个请求的超时时间
       loadingCount: 0,
+      alertMsg: '',
       isPreScript: true,
       isRandomTest: false,
       isDelayShow: false,
+      isAlertShow: false,
       isSaveShow: false,
       isExportShow: false,
       isExportCheckShow: false,
@@ -2124,6 +2126,11 @@ https://github.com/Tencent/APIJSON/issues
           selectionEnd = target.selectionEnd = selectionStart + name.length;
           isClickSelectInput = false;
         }
+      },
+
+      // 显示提示弹窗
+      showAlert(show) {
+        this.isAlertShow = show
       },
 
       // 显示保存弹窗
@@ -15383,6 +15390,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
     App = nodeApp
 
     module.exports = {getRequestFromURL, App}
+  }
+
+  function alert(msg) {
+    App.alertMsg = msg
+    App.showAlert(true)
   }
 
 })()
