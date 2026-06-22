@@ -722,3 +722,11 @@ table.diff thead th.texttitle {
   border-color: #bce8f1;
   color: #31708f;
 }
+
+.setting-item {
+  border-bottom: #DDD 1px solid;
+  width: 100%;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: small;
+}

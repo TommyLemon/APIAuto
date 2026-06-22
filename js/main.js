@@ -1,4 +1,3 @@
-
 (function () {
   const DEBUG = false // true
   const IS_NODE = typeof window == 'undefined'
@@ -84,7 +83,9 @@
 
         var axios = require('axios');
         var editormd = null;
+        
         import { PageAgent } from 'page-agent'
+        import { PageAgentCoreConfig } from "@page-agent/core";
       `)
     } catch (e) {
       console.log(e)
@@ -1503,10 +1504,14 @@ https://github.com/Tencent/APIJSON/issues
       otherEnv: 'http://localhost:8080',  // 其它环境服务地址，用来对比当前的
       server: 'http://apijson.cn:9090', // 'http://localhost:8080', //  Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了
       // server: 'http://47.74.39.68:9090',  // apijson.org
-      projectHost: {host: 'http://apijson.cn:8080', project: 'APIJSON.cn'},  // apijson.cn
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
       // thirdParty: 'YAPI /api/interface/list_menu /api/interface/get',
+      aiModel: 'qwen3.5-plus',
+      aiBaseUrl: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run',
+      aiApiKey: '',
+      aiLanguage: 'zh-CN',
+      projectHost: {host: 'http://apijson.cn:8080', project: 'APIJSON.cn'},  // apijson.cn
       projectHosts: [
          {host: 'http://localhost:8080', project: 'Localhost'},
          {host: 'http://apijson.cn:8080', project: 'APIJSON.cn'},
@@ -2261,9 +2266,15 @@ https://github.com/Tencent/APIJSON/issues
             case 7:
             case 8:
             case 15:
+            case 19:
+            case 20:
+            case 21:
+            case 22:
               this.exTxt.name = index == 0 ? this.database : (index == 1 ? this.schema : (index == 2 ? this.language
                   : (index == 6 ? this.server : (index == 8 ? this.thirdParty : (index == 15 ? this.otherEnv
-                   : (index == 16 ? (this.methods || []).join() : (this.types || []).join()))))))
+                   : (index == 19 ? this.aiModel : (index == 20 ? this.aiBaseUrl : (index == 21 ? this.aiApiKey
+                    : (index == 22 ? this.aiLanguage : (index == 16 ? (this.methods || []).join() : (this.types || []).join())))))))))
+              )
               this.isConfigShow = true
 
               if (index == 0) {
@@ -2432,12 +2443,12 @@ https://github.com/Tencent/APIJSON/issues
             case 18:
               this.isAgentEnabled = show
               this.saveCache('', 'isAgentEnabled', show)
-              pageAgent = pageAgent || new PageAgent({
-                model: 'qwen3.5-plus',
-                baseURL: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run', // 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-                // apiKey: 'YOUR_API_KEY',
-                language: 'zh-CN', // 'en-US',
-              })
+              pageAgent = pageAgent || new PageAgent()
+              const config = pageAgent?.config || new PageAgentCoreConfig()
+              config.model = this.aiModel || config?.model
+              config.baseURL = this.aiBaseUrl || config?.baseURL
+              config.apiKey = this.aiApiKey || config?.apiKey
+              config.language = this.aiLanguage || config?.language
               pageAgent?.panel?.show()
               break
             case 12:
@@ -4117,6 +4128,22 @@ https://github.com/Tencent/APIJSON/issues
           case 15:
             this.otherEnv = StringUtil.get(this.exTxt.name)
             this.saveCache('', 'otherEnv', this.otherEnv)
+            break
+          case 19:
+            this.aiModel = StringUtil.get(this.exTxt.name)
+            this.saveCache('', 'aiModel', this.aiModel)
+            break
+          case 20:
+            this.aiBaseUrl = StringUtil.get(this.exTxt.name)
+            this.saveCache('', 'aiBaseUrl', this.aiBaseUrl)
+            break
+          case 21:
+            this.aiApiKey = StringUtil.get(this.exTxt.name)
+            this.saveCache('', 'aiApiKey', this.aiApiKey)
+            break
+          case 22:
+            this.aiLanguage = StringUtil.get(this.exTxt.name)
+            this.saveCache('', 'aiLanguage', this.aiLanguage)
             break
           case 8:
             var thirdParty = this.exTxt.name
@@ -14549,6 +14576,23 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.thirdParty = thirdParty
         }
 
+        var aiModel = this.getCache('', 'aiModel')
+        if (StringUtil.isEmpty(aiModel, true) == false) {
+          this.aiModel = aiModel
+        }
+        var aiBaseUrl = this.getCache('', 'aiBaseUrl')
+        if (StringUtil.isEmpty(aiBaseUrl, true) == false) {
+          this.aiBaseUrl = aiBaseUrl
+        }
+        var aiApiKey = this.getCache('', 'aiApiKey')
+        if (StringUtil.isEmpty(aiApiKey, true) == false) {
+          this.aiApiKey = aiApiKey
+        }
+        var aiLanguage = this.getCache('', 'aiLanguage')
+        if (StringUtil.isEmpty(aiLanguage, true) == false) {
+          this.aiLanguage = aiLanguage
+        }
+
         this.locals = this.getCache('', 'locals', [])
 
         this.isDelegateEnabled = this.getCache('', 'isDelegateEnabled', this.isDelegateEnabled)
@@ -14806,12 +14850,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (this.isAgentEnabled) {
           setTimeout(function () {
-            pageAgent = pageAgent || new PageAgent({
-              model: 'qwen3.5-plus',
-              baseURL: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run', // 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-              // apiKey: 'YOUR_API_KEY',
-              language: 'zh-CN', // 'en-US',
-            })
+            pageAgent = pageAgent || new PageAgent()
+            const config = pageAgent?.config || new PageAgentCoreConfig()
+            config.model = App.aiModel || config?.model
+            config.baseURL = App.aiBaseUrl || config?.baseURL
+            config.apiKey = App.aiApiKey || config?.apiKey
+            config.language = App.aiLanguage || config?.language
             pageAgent?.panel?.show()
           }, 3000)
         }
