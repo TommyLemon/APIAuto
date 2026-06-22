@@ -134,6 +134,7 @@
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)参数注入 Random Test' : '显示(编辑)参数注入 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ (isHeaderShow ? '隐藏(固定)' : '显示(编辑)') + (isEditResponse ? '响应头 Response Header' : '请求头 Request Header' ) }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isScriptShow, 13)">{{ (isScriptShow ? '隐藏(固定)' : '显示(编辑)') + '执行脚本 JavaScript' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isAgentEnabled, 18)">{{ (isAgentEnabled ? '隐藏' : '显示') + '网页自动操作 AI Agent' }} </a>
                   <a v-show="User.id != null && User.id > 0" style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(! isStatisticsEnabled, 17)">{{ (isStatisticsEnabled ? '隐藏' : '显示') + '测试统计报告 Test Report' }} </a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 2)">生成代码(封装,解析) : {{ language || '例如 Java' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%" href="javascript:void(0)" @click="showConfig(true, 0)">数据库类型 Database: {{ database || '例如 MYSQL' }}</a>
@@ -1143,6 +1144,7 @@ fun(true, 1, 'a'..);
 <script src="md/lib/jquery.flowchart.min.js"></script>
 
 <script src="md/editormd.js"></script>
+<script src="https://registry.npmmirror.com/page-agent/1.10.0/files/dist/iife/page-agent.demo.js" crossorigin="true"></script>
 
 </body>
 </html>

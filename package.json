@@ -13,7 +13,8 @@
     "axios": "^1.14.0",
     "json5": "^2.2.3",
     "koa": "^3.2.0",
-    "koa-bodyparser": "^4.4.1"
+    "koa-bodyparser": "^4.4.1",
+    "page-agent": "^1.10.0"
   },
   "private": true
 }

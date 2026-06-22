@@ -51,7 +51,7 @@
         var JSONResponse = require('../apijson/JSONResponse');
         var JSONRequest0 = require('../apijson/JSONRequest');
         var JSONRequest = JSONRequest0.JSONRequest; // require('../apijson/JSONRequest');
-        var toFromData = JSONRequest0.toFromData;
+        var toFormData = JSONRequest0.toFormData;
         var parseJSON = JSONRequest0.parseJSON;
         var encode = JSONRequest0.encode;
         var localforage = require('./localforage.min');
@@ -84,11 +84,14 @@
 
         var axios = require('axios');
         var editormd = null;
+        import { PageAgent } from 'page-agent'
       `)
     } catch (e) {
       console.log(e)
     }
+
   }
+
 
   function log(msg) {
     if (DEBUG) {
@@ -1430,6 +1433,7 @@ https://github.com/Tencent/APIJSON/issues
       isDelegateEnabled: false,
       isEnvCompareEnabled: false,
       isPreviewEnabled: false,
+      isAgentEnabled: true,
       isStatisticsEnabled: false,
       isEncodeEnabled: true,
       isEditResponse: false,
@@ -2395,6 +2399,17 @@ https://github.com/Tencent/APIJSON/issues
               this.reportId = 0
               this.showTestCase(true, false)
               break
+            case 18:
+              this.isAgentEnabled = show
+              this.saveCache('', 'isAgentEnabled', show)
+              pageAgent = pageAgent || new PageAgent({
+                model: 'qwen3.5-plus',
+                baseURL: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run', // 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                // apiKey: 'YOUR_API_KEY',
+                language: 'zh-CN', // 'en-US',
+              })
+              pageAgent?.panel?.show()
+              break
             case 12:
               this.isEncodeEnabled = show
               this.saveCache('', 'isEncodeEnabled', show)
@@ -2451,6 +2466,11 @@ https://github.com/Tencent/APIJSON/issues
         else if (index == 17) {
           this.isStatisticsEnabled = show
           this.saveCache('', 'isStatisticsEnabled', show)
+        }
+        else if (index == 18) {
+          this.isAgentEnabled = show
+          this.saveCache('', 'isAgentEnabled', show)
+          pageAgent?.panel?.hide()
         }
         else if (index == 14) {
           this.isEnvCompareEnabled = show
@@ -14648,6 +14668,18 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           App.handleTestArg(hasTestArg, rawReq, delayTime)
         }, 2000)
+
+        if (this.isAgentEnabled) {
+          setTimeout(function () {
+            pageAgent = pageAgent || new PageAgent({
+              model: 'qwen3.5-plus',
+              baseURL: 'https://page-ag-testing-ohftxirgbn.cn-shanghai.fcapp.run', // 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+              // apiKey: 'YOUR_API_KEY',
+              language: 'zh-CN', // 'en-US',
+            })
+            pageAgent?.panel?.show()
+          }, 3000)
+        }
 
       }
 
