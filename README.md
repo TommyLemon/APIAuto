@@ -123,7 +123,8 @@ Bilibili：https://search.bilibili.com/all?keyword=APIAuto
 [别再生成测试代码了！](https://mp.weixin.qq.com/s/G1GVNhhFbSX5GoyRU6GURg) <br />
 [APIAuto: 最先进的 HTTP 接口工具](https://blog.csdn.net/Nifc666/article/details/141966487) <br />
 [APIAuto 开源项目教程](https://blog.csdn.net/gitblog_00138/article/details/142802330) <br />
-[Github 2.2k Star！一款开源的机器学习 HTTP 接口工具！](https://mp.weixin.qq.com/s/4ZS80QP-WN-holFQkrxK-w) 
+[Github 2.2k Star！一款开源的机器学习 HTTP 接口工具！](https://mp.weixin.qq.com/s/4ZS80QP-WN-holFQkrxK-w)  <br />
+[APIAuto：机器学习驱动的零代码HTTP接口智能测试平台深度解析](https://blog.csdn.net/weixin_33940469/article/details/162085502)
 
 ### 百度、搜狗、抖音公网接口调用演示 <br />
 因为这些接口不支持 CORS 跨域，所以需要开启托管服务代理。<br />
