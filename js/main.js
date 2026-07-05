@@ -11403,12 +11403,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const start = value.indexOf('(');
           const end = value.lastIndexOf(')');
           var _args = [];
-          try { // JSON 中不能出现 undefined
-            _args = parseJSON('[' + value.substring(start + 1, end) + ']');
-          } catch (e) {
-            console.log(e);
-            _args = StringUtil.split(value.substring(start + 1, end), ', ');
-          }
+          // try { // JSON 中不能出现 undefined
+            _args = eval('[' + value.substring(start + 1, end) + ']');
+          // } catch (e) {
+          //   console.log(e);
+          //   _args = StringUtil.split(value.substring(start + 1, end), ', ');
+          // }
           const args = _args || [];
 
           var request4Db = function(tableName, which, p_k, pathKeys, key, lastKeyInPath, isRandom, isDesc, step, body) {
@@ -11629,7 +11629,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 args[5] = 'data'
                 if (err != null) {
                   var arg6 = args[6]
-                  args[6] = StringUtil.isEmpty(arg6) ? err : StringUtil.get(arg6) + '; \n' + StringUtil.get(err);
+                  var err2 = new Error(StringUtil.isEmpty(arg6) ? StringUtil.get(err) : StringUtil.get(arg6) + '; \n' + StringUtil.get(err))
+                  args[6] = 'err2';
                 }
 
                 toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.slice(5).join() + ')';
@@ -11662,10 +11663,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 args[5] = 'data'
                 if (err != null) {
                   var arg6 = args[6]
-                  args[6] = StringUtil.isEmpty(arg6) ? err : StringUtil.get(arg6) + '; \n' + StringUtil.get(err);
+                  var err2 = new Error(StringUtil.isEmpty(arg6) ? StringUtil.get(err) : StringUtil.get(arg6) + '; \n' + StringUtil.get(err))
+                  args[6] = 'err2';
                 }
 
-                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.slice(5).join() + ')';
+                toEval = 'put4Path((ctx || {}).ctx || {}, ' + JSON.stringify(path) + ', ' + args.slice(5).join(', ') + ')';
                 try {
                   var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
                   invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
@@ -11851,7 +11853,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var ret = eval(StringUtil.trim(preScript) + '\n;\n(' + toEval + ')')
             invoke(ret, which, p_k, pathKeys, key, lastKeyInPath);
           } catch (e) {
-            throw new Error(e.message + '\n; 第 ' + i + ' 行：' + line)
+            throw new Error(e.message + ';\n第 ' + i + ' 行：' + line)
           }
 
           // alert('> current = ' + JSON.stringify(current, null, '    '))
@@ -12220,32 +12222,54 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
       },
 
-      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback, ctx) {
+      startTestSingle: function (list, allCount, index, item, isRandom, accountIndex, isCross, callback, singleCallback, ctx_) {
         this.isFullAssert = false
+
+        const document = item == null ? null : item.Document
+        if (document == null || document.name == null) {
+          if (isRandom) {
+            App.randomDoneCount ++
+          } else {
+            App.doneCount ++
+          }
+
+          return
+        }
+
         const caseScript = {
             pre: (item['Script:pre'] || {}),
             post: (item['Script:post'] || {})
         }
 
+        const chain = item.Chain
+
+        const isMLEnabled = this.isMLEnabled
+        const standardKey = isMLEnabled != true ? 'response' : 'standard'
+
+        const otherEnv = this.otherEnv;
+        const otherBaseUrl = this.isEnvCompareEnabled && StringUtil.isNotEmpty(otherEnv, true) ? this.getBaseUrl(otherEnv) : null
+        const isEnvCompare = StringUtil.isNotEmpty(otherBaseUrl, true) // 对比自己也行，看看前后两次是否幂等  && otherBaseUrl != baseUrl
+
+        const method = document.method
+        const type = document.type
+        const req = this.getRequest(document.request, null, true)
+        const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
+
+        const testInfo = (chain || {}).testInfo || {}
+        const curEnvUrl = (testInfo.baseUrl || baseUrl) + document.url
+        const cur = item
+        const pre = list[index - 1] || {} // item.pre = item.pre || list[index - 1] || {}
+//            const ctx = item.ctx = item.ctx || {}
+        const ctx = {
+          list: list,
+          allCount: allCount,
+          index: index,
+          cur: cur,
+          pre: pre,
+          ctx: ctx_ // ctx
+        }
+
         try {
-            const isMLEnabled = this.isMLEnabled
-            const standardKey = isMLEnabled != true ? 'response' : 'standard'
-
-            const otherEnv = this.otherEnv;
-            const otherBaseUrl = this.isEnvCompareEnabled && StringUtil.isNotEmpty(otherEnv, true) ? this.getBaseUrl(otherEnv) : null
-            const isEnvCompare = StringUtil.isNotEmpty(otherBaseUrl, true) // 对比自己也行，看看前后两次是否幂等  && otherBaseUrl != baseUrl
-
-            const document = item == null ? null : item.Document
-            if (document == null || document.name == null) {
-              if (isRandom) {
-                App.randomDoneCount ++
-              } else {
-                App.doneCount ++
-              }
-
-              return
-            }
-
             var url = document.url || ''
             if (this.isChainShow != true && (url.indexOf('login') >= 0 || url.indexOf('logout') >= 0)) { //login会导致登录用户改变为默认的但UI上还显示原来的，单独测试OWNER权限时能通过很困惑
               this.log('startTestSingle  this.isChainShow != true && (url.indexOf("login") >= 0 || url.indexOf("logout") >= 0) >> continue')
@@ -12270,8 +12294,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
             const header = hdr
 
-            const chain = item.Chain
-            const testInfo = (chain || {}).testInfo || {}
             if (chain != null) {
                 const testAccountId = chain.testAccountId
                 const accounts = this.accounts || []
@@ -12293,23 +12315,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       }
                     }
                 }
-            }
-
-            const method = document.method
-            const type = document.type
-            const req = this.getRequest(document.request, null, true)
-            const otherEnvUrl = isEnvCompare ? (otherBaseUrl + document.url) : null
-            const curEnvUrl = (testInfo.baseUrl || baseUrl) + document.url
-            const cur = item
-            const pre = list[index - 1] || {} // item.pre = item.pre || list[index - 1] || {}
-//            const ctx = item.ctx = item.ctx || {}
-            const ctx = {
-              list: list,
-              allCount: allCount,
-              index: index,
-              cur: cur,
-              pre: pre,
-              ctx: {} // ctx
             }
 
             var random = item.Random || {}
@@ -12421,7 +12426,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           tr.compare.duration = it.durationHint
 
           var resRandom = it['Random:res'] || {}
-          var resCfg = resRandom.config
+          var resCfg = justRecoverTest ? null : resRandom.config
           if (StringUtil.isNotEmpty(resCfg)) {
             try {
               caseScript = caseScript || {}
@@ -12484,7 +12489,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           case JSONResponse.COMPARE_TYPE_CHANGE:
           case JSONResponse.COMPARE_CODE_CHANGE:
           case JSONResponse.COMPARE_THROW_CHANGE:
-            var code = response == null ? null : response[JSONResponse.KEY_CODE] || JSONResponse.CODE_SUCCESS
+            var code = response == null ? null : response[JSONResponse.KEY_CODE]
             it.compareColor = 'red'
             it.hintMessage = (code != null && code != JSONResponse.CODE_SUCCESS
              ? code + ' ' : (status != null && status != 200 ? status + ' ' : '')) + '状态码/异常/值类型 改变等'
@@ -12523,13 +12528,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         var doneCount = isRandom ? App.randomDoneCount : App.doneCount
+        var isDone = doneCount >= allCount
         if (isRandom) {
-          this.testRandomProcess = doneCount >= allCount ? '' : ('正在测试: ' + doneCount + '/' + allCount)
+          this.testRandomProcess =isDone ? '' : ('正在测试: ' + doneCount + '/' + allCount)
         } else {
-          this.testProcess = doneCount >= allCount ? (this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
+          this.testProcess = isDone ? (this.isMLEnabled ? '机器学习:已开启' : '机器学习:已关闭') : '正在测试: ' + doneCount + '/' + allCount
         }
 
-        if (doneCount < allCount && callback != this.autoTestCallback && typeof this.autoTestCallback == 'function') {
+        if (isDone != true && callback != this.autoTestCallback && typeof this.autoTestCallback == 'function') {
           this.autoTestCallback('正在测试')
         }
 
@@ -12560,6 +12566,14 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         if (DEBUG) {
           this.log('tests = ' + JSON.stringify(tests, null, '    '))
         }
+
+        if (isDone && isRandom) {
+          this.currentRandomIndex = -1
+          this.isRandomShow = true
+          // this.isRandomListShow = true
+          // this.handleTest(false, 0, list[0], null, isRandom)  // , false, isCross)
+        }
+
         // this.showTestCase(true)
 
         if (singleCallback != null && singleCallback(res, allCount, list, index, response, cmp, isRandom, accountIndex, justRecoverTest, isCross)) {
@@ -13116,6 +13130,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         const rawRspStr = currentResponse == null ? null : JSON.stringify(currentResponse)
+        var rsp = parseJSON(rawRspStr)
 
         const list = isRandom ? (random.toId == null || random.toId <= 0 ? this.randoms : this.randomSubs) : this.testCases
 
@@ -13149,7 +13164,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               tag: 'TestRecord'
             }
 
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+            this.adminRequest(url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -13176,7 +13191,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 item.TestRecord = null
               }
 
-              App.updateTestRecord(0, list, index, item, rawRspStr == null ? null : parseJSON(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
+              App.updateTestRecord(0, list, index, item, rsp, isRandom, true, App.currentAccountIndex, isCross)
             })
           }
           else { //上传新的校验标准
@@ -13224,9 +13239,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             else {
               standard = (StringUtil.isEmpty(testRecord.standard, true) ? null : parseJSON(testRecord.standard)) || {}
               if (pathKeys.length <= 0) {
-                stddObj = JSONResponse.updateFullStandard(standard, rawRspStr == null ? null : parseJSON(rawRspStr), isML)
+                stddObj = JSONResponse.updateFullStandard(standard, rsp, isML)
               } else if (isML) {
-                stddObj = JSONResponse.updateStandardByPath(standard, pathNames, lastKey, rawRspStr == null ? null : parseJSON(rawRspStr))
+                stddObj = JSONResponse.updateStandardByPath(standard, pathNames, lastKey, rsp)
               }
             }
 
@@ -13287,7 +13302,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             //   }
             // }
 
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+            this.adminRequest(url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -13347,7 +13362,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //   }
                 // }
 
-                App.updateTestRecord(0, list, index, item, rawRspStr == null ? null : parseJSON(rawRspStr), isRandom, true, App.currentAccountIndex, isCross)
+                App.updateTestRecord(0, list, index, item, rsp, isRandom, true, App.currentAccountIndex, isCross)
               }
 
             })
@@ -13360,10 +13375,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         item = item || {}
         var doc = (isRandom ? item.Random : item.Document) || {}
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get', {
+        this.adminRequest('/get', {
           TestRecord: {
             documentId: isRandom ? doc.documentId : doc.id,
-            randomId: isRandom ? doc.id : null,
+            randomId: isRandom ? doc.id : 0,
             testAccountId: this.getCurrentAccountId(),
             'invalid': 0,
             'host': this.getBaseUrl(),
