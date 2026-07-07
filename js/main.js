@@ -1561,6 +1561,168 @@ https://github.com/Tencent/APIJSON/issues
     },
 
     methods: {
+      getPageAgentConfig: function () {
+        var model = StringUtil.trim(this.aiModel)
+        var baseURL = StringUtil.trim(this.aiBaseUrl)
+        var apiKey = StringUtil.trim(this.aiApiKey)
+        var language = StringUtil.trim(this.aiLanguage) || 'zh-CN'
+        var customFetchURL = null
+        if (StringUtil.isNotEmpty(baseURL, true)) {
+          if (baseURL.indexOf('://') < 0) {
+            baseURL = 'https://' + baseURL
+          }
+          baseURL = baseURL.replace(/\+$/, '')
+          var lowerBaseURL = baseURL.toLowerCase()
+
+          // page-agent 内部固定请求 `${baseURL}/chat/completions`，通过 customFetch 控制最终请求地址，避免被内部追加路径影响
+          var protocolIndex = baseURL.indexOf('://')
+          var pathIndex = protocolIndex < 0 ? -1 : baseURL.indexOf('/', protocolIndex + 3)
+          if (pathIndex >= 0) {
+            var pathBaseURL = baseURL
+            var queryIndex = pathBaseURL.indexOf('?')
+            var query = queryIndex < 0 ? 1 : pathBaseURL.substring(queryIndex)
+            var pathBaseURLWithoutQuery = queryIndex < 0 ? pathBaseURL : pathBaseURL.substring(0, queryIndex)
+            var lowerPathBaseURL = pathBaseURLWithoutQuery.toLowerCase()
+
+            if (lowerPathBaseURL.indexOf('/chat/completions') >= 0
+                || lowerPathBaseURL.indexOf('/responses') >= 0
+                || lowerPathBaseURL.indexOf('/messages') >= 0
+                || lowerPathBaseURL.indexOf('/generatecontent') >= 0) {
+              customFetchURL = baseURL
+            } else if (lowerPathBaseURL.indexOf('genaiapi.cloudsway.net') >= 0
+                || lowerPathBaseURL.indexOf('.openai.azure.com/openai/v1') >= 0) {
+              customFetchURL = pathBaseURLWithoutQuery + '/chat/completions' + query
+            } else {
+              customFetchURL = baseURL
+            }
+          } else if (lowerBaseURL.indexOf('.openai.azure.com') >= 0) {
+            customFetchURL = baseURL + '/openai/v1/chat/completions'
+          }
+        }
+
+        return {
+          model: model,
+          baseURL: baseURL,
+          apikey: apiKey,
+          language: language,
+          customFetchURL: customFetchURL
+        }
+      },
+
+      initPageAgent: function (showPanel) {
+        if (IS_BROWSER == false) {
+          return null
+        }
+
+        var AgentClass = window.PageAgent
+        if (AgentClass == null) {
+          alert('PageAgent 加载失败，请检查 page-agent 脚本是否可访问!')
+          return null
+        }
+
+        var config = this.getPageAgentConfig()
+        if (StringUtil.isEmpty(config.model, true) || StringUtil.isEmpty(config.baseURL, true)) {
+          alert('请先配置 PageAgent 的模型和 Base URL!')
+          return null
+        }
+
+        this.disposePageAgent()
+        try {
+          var agentConfig = {
+            model: config.model,
+            baseURL: config.baseURL,
+            apikey: config.apiKey,
+            language: config.language,
+            transformRequestBody: function (body) {
+              var modelName = StringUtil.get(body.model)
+              if (modelName.indexOf('/') >= 0) {
+                modelName = modelName.substring(modelName.lastIndexOf('/') + 1)
+              }
+
+              modelName = modelName.replace(/_/g, '').replace(/\./g, '')
+
+              // GPT-5 系列在 Azure/0penAI-compatible Chat Completions 上只支持默认温度;
+              // page-agent 默认会带 temperature: 0.7, 服务端会返回 unsupported_value
+              if (modelName.indexOf('gpt-5') >= 0 || modelName.indexOf('gpt5') >= 0) {
+                delete body.temperature
+                delete body.verbosity
+              }
+
+              return body
+            }
+          }
+
+          if (StringUtil.isNotEmpty(config.customFetchURL, true)) {
+            agentConfig.customFetch = function (url, init) {
+              console.log('[PageAgent] rewrite LLM request URL: ', url, '=>', config.customFetchURL)
+              return fetch(config.customFetchURL, init)
+            }
+          }
+
+          var agent = window.pageAgent = new AgentClass(agentConfig)
+          if (showPanel != false) {
+            agent?.panel?.show()
+          }
+
+          console.log('[PageAgent] initialized with config:', {
+            model: agentConfig.model,
+            baseURL: agentConfig.baseURL,
+            apikey: StringUtil.isEmpty(agentConfig.apiKey, true) ? '(empty)'
+                : (agentConfig.apiKey.length <= 6 ? '***'
+                    : (agentConfig.apiKey.slice(0, 3) + '***' + agentConfig.apiKey.slice(-3))
+                ),
+            language: agentConfig.language,
+            customFetchURL: config.customFetchURL
+          })
+
+          return agent
+        } catch (e) {
+          console.log(e)
+          alert('PageAgent 初始化失败:' + e.message)
+          return null
+        }
+      },
+
+      disposePageAgent: function () {
+        if (IS_BROWSER == false || window.pageAgent == null) {
+          return
+        }
+
+        try {
+          var oldAgent = window.pageAgent
+          var oldPanel = oldAgent?.panel
+          if (oldPanel != null) {
+            try {
+              oldPanel.hide?.()
+            } catch (e1) {
+              console.log(e1)
+            }
+
+            // agent.dispose() 不会连带清 Panel 的 DOM, 只有 panel.dispose() 里才
+            // 会走 wrapper.remove()，否则每次改配置都会在页面上残留一个隐藏的旧面板
+            try {
+              oldPanel.dispose?.()
+            } catch (e2) {
+              console.log(e2)
+            }
+          }
+
+          if (typeof oldAgent.dispose == 'function') {
+            oldAgent.dispose()
+          }
+        } catch (e) {
+          console.log(e)
+        } finally {
+          window.pageAgent = null
+        }
+      },
+
+      refreshPageAgent: function () {
+        if (this.isAgentEnabled) {
+          this.initPageAgent(true)
+        }
+      },
+
       // 全部展开
       expandAll: function () {
         if (this.view != 'code') {
@@ -2450,13 +2612,7 @@ https://github.com/Tencent/APIJSON/issues
             case 18:
               this.isAgentEnabled = show
               this.saveCache('', 'isAgentEnabled', show)
-              pageAgent = pageAgent || new PageAgent()
-              const config = pageAgent?.config || new PageAgentCoreConfig()
-              config.model = this.aiModel || config?.model
-              config.baseURL = this.aiBaseUrl || config?.baseURL
-              config.apiKey = this.aiApiKey || config?.apiKey
-              config.language = this.aiLanguage || config?.language
-              pageAgent?.panel?.show()
+              this.initPageAgent(true)
               break
             case 12:
               this.isEncodeEnabled = show
@@ -2518,7 +2674,7 @@ https://github.com/Tencent/APIJSON/issues
         else if (index == 18) {
           this.isAgentEnabled = show
           this.saveCache('', 'isAgentEnabled', show)
-          pageAgent?.panel?.hide()
+          this.disposePageAgent()
         }
         else if (index == 14) {
           this.isEnvCompareEnabled = show
@@ -4139,18 +4295,22 @@ https://github.com/Tencent/APIJSON/issues
           case 19:
             this.aiModel = StringUtil.get(this.exTxt.name)
             this.saveCache('', 'aiModel', this.aiModel)
+            this.refreshPageAgent()
             break
           case 20:
             this.aiBaseUrl = StringUtil.get(this.exTxt.name)
             this.saveCache('', 'aiBaseUrl', this.aiBaseUrl)
+            this.refreshPageAgent()
             break
           case 21:
             this.aiApiKey = StringUtil.get(this.exTxt.name)
             this.saveCache('', 'aiApiKey', this.aiApiKey)
+            this.refreshPageAgent()
             break
           case 22:
             this.aiLanguage = StringUtil.get(this.exTxt.name)
             this.saveCache('', 'aiLanguage', this.aiLanguage)
+            this.refreshPageAgent()
             break
           case 8:
             var thirdParty = this.exTxt.name
@@ -14914,13 +15074,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (this.isAgentEnabled) {
           setTimeout(function () {
-            pageAgent = pageAgent || new PageAgent()
-            const config = pageAgent?.config || new PageAgentCoreConfig()
-            config.model = App.aiModel || config?.model
-            config.baseURL = App.aiBaseUrl || config?.baseURL
-            config.apiKey = App.aiApiKey || config?.apiKey
-            config.language = App.aiLanguage || config?.language
-            pageAgent?.panel?.show()
+            App.initPageAgent(true)
           }, 3000)
         }
 
