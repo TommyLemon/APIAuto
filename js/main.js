@@ -14946,6 +14946,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
       }
 
+      if (this.isAgentEnabled) {
+        setTimeout(function () {
+          App.initPageAgent(true)
+        }, 3000)
+      }
+
       var rawReq = getRequestFromURL()
       if (rawReq == null || (StringUtil.isEmpty(rawReq.type, true) && StringUtil.isEmpty(rawReq.reportId, true))) {
         this.transfer()
@@ -15071,13 +15077,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           App.handleTestArg(hasTestArg, rawReq, delayTime)
         }, 2000)
-
-        if (this.isAgentEnabled) {
-          setTimeout(function () {
-            App.initPageAgent(true)
-          }, 3000)
-        }
-
       }
 
 
