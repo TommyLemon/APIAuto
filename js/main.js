@@ -2636,7 +2636,7 @@ https://github.com/Tencent/APIJSON/issues
       save: function () {
         var name = (this.history || {}).name
         if (StringUtil.isEmpty(name)) {
-          Helper.alert('名称不能为空！', 'danger')
+          alert('名称不能为空！', 'danger')
           return
         }
 
@@ -2653,7 +2653,7 @@ https://github.com/Tencent/APIJSON/issues
         }
         var key = String(Date.now())
         localforage.setItem(key, val, function (err, value) {
-          Helper.alert('保存成功！', 'success')
+          alert('保存成功！', 'success')
           App.showSave(false)
           val.key = key
           App.historys.push(val)
