@@ -104,9 +104,7 @@ https://www.bilibili.com/video/BV1yv411p7Y4
 * 自动给请求JSON加注释，一键切换
 * 自动保存历史请求记录，一键恢复
 
-以上是简略图，机器学习测试、自动生成代码、自动静态检查、自动生成注释 等详细的功能介绍见 <br />
-
-[https://github.com/TommyLemon/APIAuto/blob/main/apijson/README.md](https://github.com/TommyLemon/APIAuto/blob/main/apijson/README.md)
+以上是简略图，机器学习测试、自动生成代码、自动静态检查、自动生成注释 等详细的功能介绍见 [apijson/README.md](/apijson/README.md)
 
 ### 演讲稿件
 [APIAuto-机器学习 HTTP 接口工具](https://github.com/TommyLemon/StaticResources/tree/main/APIAuto/Share) <br />
@@ -181,7 +179,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/main/APIJSON-Java-Server
 点右上角登录 > 点右上角设置 > 导入第三方文档(平台 URL) > 如果默认设置不符你的需求，可以在弹窗内修改 > 点上传按钮
 
 #### 2.从浏览器 Network 接口信息界面或 Charles 等抓包工具复制后粘贴到 URL 输入框
-https://github.com/TommyLemon/APIAuto#%E7%99%BE%E5%BA%A6%E6%90%9C%E7%8B%97%E6%8A%96%E9%9F%B3%E5%85%AC%E7%BD%91%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E6%BC%94%E7%A4%BA
+[README.md#百度搜狗抖音公网接口调用演示](README.md#%E7%99%BE%E5%BA%A6%E6%90%9C%E7%8B%97%E6%8A%96%E9%9F%B3%E5%85%AC%E7%BD%91%E6%8E%A5%E5%8F%A3%E8%B0%83%E7%94%A8%E6%BC%94%E7%A4%BA)
 
 #### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、响应等信息
 https://github.com/APIJSON/APIJSON-Demo/tree/main/APIJSON-Java-Server/APIJSONBoot-MultiDataSource#%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E5%8F%8A%E5%BD%95%E5%88%B6%E6%B5%81%E9%87%8F
@@ -244,7 +242,7 @@ https://github.com/TommyLemon/APIAuto/issues/9
 如果是其它接口，则一般是以上原因或者被接口不支持 CORS 跨域，可以改为支持， <br />
 或者在 APIAuto 右上角设置开启托管服务器代理，通过后端代理访问接口， <br />
 注意默认是官网的托管服务器 http://apijson.cn:9090 ，仅支持公网， <br />
-如果是贵公司内网，请按以上 [部署方法](https://github.com/TommyLemon/APIAuto#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95) 文档来部署 APIJSON 后端到内网，并修改托管服务器地址。
+如果是贵公司内网，请按以上 [部署方法](README.md#%E9%83%A8%E7%BD%B2%E6%96%B9%E6%B3%95) 文档来部署 APIJSON 后端到内网，并修改托管服务器地址。
 
 #### 2.没有生成文档
 右上角设置项与数据库实际配置不一致 等  <br />
@@ -315,7 +313,7 @@ https://github.com/TommyLemon/APIAuto/issues
 
 [APIJSONdocs](https://github.com/ruoranw/APIJSONdocs) APIJSON 英文文档，提供排版清晰的文档内容展示，包括详细介绍、设计规范、使用方式等
 
-[apijson.org](https://github.com/APIJSON/apijson.org) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
+[apijson.org](https://github.com/APIJSON/apijson.cn) APIJSON 官方网站，提供 APIJSON 的 功能简介、登记用户、作者与贡献者、相关链接 等
 
 [APIJSON.NET](https://github.com/liaozb/APIJSON.NET) C# 版 APIJSON ，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite
 
@@ -332,6 +330,8 @@ https://github.com/TommyLemon/APIAuto/issues
 [apijson-node](https://github.com/kevinaskin/apijson-node) 字节跳动工程师开源的 Node.ts 版 APIJSON，提供 nestjs 和 typeorm 的 Demo 及后台管理
 
 [uliweb-apijson](https://github.com/zhangchunlin/uliweb-apijson) Python 版 APIJSON，支持 MySQL, PostgreSQL, SQL Server, Oracle, SQLite 等
+
+[apijson-rust](https://github.com/APIJSON/apijson-rust) Rust 版 APIJSON，包含一个优雅、高性能的多数据源管理系统，支持 MySQL, PostgreSQL 等统一管理和操作
 
 [apijson-practice](https://github.com/vcoolwind/apijson-practice) BAT 技术专家开源的 APIJSON 参数校验注解 Library 及相关 Demo
 
