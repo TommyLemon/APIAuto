@@ -727,6 +727,9 @@ var StringUtil = {
   isScoreKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Score');
   },
+  isRankKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Rank');
+  },
   isSexKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Sex');
   },
@@ -773,6 +776,28 @@ var StringUtil = {
      var l = StringUtil.length(key);
      return l >= 2 && l <= 30 && StringUtil.isKeyOfCategory(key, 'Name');
   },
+  isTitleKey: function (key) {
+    var l = StringUtil.length(key);
+    return l >= 2 && l <= 30 && StringUtil.isKeyOfCategory(key, 'Title');
+  },
+  isTextKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Text') || StringUtil.isKeyOfCategory(key, 'Txt');
+  },
+  isContentKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Content');
+  },
+  isMessageKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Message') || StringUtil.isKeyOfCategory(key, 'Msg');
+  },
+  isCommentKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Comment');
+  },
+  isDetailKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Detail');
+  },
+  isDescribeKey: function (key) {
+    return StringUtil.isKeyOfCategory(key, 'Desc') || StringUtil.isKeyOfCategory(key, 'Describe') || StringUtil.isKeyOfCategory(key, 'Description');
+  },
   isPathKey: function (key) {
      return StringUtil.isKeyOfCategory(key, 'Path');
   },
@@ -783,10 +808,14 @@ var StringUtil = {
      return StringUtil.isKeyOfCategory(key, 'Uri');
   },
   isDateKey: function (key) {
-     return ['createat', 'createdat', 'updateat', 'updatedat'].indexOf(StringUtil.get(key).toLowerCase()) >= 0 || StringUtil.isKeyOfCategory(key, 'Date');
+     return ['createat', 'createdat', 'updateat', 'updatedat', 'deletdat', 'deletedat', 'addat', 'addedat', 'editat'
+       , 'editedat', 'removeat', 'removedat', 'sendat', 'sentat', 'sendedat', 'receiveat', 'receivedat'].indexOf(StringUtil.get(key).toLowerCase()) >= 0
+         || StringUtil.isKeyOfCategory(key, 'Date');
   },
   isTimeKey: function (key) {
-     return ['createat', 'createdat', 'updateat', 'updatedat'].indexOf(StringUtil.get(key).toLowerCase()) >= 0 || StringUtil.isKeyOfCategory(key, 'Time');
+     return ['createat', 'createdat', 'updateat', 'updatedat', 'deletdat', 'deletedat', 'addat', 'addedat', 'editat'
+           , 'editedat', 'removeat', 'removedat', 'sendat', 'sentat', 'sendedat', 'receiveat', 'receivedat'].indexOf(StringUtil.get(key).toLowerCase()) >= 0
+         || StringUtil.isKeyOfCategory(key, 'Time') || StringUtil.isKeyOfCategory(key, 'Timestamp');
   },
   isKeyOfCategory: function (key, category) {
      if (StringUtil.isEmpty(key, true) || StringUtil.isEmpty(category, true) || key.length < category.length) {
