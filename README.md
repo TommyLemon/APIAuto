@@ -125,6 +125,7 @@ Bilibili：https://search.bilibili.com/all?keyword=APIAuto
 [APIAuto 开源项目教程](https://blog.csdn.net/gitblog_00138/article/details/142802330) <br />
 [Github 2.2k Star！一款开源的机器学习 HTTP 接口工具！](https://mp.weixin.qq.com/s/4ZS80QP-WN-holFQkrxK-w)  <br />
 [APIAuto：机器学习驱动的零代码HTTP接口智能测试平台深度解析](https://blog.csdn.net/weixin_33940469/article/details/162085502)
+[APIAuto：零代码接口测试与文档管理一体化平台实战指南](https://blog.csdn.net/weixin_31061699/article/details/162536896)
 [APIAuto: an HTTP interface tool that treats test cases as a database-backed workflow](https://hysenlabs.com/projects/tommylemon-apiauto)
 
 ### 百度、搜狗、抖音公网接口调用演示 <br />
