@@ -12682,8 +12682,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             it.compareColor = 'green'
             it.hintMessage = '新增字段/新增值 等'
             break;
+          case JSONResponse.COMPARE_SORT_CHANGE:
           case JSONResponse.COMPARE_LENGTH_CHANGE:
           case JSONResponse.COMPARE_VALUE_CHANGE:
+          case JSONResponse.COMPARE_FILTER_CHANGE:
             it.compareColor = 'blue'
             it.hintMessage = '值改变 等'
             break;

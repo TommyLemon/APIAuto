@@ -640,7 +640,7 @@ My-Header: 'Secret' + Math.random() // 示例，代码执行结果作为实际�
 
                     <!--        v-model  不允许调用方法            -->
                     <template v-if="scripts[scriptType][scriptBelongId]">
-                    <textarea id="vScript" style="width: 100%;height: 100%;" wrap="off"
+                    <textarea id="vScript" style="width: 100%;height: 100%; padding-bottom: 50px" wrap="off"
                               v-model="scripts[scriptType][scriptBelongId][isPreScript ? 'pre' : 'post'].script"
                               placeholder="// JavaScript 脚本
 // 逻辑代码 ..

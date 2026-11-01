@@ -878,6 +878,44 @@ var StringUtil = {
     }
 
     return StringUtil.trim(newStr);
+  },
+
+  longestSubstr: function(str1, str2, trim) {
+    let m = StringUtil.isString(str1) ? StringUtil.length(str1, trim) : 0;
+    let n = m <= 0 || ! StringUtil.isString(str2) ? 0 : StringUtil.length(str2, trim);
+    if (n <= 0) {
+      return '';
+    }
+
+    if (str1 === str2) {
+      return StringUtil.get(str1);
+    }
+
+    // 创建一个二维数组，dp[i][j] 记录以 str1[i-1] 和 str2[j-1] 结尾的公共子串长度
+    let dp = Array.from(Array(m + 1), () => Array(n + 1).fill(0));
+
+    let maxLength = 0; // 记录最长公共子串的长度
+    let endIndex = 0;  // 记录最长公共子串在 str1 中结束的位置
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        // 如果当前字符相等
+        if (str1[i - 1] === str2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+
+          // 更新最大长度和结束索引
+          if (dp[i][j] > maxLength) {
+            maxLength = dp[i][j];
+            endIndex = i; // 这里的 i 是基于 1 的索引，对应 str1 的 endIndex
+          }
+        } else {
+          dp[i][j] = 0; // 不连续则清零
+        }
+      }
+    }
+
+    // 根据结束索引和最大长度，从 str1 中截取出最长公共子串
+    return str1.substring(endIndex - maxLength, endIndex);
   }
 
 };
