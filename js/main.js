@@ -892,6 +892,7 @@ https://github.com/APIJSON/APIJSON/issues
 
   var PRE_REQ = 'PRE_REQ' // PRE_REQ('[]/page')
   var PRE_ARG = 'PRE_ARG' // PRE_ARG('[]/page')
+  var NEXT_ARG = 'NEXT_ARG' // NEXT_ARG('[]/page')
   var PRE_RES = 'PRE_RES' // PRE_RES('[]/0/User/id')
   var PRE_DATA = 'PRE_DATA' // PRE_DATA('[]/0/User/id')
   var CTX_GET = 'CTX_GET' // CTX_GET('key')
@@ -902,7 +903,7 @@ https://github.com/APIJSON/APIJSON/issues
   var CTX_PUT = 'CTX_PUT' // CTX_PUT('key', val)
 
   function get4Path(obj, path, defaultVal, msg, isDesc) {
-    var val = path == null || path === '' ? obj : JSONResponse.getValByPath(obj, StringUtil.split(path, '/'), true, isDesc)
+    var val = path == null || path === '' ? obj : JSONResponse.getValByPath(obj, StringUtil.splitPath(path, false), true, isDesc)
     if (val == null && defaultVal === undefined) {
       throw new Error('找不到 ' + path + ' 对应在 obj 中的非 null 值！' + StringUtil.get(msg))
     }
@@ -1331,6 +1332,7 @@ https://github.com/APIJSON/APIJSON/issues
       requestCount: 1,
       urlComment: '一对多关联查询。可粘贴浏览器/抓包工具/接口工具 的 Network/Header/Content 等请求信息，自动填充到界面，格式为 key: value',
       selectIndex: 0,
+      allowMultiple: true,
       isEditReqLink: true,
       options: [], // [{name:"id", type: "integer", comment:"主键"}, {name:"name", type: "string", comment:"用户名称"}],
       historys: [],
@@ -1391,7 +1393,7 @@ https://github.com/APIJSON/APIJSON/issues
       tests: { '-1':{}, '0':{}, '1':{}, '2': {} },
       crossProcess: '交叉账号:已关闭',
       testProcess: '机器学习:已关闭',
-      randomTestTitle: '参数注入 Random Test',
+      randomTestTitle: '参数规则 Random Test',
       testRandomCount: 1,
       testRandomProcess: '',
       compareColor: '#0000',
@@ -1504,7 +1506,7 @@ https://github.com/APIJSON/APIJSON/issues
       database: 'MYSQL', // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释  'MYSQL',// 'POSTGRESQL',
       schema: 'sys',  // 查文档必须，除非后端提供默认配置接口  // 用后端默认的，避免用户总是没有配置就问为什么没有生成文档和注释   'sys',
       otherEnv: 'http://localhost:8080',  // 其它环境服务地址，用来对比当前的
-      server: 'http://apijson.cn:9090', // 'http://localhost:8080', //  Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了
+      server: '', // 'http://apijson.cn:9090', // 'http://localhost:8080', //  Chrome 90+ 跨域问题非常难搞，开发模式启动都不行了
       // server: 'http://47.74.39.68:9090',  // apijson.org
       thirdParty: 'SWAGGER /v2/api-docs',  //apijson.cn
       // thirdParty: 'RAP /repository/joined /repository/get',
@@ -1543,10 +1545,10 @@ https://github.com/APIJSON/APIJSON/issues
       testCaseSearch: '',
       testCaseSearches: {},
       randomPage: 0,
-      randomCount: 50,
+      randomCount: 20,
       randomSearch: '',
       randomSubPage: 0,
-      randomSubCount: 50,
+      randomSubCount: 20,
       randomSubSearch: '',
       doneCount: 0,
       allCount: 0,
@@ -2021,12 +2023,15 @@ https://github.com/APIJSON/APIJSON/issues
         }
       },
       getUrl: function () {
-        var url = StringUtil.get(this.host) + vUrl.value
-        return url.replaceAll(' ', '').replaceAll('\n', '')
+        var url = StringUtil.trim(vUrl.value)
+        if (! url.includes('://')) {
+          url = StringUtil.noBlank(this.host) + (url.startsWith('/') ? url : '/' + url)
+        }
+        return StringUtil.noBlank(url)
       },
       //获取基地址
       getBaseUrl: function (url_, fixed) {
-        var url = StringUtil.trim(url_ != undefined ? url_ : vUrl.value)
+        var url = StringUtil.trim(url_ != undefined ? url_ : baseUrl || this.projectHost.host || vUrl.value)
         var length = this.getBaseUrlLength(url)
         if (length <= 0 && url_ == undefined) {
           var account = this.getCurrentAccount()
@@ -2047,14 +2052,14 @@ https://github.com/APIJSON/APIJSON/issues
         }
 
         index = url.indexOf('://')
-        if (index < 0) {
+        if (index < 0 && (url.startsWith('/') || url.indexOf('.') < 0)) {
           return 0
         }
 
-        var rest = url.substring(index + 3)
+        var rest = index < 0 ? url : url.substring(index + 3)
         var ind = rest.indexOf('/')
 
-        return ind < 0 ? url.length : index + 3 + ind
+        return ind < 0 ? url.length : (index < 0 ? 0 : index + 3) + ind
       },
       //获取操作方法
       getMethod: function (url, noQuery) {
@@ -2068,7 +2073,7 @@ https://github.com/APIJSON/APIJSON/issues
         return url.startsWith('/') ? url.substring(1) : url
       },
       getBranchUrl: function (url) {
-        var url = StringUtil.trim(url == null ? vUrl.value : url).replaceAll('\n', '')
+        var url = StringUtil.noBlank(url == null ? vUrl.value : url)
         var index = this.getBaseUrlLength(url)
         url = index <= 0 ? url : url.substring(index)
         return url.startsWith('/') ? url : '/' + url
@@ -2084,7 +2089,7 @@ https://github.com/APIJSON/APIJSON/issues
         return req == null ? null : req.tag
       },
 
-      getRequest: function (json, defaultValue, isRaw) {  // JSON5 兜底，减少修改范围  , isSingle) {
+      getRequest: function (json, defaultValue, isRaw, isTry) {  // JSON5 兜底，减少修改范围  , isSingle) {
         if (JSONResponse.isString(json) != true) {
           return json == null ? defaultValue : json
         }
@@ -2094,11 +2099,17 @@ https://github.com/APIJSON/APIJSON/issues
         }
         try {
           return jsonlint.parse(s);
-        }
-        catch (e) {
+        } catch (e) {
           log('main.getRequest', 'try { return jsonlint.parse(s); \n } catch (e) {\n' + e.message)
-          log('main.getRequest', 'return JSON5.parse(s);')
-          return JSON5.parse(s);  // jsonlint.parse(this.removeComment(s));
+          try {
+            return JSON5.parse(s)  // jsonlint.parse(this.removeComment(s));
+          } catch (e2) {
+            console.log('main.getRequest  try jsonlint.parse(s) >> JSON5.parse(s) >> catch e = ' + e.message + '; e2 = ' + e2.message + '; s = ' + s)
+            if (isTry) {
+              return defaultValue
+            }
+            throw e2
+          }
         }
       },
       getExtraComment: function(json) {
@@ -2461,7 +2472,7 @@ https://github.com/APIJSON/APIJSON/issues
               else if (index == 8) {
                 this.isHeaderShow = true
 
-                alert('例如：\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get\nPOSTMAN https://www.postman.com/collections/cd72b75c6a985f7a9737\nPOSTMAN /cd72b75c6a985f7a9737')
+                alert('例如：\nCHARLES file:///charles_session.chls\nSWAGGER http://apijson.cn:8080/v2/api-docs\nSWAGGER /v2/api-docs  // 省略 Host\nSWAGGER /  // 省略 Host 和 分支 URL\nRAP /repository/joined /repository/get\nYAPI /api/interface/list_menu /api/interface/get\nPOSTMAN https://www.postman.com/collections/cd72b75c6a985f7a9737\nPOSTMAN /cd72b75c6a985f7a9737')
 
                 try {
                   this.getThirdPartyApiList(this.thirdParty, function (platform, docUrl, listUrl, itemUrl, url_, res, err) {
@@ -2563,6 +2574,9 @@ https://github.com/APIJSON/APIJSON/issues
                     '\n} catch (e) {\n' + e.message)
                 }
 
+                setTimeout(function () {
+                  vFileInput.click()
+                }, 3000)
               }
               break
             case 3:
@@ -2637,6 +2651,7 @@ https://github.com/APIJSON/APIJSON/issues
               this.onChange(false)
               break
           }
+
         }
         else if (index == 3) {
           var host = StringUtil.get(this.host).replaceAll('\n', '')
@@ -2850,10 +2865,15 @@ https://github.com/APIJSON/APIJSON/issues
         }
       },
 
-      // 根据参数注入用例恢复数据
-      restoreRandom: function (index, item) {
+      // 根据参数规则用例恢复数据
+      restoreRandom: function (index, item, isSub) {
+        if (this.isRandomSubListShow) {
+          this.currentRandomSubIndex = index
+        } else if (this.isRandomListShow) {
         this.currentRandomIndex = index
         this.currentRandomItem = item
+          this.currentRandomSubIndex = -1
+        }
         this.isRandomListShow = false
         this.isRandomSubListShow = false
         var isRes = ! this.isEditReqLink
@@ -2938,7 +2958,7 @@ https://github.com/APIJSON/APIJSON/issues
             const chain = cri.Chain || {}
             const cId = chain.id || 0
 
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, '/get', {
+            this.adminRequest('/get', {
               'Script:pre': preId != null ? undefined : {
                 'ahead': 1,
                 // 'testAccountId': 0,
@@ -3014,21 +3034,21 @@ https://github.com/APIJSON/APIJSON/issues
 
           this.method = item.method;
           this.type = item.type;
-          this.urlComment = item.name;
+          this.urlComment = item.name || doc.name;
           this.requestVersion = item.version;
           this.showUrl(false, branch)
 
+          vInput.value = StringUtil.get(item.request || doc.request)
+          vHeader.value = StringUtil.get(item.header || doc.header)
+          vRandom.value = StringUtil.get(item.random || doc.random)
           this.showTestCase(false, this.isLocalShow)
-          vInput.value = StringUtil.get(item.request)
-          vHeader.value = StringUtil.get(item.header)
-          vRandom.value = StringUtil.get(item.random)
           this.changeScriptType(this.scriptType)
 
           this.onChange(false)
 
           if (isRemote) {
             this.randoms = []
-            this.showRandomList(this.isRandomListShow, item)
+            this.showRandomList(this.isRandomListShow, doc || item)
           }
 
           if (test) {
@@ -3061,7 +3081,7 @@ https://github.com/APIJSON/APIJSON/issues
         const account = curAccount.account || curAccount.phone || ''
         const info = JSON.stringify(curAccount) || '{}'
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+        this.adminRequest(this.server + '/put', {
             Chain: {
                 'id': chain.id,
                 'testAccountId': id,
@@ -3095,8 +3115,9 @@ https://github.com/APIJSON/APIJSON/issues
       },
 
       onClickHost: function(index, item) {
-        this.projectHost = item = item || {}
+        this.projectHost = item = item || {host: baseUrl}
         this.isTestCaseShow = false
+        baseUrl = item.host || baseUrl
 
         this.host = ''
         var bu = this.getBranchUrl()
@@ -3132,7 +3153,7 @@ https://github.com/APIJSON/APIJSON/issues
             }
         }
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+        this.adminRequest('/get', req, {}, function (url, res, err) {
           var data = res.data
           if (JSONResponse.isSuccess(data) != true) {
             App.log(err != null ? err : (data == null ? '' : data.msg))
@@ -3157,7 +3178,6 @@ https://github.com/APIJSON/APIJSON/issues
       },
 
       syncProjectHost: function(index, item) {
-        var rawProject = item == null ? null : item.rawProject
         var project = item == null ? null : item.project
 
         var list = this.testCases
@@ -3168,6 +3188,7 @@ https://github.com/APIJSON/APIJSON/issues
         }
 
         var ids = []
+        var rawProjects = [null, '']
         for (var i = 0; i < count; i ++) {
            var item = list[i]
            var doc = item == null ? null : item.Document
@@ -3177,12 +3198,15 @@ https://github.com/APIJSON/APIJSON/issues
            }
 
            ids.push(id)
+           if (! rawProjects.includes(doc.project)) {
+             rawProjects.push(doc.project)
+           }
         }
 
         var req = {
           'Document': {
             'id{}': ids,
-            'project{}': [null, '', rawProject],
+            'project{}': rawProjects,
             'project': project || ''
           },
           'tag': 'Document-project[]'
@@ -3384,7 +3408,7 @@ https://github.com/APIJSON/APIJSON/issues
               'tag': 'Script'
             }
 
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+            this.adminRequest(url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
@@ -3467,7 +3491,7 @@ https://github.com/APIJSON/APIJSON/issues
 
             var code_ = inputObj[JSONResponse.KEY_CODE]
             if (isEditResponse) {
-              inputObj[JSONResponse.KEY_CODE] = typeof code_ == 'undefined' ? undefined : null  // delete inputObj.code
+              inputObj[JSONResponse.KEY_CODE] = typeof code_ == 'undefined' ? code_ : null  // delete inputObj.code
             }
 
             commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
@@ -3597,7 +3621,8 @@ https://github.com/APIJSON/APIJSON/issues
             const method = App.isShowMethod() ? App.method : null;
             const extName = App.exTxt.name;
             const baseUrl = App.getBaseUrl();
-            const url = (isReleaseRESTful ? baseUrl : App.server) + (isExportRandom || isEditResponse || did == null ? '/post' : '/put')
+            var isPost = isExportRandom && isSub ? randomId <= 0 : (isExportRandom || isEditResponse || did == null)
+            const url = (isReleaseRESTful ? baseUrl : App.server) + (isPost ? '/post' : '/put')
             const reqObj = btnIndex <= 0 ? constJson : mapReq
             const httpRes = {} // this.currentHttpResponse || {}
             const err = httpRes.error
@@ -3612,7 +3637,7 @@ https://github.com/APIJSON/APIJSON/issues
                 chainId: cId,
                 documentId: did,
                 count: App.requestCount,
-                name: App.exTxt.name,
+                name: extName,
                 config: config
               },
               // 'Random:res': {
@@ -3672,14 +3697,15 @@ https://github.com/APIJSON/APIJSON/issues
               'tag': isEditResponse ? 'TestRecord' : 'Document'
             }
 
-            App.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+            App.adminRequest(url, req, {}, function (url, res, err) {
               App.onResponse(url, res, err)
 
               var data = res.data || {}
 
               if (isExportRandom && btnIndex <= 0) {
                 if (JSONResponse.isSuccess(data)) {
-                  App.randoms = []
+                  // random.config = config
+                  App.randoms = [] // isPost ? [] : App.randoms
                   App.showRandomList(true, (App.currentRemoteItem || {}).Document)
                 }
               }
@@ -3724,7 +3750,7 @@ https://github.com/APIJSON/APIJSON/issues
                       tag: 'Request'
                     };
 
-                    App.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, baseUrl + '/post', reqObj, {}, function (url, res, err) {
+                    App.adminRequest(baseUrl + '/post', reqObj, {}, function (url, res, err) {
                       if (res.data != null && res.data.Request != null && JSONResponse.isSuccess(res.data.Request)) {
                         alert('已自动生成并上传 Request 表校验规则配置:\n' + JSON.stringify(reqObj.Request, null, '  '))
                       }
@@ -3742,14 +3768,20 @@ https://github.com/APIJSON/APIJSON/issues
 
                   const isGenerate = StringUtil.isEmpty(config, true);
                   var req = isGenerate != true ? null : (isReleaseRESTful ? mapReq : App.getRequest(vInput.value, {}))
+                  if (StringUtil.isEmpty(req)) {
+                    return
+                  }
                   App.newAndUploadRandomConfig(baseUrl, req, (data.Document || {}).id, config, App.requestCount, function (url, res, err) {
 
                         if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
-                          alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
+                          if (StringUtil.isNotEmpty(config)) {
+                            alert('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
+                          }
                           App.isRandomListShow = true
-                        }
-                        else {
-                          alert((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
+                        } else {
+                          if (StringUtil.isNotEmpty(config)) {
+                            alert((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
+                          }
                           vRandom.value = config
                         }
                         App.onResponse(url, res, err)
@@ -3769,45 +3801,418 @@ https://github.com/APIJSON/APIJSON/issues
 
         }
       },
-      newAndUploadRandomConfig: function(baseUrl, req, documentId, config, count, callback, isReleaseRESTful) {
+      importCharlesSession: function (file) {
+        var self = this
+        var load
+        if (file && typeof file.arrayBuffer === 'function') {
+          load = file.arrayBuffer()
+        } else if (file && typeof file === 'object' && file.byteLength != null) {
+          load = Promise.resolve(file)
+        } else {
+          var url = typeof file === 'string' && file ? file : CHARLES_SESSION_FILE
+          load = fetch(url).then(function (res) {
+            if (!res.ok) {
+              throw new Error('读取 ' + url + ' 失败：' + res.status)
+            }
+            return res.arrayBuffer()
+          })
+        }
+
+        load.then(function (buf) {
+          var account = self.getCurrentAccount() || {}
+          var projectHost = self.projectHost || {}
+          var pack = charlesSessionToDocuments(buf, {
+            userId: (self.User || {}).id || 0,
+            project: projectHost.project || 'APIJSON',
+            testAccountId: account.id || 0
+          })
+          if (pack.list.length <= 0) {
+            alert('Charles 会话里没有可导入的接口调用')
+            return
+          }
+          self.exportChainApiCase(pack.groupName, false, pack.list)
+        }).catch(function (e) {
+          console.error(e)
+          alert('导入 Charles 会话失败：' + (e && e.message ? e.message : e))
+        })
+      },
+      normalizeCaseInput: function (item) {
+        if (item == null) {
+          return null
+        }
+        if (item.Input != null) {
+          return item.Input
+        }
+        var doc = item.Document != null ? item.Document : (item.url != null && item.request != null ? item : null)
+        if (doc == null) {
+          return null
+        }
+        var tr = item.TestRecord || {}
+        var host = tr.host || doc.host || ''
+        var docUrl = doc.url || ''
+        var fullUrl = docUrl.indexOf('://') >= 0 ? docUrl : (
+            host ? String(host).replace(/\/+$/, '') + (docUrl.charAt(0) === '/' ? docUrl : '/' + docUrl) : docUrl
+        )
+        return {
+          url: fullUrl,
+          host: host,
+          request: doc.request,
+          rawRequest: doc.request,
+          response: tr.response != null ? tr.response : doc.response,
+          method: doc.method,
+          format: doc.type || doc.format,
+          header: doc.header,
+          reqHeader: doc.header,
+          resHeader: tr.header,
+          status: tr.status,
+          config: doc.config,
+          from: doc.from,
+          project: doc.project,
+          name: doc.name,
+          operation: doc.operation,
+          apijson: doc.apijson,
+          detail: doc.detail,
+          group: doc.group,
+          version: doc.version,
+          tagList: doc.tagList,
+          testAccountId: doc.testAccountId
+        }
+      },
+      exportChainApiCase: function (groupName, isSub, randoms) {
+        groupName = StringUtil.isEmpty(groupName) ? this.exTxt.name : groupName
+        isSub = isSub == null ? this.isRandomSubListShow : isSub
+        randoms = randoms != null ? randoms : (isSub ? this.randomSubs : this.randoms)
+        var isAdd = true // TODO 暂时只添加，后续支持更新
+        var groupId = new Date().getTime()
+        this.adminRequest((isAdd ? '/post' : '/put'), {
+          Chain: {
+            'groupName': groupName,
+            'groupId': isAdd ? groupId : null,
+            'groupId{}': isAdd ? null : [groupId]
+          },
+          tag: 'Chain-group'
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var data = res.data || {}
+          var isOk = JSONResponse.isSuccess(data)
+          var msg = isOk ? '' : ('\nmsg: ' + StringUtil.get(data.msg))
+          if (err != null) {
+            msg += '\nerr: ' + err.msg
+          }
+          if (! isOk) {
+            alert((isAdd ? '新增' : '修改') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' : '！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + msg)
+            return
+          }
+          var chain = data.Chain || {}
+          App.addApiCase2Chain({id: chain.id, groupId: chain.groupId || groupId, name: chain.name || groupName}, randoms, 0, [])
+        })
+      },
+      addApiCase2Chain: function (group, list, index, chains, preIndex, preChain) {
+        const groupId = group == null ? null : group.groupId || group.id
+        if (groupId == null || groupId <= 0) {
+          alert('请选择有效的用例！')
+          return
+        }
+        const groupName = group.name
+        if (index >= list.length) {
+          alert('已完成导出场景接口用例：' + groupName + ' \nid: ' + groupId)
+          var settingStr = encodeURIComponent(JSON.stringify({
+            isChainShow: true, chainGroupPage: 0, chainGroupCount: 10, testCaseCount: 10, chainGroupSearch: groupName
+          }))
+          window.open(this.server + '/api?reportId=0&setting=' + settingStr)
+          window.open(this.server + '/api/index.html?reportId=0&setting=' + settingStr)
+          return
+        }
+        const item = list[index]
+        const input = this.normalizeCaseInput(item)
+        if (input == null) {
+          this.addApiCase2Chain(group, list, index + 1, chains, preIndex, preChain)
+          return
+        }
+        const inputUrl = input.url
+        var bizUrl_ = this.getBranchUrl(inputUrl || '');
+        var locate_ = ''
+        var qry_ = input == null ? null : StringUtil.trim(input.query)
+        var query_ = ''
+        if (JSONResponse.isString(bizUrl_)) {
+          var ind = bizUrl_.indexOf('?')
+          query_ = ind < 0 ? '' : bizUrl_.substring(ind + 1)
+          bizUrl_ = ind < 0 ? bizUrl_ : bizUrl_.substring(0, ind)
+          ind = bizUrl_.indexOf('#')
+          locate_ = ind < 0 ? '' : bizUrl_.substring(ind + 1)
+          bizUrl_ = ind < 0 ? bizUrl_ : bizUrl_.substring(0, ind)
+          if (bizUrl_.endsWith('/')) {
+            bizUrl_ = bizUrl_.substring(0, bizUrl_.length - 1);
+          }
+          if (! bizUrl_.startsWith('/')) {
+            bizUrl_ = '/' + bizUrl_;
+          }
+        }
+        const bizUrl = bizUrl_;
+        if (! StringUtil.isPath(bizUrl, true)) {
+          this.addApiCase2Chain(group, list, index + 1, chains, preIndex, preChain)
+          return
+        }
+        const currentResponse = parseJSON(input.response);
+        if (StringUtil.isEmpty(currentResponse, true)) {
+          this.addApiCase2Chain(group, list, index + 1, chains, preIndex, preChain)
+          return
+        }
+        chains = chains || []
+        const projectHost = this.projectHost || {}
+        const project = StringUtil.isEmpty(projectHost.project) ? null : projectHost.project
+        var accountInfo = this.getCurrentAccount() || {}
+        var currentAccountId = accountInfo.id
+        var account = accountInfo.account || accountInfo.phone || accountInfo.email
+        const baseUrl = this.getBaseUrl(inputUrl || '', true) || input.host;
+        const query = StringUtil.isEmpty(query_) ? qry_ : (StringUtil.isEmpty(qry_) ? query_ : query_ + '&' + qry_);
+        const request_ = input.request
+        var inputObj_;
+        try {
+          inputObj_ = this.getRequest(request_, {});
+        } catch (e) {
+          inputObj_ = getRequestFromURL('?' + request_, true)
+        }
+        const queryObj = getRequestFromURL('?' + query, true)
+        if (StringUtil.isEmpty(inputObj_) && StringUtil.isNotEmpty(queryObj)) {
+          inputObj_ = queryObj
+        }
+        const inputObj = inputObj_
+        const rawInputStr = StringUtil.trim(inputObj)
+        var nowStr = this.formatDateTime();
+        const userId = this.User.id
+        var accountInfo = this.getCurrentAccount() || {}
+        var currentAccountId = accountInfo.id
+        const method = HTTP_METHODS.indexOf(input.method) >= 0 ? input.method : null;
+        const format = input.format;
+        const type = HTTP_CONTENT_TYPES.indexOf(format) >= 0 ? format : (HTTP_JSON_TYPES.indexOf(method) >= 0
+            ? "JSON" : (HTTP_DATA_TYPES.indexOf(format) >= 0 ? "DATA" : (HTTP_URL_ARG_TYPES.indexOf(method) >= 0
+                    ? "PARAM" : (HTTP_FORM_TYPES.indexOf(format) >= 0 ? "FORM" : null))
+        ))
+        var commentObj = null;
+          var commentStddObj = null
+          try {
+            commentStddObj = {} // parseJSON(isEditResponse ? tr.standard : doc.standard);
+          }
+          catch(e) {
+            log(e)
+          }
+          commentObj = JSONResponse.updateStandard(commentStddObj, inputObj);
+        var rawRspStr = StringUtil.trim(currentResponse)
+        var isResObj = JSONResponse.isObject(currentResponse);
+        const code = isResObj ? currentResponse[JSONResponse.KEY_CODE] : undefined;
+        const thrw = isResObj ? currentResponse.throw : null;
+        if (isResObj) {
+          currentResponse[JSONResponse.KEY_CODE] = typeof code == 'undefined' ? undefined : null; // delete currentResponse.code; // currentResponse.code = null; //code必须一致
+          delete currentResponse.throw; // currentResponse.throw = null; // throw必须一致
+        }
+        const isML = this.isMLEnabled;
+        const stddObj = isML ? JSONResponse.updateStandard({}, currentResponse) : {};
+        stddObj.status = StringUtil.isNumber(input.status) ? +input.status : 200;
+        stddObj.code = code || 0;
+        stddObj.throw = thrw;
+        if (isResObj) {
+          currentResponse[JSONResponse.KEY_CODE] = code;
+          currentResponse.throw = thrw;
+        }
+        var config = input.config;
+        var cgId = groupId; // FIXME 已有 Document，需要修改
+        var cId = null; // FIXME 已有 Document，需要修改
+        const reqObj = inputObj
+        const curChain = {
+          groupId: groupId,
+          groupName: groupName,
+          testAccountId: currentAccountId,
+          account: account,
+          method: method,
+          type: type,
+          host: baseUrl,
+          url: bizUrl,
+          request: inputObj,
+          response: currentResponse
+        }
+        var callback = function (randomName, constConfig, constJson, doc, req_, url, res, err) {
+          var did = doc == null ? null : doc.id
+          if (did == null || did <= 0) {
+            App.addApiCase2Chain(group, list, index + 1, chains, preIndex, preChain)
+            alert('新增 Document 单接口用例失败！' + data.msg + '; ' + (err || {}).message + '; req = \n' + JSON.stringify(req))
+            return
+          }
+          const isAdd = true
+          const chainReq = {
+            'rank': nowStr,
+            'groupName': groupName,
+            'groupId': groupId,
+            'documentId': did,
+            'documentName': doc.name
+          }
+          const randomReq = {
+            toId: 0,
+            chainGroupId: cgId,
+            chainId: cId,
+            documentId: did,
+            count: 1,
+            name: '[Record] 参数传递 ' + nowStr,
+            config: constConfig
+          }
+          curChain.documentId = chainReq.documentId
+          curChain.documentName = chainReq.documentName
+          curChain.randomName = randomReq.name
+          const req = {
+            format: false,
+            'Chain': chainReq,
+            'Random': StringUtil.isEmpty(constConfig) ? null : randomReq,
+            'tag': StringUtil.isEmpty(constConfig) ? 'Chain' : 'Chain+Random'
+          }
+          App.adminRequest('/post', req, {}, function (url, res, err) {
+            App.onResponse(url, res, err)
+            var data = res.data || {}
+            var isOk = JSONResponse.isSuccess(data)
+            if (isOk != true) {
+              alert((isAdd ? '新增 Chain ' : '修改 Chain ') + (isOk ? '成功' : '失败') + (isAdd ? '! \n' :'！\ngroupId: ' + groupId) + '\ngroupName: ' + groupName + '\n' + data.msg)
+            }
+            else if (StringUtil.isNotEmpty(chains)) {
+              const chain = data.Chain || {}
+              const random = data.Random || {}
+              curChain.chainId = chainReq.id = chain.id
+              curChain.randomId = randomReq.id = random.id
+              const docReqObj = parseJSON(doc.request, {}, true)
+              const reqObj = JSONResponse.deepMerge(docReqObj, JSONResponse.deepMerge(queryObj, inputObj))
+              const isGenerate = StringUtil.isNotEmpty(reqObj);
+              chain.request = reqObj
+              App.newAndUploadRandomConfig(baseUrl, reqObj, chain.documentId || doc.id, config, 1, function (url, res, err) {
+                if (res.data != null && res.data.Random != null && JSONResponse.isSuccess(res.data.Random)) {
+                  console.log('已' + (isGenerate ? '自动生成并' : '') + '上传随机配置:\n' + config)
+                  App.isRandomListShow = true
+                } else {
+                  console.log((isGenerate ? '已自动生成，但' : '') + '上传以下随机配置失败:\n' + config)
+                  vRandom.value = config
+                }
+                App.onResponse(url, res, err)
+              }, false, chain.id, chain.groupId || groupId, bizUrl, chains)
+            }
+            chains.push(curChain)
+            App.addApiCase2Chain(group, list, index + 1, chains, index, curChain)
+          })
+        };
+        this.adminRequest('/get', {
+          Document: {
+            'method': input.method,
+            'url': bizUrl,
+          }
+        }, {}, function (url, res, err) {
+          App.onResponse(url, res, err)
+          var data = res.data
+          var doc = data == null ? null : data.Document
+          var did = doc == null ? null : doc.id
+          var isAdd = did == null || did <= 0
+          if (! isAdd) {
+            callback(null, config, inputObj, doc, {}, url, res, err)
+            return
+          }
+          const docReq = {
+            'userId': userId,
+            'project': StringUtil.isEmpty(input.project, true) ? (StringUtil.isEmpty(projectHost.project, true) ? null : projectHost.project) : input.project,
+            'from': input.from == null ? undefined : input.from,
+            'testAccountId': input.testAccountId == null ? undefined : input.testAccountId,
+            'version': input.version == null ? undefined : input.version,
+            'tagList': input.tagList == null ? undefined : input.tagList,
+            'group': StringUtil.isEmpty(input.group, true) ? undefined : input.group,
+            'operation': StringUtil.isEmpty(input.operation, true) ? CodeUtil.getOperation(bizUrl, reqObj) : input.operation,
+            'name': StringUtil.isEmpty(input.name, true) ? ('[Record] ' + index + '. ' + groupName + ' ' + nowStr) : input.name,
+            'method': method,
+            'type': type,
+            'url': bizUrl,
+            'request': StringUtil.isEmpty(input.rawRequest, true) ? StringUtil.trim(rawInputStr) : input.rawRequest,
+            'apijson': StringUtil.isEmpty(input.apijson, true) ? undefined : input.apijson,
+            'detail': StringUtil.isEmpty(input.detail, true) ? undefined : input.detail,
+            'standard': commentObj == null ? null : JSON.stringify(commentObj, null, '    '),
+            'header': input.reqHeader || input.header
+          }
+          const trReq = {
+            'userId': userId,
+            'chainGroupId': cgId,
+            'chainId': cId,
+            'randomId': 0,
+            'host': baseUrl,
+            'testAccountId': currentAccountId,
+            'response': rawRspStr,
+            'header': input.resHeader || input.header,
+            'standard': isML ? JSON.stringify(stddObj) : undefined,
+          }
+          curChain.method = method
+          curChain.type = type
+          curChain.host = baseUrl
+          curChain.url = bizUrl
+          const req = {
+            format: false,
+            'Document': docReq,
+            'TestRecord': trReq,
+            'tag': 'Document'
+          }
+          App.adminRequest('/post', req, {}, function (url, res, err) {
+            App.onResponse(url, res, err)
+            var data = res.data || {}
+            var doc = data.Document
+            var tr = data.TestRecord
+            var did = doc == null ? null : doc.id
+            docReq.id = did
+            trReq.id = tr == null ? null : tr.id
+            if (did == null || did <= 0) {
+              App.addApiCase2Chain(group, list, index + 1, chains, preIndex, preChain)
+              alert('新增 Document 单接口用例失败！' + data.msg + '; ' + (err || {}).message + '; req = \n' + JSON.stringify(req))
+              return
+            }
+            callback(null, config, inputObj, doc, req, url, res, err)
+          })
+        })
+      },
+      newAndUploadRandomConfig: function(baseUrl, req, documentId, config, count, callback, isReleaseRESTful, chainId, chainGroupId, url, chains) {
         if (documentId == null) {
           return
         }
+        console.log('newAndUploadRandomConfig documentId = ' + documentId + '; count = ' + count
+            + '; baseUrl = ' + baseUrl + '; url = ' + url + '; config = \n' + config
+            + '; req = \n' + StringUtil.get(req) + '; chains = \n' + StringUtil.get(chains))
+        const table = 'Random'; // isExportApi ? 'Random' : 'Document';
         const isGenerate = StringUtil.isEmpty(config, true);
         var configs = isGenerate ? [] : [config]
         if (isGenerate) {
-          var config = StringUtil.trim(this.newRandomConfig(null, '', req, false))
+          config = StringUtil.trim(this.newRandomConfig(null, '', req, false, null, null, null, null, chains, url))
           if (StringUtil.isEmpty(config, true)) {
             return;
           }
 
           configs.push(config)
-          var config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true))
+          var config2 = StringUtil.trim(this.newRandomConfig(null, '', req, true, null, null, null, null, chains, url))
           if (StringUtil.isNotEmpty(config2, true)) {
             configs.push(config2)
           }
         }
 
         for (var i = 0; i < configs.length; i ++) {
-          const config = configs[i]
-          this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, (isReleaseRESTful ? baseUrl : this.server) + '/post', {
+          const cfg = configs[i]
+          console.log('newAndUploadRandomConfig uploading cfg = \n' + StringUtil.get(cfg))
+          this.adminRequest((isReleaseRESTful ? baseUrl : this.server) + '/post', {
             format: false,
-            Random: {
+            [table]: {
+              chainGroupId: i > 0 ? null : chainGroupId,
+              chainId: i > 0 ? null : chainId,
               documentId: documentId,
               count: count,
               name: '默认配置' + (isGenerate ? '(上传测试用例时自动生成)' : ''),
-              config: config
+              config: cfg
             },
             TestRecord: {
               host: baseUrl,
               response: ''
             },
-            tag: 'Random'
+            tag: table
           }, {}, callback)
         }
       },
 
-      onClickAddRandom: function () {
+      onClickAddRandom: function (randomIndex, randomSubIndex) {
          if (this.isRandomListShow || this.isRandomSubListShow) {
             this.randomTestTitle = null;
             this.isRandomListShow = false;
@@ -3824,15 +4229,22 @@ https://github.com/APIJSON/APIJSON/issues
          }
       },
 
-      newRandomConfig: function (path, key, value, isRand, isBad, noDeep, isConst) {
-        if (key == null) {
+      newRandomConfig: function (path, key, value, isRand, isBad, noDeep, isConst, chainPath, chains, url, maxLen) {
+        maxLen = maxLen == null ? 4500 : maxLen
+        if (maxLen <= 0 || key == null || key.indexOf('/') >= 0 || key.indexOf('.') >= 0) {
           return ''
         }
-        if (path == '' && (key == 'tag' || key == 'version' || key == 'format')) {
+        var isAPIJSON = JSONObject.isAPIJSONPath(url)
+        const IGNORE_KEYS = [] // JSONResponse.IGNORE_LINK_KEYS || [];
+        var lowerKey = key.toLowerCase()
+        if (IGNORE_KEYS.indexOf(lowerKey) >= 0 || (isAPIJSON && path == '' && ['tag', 'version', 'format'].indexOf(key) >= 0)) {
           return ''
         }
 
-        var isChainShow = this.isChainShow;
+        var isValueEmpty = StringUtil.isEmpty(value)
+        var isChainShow = chains != null || this.isChainShow;
+        url = url || this.getMethod()
+        var isRestful = ! JSONObject.isAPIJSONPath(url);
 
         var config = ''
         var childPath = path == null || path == '' ? key : path + '/' + key
@@ -3845,7 +4257,7 @@ https://github.com/APIJSON/APIJSON/issues
           if (isConst) {
                config += prefix + '[]'
                for (var i = 0; i < value.length; i ++) {
-                  var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst)
+              var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst, chainPath, chains, url, maxLen - config.length)
                   config += '\n' + (StringUtil.isEmpty(cfg, true) ? 'null' : StringUtil.trim(cfg))
                }
                return config
@@ -3878,7 +4290,7 @@ https://github.com/APIJSON/APIJSON/issues
 
               var l = randomInt(0, 13)
               for (var i = 0; i < l; i ++) {
-                 var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst)
+              var cfg = this.newRandomConfig(childPath, '' + i, value[i], isRand, isBad, noDeep, isConst, chainPath, chains, url, maxLen - config.length)
                  if (StringUtil.isEmpty(cfg, true)) {
                    break
                  }
@@ -3922,7 +4334,7 @@ https://github.com/APIJSON/APIJSON/issues
               }
             }
 
-            var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep, isConst)
+            var cfg = this.newRandomConfig(childPath, k, v, isRand, isBad, noDeep, isConst, chainPath, chains, url, maxLen - config.length)
             if (StringUtil.isNotEmpty(cfg, true)) {
               if (k != null && k.toLowerCase() == 'id') {
                 return cfg
@@ -3944,6 +4356,112 @@ https://github.com/APIJSON/APIJSON/issues
 
           // FIXME 似乎加了自动生成场景传参配置后，空配置时点击 + 添加配置后，切换用例列表会卡死
           if (isChainShow && StringUtil.isNotEmpty(key, true) && (typeof value != 'string' || ! key.endsWith('@'))) {
+            var keyPath = StringUtil.isEmpty(chainPath) ? key : chainPath + '/' + StringUtil.get(key)
+            var isStr = JSONResponse.isString(value)
+            var isNum = JSONResponse.isNumber(value) || StringUtil.isNumber(value)
+            var isUnique = (isStr && value.length >= 3) || (isNum && Math.abs(+value) > 100)
+            if (chains instanceof Array) {
+              function findConfig(folder, chain, k, v, ctxVar, maxLen) {
+                if (StringUtil.isEmpty(chain)) {
+                  return ''
+                }
+                if (k == null || k.indexOf('/') >= 0 || k.indexOf('.') >= 0 || IGNORE_KEYS.indexOf(k.toLowerCase()) >= 0) {
+                  return ''
+                }
+                var route = ', "' + StringUtil.trim(chain.account) + '@' + StringUtil.trim(chain.host) + '/-1"'
+                var isFolderEmpty = StringUtil.isEmpty(folder)
+                var cp = isFolderEmpty ? (StringUtil.isEmpty(k) ? '' : k) : folder + (StringUtil.isEmpty(k) ? '' : '/' + k);
+                var isCpEmpty = StringUtil.isEmpty(cp)
+                ctxVar = ctxVar || 'data'
+                var pfx = prefix + 'PRE_' + ctxVar.toUpperCase() + '("'
+                var sfx = ', "' + StringUtil.trim(chain.method) + ' ' + StringUtil.trim(chain.url) + '"'
+                if (v instanceof Array) {
+                  for (var i = 0; i < v.length; i ++) {
+                    var ccp = isCpEmpty ? '/' : cp + '/'
+                    var cfg = findConfig(ccp, chain, '', v[i], ctxVar, maxLen)
+                    if (StringUtil.isNotEmpty(cfg, true) && config.indexOf(cfg) < 0) {
+                      return cfg
+                    }
+                  }
+                }
+                else if (v instanceof Object) {
+                  var cfg2 = ''
+                  var v2 = v[key]
+                  if (key.length >= 3 && typeof v2 != 'undefined' && ! JSONResponse.isObject(v2)) {
+                    var ccp = isFolderEmpty ? key : cp + '/' + key
+                    cfg2 = (StringUtil.isEmpty(config) ? '' : '\n// 可替代上面的 ') + pfx + ccp + '", null' + sfx + ') // key 同名';
+                    cfg2 += '\n// 可替代上面的 ' + pfx + ccp + '", undefined' + sfx + route + ') // key 同名';
+                    var isValMatch = v2 === value && (isStr || isNum) && (! isValueEmpty) && [0, 1, -1, 'true', 'false', 'null', 'undefined', '0', '1', '-1'].indexOf(v2) < 0
+                    if (isValMatch) {
+                      cfg2 += ' + value 相等：' + StringUtil.limitLength(v2, 50);
+                      return cfg2;
+                    }
+                  }
+                  for (var k2 in v) {
+                      if (k2 == key) {
+                        continue
+                      }
+                      v2 = v[k2]
+                      var cfg = findConfig(cp, chain, k2, v2, ctxVar, maxLen - cfg2.length)
+                      if (StringUtil.isEmpty(cfg, true) || config.indexOf(cfg) >= 0 || cfg2.indexOf(cfg) >= 0) {
+                        continue
+                      }
+                      cfg2 += '\n' + cfg
+                      if (cfg2.length > maxLen - 200 || k2.length >= 3) {
+                        return cfg2
+                      }
+                  }
+                  return cfg2
+                }
+                else {
+                  var isKeyMatch = StringUtil.isNotEmpty(k) && k.toLowerCase().endsWith(lowerKey) || lowerKey.endsWith(k)
+                  var isValMatch = v === value && (isStr || isNum) && (! isValueEmpty) && [0, 1, -1, 'true', 'false', 'null', 'undefined', '0', '1', '-1'].indexOf(v) < 0
+                  if (isKeyMatch || isValMatch) { // FIXME StringUtil.endsWith(a, b, ignoreCase)
+                    var sfx2 = ') // ' + (isKeyMatch ? 'key 相似' : '') + (isValMatch ? (isKeyMatch ? ' + ' : '') + 'value 相等：' + StringUtil.limitLength(v, 50) : '');
+                    var ccp = cp // isFolderEmpty ? StringUtil.get(k) : folder + '/' + StringUtil.get(k) // '' 代表数组 i = cp
+                    var cfg = (StringUtil.isEmpty(config) ? '' : '\n// 可替代上面的 ') + pfx + ccp + '", null' + sfx + sfx2;
+                    cfg += '\n// 可替代上面的 ' + pfx + ccp + '", undefined' + sfx + route + sfx2;
+                    if (isValMatch && (isKeyMatch || isUnique)) {
+                      return cfg
+                    }
+                  }
+                }
+                return config
+              }
+              const last = chains.length - 1
+              for (var i = last; i >= 0; i --) {
+                var chain = chains[i] || {}
+                var req = chain.request
+                var cfg = findConfig(chainPath, chain,'', req, 'arg')
+                if (StringUtil.isEmpty(cfg) || config.indexOf(cfg) >= 0) {
+                  continue
+                }
+                config += '\n' + cfg
+                if (config.length > maxLen - 200) {
+                  return config
+                }
+              }
+              for (var i = last; i >= 0; i --) {
+                var chain = chains[i] || {}
+                var res = chain.response
+                var data = res
+                if (JSONResponse.isObject(res) && StringUtil.isEmpty(chainPath) && res[JSONResponse.KEY_DATA] != null) {
+                  data = res[JSONResponse.KEY_DATA];
+                  chainPath = JSONResponse.KEY_DATA;
+                }
+                var cfg = findConfig(chainPath, chain, '', data, 'data')
+                if (StringUtil.isEmpty(cfg) || config.indexOf(cfg) >= 0) {
+                  continue
+                }
+                config += '\n' + cfg
+                if (config.length > maxLen - 200) {
+                  return config
+                }
+              }
+            }
+            if (StringUtil.isNotEmpty(chainPath) || config.length > maxLen - 200) {
+              return config
+            }
             var keys = StringUtil.split(path, '/');
             var table = keys == null ? '' : keys[keys.length - 1];
             var isAPIJSONArray = childPath.indexOf('[]') >= 0;
@@ -3964,28 +4482,30 @@ https://github.com/APIJSON/APIJSON/issues
             var fd = StringUtil.isEmpty(kp) ? '' : kp + '/';
 
             var ctxKey = StringUtil.isNotEmpty(tbl) ? key : StringUtil.firstCase(table, false) + StringUtil.firstCase(key, true)
-            var ctxPutPfx = ctxKey + ': '
-            var camelIdKey = StringUtil.firstCase((tbl || table) + 'Id');
-            var snakeIdKey = (tbl || table).toLowerCase() + '_id';
+            var ctxPutPfx = ctxKey + ': ';
+            var tbl_ = tbl || table;
+            var isTableEmpty = StringUtil.isEmpty(tbl_)
+            var camelIdKey = isTableEmpty ? '' : StringUtil.firstCase(tbl_ + 'Id');
+            var snakeIdKey = isTableEmpty ? '' : tbl_.toLowerCase() + '_id';
 
             if (isList) {
               if (isId) {
-                config += prefix + 'PRE_ARG("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                config += isTableEmpty ? '' : prefix + 'PRE_ARG("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
+                config += (isTableEmpty ? '' : '\n// 可替代上面的 ') + prefix + 'PRE_DATA("' + cp + '")';
                 if (isRestful) {
                     config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
                     if (key != cp) {
                       config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
                     }
                 }
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
-                if (isRestful && ! isAPIJSONArray) {
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_ARG("' + snakeIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
+                if (isRestful && ! (isAPIJSONArray || isTableEmpty)) {
                   config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + camelIdKey + '")';
                   config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + snakeIdKey + '")';
                 }
@@ -4056,27 +4576,27 @@ https://github.com/APIJSON/APIJSON/issues
             } else {
               if (isId) {
                 if (isRestful) {
-                    config += prefix + 'PRE_DATA("' + 'data/list/0/' + camelIdKey + '")';
-                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'data/0/' + snakeIdKey + '")';
-                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'list/0/' + camelIdKey + '")';
+                  config += isTableEmpty ? '' : prefix + 'PRE_DATA("' + 'data/list/0/' + camelIdKey + '")';
+                  config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'data/0/' + snakeIdKey + '")';
+                  config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + 'list/0/' + camelIdKey + '")';
                 } else {
-                    config += prefix + 'PRE_DATA("' + kp + '[]/0/' + camelIdKey + '")';
-                    config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/' + snakeIdKey + '")';
+                  config += isTableEmpty ? '' : prefix + 'PRE_DATA("' + kp + '[]/0/' + camelIdKey + '")';
+                  config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + kp + '[]/0/' + snakeIdKey + '")';
                 }
 
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + cp + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + snakeIdKey + '")';
+                config += (isTableEmpty ? '' : '\n// 可替代上面的 ') + prefix + 'PRE_DATA("' + cp + '")';
                 if (isRestful) {
                     config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + cp + '")';
                     if (key != cp) {
                       config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("data/' + key + '")';
                     }
                 }
-                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + camelIdKey + '")';
-                config += '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + snakeIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'CTX_GET("' + snakeIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + camelIdKey + '")';
+                config += isTableEmpty ? '' : '\n// 可替代上面的 ' + prefix + 'PRE_DATA("' + (StringUtil.isEmpty(path) ? '' : path + '/') + snakeIdKey + '")';
               }
               else if (StringUtil.isIdKey(key)) {
                 if (isRestful) {
@@ -4255,7 +4775,7 @@ https://github.com/APIJSON/APIJSON/issues
             this.saveCache('', 'database', this.database)
 
             doc = null
-            var item = this.accounts[this.currentAccountIndex]
+            var item = this.accounts[this.currentAccountIndex] || {}
             item.isLoggedIn = false
             this.onClickAccount(this.currentAccountIndex, item)
             break
@@ -4264,7 +4784,7 @@ https://github.com/APIJSON/APIJSON/issues
             this.saveCache('', 'schema', this.schema)
 
             doc = null
-            var item = this.accounts[this.currentAccountIndex]
+            var item = this.accounts[this.currentAccountIndex] || {}
             item.isLoggedIn = false
             this.onClickAccount(this.currentAccountIndex, item)
             break
@@ -5026,7 +5546,7 @@ https://github.com/APIJSON/APIJSON/issues
             var did = data.Document == null ? null : data.Document.id
             const isRandom = did != null && did > 0
             var config = isRandom ? StringUtil.trim(App.newRandomConfig(null, '', reqObj, false, null, null, true)) : null
-            App.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, App.server + '/post', {
+            App.adminRequest(App.server + '/post', {
               format: false,
               'Document': isRandom ? undefined : {
                 'creator': creator,
@@ -5074,7 +5594,7 @@ https://github.com/APIJSON/APIJSON/issues
               }
               App.exTxt.button = 'All:' + App.uploadTotal + '\nDone:' + App.uploadDoneCount + '\nFail:' + App.uploadFailCount
               if (App.uploadDoneCount + App.uploadFailCount >= App.uploadTotal) {
-                alert('导入完成，其中 ' + App.uploadRandomCount + ' 个用例已存在，改为生成和上传了参数注入配置')
+                alert('导入完成，其中 ' + App.uploadRandomCount + ' 个用例已存在，改为生成和上传了参数规则配置')
                 App.isSyncing = false
                 App.testCasePage = 0
                 App.isRandomShow = true
@@ -5089,7 +5609,7 @@ https://github.com/APIJSON/APIJSON/issues
           callback(url, {}, null)
         }
         else {
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get/Document?format=false&@role=OWNER', {
+            this.adminRequest(this.server + '/get/Document?format=false&@role=OWNER', {
                url: path,
                method: StringUtil.isEmpty(method, true) ? null : StringUtil.toUpperCase(method, true)
             }, {}, callback)
@@ -5151,12 +5671,13 @@ https://github.com/APIJSON/APIJSON/issues
           var accounts = this.accounts || []
           var accountMap = {}
           for (var i = 0; i < accounts.length; i ++) {
-              var account = accounts[i]
-              if (account == null || account.phone == null) {
+              var item = accounts[i]
+              var account = JSONResponse.getAccount(item);
+              if (item == null || StringUtil.isEmpty(account)) {
                 continue
               }
 
-              var bu = account.baseUrl || baseUrl
+              var bu = item.baseUrl || baseUrl
               var list = accountMap[bu] || []
 
               var find = false
@@ -5166,14 +5687,14 @@ https://github.com/APIJSON/APIJSON/issues
                       continue
                   }
 
-                  if (act.baseUrl == bu && act.phone == account.phone) {
+                  if (act.baseUrl == bu && JSONResponse.getAccount(act) != account) {
                       find = true
                       break
                   }
               }
 
               if (find != true) {
-                   list.push(account)
+                   list.push(item)
                    accountMap[bu] = list
               }
           }
@@ -5275,8 +5796,8 @@ https://github.com/APIJSON/APIJSON/issues
                   baseUrl = App.getBaseUrl(vUrl.value)
 
                   item.baseUrl = item.baseUrl || baseUrl
-                  item.id = user.id || user.userId || user.user_id || user.userid  // TODO 工具函数直接遍历 key 判断可能的名称
-                  item.name = user.name || user.nickname || user.nickName || user.user_name || user.username || user.userName
+                  item.id = JSONResponse.getId(user)  // TODO 工具函数直接遍历 key 判断可能的名称
+                  item.name = JSONResponse.getName(user)
 //                  item.phone = user.phone = user.mobile || user.mobileNo || user.mobileNum || user.mobileNumber || user.phone || user.phoneNo || user.phoneNum || user.phoneNumber || user.mobile_no || user.mobile_num || user.mobile_number || user.phone_no || user.phone_num || user.phone_number
                   item.remember = data.remember
                   item.isLoggedIn = true
@@ -5309,7 +5830,7 @@ https://github.com/APIJSON/APIJSON/issues
                       }
                   }
                 }
-              });
+              }, true);
             }
 
           }
@@ -5562,7 +6083,7 @@ https://github.com/APIJSON/APIJSON/issues
       setTag(index, item, tagList, isAdd, isDoc) {
         var table = isDoc ? 'Document' : 'Chain'
         var chain = item || {} // (item || {}).Chain || {}
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+        this.adminRequest(this.server + '/put', {
           [table]: {
             'id': chain.id,
             'groupId': isDoc ? undefined : chain.groupId,
@@ -5684,7 +6205,7 @@ https://github.com/APIJSON/APIJSON/issues
         var req = {
           format: false,
           '[]': {
-            'count': count || 0,
+            'count': count || 20,
             'page': page || 0,
             'Chain': {
               'userId': userId,
@@ -5698,7 +6219,7 @@ https://github.com/APIJSON/APIJSON/issues
 //              'documentId>': 0
             },
             '[]': {
-              'count': 0, //200 条测试直接卡死 0,
+              'count': this.testCaseCount || 20, //200 条测试直接卡死 0,
               'page': 0,
               'join': '&/Document',
               'Chain': {
@@ -5791,7 +6312,7 @@ https://github.com/APIJSON/APIJSON/issues
           this.onChange(false)
         }
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+        this.adminRequest('/get', req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
           var data = res.data
           if (JSONResponse.isSuccess(data) == false) {
@@ -5886,7 +6407,7 @@ https://github.com/APIJSON/APIJSON/issues
         var isAdd = true
         var reqObj = this.testCases == null || this.testCases.length <= 0 ? null : this.getRequest()
         var config = reqObj == null ? '' : StringUtil.trim(this.newRandomConfig(null, '', reqObj))
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/post', {
+        this.adminRequest('/post', {
           Chain: {
             'rank': this.formatDateTime(StringUtil.isEmpty(nextRank, true) ? null : new Date(new Date(nextRank).getTime() - 10)),
             'groupName': groupName,
@@ -5901,7 +6422,7 @@ https://github.com/APIJSON/APIJSON/issues
             name: '参数传递 ' + App.formatDateTime(),
             config: config
           },
-          tag: 'Chain'
+          tag: 'Chain+Random'
         }, {}, function (url, res, err) {
           App.onResponse(url, res, err)
           var isOk = JSONResponse.isSuccess(res.data)
@@ -6030,7 +6551,7 @@ https://github.com/APIJSON/APIJSON/issues
           this.onChange(false)
         }
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get', req, {}, function (url, res, err) {
+        this.adminRequest('/get', req, {}, function (url, res, err) {
           App.onResponse(url, res, err)
           var data = res.data
           if (JSONResponse.isSuccess(data) == false) {
@@ -6215,7 +6736,7 @@ https://github.com/APIJSON/APIJSON/issues
                 'url|$': StringUtil.isEmpty(groupUrl) ? null : [groupUrl, groupUrl.replaceAll('_', '\\_').replaceAll('%', '\\%') + '/%'],
                 // 'group{}': group == null || StringUtil.isNotEmpty(groupUrl) ? null : 'length(group)<=0',
                 // 'group{}': group == null ? null : (group.groupName == null ? "=null" : [group.groupName]),
-                '@combine': search == null ? null : 'operation$,name%$,url%$',
+                '@combine': StringUtil.isEmpty(search) ? null : 'operation$,name%$,url%$',
                 'method{}': methods == null || methods.length <= 0 ? null : methods,
                 'type{}': types == null || types.length <= 0 ? null : types,
                 '@null': 'sqlauto', //'sqlauto{}': '=null'
@@ -6293,7 +6814,7 @@ https://github.com/APIJSON/APIJSON/issues
             this.onChange(false)
           }
 
-          this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+          this.adminRequest(url, req, {}, function (url, res, err) {
             App.isTestCaseShow = false
             if (callback) {
               callback(url, res, err)
@@ -6603,7 +7124,7 @@ https://github.com/APIJSON/APIJSON/issues
             this.onChange(false)
           }
 
-          this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, url, req, {}, function (url, res, err) {
+          this.adminRequest(url, req, {}, function (url, res, err) {
             if (callback) {
               callback(url, res, err)
               return
@@ -6735,7 +7256,7 @@ https://github.com/APIJSON/APIJSON/issues
           }
         }
 
-        this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, '/get', req, {}, function (url, res, err) {
+        this.adminRequest('/get', req, {}, function (url, res, err) {
           var data = res.data
           if (JSONResponse.isSuccess(data) != true) {
             App.log(err != null ? err : (data == null ? '' : data.msg))
@@ -7775,6 +8296,27 @@ https://github.com/APIJSON/APIJSON/issues
         return json;
       },
 
+      handleFileSelect: function(event) {
+        const isSub = this.isRandomSubListShow;
+        const items = (isSub ? this.randomSubs : this.randoms) || [];
+        const cri = this.currentRandomItem || {}
+        const doc = (this.currentRemoteItem || {}).Document || {}
+        const random = cri.Input || {}
+        const ind = isSub && this.currentRandomSubIndex != null ? this.currentRandomSubIndex : this.currentRandomIndex;
+        const index = ind != null && ind >= 0 ? ind : -1; // items.length;
+        const server = this.server
+        var selectedFiles = Array.from(event.target.files);
+        selectedFiles.forEach((file, i) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            var fileName = file.name || '';
+            if (fileName.endsWith(".chls")) {
+              App.importCharlesSession(file);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      },
       showAndSend: function (branchUrl, req, isAdminOperation, callback) {
         this.showUrl(isAdminOperation, branchUrl)
         vInput.value = JSON.stringify(req, null, '    ')
@@ -7853,7 +8395,7 @@ https://github.com/APIJSON/APIJSON/issues
                  continue
               }
 
-              if (pjt.url == projectHost.host) {
+              if (pjt.host == projectHost.host) {
                   find = true
                   break
               }
@@ -7902,8 +8444,8 @@ https://github.com/APIJSON/APIJSON/issues
       request: function (isAdminOperation, method, type, url, req, header, callback, caseScript_, accountScript_, globalScript_, ignorePreScript, timeout_, wait_, retry_) {
         this.loadingCount ++
 
-        if (url != null && url.indexOf('://') <= 0) {
-          url = (isAdminOperation ? this.server : this.getBaseUrl()) + url
+        if (url != null && url.indexOf('://') < 0) {
+          url = (isAdminOperation ? this.server : this.getBaseUrl()) + (url.startsWith('/') ? url : '/' + url)
         }
 
         const isEnvCompare = this.isEnvCompareEnabled
@@ -8187,7 +8729,7 @@ https://github.com/APIJSON/APIJSON/issues
             console.log = logger
 
             App.loadingCount --
-            e.message = '执行脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
+            e.message = '脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
 
             // TODO if (isPre) {
             App.view = 'error'
@@ -8203,7 +8745,8 @@ https://github.com/APIJSON/APIJSON/issues
               //   throw e
               // }
 
-              App.onResponse(url, null, Object.assign({response: res, message: e.message})) // this.onResponse is not a function
+              // TODO 右侧底部新增断言列表
+              App.onResponse(url, null, new Error('脚本报错：\n' + e.message)) // this.onResponse is not a function
               // callback = function (url, res, err) {}  // 仅仅为了后续在 then 不执行 onResponse
             }
           }
@@ -8316,7 +8859,11 @@ https://github.com/APIJSON/APIJSON/issues
             document.cookie = header.Cookie
           }
         } else if (IS_NODE) {
+          var curUser = isAdminOperation ? this.User : this.getCurrentAccount()
           if (curUser != null && curUser.isLoggedIn && curUser[isEnvCompare ? 'phone' : 'cookie'] != null) {
+            if (header == null) {
+              header = {}
+            }
             // Node 环境内通过 headers 设置 Cookie 无效
             header.Cookie = isEnvCompare ? this.otherEnvCookieMap[curUser.phone + '@' + baseUrl] : curUser.cookie
           }
@@ -8763,7 +9310,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 
               var answer = StringUtil.get(typeof data2 == 'string' ? data2 : (data instanceof Array ? data2.join() : JSON.stringify(data2)))
-                .replaceAll('/wiki/Tencent/APIJSON#', 'https://deepwiki.com/Tencent/APIJSON/').replaceAll('/wiki/TommyLemon/APIAuto#', 'https://deepwiki.com/TommyLemon/APIAuto/');
+                .replaceAll('/wiki/Tencent/APIJSON#', 'https://deepwiki.com/Tencent/APIJSON/').replaceAll('/wiki/APIJSON/APIJSON#', 'https://deepwiki.com/APIJSON/APIJSON/')
+                .replaceAll('/wiki/TommyLemon/APIAuto#', 'https://deepwiki.com/TommyLemon/APIAuto/');
               App.view = 'markdown';
               vOutput.value += answer;
               markdownToHTML(vOutput.value)
@@ -8797,7 +9345,8 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       }
 
                       answer += '\n' + StringUtil.trim(typeof data2 == 'string' ? data2 : (data2 instanceof Array ? data2.join() : JSON.stringify(data2)))
-                        .replaceAll('/wiki/Tencent/APIJSON#', 'https://deepwiki.com/Tencent/APIJSON/').replaceAll('/wiki/TommyLemon/APIAuto#', 'https://deepwiki.com/TommyLemon/APIAuto/');
+                        .replaceAll('/wiki/Tencent/APIJSON#', 'https://deepwiki.com/Tencent/APIJSON/').replaceAll('/wiki/APIJSON/APIJSON#', 'https://deepwiki.com/APIJSON/APIJSON/')
+                        .replaceAll('/wiki/TommyLemon/APIAuto#', 'https://deepwiki.com/TommyLemon/APIAuto/');
                     }
 
                     answer += '\n<br/>\n';
@@ -8869,7 +9418,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               }
 //            }
 
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, 'https://api.devin.ai/ada/query', {
+            this.adminRequest('https://api.devin.ai/ada/query', {
               "engine_id": vDeepSearch.checked ? "agent" : "multihop",
               "user_query": "<relevant_context>" + (isRes ? "这是用 HTTP 接口工具 TommyLemon/APIAuto 发请求后的响应结果，分析并" : "") + "用中文回答：</relevant_context><br/>\n" + user_query,
               "keywords": [],
@@ -8985,7 +9534,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             //修改 Chain
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + (isAdd ? '/post' : '/put'), {
+            this.adminRequest((isAdd ? '/post' : '/put'), {
               Chain: {
                 'groupName': groupName,
                 'groupId': isAdd ? groupId : null,
@@ -9021,7 +9570,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             var types = this.types
 
             // Document
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/get', {
+            this.adminRequest('/get', {
                 format: false,
                 'Document[]': {
                   'count': 100, //200 条测试直接卡死 0,
@@ -9089,7 +9638,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             // }
 
             //修改 Document
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+            this.adminRequest('/put', {
               Document: {
                 'project': StringUtil.isEmpty(project, true) ? null : project,
                 'group': item.groupName,
@@ -9123,7 +9672,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             }
 
             //修改 Random 的 count
-            this.request(true, HTTP_METHOD_POST, REQUEST_TYPE_JSON, this.server + '/put', {
+            this.adminRequest('/put', {
               Random: {
                 id: r.id,
                 count: r.count,
@@ -10956,7 +11505,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         catch(e) {
           console.log(e);
           console.log = logger
-          e.message = '执行脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
+          e.message = '脚本报错：\n' + e.message // + '; 脚本：\n' + StringUtil.limitLength(script, 300, 'middle')
 
           this.view = 'error'
           this.error = {
@@ -10973,11 +11522,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         vRandom.value = StringUtil.trim(random.config);
       },
 
-      /**参数注入，动态替换键值对
+      /**参数规则，动态替换键值对
        * @param show
        */
       onClickTestRandom: function (isCross, callback) {
         this.isRandomTest = true
+        this.reportId = new Date().getTime();
         this.isStatisticsEnabled = true
         this.testRandom(! this.isRandomListShow && ! this.isRandomSubListShow, this.isRandomListShow, this.isRandomSubListShow, null, isCross, true, callback)
       },
@@ -11098,11 +11648,11 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
         }
       },
-      /**参数注入，动态替换键值对
+      /**参数规则，动态替换键值对
        * @param show
        * @param callback
        */
-      testRandomSingle: function (show, testList, testSubList, item, method, type, url, json, header, isCross, isManual, callback) {
+      testRandomSingle: function (show, testList, testSubList, item, method, type, url, json, header, isCross, isManual, callback, singleCallback, allCallback) {
         item = item || {}
 
         // 保证能调用自定义函数等 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -11192,6 +11742,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
                 else {
+                  if (singleCallback != null && singleCallback(which, randomName, constConfig, constJson)) {
+                    return
+                  }
                   if (show == true) {
                     vInput.value = JSON.stringify(constJson, null, '    ');
                     vHeader.value = StringUtil.toHeader(constHeader);
@@ -11213,6 +11766,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     item.subs = subs
                   }
                   if (respCount == count) {
+                    if (allCallback != null && allCallback(count, isCross, isManual)) {
+                      return
+                    }
                     App.testRandom(false, false, true, count, isCross, isManual, callback)
                   }
                 }
@@ -11389,7 +11945,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         return item
       },
 
-      /**参数注入，动态替换键值对
+      /**参数规则，动态替换键值对
        * @param show
        * @param callback
        */
@@ -11436,7 +11992,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
        *    json: {} //const json
        *  }
        */
-      /**参数注入，动态替换键值对
+      /**参数规则，动态替换键值对
        * @param show
        * @param callback
        */
@@ -11492,7 +12048,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const pathKeys = path.split('/')
           if (pathKeys == null || pathKeys.length <= 0) {
-            throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
+            throw new Error('参数规则 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + path + ' 不符合 JSON 路径的格式 key0/key1/../targetKey !' +
                 '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
                 '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
                 '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
@@ -11503,7 +12059,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           const customizeKey = bi > 0;
           const key = customizeKey ? p_k.substring(bi + 1) : lastKeyInPath;
           if (key == null || StringUtil.length(key, true) <= 0) {
-            throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
+            throw new Error('参数规则 第 ' + (i + 1) + ' 行格式错误！\n字符 ' + key + ' 不是合法的 JSON key!' +
                 '\n每个随机变量配置都必须按照\n  key0/key1/../targetKey replaceKey: value  // 注释\n的格式！' +
                 '\n注意冒号 ": " 左边 0 空格，右边 1 空格！其中 replaceKey 可省略。' +
                 '\nkey: {} 中最外层常量对象 {} 必须用括号包裹为 ({})，也就是 key: ({}) 这种格式！' +
@@ -11558,7 +12114,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                 //     current = parent[pathKeys[j]] = {}
                 //   }
                 //   if (parent instanceof Object == false) {
-                //     throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
+                //     throw new Error('参数规则 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中' +
                 //         ' pathKeys[' + j + '] = ' + pathKeys[j] + ' 在实际请求 JSON 内对应的值不是对象 {} 或 数组 [] !');
                 //   }
                 //   parent = current;
@@ -11706,7 +12262,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (JSONResponse.isSuccess(data) != true) {
                 respCount ++; // respCount = -reqCount;
                 var err = p_k + '  \n获取数据库数据 异常：\n' + data.msg
-                vOutput.value = '参数注入 为第 ' + (which + 1) + ' 行\n  ' + err;
+                vOutput.value = '参数规则 为第 ' + (which + 1) + ' 行\n  ' + err;
                 if (callback == null) {
                   alert(err);
                 } else {
@@ -11719,7 +12275,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   }
                 }
                 throw new Error(err)
-                // throw new Error('参数注入 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
+                // throw new Error('参数规则 为\n  ' + tableName + '/' + key + '  \n获取数据库数据 异常：\n' + data.msg)
               }
 
               var arr = data[listName] || [];
@@ -11756,7 +12312,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           //支持 1, "a" 这种原始值
           // if (start < 0 || end <= start) {  //(1) 表示原始值  start*end <= 0 || start >= end) {
-          //   throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
+          //   throw new Error('参数规则 第 ' + (i + 1) + ' 行格式错误！字符 ' + value + ' 不是合法的随机函数!');
           // }
 
           var toEval = value;
@@ -11895,7 +12451,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (Number.isSafeInteger(step) != true || step <= 0
                   || (StringUtil.isEmpty(stepStr, false) != true && StringUtil.isNumber(stepStr) != true)
               ) {
-                throw new Error('参数注入 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
+                throw new Error('参数规则 第 ' + (i + 1) + ' 行格式错误！路径 ' + path + ' 中字符 ' + stepStr + ' 不符合跨步 step 格式！'
                     + '\n顺序整数 和 顺序取值 可以通过以下格式配置 升降序 和 跨步：'
                     + '\n  ORDER_DB+step(arg0, arg1...)\n  ORDER_DB-step(arg0, arg1...)'
                     + '\n  ORDER_INT+step(arg0, arg1...)\n  ORDER_INT-step(arg0, arg1...)'
@@ -12068,6 +12624,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
       },
+      moveSplit: function (rate) {
+        rate = rate || 0.4;
+        var split_obj = IS_BROWSER ? $('.splitx') : null
+        var split_obj_left = split_obj == null ? 0 : parseInt(split_obj.css('left'))
+        var width = split_obj_left <= 0 ? 0 : (window.innerWidth || 1280)
+        if (width > 0) {
+          var w = rate*width;
+          var left_ele = $('.side-left')
+          var right_ele = $('.side-right')
+          split_obj.css('left', w)
+          left_ele.width(w);
+          right_ele.width(width - w).css('left', w);
+        }
+      },
 
       onClickSend: function () {
         this.isRandomTest = false
@@ -12079,29 +12649,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         this.reportId = new Date().getTime()
         this.caseShowType = 1
 
-        // 自动往右移动，避免断言结果遮挡太多接口名称、URL
-        var split_obj = IS_BROWSER ? $('.splitx') : null
-        var split_obj_left = split_obj == null ? 0 : parseInt(split_obj.css('left'))
-        var width = split_obj_left <= 0 ? 0 : (window.innerWidth || 1280)
-        if (width > 0 && Math.abs(split_obj_left - 0.4*width) <= 5) {
-          // 构造事件比较麻烦，即便用 JQuery 也是
-          // split_obj[0].dispatchEvent(new TouchEvent('', new class implements TouchEventInit{
-          //   clientX: 0.6*width
-          // }()))
-
-          var left_ele = $('.side-left')
-          var right_ele = $('.side-right')
-
-          // var left_width = left_ele.width()
-          // var right_width = right_ele.width()
-          //
-          // var right_left = parseInt(right_ele.css('left'))
-
-          split_obj.css('left', 0.55*width)
-          left_ele.width(0.55*width);
-          right_ele.width(0.45*width).css('left', 0.55*width);
-          // right_ele.width(right_width - left_ele.width() + left_width).css('left', right_left + left_ele.width() - left_width);
-        }
+        this.moveSplit(0.45)
 
         var isCross = this.isCrossEnabled
         var accountIndex = this.testAccountIndex = isCross ? -1 : this.currentAccountIndex
@@ -12299,8 +12847,9 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         }
 
         if (isCross) {
-          if (accountIndex < 0 && accounts[this.currentAccountIndex] != null) {  //退出登录已登录的账号
-            accounts[this.currentAccountIndex].isLoggedIn = true
+          var account = accounts[this.currentAccountIndex]
+          if (accountIndex < 0 && account != null) {  //退出登录已登录的账号
+            account.isLoggedIn = true
           }
           var index = accountIndex < 0 ? this.currentAccountIndex : accountIndex
           this.onClickAccount(index, accounts[index], function (isLoggedIn, index, err) {
@@ -12362,7 +12911,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                  method: method,
                  url: config.url,
                  header: config.header,
-                 arg: cur.arg
+                 arg: cur.arg || json
                }
                cur.status = res.status
                cur.statusText = res.statusText
@@ -12372,7 +12921,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                var info = {
                  type: type,
                  req: req,
-                 arg: json,
+                 arg: cur.arg,
                  res: res,
                  data: res.data
                }
@@ -12415,6 +12964,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         var isChainShow = this.isChainShow
         baseUrl = StringUtil.trim(this.getBaseUrl())
 
+        var toTestDocIndexes = this.toTestDocIndexes = this.toTestDocIndexes || []
         for (var i = 0; i < list.length; i++) {
             const item = list[i]
             if (isChainShow) {
@@ -12426,6 +12976,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                continue
             }
 
+            toTestDocIndexes.push(i)
             this.startTestSingle(list, allCount, i, item, isRandom, accountIndex, isCross, callback)
         }
       },
@@ -12653,7 +13204,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           }
         }
 
-        this.onTestResponse(res, allCount, list, index, it, d, r, tr, response, err,tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback);
+        this.onTestResponse(res, allCount, list, index, it, d, r, tr, response, err, tr.compare || {}, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback);
       },
 
       onTestResponse: function(res, allCount, list, index, it, d, r, tr, response, err, cmp, isRandom, accountIndex, justRecoverTest, isCross, callback, singleCallback) {
@@ -12799,7 +13350,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
           const deepAllCount = IS_NODE || this.toTestDocIndexes == null ? 0 : this.toTestDocIndexes.length
           App.deepAllCount = deepAllCount
-          if (isRandom != true && deepAllCount > 0 && ! this.isChainShow) { // 自动给非 红色 报错的接口跑参数注入
+          if (isRandom != true && deepAllCount > 0 && ! this.isChainShow) { // 自动给非 红色 报错的接口跑参数规则
             App.deepDoneCount = 0;
             this.startRandomTest4Doc(list, this.toTestDocIndexes.sort(), 0, deepAllCount, accountIndex, isCross)
           } else if (isCross && doneCount == allCount && accountIndex <= this.accounts.length) {
@@ -12851,7 +13402,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                     autoTestCallback('已完成回归测试')
                   }
 
-                  App.request(false, HTTP_METHOD_POST, REQUEST_TYPE_JSON, App.getBaseUrl() + '/coverage/report', {}, {}, function (url, res, err) {
+                  App.requestPost(false, App.getBaseUrl() + '/coverage/report', {}, {}, function (url, res, err) {
                     try {
                       App.onResponse(url, res, err)
                       if (DEBUG) {
@@ -13273,7 +13824,19 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         item = item || {}
         var random = item.Random = item.Random || {}
         var document;
+        var isChanged = false;
         if (isRandom) {
+          this.currentRandomItem = item;
+          var curIndex = this.isRandomSubListShow ? this.currentRandomSubIndex : this.currentRandomIndex;
+          isChanged = curIndex != index;
+          if (isChanged) {
+            if (this.isRandomSubListShow) {
+              this.currentRandomSubIndex = index
+            } else {
+              this.currentRandomIndex = index
+              this.currentRandomSubIndex = -1
+            }
+          }
           if ((random.count || 0) > 1) {
             this.currentRandomIndex = index
             // this.currentRandomSubIndex = -1
@@ -13284,7 +13847,6 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
             return
           }
 
-          this.currentRandomSubIndex = index
           document = this.currentRemoteItem || {}
         }
         else {
@@ -13619,10 +14181,20 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
         if (isRandom) {
           var toId = (d == null ? null : d.toId) || 0
-          this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'][index].setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
+          var eles = this.$refs[toId <= 0 ? 'randomTexts' : 'randomSubTexts'];
+          var ele = eles == null ? null : eles[index];
+          if (ele == null) {
+            return;
+          }
+          ele.setAttribute('data-hint', (d || {}).config == null ? '' : d.config);
         }
         else {
-          this.$refs['testCaseTexts'][index].setAttribute('data-hint', StringUtil.isEmpty(d.request, true) ? '' : JSON.stringify(this.getRequest(d.request, {}, true), null, ' '));
+          var eles = this.$refs['testCaseTexts'];
+          var ele = eles == null ? null : eles[index];
+          if (ele == null) {
+            return;
+          }
+          ele.setAttribute('data-hint', StringUtil.isEmpty(d.request, true) ? '' : JSON.stringify(this.getRequest(d.request, {}, true), null, ' '));
         }
       },
 
@@ -13631,8 +14203,12 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
         item = item || {};
         var toId = isRandom ? ((item.Random || {}).toId || 0) : 0;
         var h = isDuration ? item.durationHint : (isHandle ? item.compareMessage : item.hintMessage);
-        this.$refs['test' + (isRandom ? (toId <= 0 ? 'Random' : 'RandomSub') : '') + (isHandle ? 'Handle' : 'Result')
-         + (isDuration ? 'Duration' : '') + 'Buttons'][index].setAttribute('data-hint', h || '');
+        var eles = this.$refs['test' + (isRandom ? (toId <= 0 ? 'Random' : 'RandomSub') : '') + (isHandle ? 'Handle' : 'Result') + (isDuration ? 'Duration' : '') + 'Buttons'];
+        var ele = eles == null ? null : eles[index];
+        if (ele == null) {
+          return;
+        }
+        ele.setAttribute('data-hint', h || '');
       },
 
       handleTestArg: function(hasTestArg, rawReq, delayTime, callback) {
@@ -14080,7 +14656,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                   type: stringType,
                   comment: "从数据库修改记录 function(apijson:Object, tag:String, defaultVal:Any?, msg:String?)"
                 }, {
-                  name: "DB_UPDATE('UPDATE sys.Comment SET content = 'Hello~' WHERE id=', [1])",
+                  name: "DB_UPDATE('UPDATE sys.Comment SET content = 'Hello~' WHERE id=?', [1])",
                   type: stringType,
                   comment: "从数据库修改记录 function(sql:String, args:Array, datasource:String?, schema:String?, database:String?, defaultVal:Any?, msg:String?)"
                 }, {
@@ -14125,35 +14701,35 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
               if (App.isChainShow) {
                   App.options = [
                     {
-                      name: "PRE_DATA('[]/0/User/id')",
+                      name: "PRE_DATA('list/0/User/id')",
                       type: stringType,
-                      comment: "从上个请求的返回结果中取值 function(path:String?, defaultVal:Any?, msg:String?)"
+                      comment: "从上个请求的返回结果中取值 function(path:String?, defaultVal:Any?, method_url:String?, account_host_index_path:String|Integer?, msg:String?) // 示例 method_url: 'GET /user/list' | 'POST /register', account_host_index_path: '13000082001@http://localhost/-1 | '13000082001' | 'http://localhost' | -1 "
                     }, {
-                      name: "PRE_ARG('[]/page')",
+                      name: "PRE_ARG('id')",
                       type: stringType,
-                      comment: "从上个请求的参数中取值 function(path:String?, defaultVal:Any?, msg:String?)"
+                      comment: "从上个请求的参数中取值 function(path:String?, defaultVal:Any?, method_url:String?, account_host_index_path:String|Integer?, msg:String?) // 示例 method_url: 'GET /comments' | 'PUT /login', account_host_index_path: '123@mail.com@http://apijson.cn:8080/0 | '123@mail.com' | 'http://apijson.cn:8080' | 0 "
                     }, {
                       name: "CTX_GET('userId')",
                       type: stringType,
                       comment: "在上下文存放键值对 function(key:String?, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "CTX_PUT('User/id', 'PRE_DATA')",
+                      name: "CTX_PUT('userId', 'User/id', 'CUR_DATA')",
                       type: stringType,
-                      comment: "在上下文存放键值对 function(path:String, from:String|Object?, msg:String?)"
+                      comment: "在上下文存放键值对 function(key:String, path:Any, from:String|Object?, msg:String?)"
                     }, {
-                      name: "PRE_RES('[]/page')",
+                      name: "PRE_RES('data/Comment[]/0/momentId')",
                       type: stringType,
-                      comment: "从上个请求的 Response 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
+                      comment: "从上个请求的 Response 对象中取值 function(path:String, defaultVal:Any?, method_url:String?, account_host_index_path:String|Integer?, msg:String?) // 示例 method_url: 'GET /token' | 'DELETE /log/{id}', account_host_index_path: '13000082002@http://localhost:8080/1 | '13000082002' | 'http://localhost:8080' | 1 "
                     }, {
-                      name: "PRE_REQ('isMale')",
+                      name: "PRE_REQ('config/headers/token')",
                       type: stringType,
-                      comment: "从上个请求 Request 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
+                      comment: "从上个请求 Request 对象中取值 function(path:String, defaultVal:Any?, method_url:String?, account_host_index_path:String|Integer?, msg:String?) // 示例 method_url: 'GET /user/{id}' | 'POST /moment', account_host_index_path: 'test@gmail.com@http://apijson.cn:9090/-2 | 'test@gmail.com' | 'http://apijson.cn:9090' | -2 "
                     }, {
-                      name: "CUR_ARG('[]/count')",
+                      name: "CUR_ARG('[]/page')",
                       type: stringType,
                       comment: "从当前请求的参数中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "CUR_REQ('[]/count')",
+                      name: "CUR_REQ('config/data/[]/count')",
                       type: stringType,
                       comment: "从当前请求的 Request 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }, {
@@ -14161,7 +14737,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
                       type: stringType,
                       comment: "从当前请求的返回结果中取值 function(path:String?, defaultVal:Any?, msg:String?)"
                     }, {
-                      name: "CUR_RES('[]/count')",
+                      name: "CUR_RES('headers/Cookie')",
                       type: stringType,
                       comment: "从当前请求的 Response 对象中取值 function(path:String, defaultVal:Any?, msg:String?)"
                     }
@@ -14800,8 +15376,10 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
           this.otherEnv = otherEnv
         }
         var server = this.getCache('', 'server')
-        if (StringUtil.isEmpty(server, true) == false) {
+        if (StringUtil.isNotEmpty(server, true)) {
           this.server = server
+        } else {
+          this.server = window.location.origin
         }
         var thirdParty = this.getCache('', 'thirdParty')
         if (StringUtil.isEmpty(thirdParty, true) == false) {
@@ -15612,6 +16190,7 @@ Content-Type: ` + contentType) + (StringUtil.isEmpty(headerStr, true) ? '' : hea
 
   function alert(msg) {
     App.alertMsg = msg
+    vAlert.innerHTML = StringUtil.trim(msg).replaceAll('\n', '<br/>')
     App.showAlert(true)
   }
 

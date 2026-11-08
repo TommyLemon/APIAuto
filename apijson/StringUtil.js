@@ -34,7 +34,7 @@ var StringUtil = {
    * @return
    */
   get: function(s) {
-    return s == null ? '' : (typeof s == 'string' ? s : JSON.stringify(s));
+    return s == null ? '' : (StringUtil.isString(s) ? s : JSON.stringify(s));
   },
 
   /**获取去掉前后空格后的string,为null则返回''
@@ -307,19 +307,27 @@ var StringUtil = {
   },
 
   isNumber: function (s) {
-    return typeof s == 'string' && /^[0-9]+$/.test(s);
+    return StringUtil.isString(s) && /^[0-9]+$/.test(s);
   },
 
   join: function (arr, separator) {
     return arr == null ? '' : arr.join(separator);
   },
-  length: function (s, trim) {
-    if (trim !== false && typeof s == 'string') {
-      s = StringUtil.trim(s);
+  length: function (s) {
+    if (s == null) {
+      return 0;
     }
-    return s == null ? 0 : s.length;
+    if (s instanceof Array) {
+      return s.length;
+    }
+    if (s instanceof Object) {
+      return Object.keys(s).length;
+    }
+    s = StringUtil.get(s)
+    return s.length;
   },
   limitLength: function (s, maxLen, ellipsize) {
+    s = StringUtil.get(s);
     var l = StringUtil.length(s);
     if (maxLen == null || maxLen <= 0 || l <= maxLen) {
       return s;
@@ -333,13 +341,28 @@ var StringUtil = {
     }
     return s.substring(0, maxLen) + '..';
   },
+  PATTERN_PHONE: /^1(?:3\\d{3}|5[^4\\D]\\d{2}|8\\d{3}|7(?:[0-35-9]\\d{2}|4(?:0\\d|1[0-2]|9\\d))|9[0-35-9]\\d{2}|6[2567]\\d{2}|4(?:(?:10|4[01])\\d{3}|[68]\\d{4}|[579]\\d{2}))\\d{6}$/g,
+  isPhone: function (s) {
+    if (Number.isSafeInteger(s)) {
+      s = StringUtil.get(s)
+    }
+    return StringUtil.isString(s) && StringUtil.PATTERN_PHONE.test(s)
+  },
+  PATTERN_EMAIL: /^([a-zA-Z0-9_\\-\\.]+)@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.)|(([a-zA-Z0-9\\-]+\\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\\]?)$/g,
+  isEmail: function (s) {
+    return StringUtil.isString(s) && StringUtil.PATTERN_EMAIL.test(s)
+  },
+  PATTERN_ID_CARD: /(^[1-9]\\d{5}(18|19|([23]\\d))\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$)|(^[1-9]\\d{5}\\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\\d{2}$)/g,
+  isIDCard: function (s) {
+    return StringUtil.isString(s) && StringUtil.PATTERN_EMAIL.test(s)
+  },
 
   isUri: function (s) {
-    var ind = s == null ? -1 : s.indexOf('://');
+    var ind = StringUtil.isNotString(s) ? -1 : s.indexOf('://');
     return ind > 0;
   },
   isUrl: function (s, schemas) {
-    var ind = s == null ? -1 : s.indexOf('://');
+    var ind = StringUtil.isNotString(s) ? -1 : s.indexOf('://');
     if (ind <= 0) {
       return false;
     }
@@ -382,7 +405,7 @@ var StringUtil = {
     return StringUtil.isPath(s, true);
   },
   isPath: function (s, allowQuery) {
-    if (StringUtil.isEmpty(s)) {
+    if (StringUtil.isNotString(s) || StringUtil.isEmpty(s)) {
       return false;
     }
 
@@ -418,7 +441,7 @@ var StringUtil = {
     return true;
   },
   isPackage: function (s) {
-    var arr = StringUtil.split(s, '.');
+    var arr = StringUtil.isNotString(s) ? null : StringUtil.split(s, '.');
     if (arr == null || arr.length <= 1) {
       return false;
     }
@@ -433,7 +456,7 @@ var StringUtil = {
   },
   isMonth: function (s) {
     try {
-      if (/\d{4}-\d{1,2}/g.test(s) != true) {
+      if (StringUtil.isNotString(s) || /\d{4}-\d{1,2}/g.test(s) != true) {
         return false;
       }
 
@@ -448,7 +471,7 @@ var StringUtil = {
   },
   isDate: function (s) {
     try {
-      if (/\d{4}-\d{1,2}-\d{1,2}/g.test(s) != true) {
+      if (StringUtil.isNotString(s) || /\d{4}-\d{1,2}-\d{1,2}/g.test(s) != true) {
         return false;
       }
 
@@ -474,7 +497,7 @@ var StringUtil = {
   },
   isMinute: function (s) {
     try {
-      if (/\d{1,2}:\d{1,2}/g.test(s) != true) {
+      if (StringUtil.isNotString(s) || /\d{1,2}:\d{1,2}/g.test(s) != true) {
         return false;
       }
 
@@ -488,7 +511,7 @@ var StringUtil = {
   },
   isTime: function (s) {
     try {
-      if (/\d{1,2}:\d{1,2}:\d{1,2}/g.test(s) != true) {
+      if (StringUtil.isNotString(s) || /\d{1,2}:\d{1,2}:\d{1,2}/g.test(s) != true) {
         return false;
       }
 
@@ -502,7 +525,7 @@ var StringUtil = {
   },
   isDatetime: function (s) {
     try {
-      var date = new Date(s);
+      var date = StringUtil.isNotString(s) ? null : new Date(s);
       return date.getDay() > 0 && date.getTime() % 1000 > 0;
     }
     catch (e) {
@@ -511,30 +534,42 @@ var StringUtil = {
     return false;
   },
   isFileUri: function (s) {
-    return s != null && s.startsWith('file://') && StringUtil.isPath(s.substring('file://'.length));
+    return StringUtil.isNotString(s) && s.startsWith('file://') && StringUtil.isPath(s.substring('file://'.length));
   },
   isFile: function (s) {
-    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var ind = StringUtil.isNotString(s) ? -1 : s.lastIndexOf('.');
+    if (ind <= 0) {
+      return false
+    }
     var prefix = s.substring(0, ind);
     var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
     return StringUtil.isName(suffix) && StringUtil.isNotEmpty(prefix, true);
   },
   isImage: function (s) {
-    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var ind = StringUtil.isNotString(s) ? -1 : s.lastIndexOf('.');
+    if (ind <= 0) {
+      return false
+    }
     var prefix = s.substring(0, ind);
     var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
 
-    return ['jpg', 'jpeg', 'png', 'bmp', 'gif'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
+    return ['jpg', 'jpeg', 'png', 'bmp', 'gif', 'webp'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
   },
   isAudio: function (s) {
-    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var ind = StringUtil.isNotString(s) ? -1 : s.lastIndexOf('.');
+    if (ind <= 0) {
+      return false
+    }
     var prefix = s.substring(0, ind);
     var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
 
     return ['mp3', 'wav', 'flac', 'ogg', 'aiff'].indexOf(suffix) >= 0 && StringUtil.isNotEmpty(prefix, true);
   },
   isVideo: function (s) {
-    var ind = s == null ? -1 : s.lastIndexOf('.');
+    var ind = StringUtil.isNotString(s) ? -1 : s.lastIndexOf('.');
+    if (ind <= 0) {
+      return false
+    }
     var prefix = s.substring(0, ind);
     var suffix = StringUtil.toLowerCase(s.substring(ind + 1));
 
@@ -560,7 +595,7 @@ var StringUtil = {
   },
 
   isBoolKey: function (key) {
-     if (StringUtil.isEmpty(key, true) || key.length < 3) {
+     if (StringUtil.isNotString(key) || key.length < 3) {
         return false;
      }
      if (key.toLowerCase().startsWith('enable') || key.toLowerCase().startsWith('disable')
@@ -856,6 +891,14 @@ var StringUtil = {
 //    'count': 'integer'
   },
 
+  parsePair: function(s, trim) {
+    if (StringUtil.isNotString(s) || StringUtil.isEmpty(s, trim)) {
+      return []
+    }
+
+    var ind = s.indexOf(':')
+    return ind < 0 ? [s] : [s.substring(0, ind), s.substring(ind + 1)]
+  },
   toRandom: function (s) {
     return StringUtil.toForm(s, true)
   },

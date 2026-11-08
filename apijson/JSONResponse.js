@@ -184,6 +184,7 @@ var JSONResponse = {
   KEY_CODE: 'code',
   KEY_MSG: 'msg',
   KEY_THROW: 'throw',
+  KEY_DATA: 'data',
   CODE_SUCCESS: 200,
   IGNORE_KEYS: ['traceId', 'trace:stack', 'debug:info|help'],
   UPGRADE_KEYS: ['price', 'amount', 'money', 'cash', 'spend', 'cost', 'income', 'outgoing', 'borrow', 'lend', 'gold', 'coin', 'diamond', 'credit', 'budget', 'quantity', 'balance', 'type', 'status', 'state', 'stage', 'mode', 'currency', 'percent', 'percentage', 'rate', 'ratio', 'cent', 'vip', 'tax', 'change', 'exchange', 'role', 'permission', 'access', 'wealth', 'fee', 'pay', 'sku', 'spu', 'level', 'reward', 'award', 'bonus', 'consume', 'produce', 'gift', 'order', 'buy', 'purchase', 'salary', 'earn', 'coupon', 'discount', 'phone', 'email', 'card', 'idcard', 'account'],
@@ -621,7 +622,7 @@ var JSONResponse = {
       if (rCode != JSONResponse.CODE_SUCCESS && rCode != 200) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且状态码 ' + rCode + ' 不是成功值！',
+          msg: '状态码 ' + rCode + ' 不是成功值！',
           path: folder == null ? '' : folder
         };
       }
@@ -629,7 +630,7 @@ var JSONResponse = {
       if (real != null && real.throw != null) {
         return {
           code: JSONResponse.COMPARE_CODE_CHANGE, //未上传对比标准
-          msg: '没有校验标准，且 throw 是 ' + real.throw,
+          msg: 'throw 是 ' + real.throw,
           path: folder == null ? '' : folder
         };
       }
@@ -637,7 +638,7 @@ var JSONResponse = {
       if (real == null || real.data == null) {
         return {
           code: JSONResponse.COMPARE_KEY_LESS, //未上传对比标准
-          msg: '没有校验标准，且缺少有效 data 值',
+          msg: '缺少有效 data 值',
           path: folder == null ? '' : folder
         };
       }
@@ -685,7 +686,7 @@ var JSONResponse = {
 
     if (noBizCode != true) {
         delete target[codeName];
-        real[codeName] = typeof rCode == 'undefined' ? undefined : null; // delete real[codeName];
+        real[codeName] = typeof rCode == 'undefined' ? rCode : null; // delete real[codeName];
         delete target.throw;
         real.throw = typeof rThrw == 'undefined' ? rThrw : null; // delete real.throw;
     }
@@ -871,31 +872,49 @@ var JSONResponse = {
     }
 
     if (right instanceof Array) {
-      var lfirst = left[0];
-      if (lfirst instanceof Object) {
-        for (var i = 1; i < left.length; i++) {
-          lfirst = JSONResponse.deepMerge(lfirst, left[i]);
+      if (left instanceof Array) {
+        left = left.concat(right);
         }
+      else if (left instanceof Object) {
+        for (let i = 0; i < right.length; i++) {
+          var k = i + '';
+          left[k] = Object.assign(left[k], right[i]);
       }
 
-      var rfirst = right[0];
-      if (rfirst instanceof Object) {
-        for (var i = 1; i < right.length; i++) {
-          rfirst = JSONResponse.deepMerge(rfirst, right[i]);
         }
+      else {
+        left = [left].concat(right);
       }
 
-      var m = JSONResponse.deepMerge(lfirst, rfirst);
+      return left;
+      // var m = JSONResponse.deepMerge(lfirst, rfirst);
 
-      return m == null ? [] : [ m ];
+      // return m == null ? [] : [ m ];
     }
-
-    if (right instanceof Object) {
-      var m = parseJSON(JSON.stringify(left));
+    else if (right instanceof Object) {
+      if (left instanceof Array) {
+        left.push(right);
+      }
+      else if (left instanceof Object) {
+        left = Object.assign(left, right);
+        var m = left; // parseJSON(JSON.stringify(left));
       for (var k in right) {
         m[k] = JSONResponse.deepMerge(m[k], right[k]);
+        }
+        left = m;
       }
-      return m;
+      else {
+        left = Object.assign({'0$left': left}, right);
+      }
+    }
+    else if (left instanceof Array) {
+      left.push(right);
+    }
+    else if (left instanceof Object) {
+      left[Object.keys(left).length + '$right'] = right;
+    }
+    else {
+      return right;
     }
 
     return left;
@@ -1458,8 +1477,8 @@ var JSONResponse = {
 
     // delete currentResponse[JSONResponse.KEY_CODE]; //code必须一致
     // delete currentResponse.throw; //throw必须一致
-    currentResponse[JSONResponse.KEY_CODE] = null; //code必须一致
-    currentResponse.throw = null; //throw必须一致
+    currentResponse[JSONResponse.KEY_CODE] = typeof code == 'undefined' ? code : null; //code必须一致
+    currentResponse.throw = typeof thrw == 'undefined' ? thrw : null; //throw必须一致
 
     var find = false;
     if (isCodeChange && hasCode) {  // 走异常分支
@@ -1474,7 +1493,7 @@ var JSONResponse = {
 
       if (find) {
         // delete currentResponse[JSONResponse.KEY_MSG];
-        currentResponse[JSONResponse.KEY_MSG] = null;
+        currentResponse[JSONResponse.KEY_MSG] = typeof msg == 'undefined' ? msg : null; // delete currentResponse.msg;
       }
     }
 
@@ -1486,12 +1505,12 @@ var JSONResponse = {
 //    }
 
     if (hasCode || isML) {
-      stddObj.code = code || 0;
+      stddObj.code = code // || 0;
     }
 
     if (isCodeChange) {
       if (hasCode != true) {  // 走正常分支
-        stddObj.code = code;
+        stddObj.code = code // || 0;
         stddObj.throw = thrw;
       }
       else {  // 走异常分支
@@ -1556,6 +1575,7 @@ var JSONResponse = {
       target.type = type = null;
     }
 
+    var rtype = JSONResponse.getType(real);
     if ((rtype == null || real == null) && StringUtil.isEmpty(type, true) && StringUtil.isNotEmpty(key, true)) {
       target.guess = true;
       if (StringUtil.isBoolKey(key)) {
@@ -2586,8 +2606,44 @@ var JSONResponse = {
     }
 
     return value;
-  }
+  },
 
+  getId: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.id || user.ID ||user.userId || user.userID || user.user_id || user.userid;
+  },
+  getName: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.name || user.nickname || user.nickName || user.user_name || user.username || user.userName;
+  },
+  getPhone: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.mobile || user.mobileNo || user.mobileNum || user.mobileNumber || user.phone || user.phoneNo || user.phoneNum || user.phoneNumber || user.mobile_no || user.mobile_num || user.mobile_number || user.phone_no || user.phone_num || user.phone_number;
+  },
+  getEmail: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.email || user.emailAddr || user.emailAddress || user.email_addr || user.email_address || user.mail || user.mailAddr || user.mailAddress || user.mail_addr || user.mail_address;
+  },
+  getAccount: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.account || JSONResponse.getPhone(user) || JSONResponse.getEmail(user);
+  },
+  getPassword: function(user) {
+    if (! JSONResponse.isObject(user)) {
+      return null;
+    }
+    return user.password || user.passcode || user.pwd || user.pass;
+  },
 };
 
 if (typeof module == 'object') {

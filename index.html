@@ -89,6 +89,7 @@
         </span>
         <a v-show="isDelayShow" >2s</a>
 
+        <input type="file" id="vFileInput" style="opacity: 0; width: 1px; display: none" :multiple="allowMultiple" @change="handleFileSelect($event)" >
         <iframe v-show="User.id == null || User.id <= 0" src="https://ghbtns.com/github-btn.html?user=Tencent&amp;repo=APIJSON&amp;type=star&amp;count=true&amp;size=small" frameborder="0" scrolling="0" width="120px" height="18px"></iframe>
 
         <!--只用60%避免拦截左右两侧View的触摸事件-->
@@ -130,7 +131,7 @@
                   <a class="setting-item" href="javascript:void(0)" @click="showConfig(! isPreviewEnabled, 10)">预览左侧输入框:  {{ isPreviewEnabled ? '已开启，点击关闭' : '已关闭，点击开启' }}</a>
                   <a v-show="User.id != null && User.id > 0" class="setting-item" href="javascript:void(0)" @click="showConfig(! isEditResponse, 11)">当前编辑模式:  {{ isEditResponse ? 'Response 后端响应结果' : 'Request 前端请求参数' }}</a>
                   <a class="setting-item" href="javascript:void(0)" @click="showConfig(StringUtil.isEmpty(host, true), 3)">{{ StringUtil.isEmpty(host, true) ? '隐藏(固定)URL Host: 可用空格隔开' : '显示(编辑)URL Host: \n' + host }}</a>
-                  <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)参数注入 Random Test' : '显示(编辑)参数注入 Random Test' }}</a>
+                  <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isRandomShow, 5)">{{ isRandomShow ? '隐藏(固定)参数规则 Random Test' : '显示(编辑)参数规则 Random Test' }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isHeaderShow, 4)">{{ (isHeaderShow ? '隐藏(固定)' : '显示(编辑)') + (isEditResponse ? '响应头 Response Header' : '请求头 Request Header' ) }}</a>
                   <a style="border-bottom: #DDD 1px solid;width: 100%;display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden;" href="javascript:void(0)" @click="showConfig(! isScriptShow, 13)">{{ (isScriptShow ? '隐藏(固定)' : '显示(编辑)') + '执行脚本 JavaScript' }}</a>
                   <a class="setting-item" href="javascript:void(0)" @click="showConfig(! isAgentEnabled, 18)">{{ (isAgentEnabled ? '隐藏' : '显示') + '网页自动操作 AI Agent' }} </a>
@@ -312,7 +313,7 @@
                                 <button class="hint--right" :data-hint="item.Document.request" v-show="isShowType()" style="width: 48px;margin-right: 6px;padding: 0px" id="vDocType" @click="restoreRemoteAndTest(index, item)">{{ getTypeName(item.Document.type, item.Document.method) }}</button>
                                 <a class="hint--rounded hint--no-animate" ref="testCaseTexts" @mouseover="setRequestHint(index, item)" href="javascript:void(0)" @click="restoreRemote(index, item)" :style="{ color: index == currentDocIndex ? 'black' : 'gray' }"> {{(isCaseGroupShow() ? '' : (index + 1) + '. ') + (item.Document.version > 0 ? 'V' + item.Document.version : 'V*') + ' ' + item.Document.name  + '    ' + item.Document.url}}</a>
                                 <ul v-show="! (isChainShow || isLocalShow)" style="display: inline-flex; position: absolute; right: 56px; padding: 0px; height: 27px; overflow: scroll hidden;">
-                                    <li style="margin: 0px; padding: 2px; background-color: rgba(255, 255, 255, 0.7); border: #DDD 1px solid; border-radius: 2px " v-for="(tag, ind) in item.Document.tagList" :id="'tag' + index" >
+                                    <li style="margin: 0px; padding: 2px; background-color: rgba(255, 255, 255, 0.7); border: #DDD 1px solid; border-radius: 2px " v-for="(tag, ind) in (item.Document || {}).tagList" :id="'tag' + index" >
                                         <a href="javascript:void(0)" style="position: relative; min-width: 6px; width: auto; height: 30px; " @click="removeTag(ind, tag, index, item, true)" >{{ tag }}</a>
                                     </li>
                                 </ul><button v-show="! (isChainShow || isLocalShow)" class="hint--left" data-hint="新增标签" style="position: absolute; right: 32px;" href="javascript:void(0)" @click="changeTag(index, item, true)"> + </button>
@@ -470,7 +471,7 @@ Ctrl + S 或 Command + S 保存当前用例；
                             <input v-show="isRandomListShow != true && isRandomSubListShow != true" id="vTestRandomCount" v-model="testRandomCount" style="margin-left: 10px; min-width: 12px; max-width: 30px; width: auto; text-align: center" type="number" />
                             <a v-show="isRandomListShow != true && isRandomSubListShow != true" style="margin-left: 4px;">次</a>
                             <a v-show="isRandomListShow != true && isRandomSubListShow != true" href="javascript:void(0)" @click="onClickRandomType(false)" :style="{'color': isEditReqLink ? 'red' : 'gray'}" style="font-size: medium; padding-left: 10px">请求</a><a v-show="isRandomListShow != true && isRandomSubListShow != true" >|</a><a v-show="isRandomListShow != true && isRandomSubListShow != true" href="javascript:void(0)" @click="onClickRandomType(true)" :style="{'color': isEditReqLink ? 'gray' : 'red'}" style="font-size: medium">响应</a>
-                            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '参数注入 Random Test' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
+                            <a style="display: flex;flex-grow: 1;padding-left: 10px;padding-right: 2px;font-size: medium;color: black" >{{ (isRandomListShow || StringUtil.isEmpty(randomTestTitle, true) ? '参数规则 Random Test' : randomTestTitle) + (isRandomListShow || isRandomSubListShow ? ' (' + ((isRandomListShow ? randoms : randomSubs) || []).length + ')' : '') }}
                                 <a v-show="isRandomListShow != true && (currentRemoteItem || {}).Document != null" style="padding-right: 6px;padding-top: 2px" href="javascript:void(0)" @click="showRandomList(true, (currentRemoteItem || {}).Document)">
                                     父项列表
                                 </a>
@@ -726,7 +727,7 @@ fun(true, 1, 'a'..);
                             <button style="background-color: #DDD;margin: 0px;outline: none;border: #DDD 1px solid;" href="javascript:void(0)" @click="removeAccountTab()"> - </button>
                             <!-- 每个账号 -->
                             <div v-for="(item, index) in accounts" style="display: inline-block; border: #DDD 1px solid" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD'}">
-                              <button class="hint--top" :data-hint="(item.account || item.email || item.phone) + (StringUtil.isEmpty(item.baseUrl) ? '' : '@' + item.baseUrl)" style="outline: none; border: none; padding: 3px;" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD', color: currentAccountIndex == index && item.isLoggedIn ? 'red' : 'black'}" @click="onClickAccount(index, item)">{{ item.name + (getBaseUrlLength(vUrl.value) > 0 ? '' : '@' + StringUtil.trim(item.baseUrl)) }}</button>
+                              <button class="hint--top" :data-hint="(item.account || item.email || item.phone) + (StringUtil.isEmpty(item.baseUrl) ? '' : '@' + item.baseUrl)" style="outline: none; border: none; padding: 3px;" :style="{backgroundColor: currentAccountIndex == index ? 'transparent' : '#DDD', color: currentAccountIndex == index && item.isLoggedIn ? 'red' : 'black'}" @click="onClickAccount(index, item)">{{ JSONResponse.getName(item) }}</button>
                               <br v-show="isStatisticsEnabled && isCrossEnabled && isAllSummaryShow()" />
                               <div v-show="isStatisticsEnabled && isCrossEnabled && isAllSummaryShow()" style="background: lightgray; padding: 1px; display: inline-block; margin: 1px" >
                                 <!-- 只能写成一行来消除间隙，不能换行、空格 -->
@@ -839,16 +840,6 @@ fun(true, 1, 'a'..);
     <!--</a>-->
     <!--本网站部分工具是站长整合网上已有工具、开源包等，并全部遵循原有协议发布，著作权归属原作者或是团队。-->
     <!--</div>-->
-
-    <!--弹出保存框-->
-    <div class="save-box" v-show="isAlertShow">
-        <svg class="icon close-icon" @click="showAlert(false)">
-            <use xlink:href="svg/icon.svg#close"></use>
-        </svg>
-
-        <a type="text" style="background-color: white; padding: 6px 10px 6px 10px">{{alertMsg}}</a><br/>
-        <button  @click="showAlert(false)" >确定</button>
-    </div>
 
     <!--弹出保存框-->
     <div class="save-box" v-show="isSaveShow">
@@ -965,6 +956,15 @@ fun(true, 1, 'a'..);
 
     <!-- 登录 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> -->
 
+    <!--弹出对话框-->
+    <div class="save-box" v-show="isAlertShow"style="border: black 2px solid; background-color: white">
+        <svg class="icon close-icon" @click="showAlert(false)">
+            <use xlink:href="svg/icon.svg#close"></use>
+        </svg>
+
+        <a id="vAlert" type="text" style="background-color: white; padding: 6px 10px 6px 10px">{{alertMsg}}</a><br/>
+        <button  @click="showAlert(false)" >确定</button>
+    </div>
 
 </div>
 
@@ -1082,6 +1082,7 @@ fun(true, 1, 'a'..);
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONRequest.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/JSONResponse.js" ></script>
 <script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/CodeUtil.js" ></script>
+<script type="text/javascript" language="JavaScript" charset="UTF-8" src="apijson/Charles.js" ></script>
 <!-- 必须在main.js前 TODO 可能有冲突，代码写入vue文件？ >>>>>>>>>>>>>>>> -->
 <script src="https://unpkg.com/json5@^2.0.0/dist/index.min.js"></script>
 
@@ -1090,6 +1091,9 @@ fun(true, 1, 'a'..);
 
 <script type="text/javascript" language="JavaScript" charset="UTF-8" >
   //TODO 保留，用v-model绑定到App.data会报错，各种undefined
+  var vAlert = document.getElementById("vAlert");
+  var vFileInput = document.getElementById("vFileInput");
+
   var vUrl = document.getElementById("vUrl");
   var vUrlComment = document.getElementById("vUrlComment");
   var vTransfer = document.getElementById("vTransfer");

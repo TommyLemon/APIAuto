@@ -186,7 +186,7 @@ https://github.com/APIJSON/APIJSON-Demo/tree/main/APIJSON-Java-Server
 #### 3.调用 /delegate 代理接口来录制请求的方法、参数、Header、响应等信息
 https://github.com/APIJSON/APIJSON-Demo/tree/main/APIJSON-Java-Server/APIJSONBoot-MultiDataSource#%E4%BB%A3%E7%90%86%E6%8E%A5%E5%8F%A3%E5%8F%8A%E5%BD%95%E5%88%B6%E6%B5%81%E9%87%8F
 
-#### 4.打开分享链接来自动填充 URL、参数 JSON、请求头、参数注入配置、设置项 等
+#### 4.打开分享链接来自动填充 URL、参数 JSON、请求头、参数规则配置、设置项 等
 例如：
 http://apijson.cn/api/?send=true&type=JSON&url=http%3A%2F%2Fapijson.cn%3A8080%2Fget&json={%22[]%22:{%22Comment%22:{},%22User%22:{%22id@%22:%22%2FComment%2FuserId%22}}}
 

@@ -1,5 +1,15 @@
+/*Copyright ©2017 TommyLemon(https://github.com/TommyLemon/AutoUI)
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use StringUtil file except in compliance with the License.
+ You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.*/
 const Koa = require('koa');
-//const cors = require('koa2-cors');
+// const cors = require('koa2-cors');
 // const bodyParser = require('koa-bodyparser');
 // const Vue = require('vue');
 const {getRequestFromURL, App} = require('./main');
@@ -8,6 +18,7 @@ const {getRequestFromURL, App} = require('./main');
 const JSONResponse = require('../apijson/JSONResponse');
 const StringUtil = require('../apijson/StringUtil');
 
+const DEBUG = true;
 var isCrossEnabled = true; // false;
 var isLoading = false;
 var startTime = 0;
@@ -74,7 +85,7 @@ function update() {
 
 const PORT = 3000;
 
-var done = false;
+var done = [false];
 const app = new Koa();
 // app.use(bodyParser());
 app.use(async ctx => {
@@ -177,7 +188,7 @@ app.use(async ctx => {
     });
   }
   else if (ctx.path == '/test/compare' || ctx.path == '/test/ml') {
-    done = false;
+    done = [false];
 //    var json = '';
 //    ctx.req.addListener('data', (data) => {
 //  		json += data;
@@ -191,18 +202,22 @@ app.use(async ctx => {
         var stdd = body.standard;
         var response = typeof res != 'string' ? res : (StringUtil.isEmpty(res, true) ? null : JSON.parse(res));
         var standard = typeof stdd != 'string' ? stdd : (StringUtil.isEmpty(stdd, true) ? null : JSON.parse(stdd));
-        console.log('\n\nresponse = ' + JSON.stringify(response));
-        console.log('\n\nstdd = ' + JSON.stringify(stdd));
+        if (DEBUG) {
+          console.log('\n\nresponse = ' + JSON.stringify(response));
+          console.log('\n\nstdd = ' + JSON.stringify(stdd));
+        }
         var compare = JSONResponse.compareResponse(null, standard, response || {}, '', isML, null, null, false) || {}
 
         if (body.newStandard) {
           compare.newStandard = JSONResponse.updateFullStandard(standard, response, isML)
         }
-        console.log('\n\ncompare = ' + JSON.stringify(compare));
+        if (DEBUG) {
+          console.log('\n\ncompare = ' + JSON.stringify(compare));
+        }
 
         ctx.status = ctx.response.status = 200;
         ctx.body = ctx.response.body = compare == null ? '' : JSON.stringify(compare);
-        done = true;
+        done = [true];
 //    })
 //    while (true) {
 //        if (done) {
